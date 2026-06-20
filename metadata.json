@@ -1,0 +1,6 @@
+{
+  "name": "AngelOne Trading Terminal",
+  "description": "An advanced, human-friendly trading terminal displaying Live Trades, Backtests, and Performance KPIs populated dynamically from AngelOne/Wix integrations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
