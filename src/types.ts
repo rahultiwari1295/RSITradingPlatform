@@ -56,6 +56,14 @@ export interface TerminalDataResponse {
   success: boolean;
   kpis: TerminalKPIs;
   tableData: TradeRecord[];
-  source?: "live" | "fallback";
+  source?: "live" | "failed";
   error?: string;
+}
+
+export interface UpcomingStock {
+  symbol: string;
+  tradeState: "SETUP" | "WATCHING";
+  tradeStateScore: number;
+  quality: "STRONG" | "MEDIUM" | "WEAK" | string;
+  ltp?: number;
 }

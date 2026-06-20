@@ -23,7 +23,7 @@ import {
   HelpCircle,
   TrendingDown
 } from "lucide-react";
-import { TradeRecord, TerminalKPIs, TradeState } from "./types";
+import { TradeRecord, TerminalKPIs, TradeState, UpcomingStock } from "./types";
 import KPICards from "./components/KPICards";
 import TradingViewWidget from "./components/TradingViewWidget";
 
@@ -41,6 +41,11 @@ export default function App() {
   });
   const [dataSource, setDataSource] = useState<"live" | "failed">("failed");
   const [errorInfo, setErrorInfo] = useState<string | null>(null);
+
+  // Upcoming setup bounce alerts state
+  const [upcomingStocks, setUpcomingStocks] = useState<UpcomingStock[]>([]);
+  const [upcomingLoading, setUpcomingLoading] = useState<boolean>(false);
+  const [upcomingError, setUpcomingError] = useState<string | null>(null);
 
   // Filter Tabs
   const [activeTab, setActiveTab] = useState<"active" | "setup" | "portfolio" | "backtest">("active");
@@ -94,8 +99,29 @@ export default function App() {
     }
   };
 
+  // Fetch upcoming/bounce list directly
+  const fetchUpcomingStocks = async () => {
+    setUpcomingLoading(true);
+    try {
+      const res = await fetch("/api/upcoming-stocks");
+      const result = await res.json();
+      if (result.success && Array.isArray(result.status)) {
+        setUpcomingStocks(result.status);
+        setUpcomingError(null);
+      } else {
+        setUpcomingError(result.error || "Wix bounce endpoint returned unsuccessful status");
+      }
+    } catch (err: any) {
+      console.error("Upcoming Stocks Fetch Error:", err);
+      setUpcomingError(err.message || "Failed to reach node proxy for upcoming stocks");
+    } finally {
+      setUpcomingLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchTerminalData();
+    fetchUpcomingStocks();
   }, []);
 
   // Sync state mutations dynamically on the client side
@@ -124,6 +150,81 @@ export default function App() {
   const activeSignals = data.tableData.filter(t => t.tradeState === "ACTIVE" || t.tradeState === "SETUP");
   const portfolioList = data.tableData.filter(t => t.purchased);
   const setupZones = data.tableData.filter(t => t.tradeState === "SETUP" || t.tradeState === "WATCHING");
+
+  // --- DETAILED CALCULATIONS FOR DYNAMIC METRICS OVER COHORT DATA ---
+
+  // 1. Active Tab Calculations
+  const activeList = data.tableData.filter(t => t.tradeState === "ACTIVE");
+  const activeCountVal = activeList.length;
+  const activeProfitableCount = activeList.filter(t => {
+    const rawLtp = t.currentLtp !== undefined ? t.currentLtp : (t.ltp !== undefined ? t.ltp : 0);
+    return rawLtp > 0 && rawLtp > t.entryPrice;
+  }).length;
+  const activeLossCount = activeList.filter(t => {
+    const rawLtp = t.currentLtp !== undefined ? t.currentLtp : (t.ltp !== undefined ? t.ltp : 0);
+    return rawLtp > 0 && rawLtp < t.entryPrice;
+  }).length;
+  
+  let totalActiveRoiSum = 0;
+  let activeLtpCount = 0;
+  activeList.forEach(t => {
+    const rawLtp = t.currentLtp !== undefined ? t.currentLtp : (t.ltp !== undefined ? t.ltp : 0);
+    if (rawLtp > 0 && t.entryPrice > 0) {
+      totalActiveRoiSum += ((rawLtp - t.entryPrice) / t.entryPrice) * 100;
+      activeLtpCount++;
+    }
+  });
+  const avgActiveRoi = activeLtpCount > 0 ? (totalActiveRoiSum / activeLtpCount) : 0;
+
+  // 2. Portfolio Calculations
+  const portfolioItems = data.tableData.filter(t => t.purchased);
+  const totalPortfolioInvested = portfolioItems.reduce((sum, item) => {
+    const price = item.purchasePrice || item.entryPrice || 0;
+    const qty = item.purchaseQty || 100;
+    return sum + (price * qty);
+  }, 0);
+  
+  const totalPortfolioCurrentValue = portfolioItems.reduce((sum, item) => {
+    const rawLtp = item.currentLtp !== undefined ? item.currentLtp : (item.ltp !== undefined ? item.ltp : 0);
+    const qty = item.purchaseQty || 100;
+    return sum + (rawLtp * qty);
+  }, 0);
+
+  const totalPortfolioPnlVal = totalPortfolioCurrentValue - totalPortfolioInvested;
+  const totalPortfolioPnlPct = totalPortfolioInvested > 0 ? (totalPortfolioPnlVal / totalPortfolioInvested) * 100 : 0;
+  const portfolioProfitableCount = portfolioItems.filter(item => {
+    const rawLtp = item.currentLtp !== undefined ? item.currentLtp : (item.ltp !== undefined ? item.ltp : 0);
+    const price = item.purchasePrice || item.entryPrice || 0;
+    return rawLtp > 0 && rawLtp > price;
+  }).length;
+  const portfolioLossCount = portfolioItems.filter(item => {
+    const rawLtp = item.currentLtp !== undefined ? item.currentLtp : (item.ltp !== undefined ? item.ltp : 0);
+    const price = item.purchasePrice || item.entryPrice || 0;
+    return rawLtp > 0 && rawLtp < price;
+  }).length;
+
+  // 3. Backtest Calculations
+  const backtestExitedList = data.tableData.filter(t => t.isBacktest || t.tradeState === "EXITED");
+  const backtestCount = backtestExitedList.length;
+  const backtestWinnerCount = backtestExitedList.filter(t => t.exitPrice !== null && t.exitPrice >= t.entryPrice).length;
+  const backtestLoserCount = backtestExitedList.filter(t => t.exitPrice !== null && t.exitPrice < t.entryPrice).length;
+  const backtestWinRatePct = backtestCount > 0 ? (backtestWinnerCount / backtestCount) * 100 : 0;
+  
+  const backtestAvgReturnPct = backtestCount > 0 
+    ? backtestExitedList.reduce((sum, item) => {
+        if (item.tradeReturnPct !== null) return sum + item.tradeReturnPct;
+        if (item.exitPrice !== null && item.entryPrice > 0) {
+          return sum + ((item.exitPrice - item.entryPrice) / item.entryPrice * 100);
+        }
+        return sum;
+      }, 0) / backtestCount 
+    : 0;
+
+  // 4. Upcoming Bounce Calculations
+  const upcomingSetupCount = upcomingStocks.filter(u => u.tradeState === "SETUP").length;
+  const upcomingWatchingCount = upcomingStocks.filter(u => u.tradeState === "WATCHING").length;
+  const upcomingStrongCount = upcomingStocks.filter(u => u.quality === "STRONG").length;
+  const upcomingAvgScore = upcomingStocks.length ? upcomingStocks.reduce((sum, item) => sum + item.tradeStateScore, 0) / upcomingStocks.length : 0;
 
   // Filtering search list records
   const filteredRecords = data.tableData.filter((record) => {
@@ -201,12 +302,12 @@ export default function App() {
               </div>
 
               <button
-                onClick={fetchTerminalData}
-                disabled={loading}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-gray-200 hover:bg-slate-50 text-xs font-semibold text-gray-700 transition-colors shadow-3xs cursor-pointer disabled:opacity-50"
+                onClick={() => { fetchTerminalData(); fetchUpcomingStocks(); }}
+                disabled={loading || upcomingLoading}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-gray-200 hover:bg-slate-50 text-xs font-semibold text-gray-700 transition-all shadow-3xs cursor-pointer disabled:opacity-50"
               >
-                <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${loading ? "animate-spin" : ""}`} />
-                {loading ? "Syncing..." : "Force Sync"}
+                <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${(loading || upcomingLoading) ? "animate-spin" : ""}`} />
+                {loading || upcomingLoading ? "Syncing..." : "Force Sync"}
               </button>
             </div>
           </div>
@@ -253,7 +354,7 @@ export default function App() {
                         : "text-gray-500 hover:text-gray-900"
                     }`}
                   >
-                    👁️ Watch/Setup Alerts ({setupZones.length})
+                    👁️ Watch/Setup Alerts ({upcomingStocks.length})
                   </button>
                   <button
                     onClick={() => setActiveTab("portfolio")}
@@ -293,20 +394,235 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Tab-Aware Rich Analytical Insights Panel */}
+              <div className="px-4 py-3 bg-linear-to-r from-slate-50 to-indigo-50/10 border-b border-gray-100 flex flex-wrap gap-4 items-center justify-between text-xs text-gray-600">
+                {activeTab === "active" && (
+                  <>
+                    <div className="flex flex-wrap items-center gap-4">
+                      <span className="font-semibold text-indigo-950 font-mono">🚀 CORES ACTIVE INSIGHTS:</span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        Profitable Setups: <strong className="text-emerald-700 font-mono">{activeProfitableCount}</strong>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                        In Drawdown: <strong className="text-rose-700 font-mono">{activeLossCount}</strong>
+                      </span>
+                      <span className="flex items-center gap-1 text-slate-400">|</span>
+                      <span className="font-mono text-[11px]">
+                        Avg Floating ROI: <strong className={avgActiveRoi >= 0 ? "text-emerald-600" : "text-rose-500"}>
+                          {avgActiveRoi >= 0 ? "+" : ""}{avgActiveRoi.toFixed(2)}%
+                        </strong>
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-gray-400 italic">Live floating alerts tracked by RSI Sentinel</div>
+                  </>
+                )}
+
+                {activeTab === "setup" && (
+                  <>
+                    <div className="flex flex-wrap items-center gap-4">
+                      <span className="font-semibold text-indigo-950 font-mono">👁️ BOUNCE MONITOR INSIGHTS:</span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        In SETUP state: <strong className="text-amber-700 font-mono">{upcomingSetupCount}</strong>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                        In WATCHING state: <strong className="text-purple-700 font-mono">{upcomingWatchingCount}</strong>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        Strong Quality: <strong className="text-emerald-700 font-mono">{upcomingStrongCount}</strong>
+                      </span>
+                      <span className="flex items-center gap-1 text-slate-400">|</span>
+                      <span>
+                        Avg State Score: <strong className="text-indigo-600 font-mono">{upcomingAvgScore.toFixed(1)}</strong>
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-indigo-500/80 font-bold font-mono">Ready to Bounce list loaded live from Wix</div>
+                  </>
+                )}
+
+                {activeTab === "portfolio" && (
+                  <>
+                    <div className="flex flex-wrap items-center gap-4 w-full justify-between">
+                      <div className="flex flex-wrap items-center gap-4">
+                        <span className="font-semibold text-emerald-950 font-mono">🏆 PORTFOLIO BALANCE SHEETS:</span>
+                        <span>
+                          Invested: <strong className="text-slate-800 font-mono">₹{totalPortfolioInvested.toLocaleString("en-IN", { maximumFractionDigits: 1 })}</strong>
+                        </span>
+                        <span>
+                          Current Value: <strong className="text-slate-800 font-mono">₹{totalPortfolioCurrentValue.toLocaleString("en-IN", { maximumFractionDigits: 1 })}</strong>
+                        </span>
+                        <span className="flex items-center gap-1 text-slate-400">|</span>
+                        <span className="flex items-center gap-1">
+                          Net Gain/Loss: <strong className={`font-mono ${totalPortfolioPnlVal >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                            {totalPortfolioPnlVal >= 0 ? "+" : ""}₹{totalPortfolioPnlVal.toLocaleString("en-IN", { maximumFractionDigits: 1 })} ({totalPortfolioPnlVal >= 0 ? "+" : ""}{totalPortfolioPnlPct.toFixed(2)}%)
+                          </strong>
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[11px]">
+                        <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 font-medium">Profit: {portfolioProfitableCount}</span>
+                        <span className="text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 font-medium">Loss: {portfolioLossCount}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {activeTab === "backtest" && (
+                  <>
+                    <div className="flex flex-wrap items-center gap-4">
+                      <span className="font-semibold text-indigo-950 font-mono">📜 HISTORICAL EXIT STRATEGY STATS:</span>
+                      <span>
+                        Total Logs: <strong className="text-slate-800 font-mono">{backtestCount}</strong>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        Wins: <strong className="text-emerald-700 font-mono">{backtestWinnerCount}</strong>
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                        Losses: <strong className="text-rose-700 font-mono">{backtestLoserCount}</strong>
+                      </span>
+                      <span className="flex items-center gap-1 text-slate-400">|</span>
+                      <span>
+                        Avg Exit Return: <strong className={`font-mono ${backtestAvgReturnPct >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                          {backtestAvgReturnPct >= 0 ? "+" : ""}{backtestAvgReturnPct.toFixed(2)}%
+                        </strong>
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-bold font-mono text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded">
+                      Win Rate: {backtestWinRatePct.toFixed(1)}%
+                    </span>
+                  </>
+                )}
+              </div>
+
               {/* Live Alerts & Tables */}
               <div className="overflow-x-auto min-h-[400px]">
-                {loading ? (
+                {activeTab === "setup" ? (
+                  upcomingLoading ? (
+                    <div className="flex flex-col items-center justify-center p-20 gap-3">
+                      <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                      <p className="text-gray-400 text-xs font-mono">Synchronizing bounce alerts from Wix upcomingStock...</p>
+                    </div>
+                  ) : upcomingStocks.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-16 text-center">
+                      <BookOpen className="w-10 h-10 text-gray-300 mb-3" />
+                      <h4 className="font-semibold text-gray-700 text-sm">No upcoming bounce triggers detected currently</h4>
+                      <p className="text-xs text-gray-400 mt-1 max-w-sm font-mono">
+                        Check back later or force manual sync above.
+                      </p>
+                    </div>
+                  ) : (
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-200/60 font-mono text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
+                          <th className="px-4 py-3">Symbol / Base Info</th>
+                          <th className="px-4 py-3">Bounce Status</th>
+                          <th className="px-4 py-3 text-right">LTP Price</th>
+                          <th className="px-4 py-3 text-right">Setup Quality</th>
+                          <th className="px-4 py-3 text-center">Ready Score</th>
+                          <th className="px-4 py-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {upcomingStocks.map((item) => {
+                          const isSelected = selectedSymbol === item.symbol;
+                          const rawLtp = item.ltp !== undefined ? item.ltp : 0;
+                          return (
+                            <tr
+                              key={`upcoming-${item.symbol}`}
+                              className={`group transition-all hover:bg-slate-50/80 cursor-pointer ${
+                                isSelected ? "bg-indigo-50/30" : ""
+                              }`}
+                              onClick={() => setSelectedSymbol(item.symbol)}
+                            >
+                              <td className="px-4 py-3.5">
+                                <div className="flex flex-col">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-bold text-gray-900 text-sm font-mono tracking-tight group-hover:text-indigo-600 transition-colors">
+                                      {item.symbol}
+                                    </span>
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-purple-100 text-purple-800 border border-purple-200 uppercase font-mono">
+                                      BOUNCE SETUP
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] text-gray-400 font-mono mt-0.5">
+                                    Ready-to-bounce Setup Zone
+                                  </span>
+                                </div>
+                              </td>
+
+                              <td className="px-4 py-3.5">
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                  item.tradeState === "SETUP"
+                                    ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                    : "bg-purple-100 text-purple-800 border border-purple-200"
+                                }`}>
+                                  ● {item.tradeState}
+                                </span>
+                              </td>
+
+                              <td className="px-4 py-3.5 text-right font-mono font-semibold">
+                                <div className="flex flex-col">
+                                  {rawLtp > 0 ? (
+                                    <span className="text-indigo-600 font-bold bg-indigo-50/50 px-1 py-0.5 rounded inline-block text-right">₹{rawLtp.toFixed(2)}</span>
+                                  ) : (
+                                    <span className="text-slate-400 italic">0.00</span>
+                                  )}
+                                </div>
+                              </td>
+
+                              <td className="px-4 py-3.5 text-right font-mono">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                  item.quality === "STRONG" 
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200" 
+                                    : "bg-amber-50 text-amber-700 border border-amber-200"
+                                }`}>
+                                  {item.quality} Quality
+                                </span>
+                              </td>
+
+                              <td className="px-4 py-3.5 text-center">
+                                <span className="text-[11px] font-mono font-bold bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded">
+                                  Score: {item.tradeStateScore}
+                                </span>
+                              </td>
+
+                              <td className="px-4 py-3.5 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={() => setSelectedSymbol(item.symbol)}
+                                    className={`px-3 py-1.5 rounded-md border text-xs font-semibold cursor-pointer transition-all ${
+                                      isSelected
+                                        ? "bg-indigo-600 text-white border-indigo-600"
+                                        : "bg-white text-indigo-600 border-indigo-200 hover:bg-indigo-50/50"
+                                    }`}
+                                  >
+                                    Chart
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )
+                ) : loading ? (
                   <div className="flex flex-col items-center justify-center p-20 gap-3">
                     <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
                     <p className="text-gray-400 text-xs font-mono">Synchronizing trades with active Wix clusters...</p>
                   </div>
                 ) : filteredRecords.length === 0 ? (
                   <div className="flex flex-col items-center justify-center p-16 text-center">
-                    <BookOpen className="w-10 h-10 text-gray-300 mb-3" />
-                    <h4 className="font-semibold text-gray-700 text-sm">No records found matching current active tab</h4>
-                    <p className="text-xs text-gray-400 mt-1 max-w-sm">
-                      Try adjusting the search input or choosing a different strategy strength filtering option.
-                    </p>
+                     <BookOpen className="w-10 h-10 text-gray-300 mb-3" />
+                     <h4 className="font-semibold text-gray-700 text-sm">No records found matching current active tab</h4>
+                     <p className="text-xs text-gray-400 mt-1 max-w-sm">
+                       Try adjusting the search input or choosing a different strategy strength filtering option.
+                     </p>
                   </div>
                 ) : (
                   <table className="w-full text-left border-collapse">
