@@ -68,7 +68,7 @@ export default function App() {
   const fetchTerminalData = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/terminal-data");
+      const res = await fetch("https://rahultiwari1295.wixstudio.com/angelportfolio/_functions/terminalData");
       const result = await res.json();
       if (result.success) {
         setData({
