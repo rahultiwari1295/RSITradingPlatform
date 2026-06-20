@@ -26,15 +26,20 @@ async function startServer() {
 
       const rawData = await response.json();
       
-      if (rawData && rawData.success && rawData.tableData && rawData.kpis) {
+      if (rawData && rawData.success) {
         return res.json({
           success: true,
+          generatedAt: rawData.generatedAt,
           kpis: rawData.kpis,
-          tableData: rawData.tableData,
+          nearSetup: rawData.nearSetup || [],
+          ongoingTrades: rawData.ongoingTrades || [],
+          backtestLog: rawData.backtestLog || [],
+          portfolio: rawData.portfolio || [],
+          meta: rawData.meta || {},
           source: "live"
         });
       } else {
-        throw new Error("Wix API response succeeded but structure did not match expected terminal KPIs and table scheme.");
+        throw new Error("Wix API response succeeded but 'success' status is false or format did not match expected structure.");
       }
     } catch (error: any) {
       console.error("Wix API Sync Failure:", error.message);
