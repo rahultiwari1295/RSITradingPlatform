@@ -103,7 +103,7 @@ export default function App() {
   const fetchUpcomingStocks = async () => {
     setUpcomingLoading(true);
     try {
-      const res = await fetch("/api/upcoming-stocks");
+      const res = await fetch("https://rahultiwari1295.wixstudio.com/angelportfolio/_functions/upcomingStock");
       const result = await res.json();
       if (result.success && Array.isArray(result.status)) {
         setUpcomingStocks(result.status);
