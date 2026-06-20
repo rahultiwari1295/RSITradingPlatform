@@ -253,43 +253,44 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
       
       {/* Dynamic Connection Banner */}
-      <div className="bg-slate-900 text-slate-300 px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-2 border-b border-slate-800">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-mono text-[11px] tracking-wide">
+      <div className="bg-slate-900 text-slate-300 px-3 py-2 text-[10px] sm:text-xs flex flex-col md:flex-row md:items-center justify-between gap-1.5 border-b border-slate-800">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+          <span className="font-mono tracking-wide">
             API SYSTEM CONNECT: <span className="text-emerald-400 font-bold uppercase">{dataSource} Wix Signal Function</span>
           </span>
           {errorInfo && (
-            <span className="text-red-400 text-[10px] truncate max-w-md font-mono">
+            <span className="text-red-400 text-[9px] sm:text-[10px] truncate max-w-[180px] sm:max-w-md font-mono">
               ({errorInfo})
             </span>
           )}
         </div>
-        <div className="flex items-center gap-4 font-mono text-[11px]">
+        <div className="flex items-center gap-3 font-mono text-[9px] sm:text-[11px] text-slate-400 justify-between md:justify-end w-full md:w-auto border-t border-slate-800/60 pt-1.5 md:border-t-0 md:pt-0">
           <span>Server Time: 2026-06-20 IST</span>
-          <span className="text-slate-500">|</span>
-          <span className="text-slate-400 font-medium">AngelOne Auth: ACTIVE</span>
+          <span className="text-slate-700 hidden md:inline">|</span>
+          <span className="text-slate-300 font-medium">AngelOne Auth: ACTIVE</span>
         </div>
       </div>
 
       {/* Modern High-Fidelity Header */}
       <header className="bg-white border-b border-gray-200/80 sticky top-0 z-40 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex flex-col md:flex-row md:items-center justify-between py-3 md:py-0 md:h-16 gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-indigo-200 shrink-0">
                 <Activity className="w-5 h-5 animate-pulse" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-lg font-bold text-gray-900 tracking-tight">RahulTrading Terminal</h1>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100/60 font-mono uppercase">V3.5 ENGINE</span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-base md:text-lg font-bold text-gray-900 tracking-tight truncate">RahulTrading Terminal</h1>
+                  <span className="text-[9px] md:text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100/60 font-mono uppercase shrink-0">V3.5 ENGINE</span>
                 </div>
-                <p className="text-xs text-gray-500">Automated Weekly Trendline Cross &amp; RSI Exit Sentinel</p>
+                <p className="text-xs text-gray-500 hidden sm:block truncate">Automated Weekly Trendline Cross &amp; RSI Exit Sentinel</p>
+                <p className="text-[11px] text-gray-500 block sm:hidden">RSI Exit Sentinel &amp; Trendline Tracker</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 justify-between md:justify-end w-full md:w-auto">
               <div className="relative hidden md:block">
                 <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
                 <input
@@ -304,7 +305,7 @@ export default function App() {
               <button
                 onClick={() => { fetchTerminalData(); fetchUpcomingStocks(); }}
                 disabled={loading || upcomingLoading}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-gray-200 hover:bg-slate-50 text-xs font-semibold text-gray-700 transition-all shadow-3xs cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 w-full sm:w-auto rounded-lg bg-white border border-gray-200 hover:bg-slate-50 text-xs font-semibold text-gray-700 transition-all shadow-3xs cursor-pointer disabled:opacity-50"
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${(loading || upcomingLoading) ? "animate-spin" : ""}`} />
                 {loading || upcomingLoading ? "Syncing..." : "Force Sync"}
@@ -332,59 +333,59 @@ export default function App() {
             
             {/* Table Control Hub */}
             <div className="bg-white rounded-xl border border-gray-200/80 shadow-xs overflow-hidden">
-              <div className="p-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-4 bg-gray-50/50">
+              <div className="p-3 sm:p-4 border-b border-gray-100 flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-gray-50/50">
                 
                 {/* Navigation Tabs */}
-                <div className="flex p-0.5 rounded-lg bg-gray-100 border border-gray-200/30">
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap p-1 gap-1 rounded-xl bg-gray-150/80 border border-gray-200/30 w-full xl:w-auto">
                   <button
                     onClick={() => setActiveTab("active")}
-                    className={`px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all duration-150 cursor-pointer ${
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold tracking-tight transition-all duration-150 cursor-pointer text-center whitespace-nowrap truncate ${
                       activeTab === "active"
-                        ? "bg-white text-gray-900 shadow-xs"
-                        : "text-gray-500 hover:text-gray-900"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-900 hover:bg-white/40"
                     }`}
                   >
-                    🚀 Active Core ({data.tableData.filter(t => t.tradeState === "ACTIVE").length})
+                    🚀 Active ({data.tableData.filter(t => t.tradeState === "ACTIVE").length})
                   </button>
                   <button
                     onClick={() => setActiveTab("setup")}
-                    className={`px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all duration-150 cursor-pointer ${
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold tracking-tight transition-all duration-150 cursor-pointer text-center whitespace-nowrap truncate ${
                       activeTab === "setup"
-                        ? "bg-white text-gray-900 shadow-xs"
-                        : "text-gray-500 hover:text-gray-900"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-900 hover:bg-white/40"
                     }`}
                   >
-                    👁️ Watch/Setup Alerts ({upcomingStocks.length})
+                    👁️ Setup ({upcomingStocks.length})
                   </button>
                   <button
                     onClick={() => setActiveTab("portfolio")}
-                    className={`px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all duration-150 cursor-pointer ${
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold tracking-tight transition-all duration-150 cursor-pointer text-center whitespace-nowrap truncate ${
                       activeTab === "portfolio"
-                        ? "bg-white text-gray-900 shadow-xs"
-                        : "text-gray-500 hover:text-gray-900"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-900 hover:bg-white/40"
                     }`}
                   >
-                    🏆 Portfolio Tracker ({portfolioList.length})
+                    🏆 Portfolio ({portfolioList.length})
                   </button>
                   <button
                     onClick={() => setActiveTab("backtest")}
-                    className={`px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all duration-150 cursor-pointer ${
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold tracking-tight transition-all duration-150 cursor-pointer text-center whitespace-nowrap truncate ${
                       activeTab === "backtest"
-                        ? "bg-white text-gray-900 shadow-xs"
-                        : "text-gray-500 hover:text-gray-900"
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-900 hover:bg-white/40"
                     }`}
                   >
-                    📜 Backtest Log ({data.tableData.filter(t => t.isBacktest).length})
+                    📜 Backtests ({data.tableData.filter(t => t.isBacktest).length})
                   </button>
                 </div>
 
                 {/* Dropdowns Filters */}
-                <div className="flex items-center gap-2">
-                  <label className="text-[11px] font-semibold text-gray-400 uppercase font-mono tracking-wider">Quality:</label>
+                <div className="flex items-center gap-2 justify-between w-full xl:w-auto border-t border-gray-150 pt-3 xl:border-t-0 xl:pt-0">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase font-mono tracking-wider">Quality Level:</span>
                   <select
                     value={strengthFilter}
                     onChange={(e) => setStrengthFilter(e.target.value)}
-                    className="bg-white border border-gray-200 rounded-md text-xs py-1 px-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="bg-white border border-gray-200 rounded-lg text-xs py-1.5 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 shadow-3xs hover:border-gray-300 font-semibold text-gray-700 transition-colors"
                   >
                     <option value="ALL">All Strengths</option>
                     <option value="STRONG">🟢 Strong Only</option>
@@ -522,8 +523,8 @@ export default function App() {
                           <th className="px-4 py-3">Symbol / Base Info</th>
                           <th className="px-4 py-3">Bounce Status</th>
                           <th className="px-4 py-3 text-right">LTP Price</th>
-                          <th className="px-4 py-3 text-right">Setup Quality</th>
-                          <th className="px-4 py-3 text-center">Ready Score</th>
+                          <th className="px-4 py-3 text-right hidden sm:table-cell">Setup Quality</th>
+                          <th className="px-4 py-3 text-center hidden md:table-cell">Ready Score</th>
                           <th className="px-4 py-3 text-right">Actions</th>
                         </tr>
                       </thead>
@@ -540,12 +541,12 @@ export default function App() {
                               onClick={() => setSelectedSymbol(item.symbol)}
                             >
                               <td className="px-4 py-3.5">
-                                <div className="flex flex-col">
+                                <div className="flex flex-col text-left">
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <span className="font-bold text-gray-900 text-sm font-mono tracking-tight group-hover:text-indigo-600 transition-colors">
                                       {item.symbol}
                                     </span>
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-purple-100 text-purple-800 border border-purple-200 uppercase font-mono">
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-purple-100 text-purple-800 border border-purple-200 uppercase font-mono shrink-0">
                                       BOUNCE SETUP
                                     </span>
                                   </div>
@@ -575,7 +576,7 @@ export default function App() {
                                 </div>
                               </td>
 
-                              <td className="px-4 py-3.5 text-right font-mono">
+                              <td className="px-4 py-3.5 text-right font-mono hidden sm:table-cell">
                                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                                   item.quality === "STRONG" 
                                     ? "bg-emerald-50 text-emerald-700 border border-emerald-200" 
@@ -585,7 +586,7 @@ export default function App() {
                                 </span>
                               </td>
 
-                              <td className="px-4 py-3.5 text-center">
+                              <td className="px-4 py-3.5 text-center hidden md:table-cell">
                                 <span className="text-[11px] font-mono font-bold bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded">
                                   Score: {item.tradeStateScore}
                                 </span>
@@ -597,7 +598,7 @@ export default function App() {
                                     onClick={() => setSelectedSymbol(item.symbol)}
                                     className={`px-3 py-1.5 rounded-md border text-xs font-semibold cursor-pointer transition-all ${
                                       isSelected
-                                        ? "bg-indigo-600 text-white border-indigo-600"
+                                        ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
                                         : "bg-white text-indigo-600 border-indigo-200 hover:bg-indigo-50/50"
                                     }`}
                                   >
@@ -631,8 +632,8 @@ export default function App() {
                         <th className="px-4 py-3">Symbol / Base Info</th>
                         <th className="px-4 py-3">Signal State</th>
                         <th className="px-4 py-3 text-right">Entry / LTP</th>
-                        <th className="px-4 py-3 text-right">MFE Peak / ROI</th>
-                        <th className="px-4 py-3 text-center">Score / Gap</th>
+                        <th className="px-4 py-3 text-right hidden sm:table-cell">MFE Peak / ROI</th>
+                        <th className="px-4 py-3 text-center hidden md:table-cell">Score / Gap</th>
                         <th className="px-4 py-3 text-right">Actions</th>
                       </tr>
                     </thead>
@@ -743,7 +744,7 @@ export default function App() {
                               </div>
                             </td>
 
-                            <td className="px-4 py-3.5 text-right font-mono">
+                            <td className="px-4 py-3.5 text-right font-mono hidden sm:table-cell">
                               <div className="flex flex-col">
                                 <span className="text-gray-400 text-[10px]">
                                   MFE: <span className="font-semibold text-emerald-600">+{item.mfeHighWater ? item.mfeHighWater.toFixed(1) : "0"}%</span>
@@ -773,7 +774,7 @@ export default function App() {
                               </div>
                             </td>
 
-                            <td className="px-4 py-3.5 text-center">
+                            <td className="px-4 py-3.5 text-center hidden md:table-cell">
                               <div className="flex flex-col items-center">
                                 <span className={`text-[11px] px-1.5 py-0.5 rounded-sm font-bold font-mono ${
                                   item.entryScore >= 80 
