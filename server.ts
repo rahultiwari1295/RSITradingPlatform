@@ -11,7 +11,7 @@ async function startServer() {
   // Express API Proxy — strictly fetching from raw Wix Studio endpoint
   app.get("/api/terminal-data", async (req, res) => {
     try {
-      const response = await fetch("https://rahultiwari1295.wixstudio.com/angelportfolio/_functions/terminalData", {
+      const response = await fetch("https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData", {
         method: "GET",
         headers: {
           "Accept": "application/json",
@@ -26,20 +26,19 @@ async function startServer() {
 
       const rawData = await response.json();
       
-      if (rawData && rawData.success) {
+      if (rawData) {
         return res.json({
           success: true,
           generatedAt: rawData.generatedAt,
           kpis: rawData.kpis,
-          nearSetup: rawData.nearSetup || [],
-          ongoingTrades: rawData.ongoingTrades || [],
-          backtestLog: rawData.backtestLog || [],
+          toBuySignals: rawData.toBuySignals || [],
+          inTradeTrades: rawData.inTradeTrades || [],
           portfolio: rawData.portfolio || [],
-          meta: rawData.meta || {},
+          closedTrades: rawData.closedTrades || [],
           source: "live"
         });
       } else {
-        throw new Error("Wix API response succeeded but 'success' status is false or format did not match expected structure.");
+        throw new Error("Wix API response was empty or malformed.");
       }
     } catch (error: any) {
       console.error("Wix API Sync Failure:", error.message);

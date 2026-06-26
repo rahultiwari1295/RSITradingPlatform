@@ -11,21 +11,17 @@ import {
   BookOpen, 
   Search, 
   RefreshCw, 
-  CheckCircle2, 
-  ExternalLink,
+  Sun, 
+  Moon,
+  Cpu,
   TrendingDown,
-  Info,
-  Sliders,
-  BellRing,
-  Sun,
-  Moon
+  Info
 } from "lucide-react";
 import { 
   TerminalKPIs, 
-  NearSetupStock, 
-  OngoingTrade, 
-  BacktestLogRecord, 
-  PortfolioStock 
+  ToBuySignal, 
+  InTradeTrade, 
+  ClosedTrade 
 } from "./types";
 import KPICards from "./components/KPICards";
 import TradingViewWidget from "./components/TradingViewWidget";
@@ -39,26 +35,16 @@ export default function App() {
   // Core Wix API state containers
   const [kpis, setKpis] = useState<TerminalKPIs>({
     totalSignals: 0,
-    closedTrades: 0,
-    openTrades: 0,
-    winRate: 0,
-    winRateStrong: 0,
-    liveWinRate: 0,
-    avgReturn: 0,
-    avgReturnStrong: 0,
-    expectancy: 0,
-    setupCount: 0,
-    watchingCount: 0,
-    inTradeCount: 0,
-    bestTrade: null,
-    worstTrade: null,
-    exitReasonBreakdown: []
+    toBuy: 0,
+    inTrade: 0,
+    closedTradeCount: 0,
+    stocksProcessed: 0
   });
 
-  const [nearSetup, setNearSetup] = useState<NearSetupStock[]>([]);
-  const [ongoingTrades, setOngoingTrades] = useState<OngoingTrade[]>([]);
-  const [backtestLog, setBacktestLog] = useState<BacktestLogRecord[]>([]);
-  const [portfolioList, setPortfolioList] = useState<PortfolioStock[]>([]);
+  const [toBuySignals, setToBuySignals] = useState<ToBuySignal[]>([]);
+  const [inTradeTrades, setInTradeTrades] = useState<InTradeTrade[]>([]);
+  const [portfolio, setPortfolio] = useState<InTradeTrade[]>([]);
+  const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([]);
 
   // Theme support
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -94,6 +80,25 @@ export default function App() {
     }
   };
 
+  // Helper to map exit reasons beautifully
+  const getExitReasonLabel = (reason: string | null) => {
+    if (!reason) return "N/A";
+    switch (reason.toUpperCase()) {
+      case "MFE_TRAIL_L1":
+        return "🎯 Trail Stop";
+      case "SMART_EARLY_STOP":
+        return "🛡 Early Stop";
+      case "STOP_LOSS":
+        return "❌ Stop Loss";
+      case "TARGET_HIT":
+        return "✅ Target Hit";
+      case "TIME_EXIT":
+        return "⏱ Time Exit";
+      default:
+        return reason;
+    }
+  };
+
   // Main data synchronizer — requests direct Wix Studio secure endpoint first, falls back to server proxies on CORS/network blockages
   const fetchTerminalData = async () => {
     setLoading(true);
@@ -101,7 +106,7 @@ export default function App() {
     let fallbackUsed = false;
 
     try {
-      // Direct high-fidelity secure Wix fetch block as explicitly requested
+      // Direct high-fidelity secure Wix fetch block
       const directRes = await fetch("https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData", {
         method: "GET",
         headers: {
@@ -114,13 +119,13 @@ export default function App() {
         throw new Error(`Direct Wix fetch failed with status: ${directRes.status}`);
       }
     } catch (err: any) {
-      console.warn("Direct path fetch encountered standard sandboxed iframe block or CORS rule. Triggering proxy fallback...", err.message);
+      console.warn("Direct path fetch encountered sandboxed iframe block or CORS rule. Triggering proxy fallback...", err.message);
       try {
         const proxyRes = await fetch("/api/terminal-data");
         result = await proxyRes.json();
         fallbackUsed = true;
       } catch (proxyErr: any) {
-        console.error("handshake failure:", proxyErr);
+        console.error("Handshake failure:", proxyErr);
         setDataSource("failed");
         setErrorInfo(proxyErr.message || "Endpoint unreachable across direct and proxy servers");
       }
@@ -129,45 +134,35 @@ export default function App() {
     if (result && result.success) {
       setKpis(result.kpis || {
         totalSignals: 0,
-        closedTrades: 0,
-        openTrades: 0,
-        winRate: 0,
-        winRateStrong: 0,
-        liveWinRate: 0,
-        avgReturn: 0,
-        avgReturnStrong: 0,
-        expectancy: 0,
-        setupCount: 0,
-        watchingCount: 0,
-        inTradeCount: 0,
-        bestTrade: null,
-        worstTrade: null,
-        exitReasonBreakdown: []
+        toBuy: 0,
+        inTrade: 0,
+        closedTradeCount: 0,
+        stocksProcessed: 0
       });
 
-      const nearSetupData = result.nearSetup || [];
-      const ongoingTradesData = result.ongoingTrades || [];
-      const backtestLogData = result.backtestLog || [];
+      const toBuyData = result.toBuySignals || [];
+      const inTradeData = result.inTradeTrades || [];
       const portfolioData = result.portfolio || [];
+      const closedData = result.closedTrades || [];
 
-      setNearSetup(nearSetupData);
-      setOngoingTrades(ongoingTradesData);
-      setBacktestLog(backtestLogData);
-      setPortfolioList(portfolioData);
+      setToBuySignals(toBuyData);
+      setInTradeTrades(inTradeData);
+      setPortfolio(portfolioData);
+      setClosedTrades(closedData);
 
       setGeneratedAt(result.generatedAt || null);
-      setDataSource(fallbackUsed ? "live" : "live");
+      setDataSource("live");
       setErrorInfo(null);
 
       // Pre-select first appropriate stock symbol on chart stage
-      if (ongoingTradesData.length > 0) {
-        setSelectedSymbol(ongoingTradesData[0].symbol);
-      } else if (nearSetupData.length > 0) {
-        setSelectedSymbol(nearSetupData[0].symbol);
+      if (inTradeData.length > 0) {
+        setSelectedSymbol(inTradeData[0].symbol);
+      } else if (toBuyData.length > 0) {
+        setSelectedSymbol(toBuyData[0].symbol);
       } else if (portfolioData.length > 0) {
         setSelectedSymbol(portfolioData[0].symbol);
-      } else if (backtestLogData.length > 0) {
-        setSelectedSymbol(backtestLogData[0].symbol);
+      } else if (closedData.length > 0) {
+        setSelectedSymbol(closedData[0].symbol);
       }
     } else if (result) {
       setDataSource("failed");
@@ -182,141 +177,113 @@ export default function App() {
 
   // --- STRATEGY & QUERY FILTERING CONTROLLERS ---
 
-  // 1. Ongoing Trades Filters
-  const filteredOngoingTrades = ongoingTrades.filter(t => {
+  // Filter checker for Quality Threshold select dropdown
+  const matchesQualityFilter = (mlGrade: string | null | undefined) => {
+    if (strengthFilter === "ALL") return true;
+    if (!mlGrade) return false;
+    
+    const grade = mlGrade.toUpperCase();
+    if (strengthFilter === "STRONG") {
+      return grade === "A+" || grade === "A";
+    }
+    if (strengthFilter === "GOOD") {
+      return grade === "B+" || grade === "B";
+    }
+    if (strengthFilter === "WATCH") {
+      return grade === "C+" || grade === "C";
+    }
+    return true;
+  };
+
+  // 1. Ongoing/Active Trades Filters (inTradeTrades)
+  const filteredActiveTrades = inTradeTrades.filter(t => {
     const queryMatches = t.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         t.tradeId.toLowerCase().includes(searchQuery.toLowerCase());
-    const strengthMatches = strengthFilter === "ALL" || 
-                            t.strength?.toUpperCase() === strengthFilter ||
-                            t.entryQuality?.toUpperCase() === strengthFilter;
-    return queryMatches && strengthMatches;
+                         (t.sector && t.sector.toLowerCase().includes(searchQuery.toLowerCase()));
+    const gradeMatches = matchesQualityFilter(t.mlGrade);
+    return queryMatches && gradeMatches;
   });
 
-  // 2. Near Setup Filters
-  const filteredNearSetups = nearSetup.filter(s => {
+  // 2. Setup/toBuySignals Filters
+  const filteredSetups = toBuySignals.filter(s => {
     const queryMatches = s.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         s.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const strengthMatches = strengthFilter === "ALL" || 
-                            s.quality?.toUpperCase() === strengthFilter ||
-                            s.holdStrength?.toUpperCase() === strengthFilter;
-    return queryMatches && strengthMatches;
+                         (s.sector && s.sector.toLowerCase().includes(searchQuery.toLowerCase()));
+    const gradeMatches = matchesQualityFilter(s.mlGrade);
+    return queryMatches && gradeMatches;
   });
 
   // 3. Portfolio Filters
-  const filteredPortfolio = portfolioList.filter(p => {
-    const queryMatches = p.symbol.toLowerCase().includes(searchQuery.toLowerCase());
-    const strengthMatches = strengthFilter === "ALL" || 
-                            p.signal?.holdStrength?.toUpperCase() === strengthFilter;
-    return queryMatches && strengthMatches;
+  const filteredPortfolio = portfolio.filter(p => {
+    const queryMatches = p.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (p.sector && p.sector.toLowerCase().includes(searchQuery.toLowerCase()));
+    const gradeMatches = matchesQualityFilter(p.mlGrade);
+    return queryMatches && gradeMatches;
   });
 
-  // 4. Backtest Log Filters
-  const filteredBacktests = backtestLog.filter(b => {
+  // 4. Closed Trades Filters (closedTrades)
+  const filteredClosedTrades = closedTrades.filter(b => {
     const queryMatches = b.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         b.tradeId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         b.exitReason?.toLowerCase().includes(searchQuery.toLowerCase());
-    const strengthMatches = strengthFilter === "ALL" || 
-                            b.strength?.toUpperCase() === strengthFilter ||
-                            b.entryQuality?.toUpperCase() === strengthFilter;
-    return queryMatches && strengthMatches;
+                         (b.exitReason && b.exitReason.toLowerCase().includes(searchQuery.toLowerCase()));
+    const gradeMatches = matchesQualityFilter(b.mlGrade);
+    return queryMatches && gradeMatches;
   });
 
-  // --- TAB COHORT INSIGHTS & UPPER CALCULATIONS CALCULATED DYNAMICALLY ---
+
+  // --- COMPUTE DYNAMIC DOCK-LEVEL STATS BASED ON VISIBLE / FILTERED RECORDS ---
   
-  // Tab 1: Ongoing Trades Insights
-  const profitableActiveCount = filteredOngoingTrades.filter(t => t.currentRoi > 0).length;
-  const inDrawdownActiveCount = filteredOngoingTrades.filter(t => t.currentRoi < 0).length;
-  const avgActiveRoi = filteredOngoingTrades.length > 0
-    ? filteredOngoingTrades.reduce((sum, t) => sum + (t.currentRoi || 0), 0) / filteredOngoingTrades.length
+  // Tactical Win Rate: filteredClosedTrades count of WIN / total filtered closed trades
+  const totalClosed = filteredClosedTrades.length;
+  const winsCount = filteredClosedTrades.filter(t => t.pnlLabel === "WIN").length;
+  const dynamicWinRate = totalClosed > 0 ? (winsCount / totalClosed) * 100 : 0;
+
+  // Strong WR: win rate only for filtered closed trades where mlGrade is A+ or A
+  const strongClosedTrades = filteredClosedTrades.filter(t => t.mlGrade === "A+" || t.mlGrade === "A");
+  const strongWinsCount = strongClosedTrades.filter(t => t.pnlLabel === "WIN").length;
+  const dynamicWinRateStrong = strongClosedTrades.length > 0 ? (strongWinsCount / strongClosedTrades.length) * 100 : 0;
+
+  // Average Return: mean of returnPct from filtered closed trades
+  const dynamicAvgReturn = totalClosed > 0 
+    ? filteredClosedTrades.reduce((sum, t) => sum + (t.returnPct || 0), 0) / totalClosed 
     : 0;
 
-  // Tab 2: Near Setup Insights
-  const upcomingSetupCount = filteredNearSetups.filter(u => u.tradeState === "SETUP").length;
-  const upcomingWatchingCount = filteredNearSetups.filter(u => u.tradeState === "WATCHING").length;
-  const upcomingStrongCount = filteredNearSetups.filter(u => u.quality === "STRONG" || u.holdStrength === "STRONG").length;
-  const upcomingAvgScore = filteredNearSetups.length > 0
-    ? filteredNearSetups.reduce((sum, item) => sum + (item.tradeStateScore || 0), 0) / filteredNearSetups.length
+  // Active Open Count & Closed Count
+  const dynamicOpenCount = filteredActiveTrades.length;
+  const dynamicClosedCount = filteredClosedTrades.length;
+
+  // Setup toBuyCount
+  const dynamicToBuyCount = filteredSetups.length;
+
+
+  // --- TAB COHORT INSIGHTS ---
+  
+  // Active Tab Insights
+  const profitableActiveCount = filteredActiveTrades.filter(t => t.currentROI > 0).length;
+  const inDrawdownActiveCount = filteredActiveTrades.filter(t => t.currentROI < 0).length;
+  const avgActiveRoi = filteredActiveTrades.length > 0
+    ? filteredActiveTrades.reduce((sum, t) => sum + (t.currentROI || 0), 0) / filteredActiveTrades.length
     : 0;
 
-  // Tab 3: Live Portfolio Asset Sheets
-  const totalInvested = filteredPortfolio.reduce((sum, p) => sum + (p.investedValue || 0), 0);
-  const totalCurrent = filteredPortfolio.reduce((sum, p) => sum + (p.currentValue || 0), 0);
-  const totalPnlAmount = totalCurrent - totalInvested;
-  const totalPnlPercentage = totalInvested > 0 ? (totalPnlAmount / totalInvested) * 100 : 0;
-  const portfolioWinnerCount = filteredPortfolio.filter(p => p.pnl > 0).length;
-  const portfolioLoserCount = filteredPortfolio.filter(p => p.pnl < 0).length;
-
-  // Tab 4: Backtest Logs Insights
-  const backtestCount = filteredBacktests.length;
-  const backtestWinnerCount = filteredBacktests.filter(b => b.result === "WIN").length;
-  const backtestLoserCount = filteredBacktests.filter(b => b.result === "LOSS").length;
-  const backtestWinrate = backtestCount > 0 ? (backtestWinnerCount / backtestCount) * 100 : 0;
-  const backtestAvgReturn = backtestCount > 0
-    ? filteredBacktests.reduce((sum, b) => sum + (b.tradeReturnPct || 0), 0) / backtestCount
+  // Setup Tab Insights
+  const upcomingStrongCount = filteredSetups.filter(u => u.mlGrade === "A+" || u.mlGrade === "A").length;
+  const upcomingAvgScore = filteredSetups.length > 0
+    ? filteredSetups.reduce((sum, item) => sum + (item.rankScore || 0), 0) / filteredSetups.length
     : 0;
 
-  // --- COMPUTE DYNAMIC DOCK-LEVEL STATS BASED ON SELECTIONS ---
-  const calculateDynamicKPIOverview = () => {
-    // If standard mode (no filters applied) we can confidently display base kpis response
-    if (strengthFilter === "ALL" && !searchQuery) {
-      return {
-        ...kpis,
-        setupCount: nearSetup.length,
-        inTradeCount: ongoingTrades.length,
-        totalSignals: kpis.totalSignals || (ongoingTrades.length + nearSetup.length + backtestLog.length),
-        closedTrades: kpis.closedTrades || backtestLog.length,
-        openTrades: kpis.openTrades || ongoingTrades.length
-      };
-    }
-
-    // Dynamic Recalculations across filtered results
-    const backtestWins = filteredBacktests.filter(b => b.result === "WIN").length;
-    const computedWinRate = filteredBacktests.length > 0 
-      ? (backtestWins / filteredBacktests.length) * 100 
-      : (filteredOngoingTrades.length > 0 
-          ? (filteredOngoingTrades.filter(t => t.currentRoi > 0).length / filteredOngoingTrades.length) * 100 
-          : kpis.winRate);
-
-    const strongLogs = filteredBacktests.filter(b => b.entryQuality === "STRONG" || b.strength === "STRONG");
-    const strongWins = strongLogs.filter(b => b.result === "WIN").length;
-    const computedWinRateStrong = strongLogs.length > 0 ? (strongWins / strongLogs.length) * 100 : kpis.winRateStrong;
-
-    const computedAvgReturn = filteredBacktests.length > 0 
-      ? (filteredBacktests.reduce((sum, b) => sum + (b.tradeReturnPct || 0), 0) / filteredBacktests.length)
-      : (filteredOngoingTrades.length > 0
-          ? (filteredOngoingTrades.reduce((sum, t) => sum + (t.currentRoi || 0), 0) / filteredOngoingTrades.length)
-          : kpis.avgReturn);
-
-    return {
-      totalSignals: filteredOngoingTrades.length + filteredNearSetups.length + filteredBacktests.length,
-      closedTrades: filteredBacktests.length,
-      openTrades: filteredOngoingTrades.length,
-      winRate: computedWinRate,
-      winRateStrong: computedWinRateStrong,
-      liveWinRate: computedWinRate,
-      avgReturn: computedAvgReturn,
-      avgReturnStrong: computedAvgReturn,
-      expectancy: computedAvgReturn,
-      setupCount: filteredNearSetups.length,
-      watchingCount: filteredNearSetups.filter(s => s.tradeState === "WATCHING").length,
-      inTradeCount: filteredOngoingTrades.length,
-      bestTrade: kpis.bestTrade,
-      worstTrade: kpis.worstTrade,
-      exitReasonBreakdown: kpis.exitReasonBreakdown
-    };
-  };
-
-  const dynamicKPIs = calculateDynamicKPIOverview();
+  // Portfolio Tab Insights
+  const avgPortfolioRoi = filteredPortfolio.length > 0
+    ? filteredPortfolio.reduce((sum, t) => sum + (t.currentROI || 0), 0) / filteredPortfolio.length
+    : 0;
+  const portfolioWinnerCount = filteredPortfolio.filter(p => p.currentROI > 0).length;
+  const portfolioLoserCount = filteredPortfolio.filter(p => p.currentROI < 0).length;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200 selection:bg-indigo-100 selection:text-indigo-900">
       
-      {/* System Status Connectivity Ribbon — Sleek, ultra-compact on mobile */}
+      {/* System Status Connectivity Ribbon */}
       <div className="bg-slate-900 dark:bg-slate-950 text-slate-300 px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs flex flex-row items-center justify-between gap-1.5 border-b border-slate-800 dark:border-slate-900 overflow-hidden select-none">
         <div className="flex items-center gap-1.5 sm:gap-2 truncate">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
           <span className="font-mono tracking-wide truncate">
-            API SYSTEM CONNECT: <span className="text-emerald-400 font-bold uppercase">{dataSource} Wix Signal Function</span>
+            API CORE CONNECT: <span className="text-emerald-400 font-bold uppercase">{dataSource} Wix Signal Gateway</span>
           </span>
           {errorInfo && (
             <span className="text-red-400 text-[9px] truncate max-w-[100px] sm:max-w-md font-mono hidden sm:inline">
@@ -325,9 +292,9 @@ export default function App() {
           )}
         </div>
         <div className="flex items-center gap-2 sm:gap-3 font-mono text-[9px] sm:text-[11px] text-slate-400 shrink-0">
-          <span className="hidden sm:inline">Server Time: 2026-06-20 IST</span>
+          <span className="hidden sm:inline">Data Generated At: {generatedAt ? formatCompactDate(generatedAt) : "N/A"}</span>
           <span className="text-slate-700 hidden sm:inline">|</span>
-          <span className="text-slate-300 font-semibold font-mono uppercase bg-emerald-950/40 dark:bg-emerald-900/10 px-1 py-0.5 rounded border border-emerald-900/30">AngelOne Auto: ACTIVE</span>
+          <span className="text-slate-300 font-semibold font-mono uppercase bg-emerald-950/40 dark:bg-emerald-900/10 px-1.5 py-0.5 rounded border border-emerald-900/30">ML Engine: V3.5</span>
         </div>
       </div>
 
@@ -363,9 +330,9 @@ export default function App() {
               </div>
             </div>
 
-            {/* Filter and Switch controls, optimized for mobile alignment */}
+            {/* Filter and Switch controls */}
             <div className="flex items-center gap-2 w-full md:w-auto">
-              {/* Dynamic Action-Based Search Box */}
+              {/* Dynamic Search Box */}
               <div className="relative flex-1 md:flex-initial">
                 <Search className="w-3.5 h-3.5 text-gray-400 dark:text-slate-500 absolute left-2.5 top-2.5" />
                 <input
@@ -373,7 +340,7 @@ export default function App() {
                   placeholder="Filter table..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8.5 pr-2.5 py-1.5 w-full md:w-52 rounded-lg text-xs bg-slate-100 dark:bg-slate-800 border-0 text-slate-900 dark:text-slate-150 focus:outline-none focus:ring-2 focus:ring-indigo-550/20 focus:bg-white dark:focus:bg-slate-800/80 transition-all font-semibold"
+                  className="pl-8.5 pr-2.5 py-1.5 w-full md:w-52 rounded-lg text-xs bg-slate-100 dark:bg-slate-800 border-0 text-slate-900 dark:text-slate-150 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white dark:focus:bg-slate-800/80 transition-all font-semibold"
                 />
               </div>
 
@@ -391,7 +358,7 @@ export default function App() {
               <button
                 onClick={() => setDarkMode(!darkMode)}
                 className="hidden md:flex items-center justify-center p-1.5 h-8.5 w-8.5 rounded-lg bg-slate-100 dark:bg-slate-850 text-gray-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer shadow-3xs border border-transparent dark:border-slate-800"
-                title="Toggle Scheme Mode"
+                title="Toggle Theme"
               >
                 {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
               </button>
@@ -406,9 +373,13 @@ export default function App() {
         
         {/* Metric Cards Grid Component with Dynamic selection figures */}
         <KPICards 
-          kpis={dynamicKPIs} 
-          activeCount={filteredOngoingTrades.length} 
-          setupCount={filteredNearSetups.length} 
+          winRate={dynamicWinRate} 
+          winRateStrong={dynamicWinRateStrong} 
+          avgReturn={dynamicAvgReturn} 
+          openCount={dynamicOpenCount} 
+          closedCount={dynamicClosedCount} 
+          toBuyCount={dynamicToBuyCount} 
+          stocksProcessed={kpis.stocksProcessed || 0} 
         />
 
         {/* Interactive Workspace Area: Tab Table Controls & TradingView Stage */}
@@ -421,7 +392,7 @@ export default function App() {
             <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200/80 dark:border-slate-800/80 shadow-3xs overflow-hidden">
               <div className="p-3 sm:p-4 border-b border-gray-100 dark:border-slate-800 flex flex-col xl:flex-row xl:items-center justify-between gap-3 bg-gray-50/50 dark:bg-slate-900/30">
                 
-                {/* Segmented controls / Navigation Tabs — horizontally scrollable or tight grip */}
+                {/* Segmented Tab navigation controls */}
                 <div className="flex p-0.5 gap-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200/40 dark:border-slate-700 w-full xl:w-auto overflow-x-auto scrollbar-none select-none">
                   <button
                     onClick={() => setActiveTab("active")}
@@ -431,7 +402,7 @@ export default function App() {
                         : "text-gray-500 hover:text-gray-950 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-white/40 dark:hover:bg-slate-700/30"
                     }`}
                   >
-                    🚀 Active ({filteredOngoingTrades.length})
+                    🚀 Active ({filteredActiveTrades.length})
                   </button>
                   <button
                     onClick={() => setActiveTab("setup")}
@@ -441,7 +412,7 @@ export default function App() {
                         : "text-gray-500 hover:text-gray-950 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-white/40 dark:hover:bg-slate-700/30"
                     }`}
                   >
-                    👁️ Setup ({filteredNearSetups.length})
+                    👁️ Setup ({filteredSetups.length})
                   </button>
                   <button
                     onClick={() => setActiveTab("portfolio")}
@@ -461,22 +432,22 @@ export default function App() {
                         : "text-gray-500 hover:text-gray-950 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-white/40 dark:hover:bg-slate-700/30"
                     }`}
                   >
-                    📜 Backtests ({filteredBacktests.length})
+                    📜 Backtests ({filteredClosedTrades.length})
                   </button>
                 </div>
 
-                {/* Sub Dropdown Strength Select Filters */}
+                {/* Sub Dropdown Quality Filters */}
                 <div className="flex items-center gap-2 justify-between w-full xl:w-auto border-t border-gray-150 dark:border-slate-800 pt-2 xl:border-t-0 xl:pt-0">
                   <span className="text-[10px] sm:text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase font-mono tracking-wider">Quality Threshold:</span>
                   <select
                     value={strengthFilter}
                     onChange={(e) => setStrengthFilter(e.target.value)}
-                    className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg text-xs py-1 px-2.5 sm:py-1.5 select-none focus:outline-none focus:ring-2 focus:ring-indigo-550/25 shadow-3xs hover:border-gray-300 dark:hover:border-slate-700 font-bold text-gray-700 dark:text-slate-300 transition-colors"
+                    className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg text-xs py-1 px-2.5 sm:py-1.5 select-none focus:outline-none focus:ring-2 focus:ring-indigo-500/25 shadow-3xs hover:border-gray-300 dark:hover:border-slate-700 font-bold text-gray-700 dark:text-slate-300 transition-colors cursor-pointer"
                   >
                     <option value="ALL">All Strengths</option>
-                    <option value="STRONG">🟢 Strong / High</option>
-                    <option value="MEDIUM">🟡 Medium</option>
-                    <option value="WEAK">⚪ Weak</option>
+                    <option value="STRONG">🟢 Strong (A+/A)</option>
+                    <option value="GOOD">🟡 Good (B+/B)</option>
+                    <option value="WATCH">⚪ Watch (C+/C)</option>
                   </select>
                 </div>
               </div>
@@ -486,18 +457,18 @@ export default function App() {
                 {activeTab === "active" && (
                   <>
                     <div className="flex flex-wrap items-center gap-2.5 sm:gap-4">
-                      <span className="font-bold text-indigo-950 dark:text-indigo-450">🚀 ACTIVE STREAMS:</span>
+                      <span className="font-bold text-indigo-950 dark:text-indigo-400">🚀 ACTIVE STREAMS:</span>
                       <span className="flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        Gain: <strong className="text-emerald-700 dark:text-emerald-455 font-bold">{profitableActiveCount}</strong>
+                        Gain: <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{profitableActiveCount}</strong>
                       </span>
                       <span className="flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                        Loss: <strong className="text-rose-700 dark:text-rose-455 font-bold">{inDrawdownActiveCount}</strong>
+                        Loss: <strong className="text-rose-700 dark:text-rose-400 font-bold">{inDrawdownActiveCount}</strong>
                       </span>
-                      <span className="text-slate-400">|</span>
+                      <span className="text-slate-405">|</span>
                       <span>
-                        Avg Float ROI: <strong className={avgActiveRoi >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}>
+                        Avg Floating ROI: <strong className={avgActiveRoi >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}>
                           {avgActiveRoi >= 0 ? "+" : ""}{avgActiveRoi.toFixed(2)}%
                         </strong>
                       </span>
@@ -508,16 +479,16 @@ export default function App() {
                 {activeTab === "setup" && (
                   <>
                     <div className="flex flex-wrap items-center gap-2.5 sm:gap-4">
-                      <span className="font-bold text-indigo-950 dark:text-indigo-450">👁️ SETUP INTERCEPT:</span>
+                      <span className="font-bold text-indigo-950 dark:text-indigo-400">👁️ SETUP INTERCEPT:</span>
                       <span>
-                        ALERT: <strong className="text-amber-800 dark:text-amber-450 font-bold">{upcomingSetupCount}</strong>
+                        Total Setup: <strong className="text-amber-700 dark:text-amber-400 font-bold">{filteredSetups.length}</strong>
                       </span>
                       <span>
-                        WATCH: <strong className="text-purple-800 dark:text-purple-400 font-bold">{upcomingWatchingCount}</strong>
+                        Strong Grade: <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{upcomingStrongCount}</strong>
                       </span>
-                      <span className="text-slate-400">|</span>
+                      <span className="text-slate-405">|</span>
                       <span>
-                        Strong: <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{upcomingStrongCount}</strong>
+                        Avg Rank Score: <strong className="text-indigo-650 dark:text-indigo-400 font-bold">{upcomingAvgScore.toFixed(1)}%</strong>
                       </span>
                     </div>
                   </>
@@ -527,19 +498,19 @@ export default function App() {
                   <>
                     <div className="flex flex-wrap items-center gap-2.5 sm:gap-4 w-full justify-between">
                       <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-                        <span className="font-bold text-emerald-950 dark:text-emerald-450">🏆 HOLDINGS:</span>
+                        <span className="font-bold text-emerald-950 dark:text-emerald-400">🏆 PORTFOLIO SUMMARY:</span>
                         <span>
-                          Invested: <strong className="text-slate-800 dark:text-slate-300 font-bold">₹{totalInvested.toLocaleString("en-IN", { maximumFractionDigits: 1 })}</strong>
+                          Assets: <strong className="text-slate-800 dark:text-slate-300 font-bold">{filteredPortfolio.length}</strong>
                         </span>
                         <span>
-                          Margin PnL: <strong className={`font-bold ${totalPnlAmount >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600"}`}>
-                            {totalPnlAmount >= 0 ? "+" : ""}₹{totalPnlAmount.toLocaleString("en-IN", { maximumFractionDigits: 1 })} ({totalPnlAmount >= 0 ? "+" : ""}{totalPnlPercentage.toFixed(2)}%)
+                          Avg Float Return: <strong className={`font-bold ${avgPortfolioRoi >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600"}`}>
+                            {avgPortfolioRoi >= 0 ? "+" : ""}{avgPortfolioRoi.toFixed(2)}%
                           </strong>
                         </span>
                       </div>
                       <div className="hidden sm:flex items-center gap-2 font-semibold text-[10px]">
-                        <span className="text-emerald-750 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 px-1.5 py-0.5 rounded border border-emerald-150 dark:border-emerald-900/30">Win: {portfolioWinnerCount}</span>
-                        <span className="text-rose-705 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/20 px-1.5 py-0.5 rounded border border-rose-150 dark:border-rose-900/30">Loss: {portfolioLoserCount}</span>
+                        <span className="text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 px-1.5 py-0.5 rounded border border-emerald-200/50 dark:border-emerald-900/30">Up: {portfolioWinnerCount}</span>
+                        <span className="text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/20 px-1.5 py-0.5 rounded border border-rose-200/50 dark:border-rose-900/30">Down: {portfolioLoserCount}</span>
                       </div>
                     </div>
                   </>
@@ -548,18 +519,18 @@ export default function App() {
                 {activeTab === "backtest" && (
                   <>
                     <div className="flex flex-wrap items-center gap-2.5 sm:gap-4">
-                      <span className="font-bold text-indigo-950 dark:text-indigo-450">📜 CLOSED SIGS:</span>
+                      <span className="font-bold text-indigo-950 dark:text-indigo-400">📜 BACKTEST INSIGHTS:</span>
                       <span>
-                        Exits: <strong className="text-slate-800 dark:text-slate-300 font-bold">{backtestCount}</strong>
+                        Exits Analyzed: <strong className="text-slate-800 dark:text-slate-300 font-bold">{totalClosed}</strong>
                       </span>
                       <span>
-                        Avg Return: <strong className={`font-bold ${backtestAvgReturn >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600"}`}>
-                          {backtestAvgReturn >= 0 ? "+" : ""}{backtestAvgReturn.toFixed(2)}%
+                        Avg ReturnPct: <strong className={`font-bold ${dynamicAvgReturn >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600"}`}>
+                          {dynamicAvgReturn >= 0 ? "+" : ""}{dynamicAvgReturn.toFixed(2)}%
                         </strong>
                       </span>
-                      <span className="text-slate-400">|</span>
+                      <span className="text-slate-405">|</span>
                       <span>
-                        W Rate: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{backtestWinrate.toFixed(1)}%</strong>
+                        Win Rate: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{dynamicWinRate.toFixed(1)}%</strong>
                       </span>
                     </div>
                   </>
@@ -576,252 +547,35 @@ export default function App() {
                 ) : (
                   <>
                     {/* ================= DESKTOP STYLED VIEWS (Hidden on Phone Viewports) ================= */}
-                    <div className="hidden md:block">
+                    <div className="hidden md:block overflow-x-auto">
                       {activeTab === "active" && (
-                        filteredOngoingTrades.length === 0 ? (
+                        filteredActiveTrades.length === 0 ? (
                           <div className="flex flex-col items-center justify-center p-20 text-center">
                             <BookOpen className="w-10 h-10 text-gray-300 dark:text-slate-700 mb-3" />
-                            <h4 className="font-bold text-gray-700 dark:text-slate-300 text-sm">No ongoing trades match filters</h4>
+                            <h4 className="font-bold text-gray-700 dark:text-slate-300 text-sm">No active trades match filters</h4>
                             <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 max-w-sm font-mono">Relax parameters or try syncing again.</p>
                           </div>
                         ) : (
                           <table className="w-full text-left border-collapse">
                             <thead>
                               <tr className="bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200/60 dark:border-slate-800 font-mono text-[10px] text-gray-400 dark:text-slate-500 font-semibold uppercase tracking-wider select-none">
-                                <th className="px-4 py-3">Symbol / Base Info</th>
+                                <th className="px-4 py-3">Symbol</th>
                                 <th className="px-4 py-3">Entry Details</th>
-                                <th className="px-4 py-3 text-right">Entry / LTP Prices</th>
-                                <th className="px-4 py-3 text-right">Current ROI / Peak MFE</th>
-                                <th className="px-4 py-3 text-right hidden lg:table-cell">Trigger Targets</th>
+                                <th className="px-4 py-3 text-right">Entry / Current Price</th>
+                                <th className="px-4 py-3 text-right">Current ROI</th>
+                                <th className="px-4 py-3 text-center">ML Confidence</th>
+                                <th className="px-4 py-3 text-center">T1 Target</th>
+                                <th className="px-4 py-3 text-right">Max Fav / Adv</th>
                                 <th className="px-4 py-3 text-right">Actions</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-                              {filteredOngoingTrades.map((item) => {
+                              {filteredActiveTrades.map((item) => {
                                 const isSelected = selectedSymbol === item.symbol;
-                                const isPositive = item.currentRoi >= 0;
+                                const isPositive = item.currentROI >= 0;
                                 return (
                                   <tr
-                                    key={item.tradeId}
-                                    className={`group transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/20 cursor-pointer ${
-                                      isSelected ? "bg-indigo-50/30 dark:bg-indigo-950/10" : ""
-                                    }`}
-                                    onClick={() => setSelectedSymbol(item.symbol)}
-                                  >
-                                    <td className="px-4 py-3.5">
-                                      <div className="flex flex-col text-left">
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                          <span className="font-bold text-slate-900 dark:text-slate-100 text-sm font-mono tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                            {item.symbol}
-                                          </span>
-                                          {item.isLive && (
-                                            <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-sm bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 animate-pulse border border-red-200 dark:border-red-900 uppercase font-mono">
-                                              LIVE
-                                            </span>
-                                          )}
-                                        </div>
-                                        <span className="text-[10px] text-gray-450 dark:text-slate-500 font-mono mt-0.5">
-                                          ID: {item.tradeId}
-                                        </span>
-                                      </div>
-                                    </td>
-
-                                    <td className="px-4 py-3.5 font-mono text-xs">
-                                      <div className="flex flex-col">
-                                        <span className="text-gray-700 dark:text-slate-300 font-semibold">
-                                          Date: {formatCompactDate(item.entryDate)}
-                                        </span>
-                                        <span className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">
-                                          RSI Gap: +{item.entryRsiGap?.toFixed(1) || "0.0"} | Quality: <span className="text-indigo-600 dark:text-indigo-400 font-bold">{item.entryQuality}</span>
-                                        </span>
-                                      </div>
-                                    </td>
-
-                                    <td className="px-4 py-3.5 text-right font-mono">
-                                      <div className="flex flex-col">
-                                        <span className="text-xs text-gray-800 dark:text-slate-300">
-                                          Entry: <strong className="text-gray-950 dark:text-slate-100 font-sans">₹{item.entryPrice.toFixed(2)}</strong>
-                                        </span>
-                                        <span className="text-[10px] mt-0.5 text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50/50 dark:bg-indigo-950/20 px-1 py-0.5 rounded inline-block text-right">
-                                          LTP: ₹{item.currentLtp.toFixed(2)}
-                                        </span>
-                                      </div>
-                                    </td>
-
-                                    <td className="px-4 py-3.5 text-right font-mono">
-                                      <div className="flex flex-col items-end">
-                                        <span className={`text-sm font-bold ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}`}>
-                                          {isPositive ? "▲ +" : "▼ "}{item.currentRoi.toFixed(2)}%
-                                        </span>
-                                        <span className="text-[9px] text-gray-400 mt-0.5">
-                                          MFE Peak: <strong className="text-emerald-600 dark:text-emerald-450">+{item.mfePeak?.toFixed(1) || "0"}%</strong>
-                                        </span>
-                                      </div>
-                                    </td>
-
-                                    <td className="px-4 py-3.5 text-right font-mono text-[10px] hidden lg:table-cell">
-                                      <div className="flex flex-col text-right">
-                                        <span className="text-slate-550 dark:text-slate-400">
-                                          SL Barrier: <strong className="text-red-600 dark:text-red-400">₹{item.stopLoss?.toFixed(1) || "N/A"}</strong>
-                                        </span>
-                                        <span className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5 font-sans">
-                                          Action: <strong className="text-indigo-600 dark:text-indigo-400">{item.suggestedAction || "HOLD"}</strong>
-                                        </span>
-                                      </div>
-                                    </td>
-
-                                    <td className="px-4 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
-                                      <button
-                                        onClick={() => setSelectedSymbol(item.symbol)}
-                                        className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
-                                          isSelected
-                                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                                            : "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
-                                        }`}
-                                      >
-                                        Chart
-                                      </button>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        )
-                      )}
-
-                      {activeTab === "setup" && (
-                        filteredNearSetups.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center p-20 text-center">
-                            <BookOpen className="w-10 h-10 text-gray-300 dark:text-slate-700 mb-3" />
-                            <h4 className="font-bold text-gray-700 dark:text-slate-300 text-sm">No setup opportunities loaded</h4>
-                            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 max-w-sm font-mono">Parameters are solid.</p>
-                          </div>
-                        ) : (
-                          <table className="w-full text-left border-collapse">
-                            <thead>
-                              <tr className="bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200/60 dark:border-slate-800 font-mono text-[10px] text-gray-400 dark:text-slate-500 font-semibold uppercase tracking-wider select-none">
-                                <th className="px-4 py-3">Symbol / Company Name</th>
-                                <th className="px-4 py-3 text-center">Trade State</th>
-                                <th className="px-4 py-3 text-right">LTP Price</th>
-                                <th className="px-4 py-3 text-right">RSI Gap / Trend</th>
-                                <th className="px-4 py-3 text-center hidden md:table-cell">Setup Score</th>
-                                <th className="px-4 py-3 text-right">Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-                              {filteredNearSetups.map((item) => {
-                                const isSelected = selectedSymbol === item.symbol;
-                                const isRising = item.dailyRsiTrend === "RISING";
-                                return (
-                                  <tr
-                                    key={`setup-${item.symbol}`}
-                                    className={`group transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/20 cursor-pointer ${
-                                      isSelected ? "bg-indigo-50/30 dark:bg-indigo-950/10" : ""
-                                    }`}
-                                    onClick={() => setSelectedSymbol(item.symbol)}
-                                  >
-                                    <td className="px-4 py-3.5">
-                                      <div className="flex flex-col text-left">
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                          <span className="font-bold text-slate-900 dark:text-slate-100 text-sm font-mono tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                            {item.symbol}
-                                          </span>
-                                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-sm uppercase font-mono ${
-                                            item.quality === "STRONG"
-                                              ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900"
-                                              : "bg-slate-100 dark:bg-slate-800 text-slate-705 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700/60"
-                                          }`}>
-                                            {item.quality} QUALITY
-                                          </span>
-                                        </div>
-                                        <span className="text-[10px] text-gray-400 dark:text-slate-500 tracking-tight truncate max-w-[190px] mt-0.5">
-                                          {item.name}
-                                        </span>
-                                      </div>
-                                    </td>
-
-                                    <td className="px-4 py-3.5 text-center">
-                                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider font-mono ${
-                                        item.tradeState === "SETUP"
-                                          ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border border-amber-250 dark:border-amber-900"
-                                          : "bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-400 border border-purple-250 dark:border-purple-900"
-                                      }`}>
-                                        ● {item.tradeState}
-                                      </span>
-                                    </td>
-
-                                    <td className="px-4 py-3.5 text-right font-mono font-semibold">
-                                      <span className="text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50/50 dark:bg-indigo-900/10 px-1.5 py-0.5 rounded inline-block text-right">
-                                        ₹{item.ltp?.toFixed(2) || "0.00"}
-                                      </span>
-                                    </td>
-
-                                    <td className="px-4 py-3.5 text-right font-mono text-xs">
-                                      <div className="flex flex-col text-right">
-                                        <span className="text-gray-800 dark:text-slate-200 font-semibold">
-                                          Gap: {item.rsiGapFromSMA?.toFixed(2) || "0.0"} RSI
-                                        </span>
-                                        <span className={`text-[10px] items-center gap-0.5 mt-0.5 ${
-                                          isRising ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-450"
-                                        }`}>
-                                          {item.dailyRsiTrend || "FLAT"}
-                                        </span>
-                                      </div>
-                                    </td>
-
-                                    <td className="px-4 py-3.5 text-center hidden md:table-cell font-mono">
-                                      <span className="text-xs font-bold leading-none py-0.5 px-2 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded">
-                                        Score: {item.tradeStateScore || "0"}
-                                      </span>
-                                    </td>
-
-                                    <td className="px-4 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
-                                      <button
-                                        onClick={() => setSelectedSymbol(item.symbol)}
-                                        className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
-                                          isSelected
-                                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                                            : "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
-                                        }`}
-                                      >
-                                        Chart
-                                      </button>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        )
-                      )}
-
-                      {activeTab === "portfolio" && (
-                        filteredPortfolio.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center p-20 text-center">
-                            <BookOpen className="w-10 h-10 text-gray-300 dark:text-slate-700 mb-3" />
-                            <h4 className="font-bold text-gray-700 dark:text-slate-300 text-sm">No portfolio items loaded</h4>
-                            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 max-w-sm font-mono">Sync your account signal database.</p>
-                          </div>
-                        ) : (
-                          <table className="w-full text-left border-collapse">
-                            <thead>
-                              <tr className="bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200/60 dark:border-slate-800 font-mono text-[10px] text-gray-400 dark:text-slate-500 font-semibold uppercase tracking-wider select-none">
-                                <th className="px-4 py-3">Asset Quantity</th>
-                                <th className="px-4 py-3 text-right">Average / LTP Prices</th>
-                                <th className="px-4 py-3 text-right">Invested Value</th>
-                                <th className="px-4 py-3 text-right">Net Return Pnl</th>
-                                <th className="px-4 py-3 text-center hidden sm:table-cell">Algo Recommendation</th>
-                                <th className="px-4 py-3 text-right">Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-                              {filteredPortfolio.map((item) => {
-                                const isSelected = selectedSymbol === item.symbol;
-                                const isPositive = item.pnl >= 0;
-                                return (
-                                  <tr
-                                    key={`portfolio-${item.symbol}`}
+                                    key={`active-${item.symbol}`}
                                     className={`group transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/20 cursor-pointer ${
                                       isSelected ? "bg-indigo-50/30 dark:bg-indigo-950/10" : ""
                                     }`}
@@ -832,56 +586,70 @@ export default function App() {
                                         <span className="font-bold text-slate-900 dark:text-slate-100 text-sm font-mono tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                           {item.symbol}
                                         </span>
-                                        <span className="text-[10px] text-gray-400 dark:text-slate-500 font-mono mt-0.5">
-                                          Holdings: {item.qty} Shares
+                                        <span className="text-[10px] text-gray-400 dark:text-slate-500 font-mono">
+                                          {item.sector || "OTHER"}
                                         </span>
                                       </div>
                                     </td>
 
-                                    <td className="px-4 py-3.5 text-right font-mono">
-                                      <div className="flex flex-col text-right">
-                                        <span className="text-xs text-gray-700 dark:text-slate-300">
-                                          Buy: ₹{item.avgBuyPrice?.toFixed(1) || "0.0"}
-                                        </span>
-                                        <span className="text-[10px] text-indigo-650 dark:text-indigo-400 font-bold mt-0.5">
-                                          LTP: ₹{item.ltp?.toFixed(1) || "0.0"}
-                                        </span>
-                                      </div>
+                                    <td className="px-4 py-3.5 font-mono text-xs">
+                                      <span className="text-gray-700 dark:text-slate-300 font-semibold">
+                                        {formatCompactDate(item.entryDate)}
+                                      </span>
                                     </td>
 
-                                    <td className="px-4 py-3.5 text-right font-mono font-semibold">
+                                    <td className="px-4 py-3.5 text-right font-mono text-xs">
                                       <div className="flex flex-col">
-                                        <span className="text-gray-950 dark:text-slate-200 font-sans text-xs">
-                                          ₹{item.investedValue?.toLocaleString("en-IN", { maximumFractionDigits: 1 }) || "0"}
+                                        <span className="text-gray-500 dark:text-slate-400">
+                                          Buy: ₹{item.entryPrice.toFixed(2)}
                                         </span>
-                                        <span className="text-[10px] text-slate-400 dark:text-slate-550 mt-0.5 font-light">
-                                          Value: ₹{item.currentValue?.toLocaleString("en-IN", { maximumFractionDigits: 1 }) || "0"}
+                                        <span className="font-bold text-gray-900 dark:text-slate-100 mt-0.5">
+                                          LTP: ₹{item.currentPrice.toFixed(2)}
                                         </span>
                                       </div>
                                     </td>
 
                                     <td className="px-4 py-3.5 text-right font-mono">
-                                      <div className="flex flex-col items-end">
-                                        <span className={`text-sm font-bold ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600"}`}>
-                                          {isPositive ? "▲ +" : "▼ "}₹{Math.abs(item.pnl).toFixed(1)}
+                                      <span className={`text-xs sm:text-sm font-bold ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}`}>
+                                        {isPositive ? "▲ +" : "▼ "}{item.currentROI.toFixed(2)}%
+                                      </span>
+                                    </td>
+
+                                    <td className="px-4 py-3.5 text-center font-mono text-xs">
+                                      <div className="flex flex-col items-center">
+                                        <span className="font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-55/60 dark:bg-indigo-950/30 px-1.5 py-0.5 rounded">
+                                          {item.mlProbability}%
                                         </span>
-                                        <span className={`text-[10.5px] font-bold ${isPositive ? "text-emerald-500" : "text-rose-500"} mt-0.5`}>
-                                          ({isPositive ? "+" : ""}{item.currentRoi?.toFixed(2)}%)
+                                        <span className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">
+                                          Grade: <strong className="text-slate-800 dark:text-slate-300">{item.mlGrade}</strong>
                                         </span>
                                       </div>
                                     </td>
 
-                                    <td className="px-4 py-3.5 text-center hidden sm:table-cell font-mono">
+                                    <td className="px-4 py-3.5 text-center font-mono text-xs">
                                       <div className="flex flex-col items-center">
-                                        <span className={`inline-flex items-center gap-1 py-0.5 px-2 rounded font-bold uppercase text-[9px] ${
-                                          item.signal?.recommendation === "HOLD_STRONG"
-                                            ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900"
-                                            : "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200/50 dark:border-slate-700"
+                                        <span className={`text-[10px] px-1 py-0.5 rounded font-bold uppercase ${
+                                          item.t1Triggered 
+                                            ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400" 
+                                            : "bg-slate-100 dark:bg-slate-800 text-slate-500"
                                         }`}>
-                                          {item.signal?.recommendation || "HOLD"}
+                                          {item.t1Triggered ? "✅ Yes" : "❌ No"}
                                         </span>
-                                        <span className="text-[9px] text-gray-400 mt-0.5">
-                                          State: {item.signal?.tradeState || "DORMANT"}
+                                        {item.t1ReturnPct !== null && (
+                                          <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">
+                                            +{item.t1ReturnPct}%
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+
+                                    <td className="px-4 py-3.5 text-right font-mono text-[10px]">
+                                      <div className="flex flex-col">
+                                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                          MFE: +{item.maxFavorable?.toFixed(1) || item.mfe?.toFixed(1) || "0.0"}%
+                                        </span>
+                                        <span className="text-rose-500 dark:text-rose-455 mt-0.5">
+                                          MAE: {item.maxAdverse?.toFixed(1) || "0.0"}%
                                         </span>
                                       </div>
                                     </td>
@@ -889,9 +657,217 @@ export default function App() {
                                     <td className="px-4 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                                       <button
                                         onClick={() => setSelectedSymbol(item.symbol)}
-                                        className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+                                        className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
                                           isSelected
-                                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                                            ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                                            : "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                                        }`}
+                                      >
+                                        Chart
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        )
+                      )}
+
+                      {activeTab === "setup" && (
+                        filteredSetups.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center p-20 text-center">
+                            <BookOpen className="w-10 h-10 text-gray-300 dark:text-slate-700 mb-3" />
+                            <h4 className="font-bold text-gray-700 dark:text-slate-300 text-sm">No setup opportunities loaded</h4>
+                            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 max-w-sm font-mono">Parameters are solid.</p>
+                          </div>
+                        ) : (
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200/60 dark:border-slate-800 font-mono text-[10px] text-gray-400 dark:text-slate-500 font-semibold uppercase tracking-wider select-none">
+                                <th className="px-4 py-3">Symbol</th>
+                                <th className="px-4 py-3">Signal Date</th>
+                                <th className="px-4 py-3 text-right">Trigger price</th>
+                                <th className="px-4 py-3 text-center">ML Confidence</th>
+                                <th className="px-4 py-3 text-center">Action Trigger</th>
+                                <th className="px-4 py-3 text-center">Rank Details</th>
+                                <th className="px-4 py-3 text-right">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+                              {filteredSetups.map((item) => {
+                                const isSelected = selectedSymbol === item.symbol;
+                                return (
+                                  <tr
+                                    key={`setup-${item.symbol}`}
+                                    className={`group transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/20 cursor-pointer ${
+                                      isSelected ? "bg-indigo-50/30 dark:bg-indigo-950/10" : ""
+                                    }`}
+                                    onClick={() => setSelectedSymbol(item.symbol)}
+                                  >
+                                    <td className="px-4 py-3.5">
+                                      <div className="flex flex-col text-left">
+                                        <span className="font-bold text-slate-900 dark:text-slate-100 text-sm font-mono tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                          {item.symbol}
+                                        </span>
+                                        <span className="text-[10px] text-gray-400 dark:text-slate-500 font-mono">
+                                          {item.sector || "OTHER"}
+                                        </span>
+                                      </div>
+                                    </td>
+
+                                    <td className="px-4 py-3.5 font-mono text-xs">
+                                      <span className="text-gray-700 dark:text-slate-300 font-semibold">
+                                        {formatCompactDate(item.date)}
+                                      </span>
+                                    </td>
+
+                                    <td className="px-4 py-3.5 text-right font-mono text-xs font-bold text-gray-900 dark:text-slate-100">
+                                      ₹{item.price.toFixed(2)}
+                                    </td>
+
+                                    <td className="px-4 py-3.5 text-center font-mono text-xs">
+                                      <div className="flex flex-col items-center">
+                                        <span className="font-bold text-indigo-650 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded">
+                                          {item.mlProbability}%
+                                        </span>
+                                        <span className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">
+                                          Grade: <strong>{item.mlGrade}</strong>
+                                        </span>
+                                      </div>
+                                    </td>
+
+                                    <td className="px-4 py-3.5 text-center">
+                                      <span className="inline-block px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider font-mono bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40">
+                                        {item.mlAction || "BUY"}
+                                      </span>
+                                    </td>
+
+                                    <td className="px-4 py-3.5 text-center font-mono text-xs">
+                                      <div className="flex flex-col items-center">
+                                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                                          Score: {item.rankScore}
+                                        </span>
+                                        <span className="text-[10px] text-gray-400 mt-0.5">
+                                          Grade: <strong className="text-indigo-600 dark:text-indigo-450">{item.rankGrade}</strong>
+                                        </span>
+                                      </div>
+                                    </td>
+
+                                    <td className="px-4 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
+                                      <button
+                                        onClick={() => setSelectedSymbol(item.symbol)}
+                                        className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                                          isSelected
+                                            ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                                            : "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                                        }`}
+                                      >
+                                        Chart
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        )
+                      )}
+
+                      {activeTab === "portfolio" && (
+                        filteredPortfolio.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center p-20 text-center">
+                            <BookOpen className="w-10 h-10 text-gray-300 dark:text-slate-700 mb-3" />
+                            <h4 className="font-bold text-gray-700 dark:text-slate-300 text-sm">No portfolio assets found</h4>
+                            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 max-w-sm font-mono">Sync your account signal database.</p>
+                          </div>
+                        ) : (
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200/60 dark:border-slate-800 font-mono text-[10px] text-gray-400 dark:text-slate-500 font-semibold uppercase tracking-wider select-none">
+                                <th className="px-4 py-3">Symbol</th>
+                                <th className="px-4 py-3">Entry Date</th>
+                                <th className="px-4 py-3 text-right">Entry Price</th>
+                                <th className="px-4 py-3 text-right">Current Price</th>
+                                <th className="px-4 py-3 text-right">ROI (%)</th>
+                                <th className="px-4 py-3 text-center">ML Grade</th>
+                                <th className="px-4 py-3 text-center">T1 Triggered</th>
+                                <th className="px-4 py-3 text-right">Max Fav / Adverse</th>
+                                <th className="px-4 py-3 text-right">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+                              {filteredPortfolio.map((item) => {
+                                const isSelected = selectedSymbol === item.symbol;
+                                const isPositive = item.currentROI >= 0;
+                                return (
+                                  <tr
+                                    key={`portfolio-${item.symbol}`}
+                                    className={`group transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/20 cursor-pointer ${
+                                      isSelected ? "bg-indigo-50/30 dark:bg-indigo-950/10" : ""
+                                    }`}
+                                    onClick={() => setSelectedSymbol(item.symbol)}
+                                  >
+                                    <td className="px-4 py-3.5 font-bold font-mono text-slate-900 dark:text-slate-100">
+                                      {item.symbol}
+                                    </td>
+
+                                    <td className="px-4 py-3.5 font-mono text-xs text-slate-600 dark:text-slate-300">
+                                      {formatCompactDate(item.entryDate)}
+                                    </td>
+
+                                    <td className="px-4 py-3.5 text-right font-mono text-xs">
+                                      ₹{item.entryPrice.toFixed(2)}
+                                    </td>
+
+                                    <td className="px-4 py-3.5 text-right font-mono text-xs font-semibold">
+                                      ₹{item.currentPrice.toFixed(2)}
+                                    </td>
+
+                                    <td className="px-4 py-3.5 text-right font-mono font-bold">
+                                      <span className={isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}>
+                                        {isPositive ? "+" : ""}{item.currentROI.toFixed(2)}%
+                                      </span>
+                                    </td>
+
+                                    <td className="px-4 py-3.5 text-center font-mono text-xs">
+                                      <div className="flex flex-col items-center">
+                                        <span className="font-bold text-indigo-650 dark:text-indigo-400">
+                                          {item.mlGrade}
+                                        </span>
+                                        <span className="text-[9px] text-gray-400">
+                                          {item.mlProbability}%
+                                        </span>
+                                      </div>
+                                    </td>
+
+                                    <td className="px-4 py-3.5 text-center font-mono text-xs">
+                                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                                        item.t1Triggered 
+                                          ? "bg-emerald-100 dark:bg-emerald-950/45 text-emerald-800 dark:text-emerald-405" 
+                                          : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                                      }`}>
+                                        {item.t1Triggered ? "✅ Yes" : "❌ No"}
+                                      </span>
+                                    </td>
+
+                                    <td className="px-4 py-3.5 text-right font-mono text-[10px]">
+                                      <div className="flex flex-col text-right">
+                                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                          MaxF: +{item.maxFavorable?.toFixed(1) || "0.0"}%
+                                        </span>
+                                        <span className="text-rose-505 dark:text-rose-450 mt-0.5">
+                                          MaxA: {item.maxAdverse?.toFixed(1) || "0.0"}%
+                                        </span>
+                                      </div>
+                                    </td>
+
+                                    <td className="px-4 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
+                                      <button
+                                        onClick={() => setSelectedSymbol(item.symbol)}
+                                        className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                                          isSelected
+                                            ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
                                             : "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
                                         }`}
                                       >
@@ -907,100 +883,113 @@ export default function App() {
                       )}
 
                       {activeTab === "backtest" && (
-                        filteredBacktests.length === 0 ? (
+                        filteredClosedTrades.length === 0 ? (
                           <div className="flex flex-col items-center justify-center p-20 text-center">
                             <BookOpen className="w-10 h-10 text-gray-300 dark:text-slate-700 mb-3" />
-                            <h4 className="font-bold text-gray-700 dark:text-slate-300 text-sm">No historical logs found</h4>
+                            <h4 className="font-bold text-gray-700 dark:text-slate-300 text-sm">No closed signal logs loaded</h4>
+                            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 max-w-sm font-mono font-bold">Clear filters or force refresh.</p>
                           </div>
                         ) : (
                           <table className="w-full text-left border-collapse">
                             <thead>
                               <tr className="bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200/60 dark:border-slate-800 font-mono text-[10px] text-gray-400 dark:text-slate-500 font-semibold uppercase tracking-wider select-none">
-                                <th className="px-4 py-3">Symbol / Trade Reference</th>
-                                <th className="px-4 py-3">Chronology (In / Out)</th>
-                                <th className="px-4 py-3 text-right">Acquired / Selling Prices</th>
-                                <th className="px-4 py-3 text-right">Terminal Exit Return</th>
-                                <th className="px-4 py-3 text-center hidden md:table-cell">Trigger Reason</th>
+                                <th className="px-4 py-3">Symbol</th>
+                                <th className="px-4 py-3">Dates (In/Out)</th>
+                                <th className="px-4 py-3 text-right">Entry / Exit Prices</th>
+                                <th className="px-4 py-3 text-right">ReturnPct</th>
+                                <th className="px-4 py-3 text-center">Result</th>
+                                <th className="px-4 py-3">Exit Reason</th>
+                                <th className="px-4 py-3 text-center">ML Grade</th>
+                                <th className="px-4 py-3 text-right">Max Fav / Adverse</th>
                                 <th className="px-4 py-3 text-right">Actions</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-                              {filteredBacktests.map((item) => {
+                              {filteredClosedTrades.map((item, idx) => {
                                 const isSelected = selectedSymbol === item.symbol;
-                                const isWin = item.result === "WIN" || item.tradeReturnPct >= 0;
+                                const isWin = item.pnlLabel === "WIN";
                                 return (
                                   <tr
-                                    key={item.tradeId}
+                                    key={`closed-${item.symbol}-${idx}`}
                                     className={`group transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/20 cursor-pointer ${
                                       isSelected ? "bg-indigo-50/30 dark:bg-indigo-950/10" : ""
                                     }`}
                                     onClick={() => setSelectedSymbol(item.symbol)}
                                   >
                                     <td className="px-4 py-3.5">
-                                      <div className="flex flex-col text-left font-mono">
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                          <span className="font-bold text-slate-900 dark:text-slate-100 text-sm tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                            {item.symbol}
-                                          </span>
-                                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-sm uppercase ${
-                                            isWin 
-                                              ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900"
-                                              : "bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-450 border border-rose-200 dark:border-rose-900"
-                                          }`}>
-                                            {item.result || (isWin ? "WIN" : "LOSS")}
-                                          </span>
-                                        </div>
-                                        <span className="text-[10px] text-gray-400 dark:text-slate-500">
-                                          Ref: {item.tradeId}
+                                      <div className="flex flex-col text-left">
+                                        <span className="font-bold text-slate-900 dark:text-slate-100 text-sm font-mono tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                          {item.symbol}
+                                        </span>
+                                        <span className="text-[10px] text-gray-400 dark:text-slate-500 font-mono">
+                                          {item.sector || "OTHER"}
                                         </span>
                                       </div>
                                     </td>
 
-                                    <td className="px-4 py-3.5 font-mono text-xs text-gray-550 dark:text-slate-350">
+                                    <td className="px-4 py-3.5 font-mono text-xs">
                                       <div className="flex flex-col">
-                                        <span>
+                                        <span className="text-gray-700 dark:text-slate-300">
                                           In: {formatCompactDate(item.entryDate)}
                                         </span>
-                                        <span className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">
+                                        <span className="text-[10px] text-gray-400 mt-0.5">
                                           Out: {formatCompactDate(item.exitDate)}
                                         </span>
                                       </div>
                                     </td>
 
-                                    <td className="px-4 py-3.5 text-right font-mono">
+                                    <td className="px-4 py-3.5 text-right font-mono text-xs">
                                       <div className="flex flex-col">
-                                        <span className="text-xs text-gray-705 dark:text-slate-300">
-                                          Buy: ₹{item.entryPrice.toFixed(2)}
+                                        <span className="text-gray-500">
+                                          In: ₹{item.entryPrice.toFixed(2)}
                                         </span>
-                                        <span className="text-[10px] text-slate-450 mt-0.5">
-                                          Sold: ₹{item.exitPrice?.toFixed(2) || "N/A"}
+                                        <span className="font-bold text-gray-900 dark:text-slate-100 mt-0.5">
+                                          Out: ₹{item.exitPrice.toFixed(2)}
                                         </span>
                                       </div>
                                     </td>
 
                                     <td className="px-4 py-3.5 text-right font-mono">
-                                      <div className="flex flex-col items-end">
-                                        <span className={`text-xs font-bold ${isWin ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600"}`}>
-                                          {isWin ? "▲ +" : "▼ "}{item.tradeReturnPct?.toFixed(2) || "0"}%
-                                        </span>
-                                        <span className="text-[9px] text-gray-400 dark:text-slate-500 mt-0.5 font-sans">
-                                          Max MFE: +{item.maxFavorablePct?.toFixed(1) || "0.0"}%
-                                        </span>
-                                      </div>
+                                      <span className={`text-xs sm:text-sm font-bold ${isWin ? "text-emerald-600 dark:text-emerald-400" : "text-rose-550"}`}>
+                                        {item.returnPct >= 0 ? "+" : ""}{item.returnPct.toFixed(2)}%
+                                      </span>
                                     </td>
 
-                                    <td className="px-4 py-3.5 text-center hidden md:table-cell font-mono select-none">
-                                      <span className="inline-block py-0.5 px-2 bg-slate-150 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-sm text-[10px] uppercase font-bold">
-                                        {item.exitReason?.replace(/_/g, " ")}
+                                    <td className="px-4 py-3.5 text-center">
+                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
+                                        isWin 
+                                          ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400" 
+                                          : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-455"
+                                      }`}>
+                                        {isWin ? "WIN ✅" : "LOSS ❌"}
                                       </span>
+                                    </td>
+
+                                    <td className="px-4 py-3.5 text-xs font-medium text-slate-700 dark:text-slate-300">
+                                      {getExitReasonLabel(item.exitReason)}
+                                    </td>
+
+                                    <td className="px-4 py-3.5 text-center font-mono text-xs font-bold">
+                                      {item.mlGrade}
+                                    </td>
+
+                                    <td className="px-4 py-3.5 text-right font-mono text-[10px]">
+                                      <div className="flex flex-col text-right">
+                                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                          MaxF: +{item.maxFavorable?.toFixed(1) || "0.0"}%
+                                        </span>
+                                        <span className="text-rose-500 dark:text-rose-455 mt-0.5">
+                                          MaxA: {item.maxAdverse?.toFixed(1) || "0.0"}%
+                                        </span>
+                                      </div>
                                     </td>
 
                                     <td className="px-4 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                                       <button
                                         onClick={() => setSelectedSymbol(item.symbol)}
-                                        className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+                                        className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
                                           isSelected
-                                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                                            ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
                                             : "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
                                         }`}
                                       >
@@ -1016,62 +1005,50 @@ export default function App() {
                       )}
                     </div>
 
-                    {/* ================= DYNAMIC MOBILE CARDS VIEW (Optimized strictly for Phone displays) ================= */}
-                    <div className="block md:hidden divide-y divide-gray-100 dark:divide-slate-800 border-t dark:border-slate-800 select-none">
-                      
+                    {/* ================= MOBILE STYLED VIEWS (Hidden on Desktop) ================= */}
+                    <div className="block md:hidden p-3 space-y-3">
                       {activeTab === "active" && (
-                        filteredOngoingTrades.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center py-16 text-center bg-white dark:bg-slate-900">
-                            <BookOpen className="w-8 h-8 text-gray-300 dark:text-slate-700 mb-2" />
-                            <p className="text-xs text-gray-450 font-mono">No active trades match descriptors</p>
-                          </div>
+                        filteredActiveTrades.length === 0 ? (
+                          <p className="text-center py-10 text-xs text-gray-400 font-mono">No ongoing signals match criteria.</p>
                         ) : (
-                          filteredOngoingTrades.map((item) => {
+                          filteredActiveTrades.map((item) => {
                             const isSelected = selectedSymbol === item.symbol;
-                            const isPositive = item.currentRoi >= 0;
+                            const isPositive = item.currentROI >= 0;
                             return (
                               <div
-                                key={item.tradeId}
+                                key={`active-mob-${item.symbol}`}
                                 onClick={() => setSelectedSymbol(item.symbol)}
-                                className={`p-3.5 flex flex-col gap-2 cursor-pointer transition-colors ${
-                                  isSelected ? "bg-indigo-50/50 dark:bg-indigo-950/20" : "bg-white dark:bg-slate-900"
+                                className={`p-3.5 rounded-xl border transition-all ${
+                                  isSelected
+                                    ? "bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-500"
+                                    : "bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800"
                                 }`}
                               >
                                 <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="font-bold text-slate-950 dark:text-slate-50 text-sm font-mono">
-                                      {item.symbol}
+                                  <div>
+                                    <span className="text-base font-bold font-mono tracking-tight text-gray-950 dark:text-white">{item.symbol}</span>
+                                    <span className="text-[10px] text-gray-400 block font-mono">Date: {formatCompactDate(item.entryDate)}</span>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className={`text-base font-bold font-mono ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}`}>
+                                      {isPositive ? "+" : ""}{item.currentROI.toFixed(2)}%
                                     </span>
-                                    {item.isLive && (
-                                      <span className="text-[8px] font-bold px-1.5 py-0.2 rounded-sm bg-red-100 dark:bg-red-955 text-red-700 dark:text-red-400 animate-pulse uppercase font-mono border border-red-200 dark:border-red-900/60">
-                                        LIVE
-                                      </span>
-                                    )}
-                                  </div>
-                                  <span className={`text-base font-bold font-mono ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}`}>
-                                    {isPositive ? "▲ +" : "▼ "}{item.currentRoi.toFixed(2)}%
-                                  </span>
-                                </div>
-                                
-                                <div className="grid grid-cols-2 gap-y-1.5 text-xs font-mono text-gray-500 dark:text-slate-400">
-                                  <div>
-                                    Buy: <strong className="text-gray-900 dark:text-slate-200 font-sans">₹{item.entryPrice.toFixed(2)}</strong>
-                                  </div>
-                                  <div className="text-right">
-                                    LTP: <strong className="text-indigo-650 dark:text-indigo-400 font-sans">₹{item.currentLtp.toFixed(2)}</strong>
-                                  </div>
-                                  <div>
-                                    SL: <strong className="text-rose-600 dark:text-rose-400 font-sans">₹{item.stopLoss?.toFixed(1) || "N/A"}</strong>
-                                  </div>
-                                  <div className="text-right">
-                                    Quality: <strong className="text-indigo-600 dark:text-indigo-300">{item.entryQuality}</strong>
+                                    <span className="text-[10px] text-gray-400 block font-mono">LTP: ₹{item.currentPrice.toFixed(2)}</span>
                                   </div>
                                 </div>
-                                <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-dashed border-gray-150 dark:border-slate-800">
-                                  <span className="text-[10px] text-gray-400 dark:text-slate-550 font-mono">ID: {item.tradeId} • Gap: +{item.entryRsiGap?.toFixed(1)}</span>
-                                  <button className="text-[10.5px] font-bold text-indigo-700 dark:text-indigo-400 inline-flex items-center gap-0.5">
-                                    Weekly Chart &rarr;
-                                  </button>
+                                <div className="grid grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-800/60 font-mono text-[11px] text-gray-500 dark:text-slate-400">
+                                  <div>
+                                    <span>ML Grade: <strong className="text-indigo-600 dark:text-indigo-400">{item.mlGrade} ({item.mlProbability}%)</strong></span>
+                                  </div>
+                                  <div className="text-right">
+                                    <span>T1 Target: <strong className="text-slate-800 dark:text-slate-200">{item.t1Triggered ? `✅ Yes (+${item.t1ReturnPct}%)` : "❌ No"}</strong></span>
+                                  </div>
+                                  <div>
+                                    <span>Buy Price: <strong>₹{item.entryPrice.toFixed(2)}</strong></span>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="text-emerald-600 font-bold">MFE: +{item.maxFavorable || item.mfe}%</span>
+                                  </div>
                                 </div>
                               </div>
                             );
@@ -1080,51 +1057,39 @@ export default function App() {
                       )}
 
                       {activeTab === "setup" && (
-                        filteredNearSetups.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center py-16 text-center bg-white dark:bg-slate-900">
-                            <BookOpen className="w-8 h-8 text-gray-300 dark:text-slate-700 mb-2" />
-                            <p className="text-xs text-gray-450 font-mono">No bounces identified</p>
-                          </div>
+                        filteredSetups.length === 0 ? (
+                          <p className="text-center py-10 text-xs text-gray-400 font-mono">No setups match criteria.</p>
                         ) : (
-                          filteredNearSetups.map((item) => {
+                          filteredSetups.map((item) => {
                             const isSelected = selectedSymbol === item.symbol;
-                            const isRising = item.dailyRsiTrend === "RISING";
                             return (
                               <div
                                 key={`setup-mob-${item.symbol}`}
                                 onClick={() => setSelectedSymbol(item.symbol)}
-                                className={`p-3.5 flex flex-col gap-2 cursor-pointer transition-colors ${
-                                  isSelected ? "bg-indigo-50/50 dark:bg-indigo-950/20" : "bg-white dark:bg-slate-900"
+                                className={`p-3.5 rounded-xl border transition-all ${
+                                  isSelected
+                                    ? "bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-500"
+                                    : "bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800"
                                 }`}
                               >
                                 <div className="flex items-center justify-between">
-                                  <span className="font-bold text-slate-950 dark:text-slate-50 text-sm font-mono">
-                                    {item.symbol}
-                                  </span>
-                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] font-bold uppercase tracking-wider font-mono ${
-                                    item.tradeState === "SETUP"
-                                      ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border border-amber-250 dark:border-amber-900"
-                                      : "bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-400 border border-purple-250 dark:border-purple-900"
-                                  }`}>
-                                    ● {item.tradeState}
-                                  </span>
+                                  <div>
+                                    <span className="text-base font-bold font-mono tracking-tight text-gray-950 dark:text-white">{item.symbol}</span>
+                                    <span className="text-[10px] text-emerald-600 font-bold block font-mono uppercase bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded w-fit mt-1">
+                                      {item.mlAction || "BUY"}
+                                    </span>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="text-base font-bold font-mono text-gray-900 dark:text-slate-100">₹{item.price.toFixed(2)}</span>
+                                    <span className="text-[10px] text-gray-400 block font-mono">Date: {formatCompactDate(item.date)}</span>
+                                  </div>
                                 </div>
-                                <p className="text-xs text-slate-600 dark:text-slate-400 leading-tight font-medium truncate max-w-xs">
-                                  {item.name}
-                                </p>
-                                
-                                <div className="grid grid-cols-2 gap-y-1 text-xs font-mono text-gray-500 dark:text-slate-400">
+                                <div className="grid grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-800/60 font-mono text-[11px] text-gray-500 dark:text-slate-400">
                                   <div>
-                                    LTP: <strong className="text-slate-900 dark:text-slate-200 font-sans">₹{item.ltp?.toFixed(2) || "0.00"}</strong>
+                                    <span>ML Model: <strong className="text-indigo-600 dark:text-indigo-400">{item.mlGrade} ({item.mlProbability}%)</strong></span>
                                   </div>
                                   <div className="text-right">
-                                    RSI Gap: <strong className="text-slate-950 dark:text-slate-150">{item.rsiGapFromSMA?.toFixed(2) || "0.0"}</strong>
-                                  </div>
-                                  <div>
-                                    Quality: <span className="font-bold text-emerald-600 dark:text-emerald-450">{item.quality}</span>
-                                  </div>
-                                  <div className="text-right">
-                                    Score: <strong className="text-indigo-600 dark:text-indigo-400 font-sans">{item.tradeStateScore || "0"}</strong>
+                                    <span>Rank details: <strong>Score {item.rankScore} ({item.rankGrade})</strong></span>
                                   </div>
                                 </div>
                               </div>
@@ -1135,51 +1100,39 @@ export default function App() {
 
                       {activeTab === "portfolio" && (
                         filteredPortfolio.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center py-16 text-center bg-white dark:bg-slate-900">
-                            <BookOpen className="w-8 h-8 text-gray-300 dark:text-slate-700 mb-2" />
-                            <p className="text-xs text-gray-450 font-mono">No portfolio items loaded</p>
-                          </div>
+                          <p className="text-center py-10 text-xs text-gray-400 font-mono">No portfolio holdings found.</p>
                         ) : (
                           filteredPortfolio.map((item) => {
                             const isSelected = selectedSymbol === item.symbol;
-                            const isPositive = item.pnl >= 0;
+                            const isPositive = item.currentROI >= 0;
                             return (
                               <div
                                 key={`portfolio-mob-${item.symbol}`}
                                 onClick={() => setSelectedSymbol(item.symbol)}
-                                className={`p-3.5 flex flex-col gap-2 cursor-pointer transition-colors ${
-                                  isSelected ? "bg-indigo-50/50 dark:bg-indigo-950/20" : "bg-white dark:bg-slate-900"
+                                className={`p-3.5 rounded-xl border transition-all ${
+                                  isSelected
+                                    ? "bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-500"
+                                    : "bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800"
                                 }`}
                               >
                                 <div className="flex items-center justify-between">
                                   <div>
-                                    <span className="font-bold text-slate-950 dark:text-slate-50 text-sm font-mono">
-                                      {item.symbol}
-                                    </span>
-                                    <p className="text-[10px] text-gray-400 dark:text-slate-500 font-mono">Shares: {item.qty}</p>
+                                    <span className="text-base font-bold font-mono tracking-tight text-gray-950 dark:text-white">{item.symbol}</span>
+                                    <span className="text-[10px] text-gray-400 block font-mono">In: {formatCompactDate(item.entryDate)}</span>
                                   </div>
                                   <div className="text-right">
-                                    <span className={`text-sm font-bold block ${isPositive ? "text-emerald-600" : "text-rose-600"}`}>
-                                      {isPositive ? "▲ +" : "▼ "}₹{Math.abs(item.pnl).toLocaleString("en-IN", { maximumFractionDigits: 1 })}
+                                    <span className={`text-base font-bold font-mono ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}`}>
+                                      {isPositive ? "+" : ""}{item.currentROI.toFixed(2)}%
                                     </span>
-                                    <span className={`text-[11px] font-bold ${isPositive ? "text-emerald-500" : "text-rose-500"}`}>
-                                      ({isPositive ? "+" : ""}{item.currentRoi?.toFixed(2)}%)
-                                    </span>
+                                    <span className="text-[10px] text-gray-400 block font-mono">LTP: ₹{item.currentPrice.toFixed(2)}</span>
                                   </div>
                                 </div>
-                                
-                                <div className="grid grid-cols-2 gap-y-1 text-xs font-mono text-gray-500 dark:text-slate-400 pt-1.5 border-t border-dashed border-gray-150 dark:border-slate-800">
+                                <div className="grid grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-800/60 font-mono text-[11px] text-gray-500 dark:text-slate-400">
                                   <div>
-                                    Cost Avg: <strong className="text-slate-950 dark:text-slate-100 font-sans">₹{item.avgBuyPrice?.toFixed(1)}</strong>
+                                    <span>Buy Price: <strong>₹{item.entryPrice.toFixed(2)}</strong></span>
                                   </div>
                                   <div className="text-right">
-                                    LTP: <strong className="text-indigo-650 dark:text-indigo-400 font-sans">₹{item.ltp?.toFixed(1)}</strong>
-                                  </div>
-                                  <div>
-                                    Invested: <strong className="text-slate-900 dark:text-slate-300">₹{item.investedValue?.toLocaleString("en-IN", { maximumFractionDigits: 1 })}</strong>
-                                  </div>
-                                  <div className="text-right">
-                                    Action: <span className="text-indigo-600 dark:text-indigo-400 font-bold uppercase text-[10px]">{item.signal?.recommendation || "HOLD"}</span>
+                                    <span>T1 Target: <strong className="text-emerald-600 font-bold">{item.t1Triggered ? "✅ Hit" : "❌ Hold"}</strong></span>
                                   </div>
                                 </div>
                               </div>
@@ -1189,53 +1142,46 @@ export default function App() {
                       )}
 
                       {activeTab === "backtest" && (
-                        filteredBacktests.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center py-16 text-center bg-white dark:bg-slate-900">
-                            <BookOpen className="w-8 h-8 text-gray-300 dark:text-slate-700 mb-2" />
-                            <p className="text-xs text-gray-450 font-mono">No simulation loops found</p>
-                          </div>
+                        filteredClosedTrades.length === 0 ? (
+                          <p className="text-center py-10 text-xs text-gray-400 font-mono">No closed trades match filter criteria.</p>
                         ) : (
-                          filteredBacktests.map((item) => {
+                          filteredClosedTrades.map((item, idx) => {
                             const isSelected = selectedSymbol === item.symbol;
-                            const isWin = item.result === "WIN" || item.tradeReturnPct >= 0;
+                            const isWin = item.pnlLabel === "WIN";
                             return (
                               <div
-                                key={`back-mob-${item.tradeId}`}
+                                key={`closed-mob-${item.symbol}-${idx}`}
                                 onClick={() => setSelectedSymbol(item.symbol)}
-                                className={`p-3.5 flex flex-col gap-2 cursor-pointer transition-colors ${
-                                  isSelected ? "bg-indigo-50/50 dark:bg-indigo-950/20" : "bg-white dark:bg-slate-900"
+                                className={`p-3.5 rounded-xl border transition-all ${
+                                  isSelected
+                                    ? "bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-500"
+                                    : "bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800"
                                 }`}
                               >
                                 <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="font-bold text-slate-950 dark:text-slate-50 text-sm font-mono">
-                                      {item.symbol}
-                                    </span>
-                                    <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded-sm uppercase ${
-                                      isWin 
-                                        ? "bg-emerald-100 dark:bg-emerald-955 text-emerald-800 dark:text-emerald-400 border border-emerald-250 dark:border-emerald-900"
-                                        : "bg-rose-100 dark:bg-rose-955 text-rose-800 dark:text-rose-400 border border-rose-250 dark:border-rose-900"
+                                  <div>
+                                    <span className="text-base font-bold font-mono tracking-tight text-gray-950 dark:text-white">{item.symbol}</span>
+                                    <span className={`text-[9px] font-bold block w-fit px-1 rounded uppercase mt-0.5 ${
+                                      isWin ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
                                     }`}>
-                                      {item.result || (isWin ? "WIN" : "LOSS")}
+                                      {isWin ? "WIN ✅" : "LOSS ❌"}
                                     </span>
                                   </div>
-                                  <span className={`text-sm font-bold font-mono ${isWin ? "text-emerald-600" : "text-rose-550"}`}>
-                                    {isWin ? "▲ +" : "▼ "}{item.tradeReturnPct?.toFixed(2)}%
-                                  </span>
+                                  <div className="text-right">
+                                    <span className={`text-base font-bold font-mono ${isWin ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}`}>
+                                      {item.returnPct >= 0 ? "+" : ""}{item.returnPct.toFixed(2)}%
+                                    </span>
+                                    <span className="text-[10px] text-gray-400 block font-mono">Exit: {formatCompactDate(item.exitDate)}</span>
+                                  </div>
                                 </div>
-                                
-                                <div className="grid grid-cols-2 gap-y-1.5 text-xs font-mono text-gray-500 dark:text-slate-400">
-                                  <div>
-                                    Buy: <strong className="text-slate-900 dark:text-slate-200 font-sans">₹{item.entryPrice.toFixed(2)}</strong>
+                                <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-800/60 font-mono text-[11px] text-gray-500 dark:text-slate-400 space-y-1">
+                                  <div className="flex justify-between">
+                                    <span>Exit Action: <strong className="text-indigo-600 dark:text-indigo-400">{getExitReasonLabel(item.exitReason)}</strong></span>
+                                    <span>Entry: ₹{item.entryPrice.toFixed(2)}</span>
                                   </div>
-                                  <div className="text-right">
-                                    Sold: <strong className="text-slate-905 dark:text-slate-200 font-sans">₹{item.exitPrice?.toFixed(2) || "N/A"}</strong>
-                                  </div>
-                                  <div>
-                                    In: <span className="text-slate-700 dark:text-slate-350">{formatCompactDate(item.entryDate)}</span>
-                                  </div>
-                                  <div className="text-right">
-                                    Out: <span className="text-slate-700 dark:text-slate-350">{formatCompactDate(item.exitDate)}</span>
+                                  <div className="flex justify-between">
+                                    <span>ML Model Grade: <strong className="text-slate-800 dark:text-slate-200">{item.mlGrade}</strong></span>
+                                    <span>Exit: ₹{item.exitPrice.toFixed(2)}</span>
                                   </div>
                                 </div>
                               </div>
@@ -1243,52 +1189,50 @@ export default function App() {
                           })
                         )
                       )}
-
                     </div>
                   </>
                 )}
               </div>
+
             </div>
           </div>
 
-          {/* Right Column: Weekly Charting Stage (4 Columns) */}
-          <div className="lg:col-span-4 flex flex-col gap-4 sm:gap-6">
-            <div className="h-[360px] sm:h-[520px]">
-              <TradingViewWidget symbol={selectedSymbol} theme={darkMode ? "dark" : "light"} />
+          {/* Right Column: Interactive TradingView chart (4 Columns) */}
+          <div className="lg:col-span-4 sticky top-20 flex flex-col gap-4">
+            <div className="h-[460px] lg:h-[580px]">
+              {selectedSymbol ? (
+                <TradingViewWidget symbol={selectedSymbol} theme={darkMode ? "dark" : "light"} />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800 rounded-xl p-6 text-center shadow-3xs">
+                  <Activity className="w-12 h-12 text-indigo-400 animate-pulse mb-3" />
+                  <h4 className="font-bold text-gray-700 dark:text-slate-300 text-sm">Interactive Stage Waiting</h4>
+                  <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 font-mono">Select any stock symbol to load its high-definition TradingView chart immediately.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Trading Suite Tips Panel */}
+            <div className="bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800 rounded-xl p-4 shadow-3xs">
+              <div className="flex items-center gap-2 mb-2">
+                <Info className="w-4.5 h-4.5 text-indigo-500" />
+                <h5 className="font-bold text-gray-900 dark:text-slate-100 text-xs font-mono uppercase tracking-wider">Trading Suite Tips</h5>
+              </div>
+              <p className="text-[11px] text-gray-500 dark:text-slate-400 leading-relaxed font-mono">
+                Clicking on any asset card or row dynamically syncs the <strong>Weekly charts</strong> with Indian Exchange feeds (BSE/NSE) inside the viewport.
+              </p>
             </div>
           </div>
-          
-        </div>
 
-        {/* Dynamic Decoupled Wix API Documentation Block */}
-        <div className="bg-linear-to-r from-indigo-50 to-indigo-100/50 dark:from-indigo-950/30 dark:to-indigo-900/10 p-4 sm:p-5 rounded-xl border border-indigo-100 dark:border-indigo-950 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 transition-colors duration-155">
-          <div className="space-y-1">
-            <h4 className="font-semibold text-indigo-950 dark:text-indigo-300 text-sm flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-indigo-500 dark:bg-indigo-400 animate-pulse" />
-              Unified Decoupled API Integration
-            </h4>
-            <p className="text-xs text-indigo-900/80 dark:text-indigo-200/80 leading-relaxed max-w-3xl">
-              This system is fully synchronized with your live Wix-administered ecosystem at: <code className="bg-white/70 dark:bg-slate-800 px-1 py-0.5 rounded font-mono text-[11px] dark:text-slate-200">_functions/terminalData</code>. The metrics, setups, open-trades, closed logs, and actual asset holdings are cleanly structured with absolute separation across all views.
-            </p>
-          </div>
-          <a
-            href="https://rahultiwari1295.wixstudio.com/angelportfolio/_functions/terminalData"
-            target="_blank"
-            referrerPolicy="no-referrer"
-            className="px-4 py-2 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-indigo-200/60 dark:border-indigo-900/40 rounded-lg text-xs font-semibold text-indigo-805 dark:text-indigo-400 inline-flex items-center gap-1.5 shadow-3xs cursor-pointer select-none"
-          >
-            Terminal JSON Resource
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
         </div>
 
       </main>
 
-      {/* Footer Disclaimer */}
-      <footer className="bg-white dark:bg-slate-900 border-t border-gray-200/80 dark:border-slate-800 p-4 mt-auto transition-colors duration-155">
-        <div className="max-w-7xl mx-auto px-4 text-center space-y-1 font-mono text-[10px] text-gray-400 dark:text-slate-500">
-          <p>© 2026 AngelOne Unified Terminal Logic. All Rights Reserved.</p>
-          <p>Managed via dynamic Wix Studio backend APIs and high-frequency Node gateways.</p>
+      {/* Modern Compact Footer */}
+      <footer className="bg-white dark:bg-slate-900 border-t border-gray-250/50 dark:border-slate-800/80 py-4 mt-auto transition-colors duration-150 select-none">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <p className="text-[10px] text-gray-400 dark:text-slate-500 font-mono uppercase tracking-widest">
+            © 2026 RAHULTRADING TERMINAL • POWERED BY ML V3.5 CORE ENGINE • SECURE ENDPOINT SYNCHRONIZATION
+          </p>
         </div>
       </footer>
 
