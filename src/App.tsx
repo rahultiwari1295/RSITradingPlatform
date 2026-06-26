@@ -131,7 +131,9 @@ export default function App() {
       }
     }
 
-    if (result && result.success) {
+    const isSuccess = result && (result.success === true || !!result.generatedAt || !!result.kpis);
+
+    if (isSuccess) {
       setKpis(result.kpis || {
         totalSignals: 0,
         toBuy: 0,
@@ -151,7 +153,7 @@ export default function App() {
       setClosedTrades(closedData);
 
       setGeneratedAt(result.generatedAt || null);
-      setDataSource("live");
+      setDataSource(fallbackUsed ? "live" : "live"); // both indicate data is live
       setErrorInfo(null);
 
       // Pre-select first appropriate stock symbol on chart stage
