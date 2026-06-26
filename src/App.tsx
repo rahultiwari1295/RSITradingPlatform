@@ -102,7 +102,7 @@ export default function App() {
 
     try {
       // Direct high-fidelity secure Wix fetch block as explicitly requested
-      const directRes = await fetch("https://rahultiwari1295.wixstudio.com/angelportfolio/_functions/terminalData", {
+      const directRes = await fetch("https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData", {
         method: "GET",
         headers: {
           "Accept": "application/json"
