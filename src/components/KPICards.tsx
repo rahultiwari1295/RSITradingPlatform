@@ -3,35 +3,35 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TrendingUp, ArrowUpRight, Activity, AlertTriangle, Cpu } from "lucide-react";
+import { TrendingUp, ArrowUpRight, Activity, AlertTriangle, Coins, Target } from "lucide-react";
 
 interface KPICardsProps {
   winRate: number;
-  winRateStrong: number;
   avgReturn: number;
+  profitFactor: number;
   openCount: number;
   closedCount: number;
   toBuyCount: number;
-  stocksProcessed: number;
 }
 
 export default function KPICards({
   winRate,
-  winRateStrong,
   avgReturn,
+  profitFactor,
   openCount,
   closedCount,
   toBuyCount,
-  stocksProcessed,
 }: KPICardsProps) {
+  const isHighConviction = profitFactor > 2.0;
+
   const cards = [
     {
       id: "win-rate",
-      title: "Tactical Win Rate",
+      title: "Global Win Rate",
       value: `${winRate.toFixed(1)}%`,
-      description: `Strong WR: ${winRateStrong.toFixed(1)}%`,
+      description: `Across all trades`,
       descColor: "text-emerald-700 dark:text-emerald-400 font-bold",
-      icon: TrendingUp,
+      icon: Target,
       bgColor: "bg-emerald-50/50 dark:bg-emerald-950/20",
       borderColor: "border-emerald-100 dark:border-emerald-900/30",
       iconColor: "text-emerald-500 dark:text-emerald-400",
@@ -41,7 +41,7 @@ export default function KPICards({
       id: "avg-return",
       title: "Average Return",
       value: `${avgReturn >= 0 ? "+" : ""}${avgReturn.toFixed(2)}%`,
-      description: `Expectancy: ${avgReturn.toFixed(2)}%`,
+      description: `Expectancy per trade`,
       descColor: avgReturn >= 0 ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-rose-600 dark:text-rose-405 font-semibold",
       icon: ArrowUpRight,
       bgColor: avgReturn >= 0 ? "bg-indigo-50/50 dark:bg-indigo-950/20" : "bg-rose-50/30 dark:bg-rose-950/15",
@@ -50,10 +50,22 @@ export default function KPICards({
       accent: avgReturn >= 0 ? "from-indigo-500/10 to-indigo-500/0" : "from-rose-500/10 to-rose-500/0",
     },
     {
+      id: "profit-factor",
+      title: "Profit Factor",
+      value: profitFactor.toFixed(2),
+      description: isHighConviction ? "Exceptional Edge" : "Steady Edge",
+      descColor: isHighConviction ? "text-amber-600 dark:text-amber-400 font-bold" : "text-emerald-600 dark:text-emerald-400 font-semibold",
+      icon: TrendingUp,
+      bgColor: isHighConviction ? "bg-amber-50/50 dark:bg-amber-950/20" : "bg-emerald-50/50 dark:bg-emerald-950/20",
+      borderColor: isHighConviction ? "border-amber-300 dark:border-amber-700/50 shadow-[0_0_15px_rgba(251,191,36,0.15)] dark:shadow-[0_0_15px_rgba(251,191,36,0.05)]" : "border-emerald-100 dark:border-emerald-900/30",
+      iconColor: isHighConviction ? "text-amber-500 dark:text-amber-400" : "text-emerald-500 dark:text-emerald-400",
+      accent: isHighConviction ? "from-amber-500/15 to-amber-500/0" : "from-emerald-500/10 to-emerald-500/0",
+    },
+    {
       id: "active-trades",
       title: "Active Trades",
       value: `${openCount}`,
-      description: `Open: ${openCount} | Closed: ${closedCount}`,
+      description: `Historical closed: ${closedCount}`,
       descColor: "text-blue-600 dark:text-blue-400 font-semibold",
       icon: Activity,
       bgColor: "bg-blue-50/50 dark:bg-blue-950/20",
@@ -66,24 +78,12 @@ export default function KPICards({
       title: "Near Setups",
       value: `${toBuyCount}`,
       description: `Signals Found: ${toBuyCount}`,
-      descColor: "text-amber-700 dark:text-amber-400 font-semibold",
+      descColor: "text-indigo-600 dark:text-indigo-400 font-semibold",
       icon: AlertTriangle,
-      bgColor: "bg-amber-50/50 dark:bg-amber-950/20",
-      borderColor: "border-amber-100 dark:border-amber-900/30",
-      iconColor: "text-amber-600 dark:text-amber-450",
-      accent: "from-amber-500/10 to-amber-500/0",
-    },
-    {
-      id: "stocks-processed",
-      title: "Stocks Processed",
-      value: `${stocksProcessed}`,
-      description: "Active Algo Scan Range",
-      descColor: "text-slate-500 dark:text-slate-400 font-medium",
-      icon: Cpu,
-      bgColor: "bg-slate-50/50 dark:bg-slate-900/40",
-      borderColor: "border-slate-200/80 dark:border-slate-800",
+      bgColor: "bg-indigo-50/50 dark:bg-indigo-950/20",
+      borderColor: "border-indigo-100 dark:border-indigo-900/30",
       iconColor: "text-indigo-500 dark:text-indigo-400",
-      accent: "from-slate-500/10 to-slate-500/0",
+      accent: "from-indigo-500/10 to-indigo-500/0",
     },
   ];
 
@@ -91,7 +91,7 @@ export default function KPICards({
     <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4">
       {cards.map((card) => {
         const Icon = card.icon;
-        const isSpanned = card.id === "stocks-processed";
+        const isSpanned = card.id === "near-setups";
         return (
           <div
             key={card.id}
@@ -104,8 +104,8 @@ export default function KPICards({
               <span className="text-[10px] sm:text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider font-mono truncate">
                 {card.title}
               </span>
-              <div className="p-1 rounded-sm bg-white dark:bg-slate-800 shadow-3xs text-gray-500 shrink-0">
-                <Icon className={`w-3.5 h-3.5 ${card.iconColor}`} />
+              <div className={`p-1 rounded-sm bg-white dark:bg-slate-800 shadow-3xs shrink-0 ${card.iconColor}`}>
+                <Icon className={`w-3.5 h-3.5`} />
               </div>
             </div>
             

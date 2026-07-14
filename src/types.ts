@@ -11,98 +11,117 @@ export interface TerminalKPIs {
   stocksProcessed: number;
 }
 
+export interface TotalSummary {
+  totalTrades: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  avgWinPct: number;
+  avgLossPct: number;
+  avgReturnPct: number;
+  totalReturnPct: number;
+  profitFactor: number;
+  bestTrade: { symbol: string; returnPct: number };
+  worstTrade: { symbol: string; returnPct: number };
+  avgHoldDays: number;
+  generatedAt: string;
+}
+
+export interface StrategySummary {
+  strategyId: string;
+  strategyName: string;
+  totalTrades: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  avgWinPct: number;
+  avgLossPct: number;
+  avgReturnPct: number;
+  profitFactor: number;
+  avgHoldDays: number;
+}
+
 export interface ToBuySignal {
   symbol: string;
-  type: string;
-  date: string;
+  type?: string;
+  date?: string;
   price: number;
-  rsiGap: number;
-  barsSinceP2: number;
-  p1Bi: number;
-  p2Bi: number;
-  tlSlope: number;
-  tlValueAtCross: number;
-  rsiGapMarginVsGate: number;
-  maturityMarginVsGate: number;
-  rsiHeadroomToOverbought: number;
-  rsiHeadroomFromOversold: number;
-  strategy: string;
-  entryBlocked: boolean;
-  blockReasons: string[];
-  configIndex: number;
-  isLive: boolean;
-  sector: string;
-  relativeStrength4W: number;
-  relativeStrength12W: number;
-  relativeStrength24W: number;
-  niftyAbove200EMA: number;
-  niftyDistanceFrom200EMA: number;
-  distanceFrom50EMA: number;
-  closeAbove200EMA: number;
-  distanceFrom200EMA: number;
-  atrPercent: number;
-  bollingerWidth: number;
-  rankScore: number;
-  rankGrade: string;
-  mlProbability: number;
-  mlGrade: string;
-  mlAction: string;
-  mlRaw: number;
+  strategyName?: string;
+  mlProbability?: number;
+  mlGrade?: string;
+  mlAction?: string;
+  rankScore?: number;
+  rankGrade?: string;
+  sector?: string;
+  alsoTriggeredBy?: string[];
+  [key: string]: any;
 }
 
 export interface InTradeTrade {
   symbol: string;
-  sector: string;
+  sector?: string;
+  strategyName?: string;
   entryDate: string;
   entryPrice: number;
-  entryRSI: number;
-  exitReason: string | null;
-  mfe: number;
-  maxFavorable: number;
-  maxAdverse: number;
-  t1Triggered: boolean;
-  t1ReturnPct: number | null;
-  configIndex: number;
-  mlProbability: number;
-  mlGrade: string;
-  mlAction: string;
-  mlRaw: number;
   currentPrice: number;
   currentROI: number;
-  lastUpdated: string;
+  exitReason?: string | null;
+  mfe?: number;
+  maxFavorable?: number;
+  maxAdverse?: number;
+  t1Triggered?: boolean;
+  t1ReturnPct?: number | null;
+  mlProbability?: number;
+  mlGrade?: string;
+  mlAction?: string;
+  alsoTriggeredBy?: string[];
+  [key: string]: any;
+}
+
+export interface PortfolioTrade extends InTradeTrade {
+  matchedActiveTrade?: {
+    strategyId: string;
+    strategyName: string;
+    entryDate: string;
+    mfe: number;
+    alsoTriggeredBy: string[];
+  };
 }
 
 export interface ClosedTrade {
   symbol: string;
-  sector: string;
+  sector?: string;
+  strategyName?: string;
   entryDate: string;
+  exitDate?: string;
   entryPrice: number;
-  entryRSI: number;
-  exitReason: string;
-  mfe: number;
-  maxFavorable: number;
-  maxAdverse: number;
-  t1Triggered: boolean;
-  t1ReturnPct: number | null;
-  configIndex: number;
-  mlProbability: number;
-  mlGrade: string;
-  mlAction: string;
-  mlRaw: number;
-  exitDate: string;
-  exitPrice: number;
+  exitPrice?: number;
   returnPct: number;
+  exitReason?: string;
+  exitReasonLabel?: string;
+  mfe?: number;
+  maxFavorable?: number;
+  maxAdverse?: number;
+  t1Triggered?: boolean;
+  t1ReturnPct?: number | null;
+  mlProbability?: number;
+  mlGrade?: string;
   pnlLabel: "WIN" | "LOSS" | string;
+  alsoTriggeredBy?: string[];
+  [key: string]: any;
 }
 
 export interface TerminalDataResponse {
   success: boolean;
   generatedAt: string;
-  kpis: TerminalKPIs;
+  totalSummary?: TotalSummary;
+  strategySummary?: StrategySummary[];
+  kpis?: TerminalKPIs;
   toBuySignals: ToBuySignal[];
   inTradeTrades: InTradeTrade[];
-  portfolio: InTradeTrade[];
+  portfolio: PortfolioTrade[];
   closedTrades: ClosedTrade[];
   source?: "live" | "failed";
   error?: string;
 }
+

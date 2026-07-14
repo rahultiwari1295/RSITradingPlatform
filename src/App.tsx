@@ -24,6 +24,7 @@ import {
   ClosedTrade 
 } from "./types";
 import KPICards from "./components/KPICards";
+import StrategyLeaderboard from "./components/StrategyLeaderboard";
 import TradingViewWidget from "./components/TradingViewWidget";
 
 export default function App() {
@@ -33,6 +34,8 @@ export default function App() {
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
 
   // Core Wix API state containers
+  const [totalSummary, setTotalSummary] = useState<any>(null);
+  const [strategySummary, setStrategySummary] = useState<any[]>([]);
   const [kpis, setKpis] = useState<TerminalKPIs>({
     totalSignals: 0,
     toBuy: 0,
@@ -131,9 +134,11 @@ export default function App() {
       }
     }
 
-    const isSuccess = result && (result.success === true || !!result.generatedAt || !!result.kpis);
+    const isSuccess = result && (result.success === true || !!result.generatedAt || !!result.totalSummary);
 
     if (isSuccess) {
+      setTotalSummary(result.totalSummary || null);
+      setStrategySummary(result.strategySummary || []);
       setKpis(result.kpis || {
         totalSignals: 0,
         toBuy: 0,
@@ -249,7 +254,7 @@ export default function App() {
 
   // Active Open Count & Closed Count
   const dynamicOpenCount = filteredActiveTrades.length;
-  const dynamicClosedCount = filteredClosedTrades.length;
+  const dynamicClosedCount = totalSummary?.totalTrades || 0; // Use true historical count
 
   // Setup toBuyCount
   const dynamicToBuyCount = filteredSetups.length;
@@ -375,14 +380,16 @@ export default function App() {
         
         {/* Metric Cards Grid Component with Dynamic selection figures */}
         <KPICards 
-          winRate={dynamicWinRate} 
-          winRateStrong={dynamicWinRateStrong} 
-          avgReturn={dynamicAvgReturn} 
+          winRate={totalSummary?.winRate || 0} 
+          avgReturn={totalSummary?.avgReturnPct || 0} 
+          profitFactor={totalSummary?.profitFactor || 0} 
           openCount={dynamicOpenCount} 
           closedCount={dynamicClosedCount} 
           toBuyCount={dynamicToBuyCount} 
-          stocksProcessed={kpis.stocksProcessed || 0} 
         />
+
+        {/* Strategy Leaderboard Component */}
+        <StrategyLeaderboard strategies={strategySummary} />
 
         {/* Interactive Workspace Area: Tab Table Controls & TradingView Stage */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
