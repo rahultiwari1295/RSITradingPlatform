@@ -24,8 +24,17 @@ import {
   ClosedTrade 
 } from "./types";
 import KPICards from "./components/KPICards";
+import ConvictionBadge from "./components/ConvictionBadge";
 import StrategyLeaderboard from "./components/StrategyLeaderboard";
 import TradingViewWidget from "./components/TradingViewWidget";
+
+const getStrategyAbbreviation = (name?: string) => {
+  if (!name) return "UNK";
+  if (name === "Capitulation Reversal") return "CR";
+  if (name === "Trend Continuation") return "TC";
+  if (name === "52-Week High Momentum") return "52W";
+  return name;
+};
 
 export default function App() {
   const [loading, setLoading] = useState<boolean>(true);
@@ -572,7 +581,7 @@ export default function App() {
                                 <th className="px-4 py-3">Entry Details</th>
                                 <th className="px-4 py-3 text-right">Entry / Current Price</th>
                                 <th className="px-4 py-3 text-right">Current ROI</th>
-                                <th className="px-4 py-3 text-center">ML Confidence</th>
+                                <th className="px-4 py-3 text-center">Strategy</th>
                                 <th className="px-4 py-3 text-center">T1 Target</th>
                                 <th className="px-4 py-3 text-right">Max Fav / Adv</th>
                                 <th className="px-4 py-3 text-right">Actions</th>
@@ -626,12 +635,10 @@ export default function App() {
 
                                     <td className="px-4 py-3.5 text-center font-mono text-xs">
                                       <div className="flex flex-col items-center">
-                                        <span className="font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-55/60 dark:bg-indigo-950/30 px-1.5 py-0.5 rounded">
-                                          {item.mlProbability}%
-                                        </span>
-                                        <span className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">
-                                          Grade: <strong className="text-slate-800 dark:text-slate-300">{item.mlGrade}</strong>
-                                        </span>
+                                        <ConvictionBadge 
+                                          strategyName={getStrategyAbbreviation(item.strategyName)}
+                                          alsoTriggeredBy={item.alsoTriggeredBy?.map(getStrategyAbbreviation)}
+                                        />
                                       </div>
                                     </td>
 
@@ -697,7 +704,7 @@ export default function App() {
                                 <th className="px-4 py-3">Symbol</th>
                                 <th className="px-4 py-3">Signal Date</th>
                                 <th className="px-4 py-3 text-right">Trigger price</th>
-                                <th className="px-4 py-3 text-center">ML Confidence</th>
+                                <th className="px-4 py-3 text-center">Strategy</th>
                                 <th className="px-4 py-3 text-center">Action Trigger</th>
                                 <th className="px-4 py-3 text-center">Rank Details</th>
                                 <th className="px-4 py-3 text-right">Actions</th>
@@ -737,12 +744,10 @@ export default function App() {
 
                                     <td className="px-4 py-3.5 text-center font-mono text-xs">
                                       <div className="flex flex-col items-center">
-                                        <span className="font-bold text-indigo-650 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded">
-                                          {item.mlProbability}%
-                                        </span>
-                                        <span className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">
-                                          Grade: <strong>{item.mlGrade}</strong>
-                                        </span>
+                                        <ConvictionBadge 
+                                          strategyName={getStrategyAbbreviation(item.strategyName)}
+                                          alsoTriggeredBy={item.alsoTriggeredBy?.map(getStrategyAbbreviation)}
+                                        />
                                       </div>
                                     </td>
 
@@ -799,7 +804,7 @@ export default function App() {
                                 <th className="px-4 py-3 text-right">Entry Price</th>
                                 <th className="px-4 py-3 text-right">Current Price</th>
                                 <th className="px-4 py-3 text-right">ROI (%)</th>
-                                <th className="px-4 py-3 text-center">ML Grade</th>
+                                <th className="px-4 py-3 text-center">Strategy</th>
                                 <th className="px-4 py-3 text-center">T1 Triggered</th>
                                 <th className="px-4 py-3 text-right">Max Fav / Adverse</th>
                                 <th className="px-4 py-3 text-right">Actions</th>
@@ -818,7 +823,14 @@ export default function App() {
                                     onClick={() => setSelectedSymbol(item.symbol)}
                                   >
                                     <td className="px-4 py-3.5 font-bold font-mono text-slate-900 dark:text-slate-100">
-                                      {item.symbol}
+                                      <div className="flex flex-col gap-1">
+                                        <span>{item.symbol}</span>
+                                        {item.matchedActiveTrade && (
+                                          <span className="inline-flex items-center w-max px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-800/50">
+                                            🤖 Algo Managed
+                                          </span>
+                                        )}
+                                      </div>
                                     </td>
 
                                     <td className="px-4 py-3.5 font-mono text-xs text-slate-600 dark:text-slate-300">
@@ -841,12 +853,10 @@ export default function App() {
 
                                     <td className="px-4 py-3.5 text-center font-mono text-xs">
                                       <div className="flex flex-col items-center">
-                                        <span className="font-bold text-indigo-650 dark:text-indigo-400">
-                                          {item.mlGrade}
-                                        </span>
-                                        <span className="text-[9px] text-gray-400">
-                                          {item.mlProbability}%
-                                        </span>
+                                        <ConvictionBadge 
+                                          strategyName={getStrategyAbbreviation(item.strategyName)}
+                                          alsoTriggeredBy={item.alsoTriggeredBy?.map(getStrategyAbbreviation)}
+                                        />
                                       </div>
                                     </td>
 
@@ -908,7 +918,7 @@ export default function App() {
                                 <th className="px-4 py-3 text-right">ReturnPct</th>
                                 <th className="px-4 py-3 text-center">Result</th>
                                 <th className="px-4 py-3">Exit Reason</th>
-                                <th className="px-4 py-3 text-center">ML Grade</th>
+                                <th className="px-4 py-3 text-center">Strategy</th>
                                 <th className="px-4 py-3 text-right">Max Fav / Adverse</th>
                                 <th className="px-4 py-3 text-right">Actions</th>
                               </tr>
@@ -978,8 +988,11 @@ export default function App() {
                                       {getExitReasonLabel(item.exitReason)}
                                     </td>
 
-                                    <td className="px-4 py-3.5 text-center font-mono text-xs font-bold">
-                                      {item.mlGrade}
+                                    <td className="px-4 py-3.5 text-center font-mono text-xs font-bold text-slate-800 dark:text-slate-200">
+                                      <ConvictionBadge 
+                                        strategyName={getStrategyAbbreviation(item.strategyName)}
+                                        alsoTriggeredBy={item.alsoTriggeredBy?.map(getStrategyAbbreviation)}
+                                      />
                                     </td>
 
                                     <td className="px-4 py-3.5 text-right font-mono text-[10px]">
@@ -1047,7 +1060,7 @@ export default function App() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-800/60 font-mono text-[11px] text-gray-500 dark:text-slate-400">
                                   <div>
-                                    <span>ML Grade: <strong className="text-indigo-600 dark:text-indigo-400">{item.mlGrade} ({item.mlProbability}%)</strong></span>
+                                    <span>Strategy: <strong className="text-slate-800 dark:text-slate-200">{getStrategyAbbreviation(item.strategyName)}</strong></span>
                                   </div>
                                   <div className="text-right">
                                     <span>T1 Target: <strong className="text-slate-800 dark:text-slate-200">{item.t1Triggered ? `✅ Yes (+${item.t1ReturnPct}%)` : "❌ No"}</strong></span>
@@ -1095,7 +1108,7 @@ export default function App() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-800/60 font-mono text-[11px] text-gray-500 dark:text-slate-400">
                                   <div>
-                                    <span>ML Model: <strong className="text-indigo-600 dark:text-indigo-400">{item.mlGrade} ({item.mlProbability}%)</strong></span>
+                                    <span>Strategy: <strong className="text-slate-800 dark:text-slate-200">{getStrategyAbbreviation(item.strategyName)}</strong></span>
                                   </div>
                                   <div className="text-right">
                                     <span>Rank details: <strong>Score {item.rankScore} ({item.rankGrade})</strong></span>
@@ -1189,7 +1202,7 @@ export default function App() {
                                     <span>Entry: ₹{item.entryPrice.toFixed(2)}</span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span>ML Model Grade: <strong className="text-slate-800 dark:text-slate-200">{item.mlGrade}</strong></span>
+                                    <span>Strategy: <strong className="text-slate-800 dark:text-slate-200">{getStrategyAbbreviation(item.strategyName)}</strong></span>
                                     <span>Exit: ₹{item.exitPrice.toFixed(2)}</span>
                                   </div>
                                 </div>

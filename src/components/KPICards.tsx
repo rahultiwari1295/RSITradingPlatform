@@ -73,49 +73,34 @@ export default function KPICards({
       iconColor: "text-blue-500 dark:text-blue-400",
       accent: "from-blue-500/10 to-blue-500/0",
     },
-    {
-      id: "near-setups",
-      title: "Near Setups",
-      value: `${toBuyCount}`,
-      description: `Signals Found: ${toBuyCount}`,
-      descColor: "text-indigo-600 dark:text-indigo-400 font-semibold",
-      icon: AlertTriangle,
-      bgColor: "bg-indigo-50/50 dark:bg-indigo-950/20",
-      borderColor: "border-indigo-100 dark:border-indigo-900/30",
-      iconColor: "text-indigo-500 dark:text-indigo-400",
-      accent: "from-indigo-500/10 to-indigo-500/0",
-    },
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
       {cards.map((card) => {
         const Icon = card.icon;
-        const isSpanned = card.id === "near-setups";
         return (
           <div
             key={card.id}
             id={`kpi-card-${card.id}`}
-            className={`relative overflow-hidden rounded-xl bg-linear-to-b ${card.bgColor} ${card.accent} p-3 sm:p-4 border ${card.borderColor} transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs ${
-              isSpanned ? "col-span-2 lg:col-span-1" : "col-span-1"
-            }`}
+            className={`relative overflow-hidden rounded-xl bg-linear-to-b ${card.bgColor} ${card.accent} p-2.5 sm:p-3 border ${card.borderColor} transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs`}
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] sm:text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider font-mono truncate">
+            <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+              <span className="text-[9px] sm:text-[10px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider font-mono truncate">
                 {card.title}
               </span>
               <div className={`p-1 rounded-sm bg-white dark:bg-slate-800 shadow-3xs shrink-0 ${card.iconColor}`}>
-                <Icon className={`w-3.5 h-3.5`} />
+                <Icon className={`w-3 h-3`} />
               </div>
             </div>
             
             <div className="flex items-baseline">
-              <span className="text-xl sm:text-2xl font-bold text-gray-950 dark:text-slate-50 font-sans tracking-tight leading-none">
+              <span className="text-lg sm:text-xl font-bold text-gray-950 dark:text-slate-50 font-sans tracking-tight leading-none">
                 {card.value}
               </span>
             </div>
 
-            <p className={`text-[10px] sm:text-[11px] mt-1.5 leading-none truncate ${card.descColor}`}>
+            <p className={`text-[9px] sm:text-[10px] mt-1 leading-none truncate ${card.descColor}`}>
               {card.description}
             </p>
           </div>
