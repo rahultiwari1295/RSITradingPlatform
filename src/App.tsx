@@ -79,7 +79,6 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<"active" | "setup" | "portfolio" | "backtest">("active");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSymbol, setSelectedSymbol] = useState<string>("");
-  const [strengthFilter, setStrengthFilter] = useState<string>("ALL");
   const [activeTradesSort, setActiveTradesSort] = useState<"latest_date" | "oldest_date" | "return_high" | "return_low" | "strategy">("latest_date");
 
   // Format helpers
@@ -194,30 +193,10 @@ export default function App() {
 
   // --- STRATEGY & QUERY FILTERING CONTROLLERS ---
 
-  // Filter checker for Quality Threshold select dropdown
-  const matchesQualityFilter = (mlGrade: string | null | undefined) => {
-    if (strengthFilter === "ALL") return true;
-    if (!mlGrade) return false;
-    
-    const grade = mlGrade.toUpperCase();
-    if (strengthFilter === "STRONG") {
-      return grade === "A+" || grade === "A";
-    }
-    if (strengthFilter === "GOOD") {
-      return grade === "B+" || grade === "B";
-    }
-    if (strengthFilter === "WATCH") {
-      return grade === "C+" || grade === "C";
-    }
-    return true;
-  };
-
   // 1. Ongoing/Active Trades Filters (inTradeTrades)
   const filteredActiveTrades = inTradeTrades.filter(t => {
-    const queryMatches = t.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (t.sector && t.sector.toLowerCase().includes(searchQuery.toLowerCase()));
-    const gradeMatches = matchesQualityFilter(t.mlGrade);
-    return queryMatches && gradeMatches;
+    return t.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           (t.sector && t.sector.toLowerCase().includes(searchQuery.toLowerCase()));
   }).sort((a, b) => {
     switch (activeTradesSort) {
       case "latest_date":
@@ -237,26 +216,20 @@ export default function App() {
 
   // 2. Setup/toBuySignals Filters
   const filteredSetups = toBuySignals.filter(s => {
-    const queryMatches = s.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (s.sector && s.sector.toLowerCase().includes(searchQuery.toLowerCase()));
-    const gradeMatches = matchesQualityFilter(s.mlGrade);
-    return queryMatches && gradeMatches;
+    return s.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           (s.sector && s.sector.toLowerCase().includes(searchQuery.toLowerCase()));
   });
 
   // 3. Portfolio Filters
   const filteredPortfolio = portfolio.filter(p => {
-    const queryMatches = p.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (p.sector && p.sector.toLowerCase().includes(searchQuery.toLowerCase()));
-    const gradeMatches = matchesQualityFilter(p.mlGrade);
-    return queryMatches && gradeMatches;
+    return p.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           (p.sector && p.sector.toLowerCase().includes(searchQuery.toLowerCase()));
   });
 
   // 4. Closed Trades Filters (closedTrades)
   const filteredClosedTrades = closedTrades.filter(b => {
-    const queryMatches = b.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (b.exitReason && b.exitReason.toLowerCase().includes(searchQuery.toLowerCase()));
-    const gradeMatches = matchesQualityFilter(b.mlGrade);
-    return queryMatches && gradeMatches;
+    return b.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           (b.exitReason && b.exitReason.toLowerCase().includes(searchQuery.toLowerCase()));
   });
 
 
@@ -470,20 +443,7 @@ export default function App() {
                   </button>
                 </div>
 
-                {/* Sub Dropdown Quality Filters */}
                 <div className="flex items-center gap-2 justify-between w-full xl:w-auto border-t border-gray-150 dark:border-slate-800 pt-2 xl:border-t-0 xl:pt-0">
-                  <span className="text-[10px] sm:text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase font-mono tracking-wider">Quality Threshold:</span>
-                  <select
-                    value={strengthFilter}
-                    onChange={(e) => setStrengthFilter(e.target.value)}
-                    className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg text-xs py-1 px-2.5 sm:py-1.5 select-none focus:outline-none focus:ring-2 focus:ring-indigo-500/25 shadow-3xs hover:border-gray-300 dark:hover:border-slate-700 font-bold text-gray-700 dark:text-slate-300 transition-colors cursor-pointer mr-2"
-                  >
-                    <option value="ALL">All Strengths</option>
-                    <option value="STRONG">🟢 Strong (A+/A)</option>
-                    <option value="GOOD">🟡 Good (B+/B)</option>
-                    <option value="WATCH">⚪ Watch (C+/C)</option>
-                  </select>
-
                   {activeTab === "active" && (
                     <>
                       <span className="text-[10px] sm:text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase font-mono tracking-wider ml-1">Sort:</span>
