@@ -80,6 +80,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSymbol, setSelectedSymbol] = useState<string>("");
   const [strengthFilter, setStrengthFilter] = useState<string>("ALL");
+  const [activeTradesSort, setActiveTradesSort] = useState<"latest_date" | "oldest_date" | "return_high" | "return_low" | "strategy">("latest_date");
 
   // Format helpers
   const formatCompactDate = (dateStr: string | null) => {
@@ -217,6 +218,21 @@ export default function App() {
                          (t.sector && t.sector.toLowerCase().includes(searchQuery.toLowerCase()));
     const gradeMatches = matchesQualityFilter(t.mlGrade);
     return queryMatches && gradeMatches;
+  }).sort((a, b) => {
+    switch (activeTradesSort) {
+      case "latest_date":
+        return new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime();
+      case "oldest_date":
+        return new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime();
+      case "return_high":
+        return (b.currentROI || 0) - (a.currentROI || 0);
+      case "return_low":
+        return (a.currentROI || 0) - (b.currentROI || 0);
+      case "strategy":
+        return (a.strategyName || "").localeCompare(b.strategyName || "");
+      default:
+        return 0;
+    }
   });
 
   // 2. Setup/toBuySignals Filters
@@ -460,13 +476,30 @@ export default function App() {
                   <select
                     value={strengthFilter}
                     onChange={(e) => setStrengthFilter(e.target.value)}
-                    className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg text-xs py-1 px-2.5 sm:py-1.5 select-none focus:outline-none focus:ring-2 focus:ring-indigo-500/25 shadow-3xs hover:border-gray-300 dark:hover:border-slate-700 font-bold text-gray-700 dark:text-slate-300 transition-colors cursor-pointer"
+                    className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg text-xs py-1 px-2.5 sm:py-1.5 select-none focus:outline-none focus:ring-2 focus:ring-indigo-500/25 shadow-3xs hover:border-gray-300 dark:hover:border-slate-700 font-bold text-gray-700 dark:text-slate-300 transition-colors cursor-pointer mr-2"
                   >
                     <option value="ALL">All Strengths</option>
                     <option value="STRONG">🟢 Strong (A+/A)</option>
                     <option value="GOOD">🟡 Good (B+/B)</option>
                     <option value="WATCH">⚪ Watch (C+/C)</option>
                   </select>
+
+                  {activeTab === "active" && (
+                    <>
+                      <span className="text-[10px] sm:text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase font-mono tracking-wider ml-1">Sort:</span>
+                      <select
+                        value={activeTradesSort}
+                        onChange={(e: any) => setActiveTradesSort(e.target.value)}
+                        className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg text-xs py-1 px-2.5 sm:py-1.5 select-none focus:outline-none focus:ring-2 focus:ring-indigo-500/25 shadow-3xs hover:border-gray-300 dark:hover:border-slate-700 font-bold text-gray-700 dark:text-slate-300 transition-colors cursor-pointer"
+                      >
+                        <option value="latest_date">Latest to Old</option>
+                        <option value="oldest_date">Oldest to Latest</option>
+                        <option value="return_high">Return (High to Low)</option>
+                        <option value="return_low">Return (Low to High)</option>
+                        <option value="strategy">Strategy Name</option>
+                      </select>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -582,7 +615,6 @@ export default function App() {
                                 <th className="px-4 py-3 text-right">Entry / Current Price</th>
                                 <th className="px-4 py-3 text-right">Current ROI</th>
                                 <th className="px-4 py-3 text-center">Strategy</th>
-                                <th className="px-4 py-3 text-center">T1 Target</th>
                                 <th className="px-4 py-3 text-right">Max Fav / Adv</th>
                                 <th className="px-4 py-3 text-right">Actions</th>
                               </tr>
@@ -639,23 +671,6 @@ export default function App() {
                                           strategyName={getStrategyAbbreviation(item.strategyName)}
                                           alsoTriggeredBy={item.alsoTriggeredBy?.map(getStrategyAbbreviation)}
                                         />
-                                      </div>
-                                    </td>
-
-                                    <td className="px-4 py-3.5 text-center font-mono text-xs">
-                                      <div className="flex flex-col items-center">
-                                        <span className={`text-[10px] px-1 py-0.5 rounded font-bold uppercase ${
-                                          item.t1Triggered 
-                                            ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-400" 
-                                            : "bg-slate-100 dark:bg-slate-800 text-slate-500"
-                                        }`}>
-                                          {item.t1Triggered ? "✅ Yes" : "❌ No"}
-                                        </span>
-                                        {item.t1ReturnPct !== null && (
-                                          <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">
-                                            +{item.t1ReturnPct}%
-                                          </span>
-                                        )}
                                       </div>
                                     </td>
 
@@ -805,7 +820,6 @@ export default function App() {
                                 <th className="px-4 py-3 text-right">Current Price</th>
                                 <th className="px-4 py-3 text-right">ROI (%)</th>
                                 <th className="px-4 py-3 text-center">Strategy</th>
-                                <th className="px-4 py-3 text-center">T1 Triggered</th>
                                 <th className="px-4 py-3 text-right">Max Fav / Adverse</th>
                                 <th className="px-4 py-3 text-right">Actions</th>
                               </tr>
@@ -858,16 +872,6 @@ export default function App() {
                                           alsoTriggeredBy={item.alsoTriggeredBy?.map(getStrategyAbbreviation)}
                                         />
                                       </div>
-                                    </td>
-
-                                    <td className="px-4 py-3.5 text-center font-mono text-xs">
-                                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
-                                        item.t1Triggered 
-                                          ? "bg-emerald-100 dark:bg-emerald-950/45 text-emerald-800 dark:text-emerald-405" 
-                                          : "bg-slate-100 dark:bg-slate-800 text-slate-500"
-                                      }`}>
-                                        {item.t1Triggered ? "✅ Yes" : "❌ No"}
-                                      </span>
                                     </td>
 
                                     <td className="px-4 py-3.5 text-right font-mono text-[10px]">
@@ -1060,15 +1064,15 @@ export default function App() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-800/60 font-mono text-[11px] text-gray-500 dark:text-slate-400">
                                   <div>
-                                    <span>Strategy: <strong className="text-slate-800 dark:text-slate-200">{getStrategyAbbreviation(item.strategyName)}</strong></span>
+                                    <ConvictionBadge 
+                                      strategyName={getStrategyAbbreviation(item.strategyName)}
+                                      alsoTriggeredBy={item.alsoTriggeredBy?.map(getStrategyAbbreviation)}
+                                    />
                                   </div>
                                   <div className="text-right">
-                                    <span>T1 Target: <strong className="text-slate-800 dark:text-slate-200">{item.t1Triggered ? `✅ Yes (+${item.t1ReturnPct}%)` : "❌ No"}</strong></span>
-                                  </div>
-                                  <div>
                                     <span>Buy Price: <strong>₹{item.entryPrice.toFixed(2)}</strong></span>
                                   </div>
-                                  <div className="text-right">
+                                  <div>
                                     <span className="text-emerald-600 font-bold">MFE: +{item.maxFavorable || item.mfe}%</span>
                                   </div>
                                 </div>
@@ -1108,7 +1112,10 @@ export default function App() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-800/60 font-mono text-[11px] text-gray-500 dark:text-slate-400">
                                   <div>
-                                    <span>Strategy: <strong className="text-slate-800 dark:text-slate-200">{getStrategyAbbreviation(item.strategyName)}</strong></span>
+                                    <ConvictionBadge 
+                                      strategyName={getStrategyAbbreviation(item.strategyName)}
+                                      alsoTriggeredBy={item.alsoTriggeredBy?.map(getStrategyAbbreviation)}
+                                    />
                                   </div>
                                   <div className="text-right">
                                     <span>Rank details: <strong>Score {item.rankScore} ({item.rankGrade})</strong></span>
@@ -1151,10 +1158,16 @@ export default function App() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-800/60 font-mono text-[11px] text-gray-500 dark:text-slate-400">
                                   <div>
-                                    <span>Buy Price: <strong>₹{item.entryPrice.toFixed(2)}</strong></span>
+                                    <ConvictionBadge 
+                                      strategyName={getStrategyAbbreviation(item.strategyName)}
+                                      alsoTriggeredBy={item.alsoTriggeredBy?.map(getStrategyAbbreviation)}
+                                    />
                                   </div>
                                   <div className="text-right">
-                                    <span>T1 Target: <strong className="text-emerald-600 font-bold">{item.t1Triggered ? "✅ Hit" : "❌ Hold"}</strong></span>
+                                    <span>Buy Price: <strong>₹{item.entryPrice.toFixed(2)}</strong></span>
+                                  </div>
+                                  <div>
+                                    <span className="text-emerald-600 font-bold">MFE: +{item.maxFavorable || item.mfe}%</span>
                                   </div>
                                 </div>
                               </div>
@@ -1201,8 +1214,11 @@ export default function App() {
                                     <span>Exit Action: <strong className="text-indigo-600 dark:text-indigo-400">{getExitReasonLabel(item.exitReason)}</strong></span>
                                     <span>Entry: ₹{item.entryPrice.toFixed(2)}</span>
                                   </div>
-                                  <div className="flex justify-between">
-                                    <span>Strategy: <strong className="text-slate-800 dark:text-slate-200">{getStrategyAbbreviation(item.strategyName)}</strong></span>
+                                  <div className="flex justify-between items-center">
+                                    <ConvictionBadge 
+                                      strategyName={getStrategyAbbreviation(item.strategyName)}
+                                      alsoTriggeredBy={item.alsoTriggeredBy?.map(getStrategyAbbreviation)}
+                                    />
                                     <span>Exit: ₹{item.exitPrice.toFixed(2)}</span>
                                   </div>
                                 </div>
