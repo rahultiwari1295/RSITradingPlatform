@@ -111,6 +111,12 @@ export interface ClosedTrade {
   [key: string]: any;
 }
 
+export interface ManualPortfolioTrade {
+  symbol: string;
+  buyPrice: number;
+  isActiveInStrategy: boolean;
+}
+
 export interface TerminalDataResponse {
   success: boolean;
   generatedAt: string;
@@ -120,6 +126,7 @@ export interface TerminalDataResponse {
   toBuySignals: ToBuySignal[];
   inTradeTrades: InTradeTrade[];
   portfolio: PortfolioTrade[];
+  manualPortfolio?: ManualPortfolioTrade[];
   closedTrades: ClosedTrade[];
   source?: "live" | "failed";
   error?: string;

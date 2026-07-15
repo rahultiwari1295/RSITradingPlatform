@@ -21,7 +21,8 @@ import {
   TerminalKPIs, 
   ToBuySignal, 
   InTradeTrade, 
-  ClosedTrade 
+  ClosedTrade,
+  ManualPortfolioTrade
 } from "./types";
 import KPICards from "./components/KPICards";
 import ConvictionBadge from "./components/ConvictionBadge";
@@ -56,7 +57,13 @@ export default function App() {
   const [toBuySignals, setToBuySignals] = useState<ToBuySignal[]>([]);
   const [inTradeTrades, setInTradeTrades] = useState<InTradeTrade[]>([]);
   const [portfolio, setPortfolio] = useState<InTradeTrade[]>([]);
+  const [manualPortfolio, setManualPortfolio] = useState<ManualPortfolioTrade[]>([]);
   const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([]);
+
+  // UI States for manual portfolio
+  const [buyPopupSymbol, setBuyPopupSymbol] = useState<{symbol: string, currentPrice: number} | null>(null);
+  const [buyPopupPrice, setBuyPopupPrice] = useState<number | "">("");
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Theme support
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -80,6 +87,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSymbol, setSelectedSymbol] = useState<string>("");
   const [activeTradesSort, setActiveTradesSort] = useState<"latest_date" | "oldest_date" | "return_high" | "return_low" | "strategy">("latest_date");
+  const [closedTradesSort, setClosedTradesSort] = useState<"in_latest" | "in_oldest" | "out_latest" | "out_oldest" | "return_high" | "return_low">("out_latest");
 
   // Format helpers
   const formatCompactDate = (dateStr: string | null) => {
@@ -108,6 +116,52 @@ export default function App() {
         return "⏱ Time Exit";
       default:
         return reason;
+    }
+  };
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleBuySubmit = async () => {
+    if (!buyPopupSymbol || buyPopupPrice === "") return;
+    
+    try {
+      const res = await fetch("https://rahultiwari1295.wixstudio.com/angelapi/_functions/addManualPortfolioTrade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbol: buyPopupSymbol.symbol, buyPrice: Number(buyPopupPrice) })
+      });
+      if (res.ok) {
+        showToast(`${buyPopupSymbol.symbol} added to Portfolio`);
+        setBuyPopupSymbol(null);
+        fetchTerminalData();
+      } else {
+        showToast("Error adding to portfolio.");
+      }
+    } catch (e) {
+      showToast("Network error.");
+    }
+  };
+
+  const handleSellConfirm = async (symbol: string) => {
+    if (!window.confirm(`Are you sure you want to sell ${symbol}?`)) return;
+
+    try {
+      const res = await fetch("https://rahultiwari1295.wixstudio.com/angelapi/_functions/removePortfolioTrade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbol })
+      });
+      if (res.ok) {
+        showToast(`${symbol} removed from Portfolio`);
+        setManualPortfolio(prev => prev.filter(p => p.symbol !== symbol));
+      } else {
+        showToast("Error removing from portfolio.");
+      }
+    } catch (e) {
+      showToast("Network error.");
     }
   };
 
@@ -159,11 +213,13 @@ export default function App() {
       const toBuyData = result.toBuySignals || [];
       const inTradeData = result.inTradeTrades || [];
       const portfolioData = result.portfolio || [];
+      const manualPortfolioData = result.manualPortfolio || [];
       const closedData = result.closedTrades || [];
 
       setToBuySignals(toBuyData);
       setInTradeTrades(inTradeData);
       setPortfolio(portfolioData);
+      setManualPortfolio(manualPortfolioData);
       setClosedTrades(closedData);
 
       setGeneratedAt(result.generatedAt || null);
@@ -221,15 +277,31 @@ export default function App() {
   });
 
   // 3. Portfolio Filters
-  const filteredPortfolio = portfolio.filter(p => {
-    return p.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           (p.sector && p.sector.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredPortfolio = manualPortfolio.filter(p => {
+    return p.symbol.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   // 4. Closed Trades Filters (closedTrades)
   const filteredClosedTrades = closedTrades.filter(b => {
     return b.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
            (b.exitReason && b.exitReason.toLowerCase().includes(searchQuery.toLowerCase()));
+  }).sort((a, b) => {
+    switch (closedTradesSort) {
+      case "in_latest":
+        return new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime();
+      case "in_oldest":
+        return new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime();
+      case "out_latest":
+        return new Date(b.exitDate).getTime() - new Date(a.exitDate).getTime();
+      case "out_oldest":
+        return new Date(a.exitDate).getTime() - new Date(b.exitDate).getTime();
+      case "return_high":
+        return (b.returnPct || 0) - (a.returnPct || 0);
+      case "return_low":
+        return (a.returnPct || 0) - (b.returnPct || 0);
+      default:
+        return 0;
+    }
   });
 
 
@@ -273,12 +345,25 @@ export default function App() {
     ? filteredSetups.reduce((sum, item) => sum + (item.rankScore || 0), 0) / filteredSetups.length
     : 0;
 
+  // Helper for manual portfolio ROI
+  const getManualPortfolioCurrentData = (symbol: string, buyPrice: number) => {
+    const liveTrade = inTradeTrades.find(t => t.symbol === symbol) || portfolio.find(p => p.symbol === symbol) || toBuySignals.find(s => s.symbol === symbol);
+    const currentPrice = liveTrade?.currentPrice || liveTrade?.price || null;
+    const currentROI = currentPrice ? ((currentPrice - buyPrice) / buyPrice) * 100 : 0;
+    return { currentPrice, currentROI };
+  };
+
   // Portfolio Tab Insights
-  const avgPortfolioRoi = filteredPortfolio.length > 0
-    ? filteredPortfolio.reduce((sum, t) => sum + (t.currentROI || 0), 0) / filteredPortfolio.length
+  const portfolioWithROI = filteredPortfolio.map(p => {
+    const { currentPrice, currentROI } = getManualPortfolioCurrentData(p.symbol, p.buyPrice);
+    return { ...p, currentPrice, currentROI };
+  });
+
+  const avgPortfolioRoi = portfolioWithROI.length > 0
+    ? portfolioWithROI.reduce((sum, t) => sum + t.currentROI, 0) / portfolioWithROI.length
     : 0;
-  const portfolioWinnerCount = filteredPortfolio.filter(p => p.currentROI > 0).length;
-  const portfolioLoserCount = filteredPortfolio.filter(p => p.currentROI < 0).length;
+  const portfolioWinnerCount = portfolioWithROI.filter(p => p.currentROI > 0).length;
+  const portfolioLoserCount = portfolioWithROI.filter(p => p.currentROI < 0).length;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200 selection:bg-indigo-100 selection:text-indigo-900">
@@ -457,6 +542,23 @@ export default function App() {
                         <option value="return_high">Return (High to Low)</option>
                         <option value="return_low">Return (Low to High)</option>
                         <option value="strategy">Strategy Name</option>
+                      </select>
+                    </>
+                  )}
+                  {activeTab === "backtest" && (
+                    <>
+                      <span className="text-[10px] sm:text-[11px] font-bold text-gray-400 dark:text-slate-500 uppercase font-mono tracking-wider ml-1">Sort:</span>
+                      <select
+                        value={closedTradesSort}
+                        onChange={(e: any) => setClosedTradesSort(e.target.value)}
+                        className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg text-xs py-1 px-2.5 sm:py-1.5 select-none focus:outline-none focus:ring-2 focus:ring-indigo-500/25 shadow-3xs hover:border-gray-300 dark:hover:border-slate-700 font-bold text-gray-700 dark:text-slate-300 transition-colors cursor-pointer"
+                      >
+                        <option value="out_latest">Exit Date (Latest)</option>
+                        <option value="out_oldest">Exit Date (Oldest)</option>
+                        <option value="in_latest">Entry Date (Latest)</option>
+                        <option value="in_oldest">Entry Date (Oldest)</option>
+                        <option value="return_high">Return (High to Low)</option>
+                        <option value="return_low">Return (Low to High)</option>
                       </select>
                     </>
                   )}
@@ -644,8 +746,7 @@ export default function App() {
                                         </span>
                                       </div>
                                     </td>
-
-                                    <td className="px-4 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
+                                    <td className="px-4 py-3.5 text-right flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                                       <button
                                         onClick={() => setSelectedSymbol(item.symbol)}
                                         className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
@@ -655,6 +756,15 @@ export default function App() {
                                         }`}
                                       >
                                         Chart
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setBuyPopupSymbol({ symbol: item.symbol, currentPrice: item.currentPrice });
+                                          setBuyPopupPrice(item.currentPrice);
+                                        }}
+                                        className="px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-900/50 bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 text-xs font-bold transition-all hover:bg-emerald-50 dark:hover:bg-emerald-900/30 cursor-pointer shadow-3xs whitespace-nowrap"
+                                      >
+                                        ➕ Buy
                                       </button>
                                     </td>
                                   </tr>
@@ -775,12 +885,10 @@ export default function App() {
                             <thead>
                               <tr className="bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200/60 dark:border-slate-800 font-mono text-[10px] text-gray-400 dark:text-slate-500 font-semibold uppercase tracking-wider select-none">
                                 <th className="px-4 py-3">Symbol</th>
-                                <th className="px-4 py-3">Entry Date</th>
-                                <th className="px-4 py-3 text-right">Entry Price</th>
+                                <th className="px-4 py-3 text-right">Buy Price</th>
                                 <th className="px-4 py-3 text-right">Current Price</th>
                                 <th className="px-4 py-3 text-right">ROI (%)</th>
-                                <th className="px-4 py-3 text-center">Strategy</th>
-                                <th className="px-4 py-3 text-right">Max Fav / Adverse</th>
+                                <th className="px-4 py-3 text-center">Status</th>
                                 <th className="px-4 py-3 text-right">Actions</th>
                               </tr>
                             </thead>
@@ -1035,6 +1143,18 @@ export default function App() {
                                   <div>
                                     <span className="text-emerald-600 font-bold">MFE: +{item.maxFavorable || item.mfe}%</span>
                                   </div>
+                                  <div className="col-span-2 mt-1">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setBuyPopupSymbol({ symbol: item.symbol, currentPrice: item.currentPrice });
+                                        setBuyPopupPrice(item.currentPrice);
+                                      }}
+                                      className="px-2.5 py-1.5 w-full rounded border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 text-xs font-bold transition-all hover:bg-emerald-100 dark:hover:bg-emerald-900/30 cursor-pointer shadow-3xs text-center"
+                                    >
+                                      ➕ Buy
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             );
@@ -1088,12 +1208,13 @@ export default function App() {
                       )}
 
                       {activeTab === "portfolio" && (
-                        filteredPortfolio.length === 0 ? (
+                        portfolioWithROI.length === 0 ? (
                           <p className="text-center py-10 text-xs text-gray-400 font-mono">No portfolio holdings found.</p>
                         ) : (
-                          filteredPortfolio.map((item) => {
+                          portfolioWithROI.map((item) => {
                             const isSelected = selectedSymbol === item.symbol;
                             const isPositive = item.currentROI >= 0;
+                            const isExited = !item.isActiveInStrategy;
                             return (
                               <div
                                 key={`portfolio-mob-${item.symbol}`}
@@ -1102,32 +1223,50 @@ export default function App() {
                                   isSelected
                                     ? "bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-500"
                                     : "bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800"
-                                }`}
+                                } ${isExited ? "bg-rose-50 dark:bg-rose-950/20" : ""}`}
                               >
                                 <div className="flex items-center justify-between">
                                   <div>
                                     <span className="text-base font-bold font-mono tracking-tight text-gray-950 dark:text-white">{item.symbol}</span>
-                                    <span className="text-[10px] text-gray-400 block font-mono">In: {formatCompactDate(item.entryDate)}</span>
+                                    <div className="mt-1">
+                                      {isExited ? (
+                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-300">
+                                          ⚠️ Exited
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 border border-emerald-300">
+                                          Active
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                   <div className="text-right">
-                                    <span className={`text-base font-bold font-mono ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}`}>
-                                      {isPositive ? "+" : ""}{item.currentROI.toFixed(2)}%
-                                    </span>
-                                    <span className="text-[10px] text-gray-400 block font-mono">LTP: ₹{item.currentPrice.toFixed(2)}</span>
+                                    {item.currentPrice ? (
+                                      <>
+                                        <span className={`text-base font-bold font-mono ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}`}>
+                                          {isPositive ? "+" : ""}{item.currentROI.toFixed(2)}%
+                                        </span>
+                                        <span className="text-[10px] text-gray-400 block font-mono">LTP: ₹{item.currentPrice.toFixed(2)}</span>
+                                      </>
+                                    ) : (
+                                      <span className="text-[10px] text-gray-400 block font-mono">LTP: N/A</span>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-800/60 font-mono text-[11px] text-gray-500 dark:text-slate-400">
                                   <div>
-                                    <ConvictionBadge 
-                                      strategyName={getStrategyAbbreviation(item.strategyName)}
-                                      alsoTriggeredBy={item.alsoTriggeredBy?.map(getStrategyAbbreviation)}
-                                    />
+                                    <span>Buy Price: <strong>₹{item.buyPrice.toFixed(2)}</strong></span>
                                   </div>
-                                  <div className="text-right">
-                                    <span>Buy Price: <strong>₹{item.entryPrice.toFixed(2)}</strong></span>
-                                  </div>
-                                  <div>
-                                    <span className="text-emerald-600 font-bold">MFE: +{item.maxFavorable || item.mfe}%</span>
+                                  <div className="text-right flex justify-end">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleSellConfirm(item.symbol);
+                                      }}
+                                      className="px-2.5 py-1 rounded-md border border-rose-200 dark:border-rose-900/50 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 text-[10px] font-bold transition-all hover:bg-rose-50 dark:hover:bg-rose-900/30 cursor-pointer shadow-3xs flex items-center justify-center"
+                                    >
+                                      🟥 Sell
+                                    </button>
                                   </div>
                                 </div>
                               </div>
@@ -1234,6 +1373,46 @@ export default function App() {
         </div>
       </footer>
 
+      {/* Buy Popup Modal */}
+      {buyPopupSymbol && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-200 dark:border-slate-800 w-full max-w-xs overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
+              <h3 className="font-bold text-slate-800 dark:text-slate-100 font-mono text-sm">Buy {buyPopupSymbol.symbol}</h3>
+              <button 
+                onClick={() => setBuyPopupSymbol(null)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4">
+              <label className="block text-[11px] font-bold text-gray-500 dark:text-slate-400 font-mono mb-1.5 uppercase tracking-wider">Buy Price</label>
+              <input
+                type="number"
+                value={buyPopupPrice}
+                onChange={(e) => setBuyPopupPrice(e.target.value === "" ? "" : Number(e.target.value))}
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm font-mono font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                placeholder={buyPopupSymbol.currentPrice ? buyPopupSymbol.currentPrice.toString() : ""}
+              />
+              <button
+                onClick={handleBuySubmit}
+                className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-sm transition-colors shadow-sm"
+              >
+                Confirm Buy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-4 right-4 bg-gray-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2.5 rounded-lg shadow-xl text-xs font-bold font-mono tracking-tight z-50 flex items-center gap-2 border border-gray-800 dark:border-gray-200">
+          <span className="text-emerald-400 dark:text-emerald-600">✓</span>
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 }
