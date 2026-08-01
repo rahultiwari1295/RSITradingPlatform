@@ -128,7 +128,7 @@
 //     if (!buyPopupSymbol || buyPopupPrice === "") return;
     
 //     try {
-//       const res = await fetch("https://rahultiwari1295.wixstudio.com/angelapi/_functions/addManualPortfolioTrade", {
+//       const res = await fetch("https://rahultiwari1295.wixstudio.com/rsitrading/_functions/addManualPortfolioTrade", {
 //         method: "POST",
 //         headers: { "Content-Type": "application/json" },
 //         body: JSON.stringify({ symbol: buyPopupSymbol.symbol, buyPrice: Number(buyPopupPrice) })
@@ -149,7 +149,7 @@
 //     if (!window.confirm(`Are you sure you want to sell ${symbol}?`)) return;
 
 //     try {
-//       const res = await fetch("https://rahultiwari1295.wixstudio.com/angelapi/_functions/removePortfolioTrade", {
+//       const res = await fetch("https://rahultiwari1295.wixstudio.com/rsitrading/_functions/removePortfolioTrade", {
 //         method: "POST",
 //         headers: { "Content-Type": "application/json" },
 //         body: JSON.stringify({ symbol })
@@ -173,7 +173,7 @@
 
 //     try {
 //       // Direct high-fidelity secure Wix fetch block
-//       const directRes = await fetch("https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData", {
+//       const directRes = await fetch("https://rahultiwari1295.wixstudio.com/rsitrading/_functions/terminalData", {
 //         method: "GET",
 //         headers: {
 //           "Accept": "application/json"
@@ -1548,7 +1548,7 @@ export default function App() {
     if (!buyPopupSymbol || buyPopupPrice === "") return;
     
     try {
-      const res = await fetch("https://rahultiwari1295.wixstudio.com/angelapi/_functions/addManualPortfolioTrade", {
+      const res = await fetch("https://rahultiwari1295.wixstudio.com/rsitrading/_functions/addManualPortfolioTrade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ symbol: buyPopupSymbol.symbol, buyPrice: Number(buyPopupPrice) })
@@ -1569,7 +1569,7 @@ export default function App() {
     if (!window.confirm(`Are you sure you want to sell ${symbol}?`)) return;
 
     try {
-      const res = await fetch("https://rahultiwari1295.wixstudio.com/angelapi/_functions/removePortfolioTrade", {
+      const res = await fetch("https://rahultiwari1295.wixstudio.com/rsitrading/_functions/removePortfolioTrade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ symbol })
@@ -1593,7 +1593,7 @@ export default function App() {
 
     try {
       // Direct high-fidelity secure Wix fetch block
-      const directRes = await fetch("https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData", {
+      const directRes = await fetch("https://rahultiwari1295.wixstudio.com/rsitrading/_functions/terminalData", {
         method: "GET",
         headers: {
           "Accept": "application/json"
