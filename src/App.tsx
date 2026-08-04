@@ -28,6 +28,7 @@ import KPICards from "./components/KPICards";
 import ConvictionBadge from "./components/ConvictionBadge";
 import StrategyLeaderboard from "./components/StrategyLeaderboard";
 import TradingViewWidget from "./components/TradingViewWidget";
+import ScoreBadge from "./components/ScoreBadge";
 
 const getStrategyAbbreviation = (name?: string) => {
   if (!name) return "UNK";
@@ -61,8 +62,16 @@ export default function App() {
   const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([]);
 
   // UI States for manual portfolio
-  const [buyPopupSymbol, setBuyPopupSymbol] = useState<{symbol: string, currentPrice: number} | null>(null);
+  const [buyPopupSymbol, setBuyPopupSymbol] = useState<{symbol: string, currentPrice: number, strategyName?: string} | null>(null);
   const [buyPopupPrice, setBuyPopupPrice] = useState<number | "">("");
+  const [buyPopupQty, setBuyPopupQty] = useState<number | "">("");
+  
+  const [sellPopupTrade, setSellPopupTrade] = useState<any | null>(null);
+  const [sellPopupPrice, setSellPopupPrice] = useState<number | "">("");
+  const [sellPopupQty, setSellPopupQty] = useState<number | "">("");
+  
+  const [tradeHistory, setTradeHistory] = useState<any>({});
+  
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Theme support
@@ -83,8 +92,9 @@ export default function App() {
   }, [darkMode]);
 
   // Navigation Filter States
-  const [activeTab, setActiveTab] = useState<"active" | "setup" | "portfolio" | "backtest">("active");
+  const [activeTab, setActiveTab] = useState<"active" | "portfolio" | "backtest">("active");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedStrategy, setSelectedStrategy] = useState<string>("ALL");
   const [selectedSymbol, setSelectedSymbol] = useState<string>("");
   const [activeTradesSort, setActiveTradesSort] = useState<"latest_date" | "oldest_date" | "return_high" | "return_low" | "strategy">("latest_date");
   const [closedTradesSort, setClosedTradesSort] = useState<"in_latest" | "in_oldest" | "out_latest" | "out_oldest" | "return_high" | "return_low">("out_latest");
@@ -125,17 +135,23 @@ export default function App() {
   };
 
   const handleBuySubmit = async () => {
-    if (!buyPopupSymbol || buyPopupPrice === "") return;
+    if (!buyPopupSymbol || buyPopupPrice === "" || buyPopupQty === "") return;
     
     try {
       const res = await fetch("https://rahultiwari1295.wixstudio.com/angelapi/_functions/addManualPortfolioTrade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symbol: buyPopupSymbol.symbol, buyPrice: Number(buyPopupPrice) })
+        body: JSON.stringify({ 
+          symbol: buyPopupSymbol.symbol, 
+          buyPrice: Number(buyPopupPrice),
+          quantity: Number(buyPopupQty),
+          strategyName: buyPopupSymbol.strategyName
+        })
       });
       if (res.ok) {
         showToast(`${buyPopupSymbol.symbol} added to Portfolio`);
         setBuyPopupSymbol(null);
+        setBuyPopupQty("");
         fetchTerminalData();
       } else {
         showToast("Error adding to portfolio.");
@@ -145,20 +161,28 @@ export default function App() {
     }
   };
 
-  const handleSellConfirm = async (symbol: string) => {
-    if (!window.confirm(`Are you sure you want to sell ${symbol}?`)) return;
+  const handleSellSubmit = async () => {
+    if (!sellPopupTrade || sellPopupPrice === "" || sellPopupQty === "") return;
 
     try {
-      const res = await fetch("https://rahultiwari1295.wixstudio.com/angelapi/_functions/removePortfolioTrade", {
+      const res = await fetch("https://rahultiwari1295.wixstudio.com/angelapi/_functions/sellPortfolioTrade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symbol })
+        body: JSON.stringify({ 
+          tradeId: sellPopupTrade.tradeId,
+          symbol: sellPopupTrade.symbol,
+          sellQuantity: Number(sellPopupQty),
+          sellPrice: Number(sellPopupPrice)
+        })
       });
       if (res.ok) {
-        showToast(`${symbol} removed from Portfolio`);
-        setManualPortfolio(prev => prev.filter(p => p.symbol !== symbol));
+        showToast(`Sold ${sellPopupQty} of ${sellPopupTrade.symbol}`);
+        setSellPopupTrade(null);
+        setSellPopupQty("");
+        setSellPopupPrice("");
+        fetchTerminalData();
       } else {
-        showToast("Error removing from portfolio.");
+        showToast("Error selling asset.");
       }
     } catch (e) {
       showToast("Network error.");
@@ -202,13 +226,8 @@ export default function App() {
     if (isSuccess) {
       setTotalSummary(result.totalSummary || null);
       setStrategySummary(result.strategySummary || []);
-      setKpis(result.kpis || {
-        totalSignals: 0,
-        toBuy: 0,
-        inTrade: 0,
-        closedTradeCount: 0,
-        stocksProcessed: 0
-      });
+      
+      if (result.kpis) setKpis(result.kpis);
 
       const toBuyData = result.toBuySignals || [];
       const inTradeData = result.inTradeTrades || [];
@@ -221,6 +240,7 @@ export default function App() {
       setPortfolio(portfolioData);
       setManualPortfolio(manualPortfolioData);
       setClosedTrades(closedData);
+      setTradeHistory(result.tradeHistory || {});
 
       setGeneratedAt(result.generatedAt || null);
       setDataSource(fallbackUsed ? "live" : "live"); // both indicate data is live
@@ -251,8 +271,10 @@ export default function App() {
 
   // 1. Ongoing/Active Trades Filters (inTradeTrades)
   const filteredActiveTrades = inTradeTrades.filter(t => {
-    return t.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           (t.sector && t.sector.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch = t.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (t.sector && t.sector.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesStrategy = selectedStrategy === "ALL" || t.strategyName === selectedStrategy || getStrategyAbbreviation(t.strategyName) === selectedStrategy;
+    return matchesSearch && matchesStrategy;
   }).sort((a, b) => {
     switch (activeTradesSort) {
       case "latest_date":
@@ -270,21 +292,21 @@ export default function App() {
     }
   });
 
-  // 2. Setup/toBuySignals Filters
-  const filteredSetups = toBuySignals.filter(s => {
-    return s.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           (s.sector && s.sector.toLowerCase().includes(searchQuery.toLowerCase()));
-  });
+  // 2. Setup/toBuySignals Filters - Removed per user request
+  const filteredSetups: any[] = [];
 
   // 3. Portfolio Filters
   const filteredPortfolio = manualPortfolio.filter(p => {
-    return p.symbol.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = p.symbol.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
   });
 
   // 4. Closed Trades Filters (closedTrades)
   const filteredClosedTrades = closedTrades.filter(b => {
-    return b.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           (b.exitReason && b.exitReason.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch = b.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (b.exitReason && b.exitReason.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesStrategy = selectedStrategy === "ALL" || b.strategyName === selectedStrategy || getStrategyAbbreviation(b.strategyName) === selectedStrategy;
+    return matchesSearch && matchesStrategy;
   }).sort((a, b) => {
     switch (closedTradesSort) {
       case "in_latest":
@@ -339,11 +361,7 @@ export default function App() {
     ? filteredActiveTrades.reduce((sum, t) => sum + (t.currentROI || 0), 0) / filteredActiveTrades.length
     : 0;
 
-  // Setup Tab Insights
-  const upcomingStrongCount = filteredSetups.filter(u => u.mlGrade === "A+" || u.mlGrade === "A").length;
-  const upcomingAvgScore = filteredSetups.length > 0
-    ? filteredSetups.reduce((sum, item) => sum + (item.rankScore || 0), 0) / filteredSetups.length
-    : 0;
+
 
   // Helper for manual portfolio ROI
   const getManualPortfolioCurrentData = (symbol: string, buyPrice: number) => {
@@ -422,6 +440,18 @@ export default function App() {
 
             {/* Filter and Switch controls */}
             <div className="flex items-center gap-2 w-full md:w-auto">
+              {/* Strategy Filter Dropdown */}
+              <select
+                value={selectedStrategy}
+                onChange={(e) => setSelectedStrategy(e.target.value)}
+                className="py-1.5 px-2.5 rounded-lg text-xs bg-slate-100 dark:bg-slate-800 border-0 text-slate-900 dark:text-slate-150 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white dark:focus:bg-slate-800/80 transition-all font-semibold cursor-pointer"
+              >
+                <option value="ALL">All Strategies</option>
+                {strategySummary.map(s => (
+                  <option key={s.strategyName} value={s.strategyName}>{s.strategyName}</option>
+                ))}
+              </select>
+
               {/* Dynamic Search Box */}
               <div className="relative flex-1 md:flex-initial">
                 <Search className="w-3.5 h-3.5 text-gray-400 dark:text-slate-500 absolute left-2.5 top-2.5" />
@@ -468,7 +498,7 @@ export default function App() {
           profitFactor={totalSummary?.profitFactor || 0} 
           openCount={dynamicOpenCount} 
           closedCount={dynamicClosedCount} 
-          toBuyCount={dynamicToBuyCount} 
+          toBuyCount={0} 
         />
 
         {/* Strategy Leaderboard Component */}
@@ -496,16 +526,7 @@ export default function App() {
                   >
                     🚀 Active ({filteredActiveTrades.length})
                   </button>
-                  <button
-                    onClick={() => setActiveTab("setup")}
-                    className={`flex-1 sm:flex-initial px-2.5 py-1.5 rounded-md text-[11px] sm:text-xs font-bold tracking-tight transition-all duration-150 cursor-pointer text-center whitespace-nowrap ${
-                      activeTab === "setup"
-                        ? "bg-white dark:bg-slate-900 text-indigo-900 dark:text-indigo-400 shadow-3xs"
-                        : "text-gray-500 hover:text-gray-950 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-white/40 dark:hover:bg-slate-700/30"
-                    }`}
-                  >
-                    👁️ Setup ({filteredSetups.length})
-                  </button>
+
                   <button
                     onClick={() => setActiveTab("portfolio")}
                     className={`flex-1 sm:flex-initial px-2.5 py-1.5 rounded-md text-[11px] sm:text-xs font-bold tracking-tight transition-all duration-150 cursor-pointer text-center whitespace-nowrap ${
@@ -589,23 +610,7 @@ export default function App() {
                   </>
                 )}
 
-                {activeTab === "setup" && (
-                  <>
-                    <div className="flex flex-wrap items-center gap-2.5 sm:gap-4">
-                      <span className="font-bold text-indigo-950 dark:text-indigo-400">👁️ SETUP INTERCEPT:</span>
-                      <span>
-                        Total Setup: <strong className="text-amber-700 dark:text-amber-400 font-bold">{filteredSetups.length}</strong>
-                      </span>
-                      <span>
-                        Strong Grade: <strong className="text-emerald-700 dark:text-emerald-400 font-bold">{upcomingStrongCount}</strong>
-                      </span>
-                      <span className="text-slate-405">|</span>
-                      <span>
-                        Avg Rank Score: <strong className="text-indigo-650 dark:text-indigo-400 font-bold">{upcomingAvgScore.toFixed(1)}%</strong>
-                      </span>
-                    </div>
-                  </>
-                )}
+
 
                 {activeTab === "portfolio" && (
                   <>
@@ -677,6 +682,7 @@ export default function App() {
                                 <th className="px-4 py-3 text-right">Entry / Current Price</th>
                                 <th className="px-4 py-3 text-right">Current ROI</th>
                                 <th className="px-4 py-3 text-center">Strategy</th>
+                                <th className="px-4 py-3 text-center">Score</th>
                                 <th className="px-4 py-3 text-right">Max Fav / Adv</th>
                                 <th className="px-4 py-3 text-right">Actions</th>
                               </tr>
@@ -685,19 +691,23 @@ export default function App() {
                               {filteredActiveTrades.map((item) => {
                                 const isSelected = selectedSymbol === item.symbol;
                                 const isPositive = item.currentROI >= 0;
+                                const isHeld = manualPortfolio.some(m => m.symbol === item.symbol);
                                 return (
                                   <tr
                                     key={`active-${item.symbol}`}
                                     className={`group transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/20 cursor-pointer ${
                                       isSelected ? "bg-indigo-50/30 dark:bg-indigo-950/10" : ""
-                                    }`}
+                                    } ${isHeld ? "border-l-4 border-l-emerald-500 bg-emerald-50/10 dark:bg-emerald-900/10" : ""}`}
                                     onClick={() => setSelectedSymbol(item.symbol)}
                                   >
                                     <td className="px-4 py-3.5">
                                       <div className="flex flex-col text-left">
-                                        <span className="font-bold text-slate-900 dark:text-slate-100 text-sm font-mono tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                          {item.symbol}
-                                        </span>
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="font-bold text-slate-900 dark:text-slate-100 text-sm font-mono tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                            {item.symbol}
+                                          </span>
+                                          {isHeld && <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400 text-[9px] rounded font-bold uppercase">Held</span>}
+                                        </div>
                                         <span className="text-[10px] text-gray-400 dark:text-slate-500 font-mono">
                                           {item.sector || "OTHER"}
                                         </span>
@@ -736,6 +746,17 @@ export default function App() {
                                       </div>
                                     </td>
 
+                                    <td className="px-4 py-3.5 text-center font-mono text-xs">
+                                      <div className="flex flex-col items-center">
+                                        <ScoreBadge
+                                          compositeScore={item.compositeScore}
+                                          technicalScore={item.technicalScore}
+                                          riskScore={item.riskScore}
+                                          confidence={item.confidence}
+                                        />
+                                      </div>
+                                    </td>
+
                                     <td className="px-4 py-3.5 text-right font-mono text-[10px]">
                                       <div className="flex flex-col">
                                         <span className="text-emerald-600 dark:text-emerald-400 font-bold">
@@ -757,15 +778,17 @@ export default function App() {
                                       >
                                         Chart
                                       </button>
-                                      <button
-                                        onClick={() => {
-                                          setBuyPopupSymbol({ symbol: item.symbol, currentPrice: item.currentPrice });
-                                          setBuyPopupPrice(item.currentPrice);
-                                        }}
-                                        className="px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-900/50 bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 text-xs font-bold transition-all hover:bg-emerald-50 dark:hover:bg-emerald-900/30 cursor-pointer shadow-3xs whitespace-nowrap"
-                                      >
-                                        ➕ Buy
-                                      </button>
+                                      {!isHeld && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setBuyPopupSymbol({symbol: item.symbol, currentPrice: item.currentPrice});
+                                          }}
+                                          className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-xs font-bold transition-colors cursor-pointer shadow-xs border border-emerald-700"
+                                        >
+                                          Buy
+                                        </button>
+                                      )}
                                     </td>
                                   </tr>
                                 );
@@ -775,103 +798,7 @@ export default function App() {
                         )
                       )}
 
-                      {activeTab === "setup" && (
-                        filteredSetups.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center p-20 text-center">
-                            <BookOpen className="w-10 h-10 text-gray-300 dark:text-slate-700 mb-3" />
-                            <h4 className="font-bold text-gray-700 dark:text-slate-300 text-sm">No setup opportunities loaded</h4>
-                            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 max-w-sm font-mono">Parameters are solid.</p>
-                          </div>
-                        ) : (
-                          <table className="w-full text-left border-collapse">
-                            <thead>
-                              <tr className="bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200/60 dark:border-slate-800 font-mono text-[10px] text-gray-400 dark:text-slate-500 font-semibold uppercase tracking-wider select-none">
-                                <th className="px-4 py-3">Symbol</th>
-                                <th className="px-4 py-3">Signal Date</th>
-                                <th className="px-4 py-3 text-right">Trigger price</th>
-                                <th className="px-4 py-3 text-center">Strategy</th>
-                                <th className="px-4 py-3 text-center">Action Trigger</th>
-                                <th className="px-4 py-3 text-center">Rank Details</th>
-                                <th className="px-4 py-3 text-right">Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-                              {filteredSetups.map((item) => {
-                                const isSelected = selectedSymbol === item.symbol;
-                                return (
-                                  <tr
-                                    key={`setup-${item.symbol}`}
-                                    className={`group transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/20 cursor-pointer ${
-                                      isSelected ? "bg-indigo-50/30 dark:bg-indigo-950/10" : ""
-                                    }`}
-                                    onClick={() => setSelectedSymbol(item.symbol)}
-                                  >
-                                    <td className="px-4 py-3.5">
-                                      <div className="flex flex-col text-left">
-                                        <span className="font-bold text-slate-900 dark:text-slate-100 text-sm font-mono tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                          {item.symbol}
-                                        </span>
-                                        <span className="text-[10px] text-gray-400 dark:text-slate-500 font-mono">
-                                          {item.sector || "OTHER"}
-                                        </span>
-                                      </div>
-                                    </td>
 
-                                    <td className="px-4 py-3.5 font-mono text-xs">
-                                      <span className="text-gray-700 dark:text-slate-300 font-semibold">
-                                        {formatCompactDate(item.date)}
-                                      </span>
-                                    </td>
-
-                                    <td className="px-4 py-3.5 text-right font-mono text-xs font-bold text-gray-900 dark:text-slate-100">
-                                      ₹{item.price.toFixed(2)}
-                                    </td>
-
-                                    <td className="px-4 py-3.5 text-center font-mono text-xs">
-                                      <div className="flex flex-col items-center">
-                                        <ConvictionBadge 
-                                          strategyName={getStrategyAbbreviation(item.strategyName)}
-                                          alsoTriggeredBy={item.alsoTriggeredBy?.map(getStrategyAbbreviation)}
-                                        />
-                                      </div>
-                                    </td>
-
-                                    <td className="px-4 py-3.5 text-center">
-                                      <span className="inline-block px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider font-mono bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40">
-                                        {item.mlAction || "BUY"}
-                                      </span>
-                                    </td>
-
-                                    <td className="px-4 py-3.5 text-center font-mono text-xs">
-                                      <div className="flex flex-col items-center">
-                                        <span className="font-bold text-slate-800 dark:text-slate-200">
-                                          Score: {item.rankScore}
-                                        </span>
-                                        <span className="text-[10px] text-gray-400 mt-0.5">
-                                          Grade: <strong className="text-indigo-600 dark:text-indigo-450">{item.rankGrade}</strong>
-                                        </span>
-                                      </div>
-                                    </td>
-
-                                    <td className="px-4 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
-                                      <button
-                                        onClick={() => setSelectedSymbol(item.symbol)}
-                                        className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
-                                          isSelected
-                                            ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
-                                            : "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-slate-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
-                                        }`}
-                                      >
-                                        Chart
-                                      </button>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        )
-                      )}
 
                       {activeTab === "portfolio" && (
                         filteredPortfolio.length === 0 ? (
@@ -885,9 +812,10 @@ export default function App() {
                             <thead>
                               <tr className="bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200/60 dark:border-slate-800 font-mono text-[10px] text-gray-400 dark:text-slate-500 font-semibold uppercase tracking-wider select-none">
                                 <th className="px-4 py-3">Symbol</th>
-                                <th className="px-4 py-3 text-right">Buy Price</th>
-                                <th className="px-4 py-3 text-right">Current Price</th>
-                                <th className="px-4 py-3 text-right">ROI (%)</th>
+                                <th className="px-4 py-3 text-right">Qty</th>
+                                <th className="px-4 py-3 text-right">Buy Price / Total</th>
+                                <th className="px-4 py-3 text-right">LTP / Value</th>
+                                <th className="px-4 py-3 text-right">P&L</th>
                                 <th className="px-4 py-3 text-center">Status</th>
                                 <th className="px-4 py-3 text-right">Actions</th>
                               </tr>
@@ -897,9 +825,13 @@ export default function App() {
                                 const isSelected = selectedSymbol === item.symbol;
                                 const isPositive = item.currentROI >= 0;
                                 const isExited = !item.isActiveInStrategy;
+                                const totalInvested = (item.buyPrice || 0) * (item.quantity || 1);
+                                const currentValue = (item.currentPrice || 0) * (item.quantity || 1);
+                                const pnlAmount = currentValue - totalInvested;
+                                
                                 return (
                                   <tr
-                                    key={`portfolio-${item.symbol}`}
+                                    key={`portfolio-${item.tradeId || item.symbol}`}
                                     className={`group transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/20 cursor-pointer ${
                                       isSelected ? "bg-indigo-50/30 dark:bg-indigo-950/10" : ""
                                     } ${isExited ? "bg-rose-50 dark:bg-rose-900/10" : ""}`}
@@ -920,25 +852,36 @@ export default function App() {
                                       </div>
                                     </td>
 
-                                    <td className="px-4 py-3.5 font-mono text-xs text-slate-600 dark:text-slate-300">
-                                      {item.date ? formatCompactDate(item.date) : "N/A"}
+                                    <td className="px-4 py-3.5 text-right font-mono text-xs text-slate-800 dark:text-slate-200 font-bold">
+                                      {item.quantity || 1}
                                     </td>
 
                                     <td className="px-4 py-3.5 text-right font-mono text-xs">
-                                      ₹{item.buyPrice?.toFixed(2)}
+                                      <div className="flex flex-col">
+                                        <span className="text-gray-500 dark:text-slate-400">₹{item.buyPrice?.toFixed(2)}</span>
+                                        <span className="font-bold text-slate-800 dark:text-slate-200 mt-0.5">₹{totalInvested.toFixed(2)}</span>
+                                      </div>
                                     </td>
 
-                                    <td className="px-4 py-3.5 text-right font-mono text-xs font-semibold">
-                                      {item.currentPrice ? `₹${item.currentPrice.toFixed(2)}` : "N/A"}
+                                    <td className="px-4 py-3.5 text-right font-mono text-xs">
+                                      <div className="flex flex-col">
+                                        <span className="text-gray-500 dark:text-slate-400">{item.currentPrice ? `₹${item.currentPrice.toFixed(2)}` : "N/A"}</span>
+                                        <span className="font-bold text-slate-800 dark:text-slate-200 mt-0.5">{item.currentPrice ? `₹${currentValue.toFixed(2)}` : "N/A"}</span>
+                                      </div>
                                     </td>
 
-                                    <td className="px-4 py-3.5 text-right font-mono font-bold">
+                                    <td className="px-4 py-3.5 text-right font-mono">
                                       {item.currentPrice ? (
-                                        <span className={isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}>
-                                          {isPositive ? "+" : ""}{(item.currentROI || 0).toFixed(2)}%
-                                        </span>
+                                        <div className="flex flex-col">
+                                          <span className={`text-[11px] font-bold ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                                            {isPositive ? "+" : ""}₹{pnlAmount.toFixed(2)}
+                                          </span>
+                                          <span className={`text-[10px] font-bold mt-0.5 ${isPositive ? "text-emerald-500 dark:text-emerald-500/70" : "text-rose-500/70"}`}>
+                                            {isPositive ? "+" : ""}{(item.currentROI || 0).toFixed(2)}%
+                                          </span>
+                                        </div>
                                       ) : (
-                                        <span className="text-gray-400">N/A</span>
+                                        <span className="text-gray-400 text-xs">N/A</span>
                                       )}
                                     </td>
 
@@ -951,23 +894,15 @@ export default function App() {
                                       </div>
                                     </td>
 
-                                    <td className="px-4 py-3.5 text-right font-mono text-[10px]">
-                                      <div className="flex flex-col text-right">
-                                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                                          N/A
-                                        </span>
-                                      </div>
-                                    </td>
-
                                     <td className="px-4 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleSellConfirm(item.symbol);
+                                          setSellPopupTrade(item);
                                         }}
-                                        className="px-3 py-1.5 rounded-lg border border-rose-200 dark:border-rose-900/50 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 text-xs font-bold transition-all hover:bg-rose-50 dark:hover:bg-rose-900/30 cursor-pointer shadow-3xs"
+                                        className="px-3 py-1.5 rounded-lg bg-rose-600 text-white hover:bg-rose-700 text-xs font-bold transition-colors cursor-pointer shadow-xs border border-rose-700 whitespace-nowrap"
                                       >
-                                        🟥 Sell
+                                        Sell
                                       </button>
                                     </td>
                                   </tr>
@@ -976,6 +911,59 @@ export default function App() {
                             </tbody>
                           </table>
                         )
+                      )}
+
+                      {activeTab === "portfolio" && Object.keys(tradeHistory).length > 0 && (
+                        <div className="mt-8 border-t border-gray-200 dark:border-slate-800 pt-6">
+                          <h4 className="px-4 font-bold text-gray-900 dark:text-slate-100 font-mono text-sm uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                            Realized Trade History
+                          </h4>
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="bg-slate-50 dark:bg-slate-900/40 border-b border-gray-200/60 dark:border-slate-800 font-mono text-[10px] text-gray-400 dark:text-slate-500 font-semibold uppercase tracking-wider select-none">
+                                <th className="px-4 py-3">Symbol</th>
+                                <th className="px-4 py-3 text-right">Qty</th>
+                                <th className="px-4 py-3">Dates (Buy/Sell)</th>
+                                <th className="px-4 py-3 text-right">Prices (Buy/Sell)</th>
+                                <th className="px-4 py-3 text-right">Realized P&L</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+                              {Object.values(tradeHistory).flat().sort((a: any, b: any) => new Date(b.sellDate).getTime() - new Date(a.sellDate).getTime()).map((item: any, idx) => {
+                                const isPositive = item.pnl >= 0;
+                                return (
+                                  <tr key={`th-${item.tradeId}-${idx}`} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
+                                    <td className="px-4 py-3 font-bold font-mono text-sm text-slate-800 dark:text-slate-200">{item.symbol}</td>
+                                    <td className="px-4 py-3 text-right font-mono text-xs text-slate-600 dark:text-slate-400">{item.quantity}</td>
+                                    <td className="px-4 py-3 font-mono text-[11px] text-slate-500 dark:text-slate-400">
+                                      <div className="flex flex-col gap-0.5">
+                                        <span>B: {formatCompactDate(item.buyDate)}</span>
+                                        <span>S: {formatCompactDate(item.sellDate)}</span>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-right font-mono text-[11px] text-slate-500 dark:text-slate-400">
+                                      <div className="flex flex-col gap-0.5">
+                                        <span>₹{item.buyPrice?.toFixed(2)}</span>
+                                        <span>₹{item.sellPrice?.toFixed(2)}</span>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-right font-mono">
+                                      <div className="flex flex-col items-end">
+                                        <span className={`text-[12px] font-bold ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                                          {isPositive ? "+" : ""}₹{item.pnl?.toFixed(2)}
+                                        </span>
+                                        <span className={`text-[10px] font-bold ${isPositive ? "text-emerald-500" : "text-rose-500"}`}>
+                                          {isPositive ? "+" : ""}{item.pnlPct?.toFixed(2)}%
+                                        </span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
                       )}
 
                       {activeTab === "backtest" && (
@@ -1148,17 +1136,34 @@ export default function App() {
                                   <div>
                                     <span className="text-emerald-600 font-bold">MFE: +{item.maxFavorable || item.mfe}%</span>
                                   </div>
+                                  <div className="text-right">
+                                    <span>Score: <ScoreBadge compositeScore={item.compositeScore} technicalScore={item.technicalScore} riskScore={item.riskScore} confidence={item.confidence} /></span>
+                                  </div>
                                   <div className="col-span-2 mt-1">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setBuyPopupSymbol({ symbol: item.symbol, currentPrice: item.currentPrice });
-                                        setBuyPopupPrice(item.currentPrice);
-                                      }}
-                                      className="px-2.5 py-1.5 w-full rounded border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 text-xs font-bold transition-all hover:bg-emerald-100 dark:hover:bg-emerald-900/30 cursor-pointer shadow-3xs text-center"
-                                    >
-                                      ➕ Buy
-                                    </button>
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedSymbol(item.symbol);
+                                        }}
+                                        className="flex-1 px-2.5 py-1.5 rounded border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50 dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 text-xs font-bold transition-all hover:bg-indigo-100 dark:hover:bg-indigo-900/30 cursor-pointer shadow-3xs text-center"
+                                      >
+                                        Chart
+                                      </button>
+                                      {!manualPortfolio.some(m => m.symbol === item.symbol) && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setBuyPopupSymbol({ symbol: item.symbol, currentPrice: item.currentPrice, strategyName: item.strategyName });
+                                            setBuyPopupPrice(item.currentPrice);
+                                            setBuyPopupQty("");
+                                          }}
+                                          className="flex-1 px-2.5 py-1.5 rounded border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 text-xs font-bold transition-all hover:bg-emerald-100 dark:hover:bg-emerald-900/30 cursor-pointer shadow-3xs text-center"
+                                        >
+                                          Buy
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
@@ -1167,50 +1172,7 @@ export default function App() {
                         )
                       )}
 
-                      {activeTab === "setup" && (
-                        filteredSetups.length === 0 ? (
-                          <p className="text-center py-10 text-xs text-gray-400 font-mono">No setups match criteria.</p>
-                        ) : (
-                          filteredSetups.map((item) => {
-                            const isSelected = selectedSymbol === item.symbol;
-                            return (
-                              <div
-                                key={`setup-mob-${item.symbol}`}
-                                onClick={() => setSelectedSymbol(item.symbol)}
-                                className={`p-3.5 rounded-xl border transition-all ${
-                                  isSelected
-                                    ? "bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-500"
-                                    : "bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800"
-                                }`}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <span className="text-base font-bold font-mono tracking-tight text-gray-950 dark:text-white">{item.symbol}</span>
-                                    <span className="text-[10px] text-emerald-600 font-bold block font-mono uppercase bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded w-fit mt-1">
-                                      {item.mlAction || "BUY"}
-                                    </span>
-                                  </div>
-                                  <div className="text-right">
-                                    <span className="text-base font-bold font-mono text-gray-900 dark:text-slate-100">₹{item.price.toFixed(2)}</span>
-                                    <span className="text-[10px] text-gray-400 block font-mono">Date: {formatCompactDate(item.date)}</span>
-                                  </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-800/60 font-mono text-[11px] text-gray-500 dark:text-slate-400">
-                                  <div>
-                                    <ConvictionBadge 
-                                      strategyName={getStrategyAbbreviation(item.strategyName)}
-                                      alsoTriggeredBy={item.alsoTriggeredBy?.map(getStrategyAbbreviation)}
-                                    />
-                                  </div>
-                                  <div className="text-right">
-                                    <span>Rank details: <strong>Score {item.rankScore} ({item.rankGrade})</strong></span>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })
-                        )
-                      )}
+
 
                       {activeTab === "portfolio" && (
                         portfolioWithROI.length === 0 ? (
@@ -1249,30 +1211,38 @@ export default function App() {
                                     {item.currentPrice ? (
                                       <>
                                         <span className={`text-base font-bold font-mono ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}`}>
+                                          {isPositive ? "+" : ""}₹{((item.currentPrice - item.buyPrice) * (item.quantity || 1)).toFixed(2)}
+                                        </span>
+                                        <span className={`text-[10px] font-bold block font-mono ${isPositive ? "text-emerald-500/80" : "text-rose-500/80"}`}>
                                           {isPositive ? "+" : ""}{item.currentROI.toFixed(2)}%
                                         </span>
-                                        <span className="text-[10px] text-gray-400 block font-mono">LTP: ₹{item.currentPrice.toFixed(2)}</span>
                                       </>
                                     ) : (
                                       <span className="text-[10px] text-gray-400 block font-mono">LTP: N/A</span>
                                     )}
                                   </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-800/60 font-mono text-[11px] text-gray-500 dark:text-slate-400">
-                                  <div>
-                                    <span>Buy Price: <strong>₹{item.buyPrice.toFixed(2)}</strong></span>
+                                <div className="flex justify-between mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-800/60 font-mono text-[11px] text-gray-500 dark:text-slate-400">
+                                  <div className="flex flex-col gap-1">
+                                    <span>Qty: <strong className="text-slate-800 dark:text-slate-200">{item.quantity || 1}</strong></span>
+                                    <span>Buy: <strong>₹{item.buyPrice.toFixed(2)}</strong></span>
                                   </div>
-                                  <div className="text-right flex justify-end">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleSellConfirm(item.symbol);
-                                      }}
-                                      className="px-2.5 py-1 rounded-md border border-rose-200 dark:border-rose-900/50 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 text-[10px] font-bold transition-all hover:bg-rose-50 dark:hover:bg-rose-900/30 cursor-pointer shadow-3xs flex items-center justify-center"
-                                    >
-                                      🟥 Sell
-                                    </button>
+                                  <div className="flex flex-col gap-1 text-right">
+                                    <span>Inv: <strong>₹{((item.buyPrice || 0) * (item.quantity || 1)).toFixed(2)}</strong></span>
+                                    <span>Val: <strong>{item.currentPrice ? `₹${((item.currentPrice || 0) * (item.quantity || 1)).toFixed(2)}` : "N/A"}</strong></span>
                                   </div>
+                                </div>
+                                <div className="mt-2.5">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSellPopupTrade(item);
+                                    }}
+                                    className="w-full py-1.5 rounded-lg border border-rose-200 dark:border-rose-900/50 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 text-[11px] font-bold transition-all hover:bg-rose-50 dark:hover:bg-rose-900/30 cursor-pointer shadow-3xs flex items-center justify-center"
+                                  >
+                                    Sell Asset
+                                  </button>
+                                </div>
                                 </div>
                               </div>
                             );
@@ -1386,25 +1356,123 @@ export default function App() {
               <h3 className="font-bold text-slate-800 dark:text-slate-100 font-mono text-sm">Buy {buyPopupSymbol.symbol}</h3>
               <button 
                 onClick={() => setBuyPopupSymbol(null)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
               >
                 ✕
               </button>
             </div>
-            <div className="p-4">
-              <label className="block text-[11px] font-bold text-gray-500 dark:text-slate-400 font-mono mb-1.5 uppercase tracking-wider">Buy Price</label>
-              <input
-                type="number"
-                value={buyPopupPrice}
-                onChange={(e) => setBuyPopupPrice(e.target.value === "" ? "" : Number(e.target.value))}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm font-mono font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                placeholder={buyPopupSymbol.currentPrice ? buyPopupSymbol.currentPrice.toString() : ""}
-              />
+            <div className="p-4 space-y-3">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-500 dark:text-slate-400 font-mono mb-1.5 uppercase tracking-wider">Buy Price (₹)</label>
+                <input
+                  type="number"
+                  value={buyPopupPrice}
+                  onChange={(e) => setBuyPopupPrice(e.target.value === "" ? "" : Number(e.target.value))}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm font-mono font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                  placeholder={buyPopupSymbol.currentPrice ? buyPopupSymbol.currentPrice.toString() : ""}
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-500 dark:text-slate-400 font-mono mb-1.5 uppercase tracking-wider">Quantity</label>
+                <input
+                  type="number"
+                  value={buyPopupQty}
+                  onChange={(e) => setBuyPopupQty(e.target.value === "" ? "" : Number(e.target.value))}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm font-mono font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                  placeholder="e.g. 100"
+                />
+              </div>
+              {buyPopupPrice !== "" && buyPopupQty !== "" && (
+                <div className="flex justify-between items-center py-2 border-t border-gray-100 dark:border-slate-800">
+                  <span className="text-[11px] font-bold text-gray-500 dark:text-slate-400 font-mono uppercase">Total</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">₹{(Number(buyPopupPrice) * Number(buyPopupQty)).toFixed(2)}</span>
+                </div>
+              )}
               <button
                 onClick={handleBuySubmit}
-                className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-sm transition-colors shadow-sm"
+                disabled={!buyPopupPrice || !buyPopupQty}
+                className="w-full mt-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-600/50 disabled:cursor-not-allowed text-white font-bold py-2 rounded-lg text-sm transition-colors shadow-sm cursor-pointer"
               >
                 Confirm Buy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sell Popup Modal */}
+      {sellPopupTrade && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-200 dark:border-slate-800 w-full max-w-xs overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between bg-rose-50/50 dark:bg-rose-900/10">
+              <h3 className="font-bold text-rose-800 dark:text-rose-100 font-mono text-sm">Sell {sellPopupTrade.symbol}</h3>
+              <button 
+                onClick={() => setSellPopupTrade(null)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              <div className="flex justify-between text-xs font-mono mb-2">
+                <span className="text-gray-500">Avg Buy: ₹{sellPopupTrade.buyPrice?.toFixed(2)}</span>
+                <span className="text-gray-500">Held: {sellPopupTrade.quantity} qty</span>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-500 dark:text-slate-400 font-mono mb-1.5 uppercase tracking-wider">Sell Price (₹)</label>
+                <input
+                  type="number"
+                  value={sellPopupPrice}
+                  onChange={(e) => setSellPopupPrice(e.target.value === "" ? "" : Number(e.target.value))}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm font-mono font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                  placeholder={sellPopupTrade.currentPrice ? sellPopupTrade.currentPrice.toString() : ""}
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-500 dark:text-slate-400 font-mono mb-1.5 uppercase tracking-wider">Sell Quantity</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={sellPopupQty}
+                    onChange={(e) => setSellPopupQty(e.target.value === "" ? "" : Number(e.target.value))}
+                    className="flex-1 bg-slate-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm font-mono font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                    placeholder={`Max ${sellPopupTrade.quantity}`}
+                  />
+                  <button 
+                    onClick={() => setSellPopupQty(sellPopupTrade.quantity)}
+                    className="px-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold rounded-lg border border-gray-200 dark:border-slate-700 cursor-pointer transition-colors text-slate-700 dark:text-slate-300 font-mono"
+                  >
+                    ALL
+                  </button>
+                </div>
+              </div>
+              
+              {sellPopupPrice !== "" && sellPopupQty !== "" && (
+                <div className="py-2 border-t border-gray-100 dark:border-slate-800 mt-2 space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-gray-500 dark:text-slate-400 font-mono uppercase">Proceeds</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-300 font-mono text-[11px]">₹{(Number(sellPopupPrice) * Number(sellPopupQty)).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-gray-500 dark:text-slate-400 font-mono uppercase">Est. P&L</span>
+                    {(() => {
+                      const pnl = (Number(sellPopupPrice) - sellPopupTrade.buyPrice) * Number(sellPopupQty);
+                      return (
+                        <span className={`font-bold font-mono text-[11px] ${pnl >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                          {pnl >= 0 ? "+" : ""}₹{pnl.toFixed(2)}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
+              
+              <button
+                onClick={handleSellSubmit}
+                disabled={!sellPopupPrice || !sellPopupQty || Number(sellPopupQty) > sellPopupTrade.quantity}
+                className="w-full mt-2 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-600/50 disabled:cursor-not-allowed text-white font-bold py-2 rounded-lg text-sm transition-colors shadow-sm cursor-pointer"
+              >
+                Confirm Sell
               </button>
             </div>
           </div>
