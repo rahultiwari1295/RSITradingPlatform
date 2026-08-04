@@ -53,6 +53,11 @@ export interface ToBuySignal {
   rankScore?: number;
   rankGrade?: string;
   sector?: string;
+  compositeScore?: number;
+  technicalScore?: number;
+  riskScore?: number;
+  confidence?: number;
+  opportunityScore?: number;
   alsoTriggeredBy?: string[];
   [key: string]: any;
 }
@@ -60,6 +65,7 @@ export interface ToBuySignal {
 export interface InTradeTrade {
   symbol: string;
   sector?: string;
+  strategyId?: string;
   strategyName?: string;
   entryDate: string;
   entryPrice: number;
@@ -74,6 +80,12 @@ export interface InTradeTrade {
   mlProbability?: number;
   mlGrade?: string;
   mlAction?: string;
+  mlRawEntry?: number;
+  // Enhanced scores
+  compositeScore?: number;
+  technicalScore?: number;
+  riskScore?: number;
+  confidence?: number;
   alsoTriggeredBy?: string[];
   [key: string]: any;
 }
@@ -112,9 +124,38 @@ export interface ClosedTrade {
 }
 
 export interface ManualPortfolioTrade {
+  tradeId?: string;
   symbol: string;
   buyPrice: number;
+  quantity?: number;
+  totalInvested?: number;
+  strategyName?: string;
+  date?: string;
+  broker?: string;
+  currentPrice?: number | null;
+  currentROI?: number | null;
   isActiveInStrategy: boolean;
+}
+
+export interface CompletedTrade {
+  tradeId: string;
+  symbol: string;
+  buyPrice: number;
+  sellPrice: number;
+  quantity: number;
+  totalInvested: number;
+  totalReceived: number;
+  pnl: number;
+  pnlPct: number;
+  strategyName?: string;
+  buyDate: string;
+  sellDate: string;
+  holdDays: number;
+}
+
+// Trade history keyed by symbol
+export interface TradeHistory {
+  [symbol: string]: CompletedTrade[];
 }
 
 export interface TerminalDataResponse {
@@ -128,6 +169,7 @@ export interface TerminalDataResponse {
   portfolio: PortfolioTrade[];
   manualPortfolio?: ManualPortfolioTrade[];
   closedTrades: ClosedTrade[];
+  tradeHistory?: TradeHistory;
   source?: "live" | "failed";
   error?: string;
 }
