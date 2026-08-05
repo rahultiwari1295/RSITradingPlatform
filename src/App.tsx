@@ -1243,7 +1243,6 @@ export default function App() {
                                     Sell Asset
                                   </button>
                                 </div>
-                                </div>
                               </div>
                             );
                           })
