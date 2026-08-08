@@ -1197,7 +1197,13 @@ export default function App() {
                                   </div>
 
                                   <div className="flex items-center gap-1 shrink-0">
-                                    <ScoreBadge compositeScore={item.compositeScore} technicalScore={item.technicalScore} riskScore={item.riskScore} confidence={item.confidence} />
+                                    {(item.compositeScore != null || item.technicalScore != null) ? (
+                                      <ScoreBadge compositeScore={item.compositeScore} technicalScore={item.technicalScore} riskScore={item.riskScore} confidence={item.confidence} />
+                                    ) : (
+                                      <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                                        Entry: <strong className="text-slate-800 dark:text-slate-200">{formatCompactDate(item.entryDate || item.date)}</strong>
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
 

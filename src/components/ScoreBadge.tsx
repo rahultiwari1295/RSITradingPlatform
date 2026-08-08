@@ -39,9 +39,7 @@ export default function ScoreBadge({ compositeScore, technicalScore, riskScore, 
   const [showDetails, setShowDetails] = useState(false);
   
   if (compositeScore == null && technicalScore == null) {
-    return (
-      <span className="text-[10px] text-gray-400 dark:text-slate-500 font-mono">N/A</span>
-    );
+    return null;
   }
 
   const primaryScore = compositeScore ?? technicalScore ?? 0;
