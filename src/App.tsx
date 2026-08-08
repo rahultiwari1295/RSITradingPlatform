@@ -15,7 +15,10 @@ import {
   Moon,
   Cpu,
   TrendingDown,
-  Info
+  Info,
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { 
   TerminalKPIs, 
@@ -96,6 +99,12 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedStrategy, setSelectedStrategy] = useState<string>("ALL");
   const [selectedSymbol, setSelectedSymbol] = useState<string>("");
+  const [isMobileChartOpen, setIsMobileChartOpen] = useState<boolean>(false);
+
+  const openMobileChart = (symbol: string) => {
+    setSelectedSymbol(symbol);
+    setIsMobileChartOpen(true);
+  };
   const [activeTradesSort, setActiveTradesSort] = useState<"latest_date" | "oldest_date" | "return_high" | "return_low" | "strategy">("latest_date");
   const [closedTradesSort, setClosedTradesSort] = useState<"in_latest" | "in_oldest" | "out_latest" | "out_oldest" | "return_high" | "return_low">("out_latest");
 
@@ -111,8 +120,10 @@ export default function App() {
   };
 
   // Helper to map exit reasons beautifully
-  const getExitReasonLabel = (reason: string | null) => {
-    if (!reason) return "N/A";
+  const getExitReasonLabel = (reason: string | null | undefined, strategyName?: string) => {
+    if (!reason || reason === "N/A" || reason.trim() === "") {
+      return strategyName || "Completed Trade";
+    }
     switch (reason.toUpperCase()) {
       case "MFE_TRAIL_L1":
         return "🎯 Trail Stop";
@@ -383,6 +394,22 @@ export default function App() {
   const portfolioWinnerCount = portfolioWithROI.filter(p => p.currentROI > 0).length;
   const portfolioLoserCount = portfolioWithROI.filter(p => p.currentROI < 0).length;
 
+  // List helper for mobile full-screen chart navigation
+  const currentSymbolList: any[] = activeTab === "active" ? filteredActiveTrades : activeTab === "portfolio" ? portfolioWithROI : filteredClosedTrades;
+  const currentSymbolIndex = currentSymbolList.findIndex(item => item.symbol === selectedSymbol);
+
+  const handleNextSymbol = () => {
+    if (currentSymbolList.length === 0) return;
+    const nextIdx = (currentSymbolIndex + 1) % currentSymbolList.length;
+    setSelectedSymbol(currentSymbolList[nextIdx].symbol);
+  };
+
+  const handlePrevSymbol = () => {
+    if (currentSymbolList.length === 0) return;
+    const prevIdx = (currentSymbolIndex - 1 + currentSymbolList.length) % currentSymbolList.length;
+    setSelectedSymbol(currentSymbolList[prevIdx].symbol);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200 selection:bg-indigo-100 selection:text-indigo-900">
       
@@ -427,13 +454,23 @@ export default function App() {
               </div>
 
               {/* Dark mode switcher on phone layout */}
-              <div className="flex items-center gap-2 md:hidden">
+              <div className="flex items-center gap-1.5 md:hidden">
                 <button
-                  onClick={() => setDarkMode(!darkMode)}
-                  className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer text-xs"
-                  title="Toggle Theme"
+                  onClick={() => setDarkMode(prev => !prev)}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-gray-200 dark:border-slate-700 active:scale-95 transition-all cursor-pointer text-xs font-mono font-bold"
+                  title="Toggle Light/Dark Theme"
                 >
-                  {darkMode ? <Sun className="w-3.5 h-3.5 text-amber-500" /> : <Moon className="w-3.5 h-3.5" />}
+                  {darkMode ? (
+                    <>
+                      <Sun className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="text-[10px]">Light</span>
+                    </>
+                  ) : (
+                    <>
+                      <Moon className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                      <span className="text-[10px]">Dark</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -476,11 +513,21 @@ export default function App() {
 
               {/* Theme switcher on desktop */}
               <button
-                onClick={() => setDarkMode(!darkMode)}
-                className="hidden md:flex items-center justify-center p-1.5 h-8.5 w-8.5 rounded-lg bg-slate-100 dark:bg-slate-850 text-gray-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer shadow-3xs border border-transparent dark:border-slate-800"
-                title="Toggle Theme"
+                onClick={() => setDarkMode(prev => !prev)}
+                className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer text-xs font-mono font-bold border border-gray-200 dark:border-slate-700 transition-all active:scale-95 shadow-3xs"
+                title="Toggle Light/Dark Theme"
               >
-                {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
+                {darkMode ? (
+                  <>
+                    <Sun className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Light</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                    <span>Dark</span>
+                  </>
+                )}
               </button>
             </div>
 
@@ -502,7 +549,11 @@ export default function App() {
         />
 
         {/* Strategy Leaderboard Component */}
-        <StrategyLeaderboard strategies={strategySummary} />
+        <StrategyLeaderboard 
+          strategies={strategySummary} 
+          selectedStrategy={selectedStrategy}
+          onSelectStrategy={setSelectedStrategy}
+        />
 
         {/* Interactive Workspace Area: Tab Table Controls & TradingView Stage */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
@@ -1093,7 +1144,7 @@ export default function App() {
                     </div>
 
                     {/* ================= MOBILE STYLED VIEWS (Hidden on Desktop) ================= */}
-                    <div className="block md:hidden p-3 space-y-3">
+                    <div className="block md:hidden p-2.5 space-y-2">
                       {activeTab === "active" && (
                         filteredActiveTrades.length === 0 ? (
                           <p className="text-center py-10 text-xs text-gray-400 font-mono">No ongoing signals match criteria.</p>
@@ -1104,75 +1155,84 @@ export default function App() {
                             return (
                               <div
                                 key={`active-mob-${item.symbol}`}
-                                onClick={() => setSelectedSymbol(item.symbol)}
-                                className={`p-3.5 rounded-xl border transition-all ${
+                                onClick={() => openMobileChart(item.symbol)}
+                                className={`p-2.5 rounded-xl border transition-all cursor-pointer active:scale-[0.99] ${
                                   isSelected
-                                    ? "bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-500"
-                                    : "bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800"
+                                    ? "bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-500 shadow-2xs"
+                                    : "bg-white dark:bg-slate-900 border-gray-200/80 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-slate-700"
                                 }`}
                               >
+                                {/* Header line: Symbol + Conviction Badge | Price + ROI Pill */}
                                 <div className="flex items-center justify-between">
-                                  <div>
-                                    <span className="text-base font-bold font-mono tracking-tight text-gray-950 dark:text-white">{item.symbol}</span>
-                                    <span className="text-[10px] text-gray-400 block font-mono">Date: {formatCompactDate(item.entryDate)}</span>
-                                  </div>
-                                  <div className="text-right">
-                                    <span className={`text-base font-bold font-mono ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}`}>
-                                      {isPositive ? "+" : ""}{item.currentROI.toFixed(2)}%
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className="text-sm font-bold font-mono tracking-tight text-slate-900 dark:text-white truncate">
+                                      {item.symbol}
                                     </span>
-                                    <span className="text-[10px] text-gray-400 block font-mono">LTP: ₹{item.currentPrice.toFixed(2)}</span>
-                                  </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2 mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-800/60 font-mono text-[11px] text-gray-500 dark:text-slate-400">
-                                  <div>
                                     <ConvictionBadge 
                                       strategyName={getStrategyAbbreviation(item.strategyName)}
                                       alsoTriggeredBy={item.alsoTriggeredBy?.map(getStrategyAbbreviation)}
                                     />
                                   </div>
-                                  <div className="text-right">
-                                    <span>Buy Price: <strong>₹{item.entryPrice.toFixed(2)}</strong></span>
+
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                                      ₹{item.currentPrice.toFixed(2)}
+                                    </span>
+                                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold font-mono ${
+                                      isPositive 
+                                        ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/50" 
+                                        : "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800/50"
+                                    }`}>
+                                      {isPositive ? "+" : ""}{item.currentROI.toFixed(2)}%
+                                    </span>
                                   </div>
-                                  <div>
-                                    <span className="text-emerald-600 font-bold">MFE: +{item.maxFavorable || item.mfe}%</span>
+                                </div>
+
+                                {/* Compact Metadata Line */}
+                                <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-slate-800/60 text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                                  <div className="flex items-center gap-2 truncate">
+                                    <span>Buy: <strong className="text-slate-700 dark:text-slate-200">₹{item.entryPrice.toFixed(2)}</strong></span>
+                                    <span className="text-slate-300 dark:text-slate-700">•</span>
+                                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">MFE: +{item.maxFavorable || item.mfe}%</span>
                                   </div>
-                                  <div className="text-right">
-                                    <span>Score: <ScoreBadge compositeScore={item.compositeScore} technicalScore={item.technicalScore} riskScore={item.riskScore} confidence={item.confidence} /></span>
+
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <ScoreBadge compositeScore={item.compositeScore} technicalScore={item.technicalScore} riskScore={item.riskScore} confidence={item.confidence} />
                                   </div>
-                                  <div className="col-span-2 mt-1">
-                                    <div className="flex gap-2">
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setSelectedSymbol(item.symbol);
-                                        }}
-                                        className="flex-1 px-2.5 py-1.5 rounded border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50 dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 text-xs font-bold transition-all hover:bg-indigo-100 dark:hover:bg-indigo-900/30 cursor-pointer shadow-3xs text-center"
-                                      >
-                                        Chart
-                                      </button>
-                                      {!manualPortfolio.some(m => m.symbol === item.symbol) && (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setBuyPopupSymbol({ symbol: item.symbol, currentPrice: item.currentPrice, strategyName: item.strategyName });
-                                            setBuyPopupPrice(item.currentPrice);
-                                            setBuyPopupQty("");
-                                          }}
-                                          className="flex-1 px-2.5 py-1.5 rounded border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 text-xs font-bold transition-all hover:bg-emerald-100 dark:hover:bg-emerald-900/30 cursor-pointer shadow-3xs text-center"
-                                        >
-                                          Buy
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
+                                </div>
+
+                                {/* Quick Action Bar */}
+                                <div className="flex items-center gap-2 mt-2 pt-1.5">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openMobileChart(item.symbol);
+                                    }}
+                                    className="flex-1 py-1 px-2.5 rounded-lg border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 text-xs font-bold transition-all hover:bg-indigo-100 dark:hover:bg-indigo-900/40 cursor-pointer text-center flex items-center justify-center gap-1 shadow-2xs"
+                                  >
+                                    <Activity className="w-3 h-3 text-indigo-500" />
+                                    <span>Full Chart</span>
+                                  </button>
+
+                                  {!manualPortfolio.some(m => m.symbol === item.symbol) && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setBuyPopupSymbol({ symbol: item.symbol, currentPrice: item.currentPrice, strategyName: item.strategyName });
+                                        setBuyPopupPrice(item.currentPrice);
+                                        setBuyPopupQty("");
+                                      }}
+                                      className="flex-1 py-1 px-2.5 rounded-lg border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition-all hover:bg-emerald-100 dark:hover:bg-emerald-900/40 cursor-pointer text-center shadow-2xs"
+                                    >
+                                      Buy
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             );
                           })
                         )
                       )}
-
-
 
                       {activeTab === "portfolio" && (
                         portfolioWithROI.length === 0 ? (
@@ -1185,63 +1245,71 @@ export default function App() {
                             return (
                               <div
                                 key={`portfolio-mob-${item.symbol}`}
-                                onClick={() => setSelectedSymbol(item.symbol)}
-                                className={`p-3.5 rounded-xl border transition-all ${
+                                onClick={() => openMobileChart(item.symbol)}
+                                className={`p-2.5 rounded-xl border transition-all cursor-pointer active:scale-[0.99] ${
                                   isSelected
-                                    ? "bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-500"
-                                    : "bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800"
-                                } ${isExited ? "bg-rose-50 dark:bg-rose-950/20" : ""}`}
+                                    ? "bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-500 shadow-2xs"
+                                    : "bg-white dark:bg-slate-900 border-gray-200/80 dark:border-slate-800"
+                                } ${isExited ? "bg-rose-50/40 dark:bg-rose-950/15 border-rose-200 dark:border-rose-900/30" : ""}`}
                               >
                                 <div className="flex items-center justify-between">
-                                  <div>
-                                    <span className="text-base font-bold font-mono tracking-tight text-gray-950 dark:text-white">{item.symbol}</span>
-                                    <div className="mt-1">
-                                      {isExited ? (
-                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-300">
-                                          ⚠️ Exited
-                                        </span>
-                                      ) : (
-                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 border border-emerald-300">
-                                          Active
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="text-right">
-                                    {item.currentPrice ? (
-                                      <>
-                                        <span className={`text-base font-bold font-mono ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}`}>
-                                          {isPositive ? "+" : ""}₹{((item.currentPrice - item.buyPrice) * (item.quantity || 1)).toFixed(2)}
-                                        </span>
-                                        <span className={`text-[10px] font-bold block font-mono ${isPositive ? "text-emerald-500/80" : "text-rose-500/80"}`}>
-                                          {isPositive ? "+" : ""}{item.currentROI.toFixed(2)}%
-                                        </span>
-                                      </>
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className="text-sm font-bold font-mono tracking-tight text-slate-900 dark:text-white truncate">
+                                      {item.symbol}
+                                    </span>
+                                    {isExited ? (
+                                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-800 shrink-0">
+                                        ⚠️ Exited
+                                      </span>
                                     ) : (
-                                      <span className="text-[10px] text-gray-400 block font-mono">LTP: N/A</span>
+                                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 shrink-0">
+                                        Active
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="text-right shrink-0">
+                                    {item.currentPrice ? (
+                                      <div className="flex items-center gap-2 font-mono">
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                                          Val: ₹{((item.currentPrice || 0) * (item.quantity || 1)).toFixed(0)}
+                                        </span>
+                                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                                          isPositive 
+                                            ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50" 
+                                            : "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50"
+                                        }`}>
+                                          {isPositive ? "+" : ""}₹{((item.currentPrice - item.buyPrice) * (item.quantity || 1)).toFixed(1)}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-xs text-slate-400 font-mono">LTP: N/A</span>
                                     )}
                                   </div>
                                 </div>
-                                <div className="flex justify-between mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-800/60 font-mono text-[11px] text-gray-500 dark:text-slate-400">
-                                  <div className="flex flex-col gap-1">
-                                    <span>Qty: <strong className="text-slate-800 dark:text-slate-200">{item.quantity || 1}</strong></span>
-                                    <span>Buy: <strong>₹{item.buyPrice.toFixed(2)}</strong></span>
+
+                                <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-slate-800/60 text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                                  <div>Qty: <strong className="text-slate-700 dark:text-slate-200">{item.quantity || 1}</strong> • Buy: <strong>₹{item.buyPrice.toFixed(2)}</strong></div>
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openMobileChart(item.symbol);
+                                      }}
+                                      className="px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 text-[11px] font-bold"
+                                    >
+                                      Chart
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSellPopupTrade(item);
+                                      }}
+                                      className="px-2.5 py-1 rounded-lg border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-400 text-[11px] font-bold"
+                                    >
+                                      Sell
+                                    </button>
                                   </div>
-                                  <div className="flex flex-col gap-1 text-right">
-                                    <span>Inv: <strong>₹{((item.buyPrice || 0) * (item.quantity || 1)).toFixed(2)}</strong></span>
-                                    <span>Val: <strong>{item.currentPrice ? `₹${((item.currentPrice || 0) * (item.quantity || 1)).toFixed(2)}` : "N/A"}</strong></span>
-                                  </div>
-                                </div>
-                                <div className="mt-2.5">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSellPopupTrade(item);
-                                    }}
-                                    className="w-full py-1.5 rounded-lg border border-rose-200 dark:border-rose-900/50 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 text-[11px] font-bold transition-all hover:bg-rose-50 dark:hover:bg-rose-900/30 cursor-pointer shadow-3xs flex items-center justify-center"
-                                  >
-                                    Sell Asset
-                                  </button>
                                 </div>
                               </div>
                             );
@@ -1259,41 +1327,57 @@ export default function App() {
                             return (
                               <div
                                 key={`closed-mob-${item.symbol}-${idx}`}
-                                onClick={() => setSelectedSymbol(item.symbol)}
-                                className={`p-3.5 rounded-xl border transition-all ${
+                                onClick={() => openMobileChart(item.symbol)}
+                                className={`p-2.5 rounded-xl border transition-all cursor-pointer active:scale-[0.99] ${
                                   isSelected
-                                    ? "bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-500"
-                                    : "bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800"
+                                    ? "bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-500 shadow-2xs"
+                                    : "bg-white dark:bg-slate-900 border-gray-200/80 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-slate-700"
                                 }`}
                               >
                                 <div className="flex items-center justify-between">
-                                  <div>
-                                    <span className="text-base font-bold font-mono tracking-tight text-gray-950 dark:text-white">{item.symbol}</span>
-                                    <span className={`text-[9px] font-bold block w-fit px-1 rounded uppercase mt-0.5 ${
-                                      isWin ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className="text-sm font-bold font-mono tracking-tight text-slate-900 dark:text-white truncate">
+                                      {item.symbol}
+                                    </span>
+                                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase font-mono ${
+                                      isWin ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400" : "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400"
                                     }`}>
                                       {isWin ? "WIN ✅" : "LOSS ❌"}
                                     </span>
                                   </div>
-                                  <div className="text-right">
-                                    <span className={`text-base font-bold font-mono ${isWin ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}`}>
+
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold font-mono ${
+                                      isWin ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400" : "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400"
+                                    }`}>
                                       {item.returnPct >= 0 ? "+" : ""}{item.returnPct.toFixed(2)}%
                                     </span>
-                                    <span className="text-[10px] text-gray-400 block font-mono">Exit: {formatCompactDate(item.exitDate)}</span>
                                   </div>
                                 </div>
-                                <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-800/60 font-mono text-[11px] text-gray-500 dark:text-slate-400 space-y-1">
-                                  <div className="flex justify-between">
-                                    <span>Exit Action: <strong className="text-indigo-600 dark:text-indigo-400">{getExitReasonLabel(item.exitReason)}</strong></span>
-                                    <span>Entry: ₹{item.entryPrice.toFixed(2)}</span>
+
+                                <div className="grid grid-cols-2 gap-1 mt-2 pt-2 border-t border-gray-100 dark:border-slate-800/60 font-mono text-[11px] text-slate-500 dark:text-slate-400">
+                                  <div>
+                                    <span>Entry: <strong className="text-slate-700 dark:text-slate-200">{formatCompactDate(item.entryDate)}</strong> @ <strong>₹{item.entryPrice.toFixed(2)}</strong></span>
                                   </div>
-                                  <div className="flex justify-between items-center">
-                                    <ConvictionBadge 
-                                      strategyName={getStrategyAbbreviation(item.strategyName)}
-                                      alsoTriggeredBy={item.alsoTriggeredBy?.map(getStrategyAbbreviation)}
-                                    />
-                                    <span>Exit: ₹{item.exitPrice.toFixed(2)}</span>
+                                  <div className="text-right">
+                                    <span>Exit: <strong className="text-slate-700 dark:text-slate-200">{formatCompactDate(item.exitDate)}</strong> @ <strong>₹{(item.exitPrice || item.entryPrice).toFixed(2)}</strong></span>
                                   </div>
+                                </div>
+
+                                <div className="flex items-center justify-between mt-2 pt-1.5 text-[11px] font-mono">
+                                  <div className="text-slate-500 dark:text-slate-400 truncate pr-2">
+                                    Strategy: <strong className="text-indigo-600 dark:text-indigo-400">{item.strategyName || "Quantitative Model"}</strong>
+                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openMobileChart(item.symbol);
+                                    }}
+                                    className="px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 text-[11px] font-bold shrink-0 flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Activity className="w-3 h-3 text-indigo-500" />
+                                    <span>Chart</span>
+                                  </button>
                                 </div>
                               </div>
                             );
@@ -1474,6 +1558,112 @@ export default function App() {
                 Confirm Sell
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full-Screen Mobile Chart View Modal */}
+      {isMobileChartOpen && selectedSymbol && (
+        <div className="fixed inset-0 z-50 bg-slate-950 text-slate-100 flex flex-col md:hidden animate-in fade-in duration-150">
+          {/* Header Bar */}
+          <div className="flex items-center justify-between px-3 py-2.5 bg-slate-900 border-b border-slate-800 shrink-0">
+            <button
+              onClick={() => setIsMobileChartOpen(false)}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 text-xs font-bold rounded-lg transition-all border border-slate-700 cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 text-indigo-400" />
+              <span>Back</span>
+            </button>
+
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1.5">
+                <span className="font-mono font-bold text-sm text-white">{selectedSymbol}</span>
+                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-400 border border-indigo-900 font-mono">BSE</span>
+              </div>
+              {(() => {
+                const item = currentSymbolList.find((i: any) => i.symbol === selectedSymbol);
+                if (!item) return null;
+                const roi = item.currentROI ?? item.returnPct;
+                const price = item.currentPrice || item.exitPrice || item.buyPrice || item.entryPrice;
+                const isPos = roi >= 0;
+                return (
+                  <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-slate-400">
+                    <span>₹{price?.toFixed(2) || "0.00"}</span>
+                    {roi !== undefined && (
+                      <span className={`font-bold ${isPos ? "text-emerald-400" : "text-rose-400"}`}>
+                        {isPos ? "+" : ""}{roi.toFixed(2)}%
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handlePrevSymbol}
+                disabled={currentSymbolList.length <= 1}
+                className="p-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 disabled:opacity-40 text-slate-300 rounded-lg border border-slate-700 cursor-pointer"
+                title="Previous stock"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleNextSymbol}
+                disabled={currentSymbolList.length <= 1}
+                className="p-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 disabled:opacity-40 text-slate-300 rounded-lg border border-slate-700 cursor-pointer"
+                title="Next stock"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Chart Container */}
+          <div className="flex-1 w-full bg-slate-950 relative overflow-hidden">
+            <TradingViewWidget symbol={selectedSymbol} theme="dark" />
+          </div>
+
+          {/* Quick Action Footer */}
+          <div className="p-3 bg-slate-900 border-t border-slate-800 flex items-center justify-between gap-2 shrink-0">
+            {(() => {
+              const item = currentSymbolList.find((i: any) => i.symbol === selectedSymbol);
+              const inPortfolio = manualPortfolio.some(m => m.symbol === selectedSymbol);
+              return (
+                <>
+                  <div className="flex flex-col font-mono text-[10px] text-slate-400">
+                    <span>Strategy: <strong className="text-indigo-400">{getStrategyAbbreviation(item?.strategyName)}</strong></span>
+                    <span>Entry: <strong className="text-slate-200">₹{(item?.entryPrice || item?.buyPrice || 0).toFixed(2)}</strong></span>
+                  </div>
+
+                  <div className="flex gap-2">
+                    {!inPortfolio && item?.currentPrice && (
+                      <button
+                        onClick={() => {
+                          setBuyPopupSymbol({ symbol: selectedSymbol, currentPrice: item.currentPrice, strategyName: item.strategyName });
+                          setBuyPopupPrice(item.currentPrice);
+                          setBuyPopupQty("");
+                        }}
+                        className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg shadow-md cursor-pointer transition-colors"
+                      >
+                        Buy Stock
+                      </button>
+                    )}
+                    {inPortfolio && (
+                      <button
+                        onClick={() => {
+                          const portItem = manualPortfolio.find(p => p.symbol === selectedSymbol);
+                          if (portItem) setSellPopupTrade(portItem);
+                        }}
+                        className="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-lg shadow-md cursor-pointer transition-colors"
+                      >
+                        Sell Stock
+                      </button>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
