@@ -22,13 +22,16 @@ export default function KPICards({
   closedCount,
   toBuyCount,
 }: KPICardsProps) {
-  const isHighConviction = profitFactor > 2.0;
+  const safeWinRate = winRate ?? 0;
+  const safeAvgReturn = avgReturn ?? 0;
+  const safeProfitFactor = profitFactor ?? 0;
+  const isHighConviction = safeProfitFactor > 2.0;
 
   const cards = [
     {
       id: "win-rate",
       title: "Global Win Rate",
-      value: `${winRate.toFixed(1)}%`,
+      value: `${safeWinRate.toFixed(1)}%`,
       description: `Across all trades`,
       descColor: "text-emerald-700 dark:text-emerald-400 font-bold",
       icon: Target,
@@ -40,19 +43,19 @@ export default function KPICards({
     {
       id: "avg-return",
       title: "Average Return",
-      value: `${avgReturn >= 0 ? "+" : ""}${avgReturn.toFixed(2)}%`,
+      value: `${safeAvgReturn >= 0 ? "+" : ""}${safeAvgReturn.toFixed(2)}%`,
       description: `Expectancy per trade`,
-      descColor: avgReturn >= 0 ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-rose-600 dark:text-rose-405 font-semibold",
+      descColor: safeAvgReturn >= 0 ? "text-emerald-700 dark:text-emerald-400 font-semibold" : "text-rose-600 dark:text-rose-405 font-semibold",
       icon: ArrowUpRight,
-      bgColor: avgReturn >= 0 ? "bg-indigo-50/50 dark:bg-indigo-950/20" : "bg-rose-50/30 dark:bg-rose-950/15",
-      borderColor: avgReturn >= 0 ? "border-indigo-100 dark:border-indigo-900/30" : "border-rose-100 dark:border-rose-900/30",
-      iconColor: avgReturn >= 0 ? "text-indigo-500 dark:text-indigo-400" : "text-rose-500 dark:text-rose-450",
-      accent: avgReturn >= 0 ? "from-indigo-500/10 to-indigo-500/0" : "from-rose-500/10 to-rose-500/0",
+      bgColor: safeAvgReturn >= 0 ? "bg-indigo-50/50 dark:bg-indigo-950/20" : "bg-rose-50/30 dark:bg-rose-950/15",
+      borderColor: safeAvgReturn >= 0 ? "border-indigo-100 dark:border-indigo-900/30" : "border-rose-100 dark:border-rose-900/30",
+      iconColor: safeAvgReturn >= 0 ? "text-indigo-500 dark:text-indigo-400" : "text-rose-500 dark:text-rose-450",
+      accent: safeAvgReturn >= 0 ? "from-indigo-500/10 to-indigo-500/0" : "from-rose-500/10 to-rose-500/0",
     },
     {
       id: "profit-factor",
       title: "Profit Factor",
-      value: profitFactor.toFixed(2),
+      value: safeProfitFactor.toFixed(2),
       description: isHighConviction ? "Exceptional Edge" : "Steady Edge",
       descColor: isHighConviction ? "text-amber-600 dark:text-amber-400 font-bold" : "text-emerald-600 dark:text-emerald-400 font-semibold",
       icon: TrendingUp,

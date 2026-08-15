@@ -484,8 +484,8 @@ export default function App() {
                 className="py-1.5 px-2.5 rounded-lg text-xs bg-slate-100 dark:bg-slate-800 border-0 text-slate-900 dark:text-slate-150 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white dark:focus:bg-slate-800/80 transition-all font-semibold cursor-pointer"
               >
                 <option value="ALL">All Strategies</option>
-                {strategySummary.map(s => (
-                  <option key={s.strategyName} value={s.strategyName}>{s.strategyName}</option>
+                {strategySummary.map((s, idx) => (
+                  <option key={s.strategyId || `${s.strategyName}-${idx}`} value={s.strategyName}>{s.strategyName}</option>
                 ))}
               </select>
 
@@ -739,13 +739,13 @@ export default function App() {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-                              {filteredActiveTrades.map((item) => {
+                              {filteredActiveTrades.map((item, idx) => {
                                 const isSelected = selectedSymbol === item.symbol;
                                 const isPositive = item.currentROI >= 0;
                                 const isHeld = manualPortfolio.some(m => m.symbol === item.symbol);
                                 return (
                                   <tr
-                                    key={`active-${item.symbol}`}
+                                    key={`active-${item.symbol}-${idx}`}
                                     className={`group transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/20 cursor-pointer ${
                                       isSelected ? "bg-indigo-50/30 dark:bg-indigo-950/10" : ""
                                     } ${isHeld ? "border-l-4 border-l-emerald-500 bg-emerald-50/10 dark:bg-emerald-900/10" : ""}`}
@@ -774,17 +774,17 @@ export default function App() {
                                     <td className="px-4 py-3.5 text-right font-mono text-xs">
                                       <div className="flex flex-col">
                                         <span className="text-gray-500 dark:text-slate-400">
-                                          Buy: ₹{item.entryPrice.toFixed(2)}
+                                          Buy: ₹{item.entryPrice?.toFixed(2)}
                                         </span>
                                         <span className="font-bold text-gray-900 dark:text-slate-100 mt-0.5">
-                                          LTP: ₹{item.currentPrice.toFixed(2)}
+                                          LTP: ₹{item.currentPrice?.toFixed(2)}
                                         </span>
                                       </div>
                                     </td>
 
                                     <td className="px-4 py-3.5 text-right font-mono">
                                       <span className={`text-xs sm:text-sm font-bold ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}`}>
-                                        {isPositive ? "▲ +" : "▼ "}{item.currentROI.toFixed(2)}%
+                                        {isPositive ? "▲ +" : "▼ "}{item.currentROI?.toFixed(2)}%
                                       </span>
                                     </td>
 
@@ -916,7 +916,7 @@ export default function App() {
 
                                     <td className="px-4 py-3.5 text-right font-mono text-xs">
                                       <div className="flex flex-col">
-                                        <span className="text-gray-500 dark:text-slate-400">{item.currentPrice ? `₹${item.currentPrice.toFixed(2)}` : "N/A"}</span>
+                                        <span className="text-gray-500 dark:text-slate-400">{item.currentPrice ? `₹${item.currentPrice?.toFixed(2)}` : "N/A"}</span>
                                         <span className="font-bold text-slate-800 dark:text-slate-200 mt-0.5">{item.currentPrice ? `₹${currentValue.toFixed(2)}` : "N/A"}</span>
                                       </div>
                                     </td>
@@ -1076,17 +1076,17 @@ export default function App() {
                                     <td className="px-4 py-3.5 text-right font-mono text-xs">
                                       <div className="flex flex-col">
                                         <span className="text-gray-500">
-                                          In: ₹{item.entryPrice.toFixed(2)}
+                                          In: ₹{item.entryPrice?.toFixed(2)}
                                         </span>
                                         <span className="font-bold text-gray-900 dark:text-slate-100 mt-0.5">
-                                          Out: ₹{item.exitPrice.toFixed(2)}
+                                          Out: ₹{item.exitPrice?.toFixed(2)}
                                         </span>
                                       </div>
                                     </td>
 
                                     <td className="px-4 py-3.5 text-right font-mono">
                                       <span className={`text-xs sm:text-sm font-bold ${isWin ? "text-emerald-600 dark:text-emerald-400" : "text-rose-550"}`}>
-                                        {item.returnPct >= 0 ? "+" : ""}{item.returnPct.toFixed(2)}%
+                                        {item.returnPct >= 0 ? "+" : ""}{item.returnPct?.toFixed(2)}%
                                       </span>
                                     </td>
 
@@ -1149,12 +1149,12 @@ export default function App() {
                         filteredActiveTrades.length === 0 ? (
                           <p className="text-center py-10 text-xs text-gray-400 font-mono">No ongoing signals match criteria.</p>
                         ) : (
-                          filteredActiveTrades.map((item) => {
+                          filteredActiveTrades.map((item, idx) => {
                             const isSelected = selectedSymbol === item.symbol;
                             const isPositive = item.currentROI >= 0;
                             return (
                               <div
-                                key={`active-mob-${item.symbol}`}
+                                key={`active-mob-${item.symbol}-${idx}`}
                                 onClick={() => openMobileChart(item.symbol)}
                                 className={`p-2.5 rounded-xl border transition-all cursor-pointer active:scale-[0.99] ${
                                   isSelected
@@ -1176,14 +1176,14 @@ export default function App() {
 
                                   <div className="flex items-center gap-2 shrink-0">
                                     <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
-                                      ₹{item.currentPrice.toFixed(2)}
+                                      ₹{item.currentPrice?.toFixed(2)}
                                     </span>
                                     <span className={`px-2 py-0.5 rounded-full text-xs font-bold font-mono ${
                                       isPositive 
                                         ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/50" 
                                         : "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800/50"
                                     }`}>
-                                      {isPositive ? "+" : ""}{item.currentROI.toFixed(2)}%
+                                      {isPositive ? "+" : ""}{item.currentROI?.toFixed(2)}%
                                     </span>
                                   </div>
                                 </div>
@@ -1191,7 +1191,7 @@ export default function App() {
                                 {/* Compact Metadata Line */}
                                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-slate-800/60 text-[11px] font-mono text-slate-500 dark:text-slate-400">
                                   <div className="flex items-center gap-2 truncate">
-                                    <span>Buy: <strong className="text-slate-700 dark:text-slate-200">₹{item.entryPrice.toFixed(2)}</strong></span>
+                                    <span>Buy: <strong className="text-slate-700 dark:text-slate-200">₹{item.entryPrice?.toFixed(2)}</strong></span>
                                     <span className="text-slate-300 dark:text-slate-700">•</span>
                                     <span className="text-emerald-600 dark:text-emerald-400 font-bold">MFE: +{item.maxFavorable || item.mfe}%</span>
                                   </div>
@@ -1295,7 +1295,7 @@ export default function App() {
                                 </div>
 
                                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-slate-800/60 text-[11px] font-mono text-slate-500 dark:text-slate-400">
-                                  <div>Qty: <strong className="text-slate-700 dark:text-slate-200">{item.quantity || 1}</strong> • Buy: <strong>₹{item.buyPrice.toFixed(2)}</strong></div>
+                                  <div>Qty: <strong className="text-slate-700 dark:text-slate-200">{item.quantity || 1}</strong> • Buy: <strong>₹{item.buyPrice?.toFixed(2)}</strong></div>
                                   <div className="flex items-center gap-1.5">
                                     <button
                                       onClick={(e) => {
@@ -1356,17 +1356,17 @@ export default function App() {
                                     <span className={`px-2 py-0.5 rounded-full text-xs font-bold font-mono ${
                                       isWin ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400" : "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400"
                                     }`}>
-                                      {item.returnPct >= 0 ? "+" : ""}{item.returnPct.toFixed(2)}%
+                                      {(item.returnPct ?? 0) >= 0 ? "+" : ""}{(item.returnPct ?? 0).toFixed(2)}%
                                     </span>
                                   </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-1 mt-2 pt-2 border-t border-gray-100 dark:border-slate-800/60 font-mono text-[11px] text-slate-500 dark:text-slate-400">
                                   <div>
-                                    <span>Entry: <strong className="text-slate-700 dark:text-slate-200">{formatCompactDate(item.entryDate)}</strong> @ <strong>₹{item.entryPrice.toFixed(2)}</strong></span>
+                                    <span>Entry: <strong className="text-slate-700 dark:text-slate-200">{formatCompactDate(item.entryDate)}</strong> @ <strong>₹{item.entryPrice != null ? item.entryPrice.toFixed(2) : "0.00"}</strong></span>
                                   </div>
                                   <div className="text-right">
-                                    <span>Exit: <strong className="text-slate-700 dark:text-slate-200">{formatCompactDate(item.exitDate)}</strong> @ <strong>₹{(item.exitPrice || item.entryPrice).toFixed(2)}</strong></span>
+                                    <span>Exit: <strong className="text-slate-700 dark:text-slate-200">{formatCompactDate(item.exitDate)}</strong> @ <strong>₹{((item.exitPrice || item.entryPrice) != null ? (item.exitPrice || item.entryPrice).toFixed(2) : "0.00")}</strong></span>
                                   </div>
                                 </div>
 
@@ -1591,13 +1591,13 @@ export default function App() {
                 if (!item) return null;
                 const roi = item.currentROI ?? item.returnPct;
                 const price = item.currentPrice || item.exitPrice || item.buyPrice || item.entryPrice;
-                const isPos = roi >= 0;
+                const isPos = (roi ?? 0) >= 0;
                 return (
                   <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-slate-400">
-                    <span>₹{price?.toFixed(2) || "0.00"}</span>
-                    {roi !== undefined && (
+                    <span>₹{price != null ? price.toFixed(2) : "0.00"}</span>
+                    {roi !== undefined && roi !== null && (
                       <span className={`font-bold ${isPos ? "text-emerald-400" : "text-rose-400"}`}>
-                        {isPos ? "+" : ""}{roi.toFixed(2)}%
+                        {isPos ? "+" : ""}{(roi ?? 0).toFixed(2)}%
                       </span>
                     )}
                   </div>
@@ -1639,7 +1639,7 @@ export default function App() {
                 <>
                   <div className="flex flex-col font-mono text-[10px] text-slate-400">
                     <span>Strategy: <strong className="text-indigo-400">{getStrategyAbbreviation(item?.strategyName)}</strong></span>
-                    <span>Entry: <strong className="text-slate-200">₹{(item?.entryPrice || item?.buyPrice || 0).toFixed(2)}</strong></span>
+                    <span>Entry: <strong className="text-slate-200">₹{((item?.entryPrice || item?.buyPrice || 0) ?? 0).toFixed(2)}</strong></span>
                   </div>
 
                   <div className="flex gap-2">
