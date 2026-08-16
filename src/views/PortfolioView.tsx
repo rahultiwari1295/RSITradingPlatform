@@ -189,7 +189,7 @@ export default function PortfolioView({
                       <div className="flex items-center justify-between gap-3 pt-0.5">
                         <div className="flex items-center gap-3.5">
                           <div>
-                            <div className="text-[9.5px] text-[#B3B5C0] font-bold uppercase tracking-[0.3px] font-mono">
+                            <div className="text-[9.5px] text-[#56586A] dark:text-slate-400 font-bold uppercase tracking-[0.3px] font-mono">
                               Invested
                             </div>
                             <div className="text-[13.5px] text-[#14151A] dark:text-slate-100 font-bold mt-0.5 font-mono">
@@ -197,7 +197,7 @@ export default function PortfolioView({
                             </div>
                           </div>
                           <div>
-                            <div className="text-[9.5px] text-[#B3B5C0] font-bold uppercase tracking-[0.3px] font-mono">
+                            <div className="text-[9.5px] text-[#56586A] dark:text-slate-400 font-bold uppercase tracking-[0.3px] font-mono">
                               Held for
                             </div>
                             <div className="text-[13.5px] text-[#14151A] dark:text-slate-100 font-bold mt-0.5">
@@ -288,7 +288,7 @@ export default function PortfolioView({
                       <div className="flex items-center justify-between gap-3 pt-0.5">
                         <div className="flex items-center gap-3 sm:gap-4">
                           <div>
-                            <div className="text-[9.5px] text-[#B3B5C0] font-bold uppercase tracking-[0.3px] font-mono">
+                            <div className="text-[9.5px] text-[#56586A] dark:text-slate-400 font-bold uppercase tracking-[0.3px] font-mono">
                               Invested
                             </div>
                             <div className="text-[13.5px] font-bold text-[#14151A] dark:text-slate-100 font-mono mt-0.5">
@@ -301,7 +301,7 @@ export default function PortfolioView({
                           </div>
 
                           <div>
-                            <div className="text-[9.5px] text-[#B3B5C0] font-bold uppercase tracking-[0.3px] font-mono">
+                            <div className="text-[9.5px] text-[#56586A] dark:text-slate-400 font-bold uppercase tracking-[0.3px] font-mono">
                               PnL
                             </div>
                             <div
