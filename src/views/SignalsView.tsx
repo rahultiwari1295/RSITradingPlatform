@@ -45,6 +45,49 @@ export default function SignalsView({
     return isNaN(t) ? 0 : t;
   };
 
+  const formatSignalDate = (dateStr?: string) => {
+    if (!dateStr) return "3 Aug";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const day = d.getDate();
+    const month = d.toLocaleDateString("en-US", { month: "short" });
+    return `${day} ${month}`;
+  };
+
+  const getSignalBadge = (signal: InTradeTrade, holdingDays: number) => {
+    const roi = signal.currentROI ?? 0;
+    // Rule 1: If stock already crossed > 7%, entry is extended/missed
+    if (roi > 7.0) {
+      return {
+        label: "MISSED",
+        sub: `+${roi.toFixed(1)}% run`,
+        tone: "bg-[#FEF3F2] text-[#F04438] border border-[#FECDCA] dark:bg-rose-950/50 dark:text-rose-400 dark:border-rose-900/50"
+      };
+    }
+    // Rule 2: If signal is older than 10 days, expired/stale
+    if (holdingDays > 10) {
+      return {
+        label: "EXPIRED",
+        sub: ">10d stale",
+        tone: "bg-[#F6F7F9] text-[#71747E] border border-[#ECEEF2] dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
+      };
+    }
+    // Rule 3: If signal is within 3 days and within optimal entry zone
+    if (holdingDays <= 3) {
+      return {
+        label: "BUY",
+        sub: "Fresh signal",
+        tone: "bg-[#ECFDF3] text-[#16A34A] border border-[#86EFAC] dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-800/50"
+      };
+    }
+    // Rule 4: Active within 4-10 days and under 7% run
+    return {
+      label: "BUY ZONE",
+      sub: "In range",
+      tone: "bg-[#EEF0FE] text-[#6366F1] border border-[#C7D2FE] dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800/50"
+    };
+  };
+
   // Filtered & Sorted signals (Default: entry date latest to oldest)
   const filteredSignals = signals.filter(s => {
     const matchesSearch = s.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -187,6 +230,7 @@ export default function SignalsView({
             const isPositive = (signal.currentROI ?? 0) >= 0;
             const holdingDays = signal.holdingDays || 
               (signal.entryDate ? Math.max(1, Math.round((Date.now() - new Date(signal.entryDate).getTime()) / (1000 * 60 * 60 * 24))) : 30);
+            const badge = getSignalBadge(signal, holdingDays);
 
             return (
               <div
@@ -222,8 +266,8 @@ export default function SignalsView({
                       >
                         {formatPercent(signal.currentROI)}
                       </div>
-                      <div className="text-[10px] text-[#8B8D98] font-semibold text-right mt-0.5 font-mono">
-                        unrealized
+                      <div className="text-[10.5px] text-[#475569] dark:text-slate-300 font-semibold text-right mt-0.5 font-mono">
+                        Signal Date: {formatSignalDate(signal.entryDate)}
                       </div>
                     </div>
                   </div>
@@ -243,7 +287,7 @@ export default function SignalsView({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex flex-col">
-                    <div className="text-[9.5px] text-[#B3B5C0] font-bold uppercase tracking-[0.3px] font-mono">
+                    <div className="text-[9.5px] text-[#56586A] dark:text-slate-400 font-bold uppercase tracking-[0.3px] font-mono">
                       Holding
                     </div>
                     <div className="text-[12.5px] text-[#14151A] dark:text-slate-100 font-bold mt-0.5">
@@ -251,17 +295,15 @@ export default function SignalsView({
                     </div>
                   </div>
 
-                  <div className="flex flex-col">
-                    <div className="text-[9.5px] text-[#B3B5C0] font-bold uppercase tracking-[0.3px] font-mono">
-                      Target 1
+                  <div className="flex flex-col items-center">
+                    <div className="text-[9.5px] text-[#56586A] dark:text-slate-400 font-bold uppercase tracking-[0.3px] font-mono mb-0.5">
+                      Status
                     </div>
-                    <div
-                      className={`text-[12.5px] font-bold mt-0.5 ${
-                        signal.t1Triggered ? "text-[#16A34A]" : "text-[#B3B5C0]"
-                      }`}
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-[6px] text-[10.5px] font-extrabold font-mono tracking-wider shadow-3xs ${badge.tone}`}
                     >
-                      {signal.t1Triggered ? "Hit ✓" : "Not hit"}
-                    </div>
+                      {badge.label}
+                    </span>
                   </div>
 
                   <button
