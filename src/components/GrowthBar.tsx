@@ -33,7 +33,7 @@ export default function GrowthBar({
   return (
     <div className={`w-full ${className}`}>
       {/* Labels */}
-      <div className="flex justify-between items-center text-[10px] text-[#B3B5C0] font-semibold mb-[5px] font-mono">
+      <div className="flex justify-between items-center text-[11px] text-[#334155] dark:text-slate-200 font-bold mb-[5px] font-mono">
         <span>Entry {formatINR(entryPrice)}</span>
         <span>Now {formatINR(currentPrice)}</span>
       </div>
