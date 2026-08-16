@@ -39,6 +39,7 @@ export interface StrategySummary {
   avgReturnPct: number;
   profitFactor: number;
   avgHoldDays: number;
+  description?: string;
 }
 
 export interface ToBuySignal {
@@ -135,6 +136,7 @@ export interface ManualPortfolioTrade {
   currentPrice?: number | null;
   currentROI?: number | null;
   isActiveInStrategy: boolean;
+  daysHeld?: number;
 }
 
 export interface CompletedTrade {
