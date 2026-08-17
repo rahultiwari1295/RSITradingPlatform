@@ -259,6 +259,7 @@ export default function App() {
         return (
           <SignalsView
             signals={signals}
+            portfolioSymbols={portfolio.map(p => p.symbol)}
             onOpenChart={(sym) => setSelectedChartSymbol(sym)}
             onOpenBuyModal={(sym, price, strat) => setBuyModalData({ symbol: sym, price, strategyName: strat })}
             onRefresh={fetchLiveTerminalData}
@@ -363,6 +364,7 @@ export default function App() {
           onClose={() => setSelectedChartSymbol(null)}
           onPrev={handlePrevChart}
           onNext={handleNextChart}
+          isBought={portfolio.some(p => p.symbol === selectedChartSymbol)}
           onMarkBought={(sym) => {
             setBuyModalData({
               symbol: sym,
