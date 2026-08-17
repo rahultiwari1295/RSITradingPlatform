@@ -10,6 +10,7 @@ interface ChartModalProps {
   onPrev?: () => void;
   onNext?: () => void;
   onMarkBought?: (symbol: string) => void;
+  isBought?: boolean;
   tradeDetails?: {
     currentPrice?: number;
     entryPrice?: number;
@@ -26,6 +27,7 @@ export default function ChartModal({
   onPrev,
   onNext,
   onMarkBought,
+  isBought = false,
   tradeDetails,
   darkMode = false
 }: ChartModalProps) {
@@ -95,12 +97,23 @@ export default function ChartModal({
             )}
 
             {onMarkBought && (
-              <button
-                onClick={() => onMarkBought(symbol)}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#14151A] text-white text-[12px] font-bold hover:opacity-90 transition-opacity"
-              >
-                <ShoppingCart className="w-3.5 h-3.5" /> Mark Bought
-              </button>
+              isBought ? (
+                <button
+                  onClick={() => onMarkBought(symbol)}
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] border border-[#16A34A] dark:border-emerald-500/80 bg-[#ECFDF3]/80 dark:bg-emerald-950/40 text-[#16A34A] dark:text-emerald-400 text-[12px] font-bold hover:bg-[#ECFDF3] dark:hover:bg-emerald-900/50 transition-colors cursor-pointer"
+                  title="In your portfolio. Click to add more shares."
+                >
+                  <span>Bought</span>
+                  <span>✓</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => onMarkBought(symbol)}
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#14151A] dark:bg-slate-100 text-white dark:text-slate-900 text-[12px] font-bold hover:opacity-90 transition-opacity cursor-pointer"
+                >
+                  <ShoppingCart className="w-3.5 h-3.5" /> Mark Bought
+                </button>
+              )
             )}
 
             <button
