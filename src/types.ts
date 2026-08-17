@@ -54,11 +54,14 @@ export interface ToBuySignal {
   rankScore?: number;
   rankGrade?: string;
   sector?: string;
+  // Enhanced scores
   compositeScore?: number;
   technicalScore?: number;
   riskScore?: number;
   confidence?: number;
   opportunityScore?: number;
+  marketScore?: number;
+  researchScore?: number | null;
   alsoTriggeredBy?: string[];
   [key: string]: any;
 }
@@ -87,6 +90,8 @@ export interface InTradeTrade {
   technicalScore?: number;
   riskScore?: number;
   confidence?: number;
+  marketScore?: number;
+  researchScore?: number | null;
   alsoTriggeredBy?: string[];
   [key: string]: any;
 }

@@ -3,6 +3,7 @@ import { Bell, Search, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import HeroCard from "../components/HeroCard";
 import SymbolAvatar from "../components/SymbolAvatar";
 import GrowthBar from "../components/GrowthBar";
+import SignalQualityBadge from "../components/SignalQualityBadge";
 import { InTradeTrade } from "../types";
 import { formatPercent } from "../constants/theme";
 
@@ -247,8 +248,11 @@ export default function SignalsView({
                     <div className="flex items-center gap-2.5">
                       <SymbolAvatar symbol={signal.symbol} gradientIndex={idx} size={40} />
                       <div>
-                        <div className="text-[15.5px] font-bold text-[#14151A] dark:text-slate-100 tracking-[-0.2px]">
-                          {signal.symbol}
+                        <div className="flex items-center gap-1.5">
+                          <div className="text-[15.5px] font-bold text-[#14151A] dark:text-slate-100 tracking-[-0.2px]">
+                            {signal.symbol}
+                          </div>
+                          <SignalQualityBadge signal={signal} />
                         </div>
                         <div className="text-[11px] text-[#8B8D98] font-semibold mt-0.5 flex items-center gap-1.5">
                           <span>{signal.strategyName || "Breakout"}</span>
