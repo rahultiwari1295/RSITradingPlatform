@@ -8,6 +8,7 @@ import { formatPercent } from "../constants/theme";
 
 interface SignalsViewProps {
   signals: InTradeTrade[];
+  portfolioSymbols?: string[];
   onOpenChart: (symbol: string) => void;
   onOpenBuyModal: (symbol: string, currentPrice: number, strategyName?: string) => void;
   onRefresh?: () => void;
@@ -16,6 +17,7 @@ interface SignalsViewProps {
 
 export default function SignalsView({
   signals,
+  portfolioSymbols = [],
   onOpenChart,
   onOpenBuyModal,
   onRefresh,
@@ -228,6 +230,7 @@ export default function SignalsView({
         ) : (
           filteredSignals.map((signal, idx) => {
             const isPositive = (signal.currentROI ?? 0) >= 0;
+            const isBought = portfolioSymbols.includes(signal.symbol);
             const holdingDays = signal.holdingDays || 
               (signal.entryDate ? Math.max(1, Math.round((Date.now() - new Date(signal.entryDate).getTime()) / (1000 * 60 * 60 * 24))) : 30);
             const badge = getSignalBadge(signal, holdingDays);
@@ -306,12 +309,23 @@ export default function SignalsView({
                     </span>
                   </div>
 
-                  <button
-                    onClick={() => onOpenBuyModal(signal.symbol, signal.currentPrice || signal.entryPrice, signal.strategyName)}
-                    className="px-3.5 py-1.5 rounded-[10px] bg-[#14151A] dark:bg-slate-100 text-white dark:text-slate-900 text-[11.5px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-xs cursor-pointer"
-                  >
-                    Mark bought
-                  </button>
+                  {isBought ? (
+                    <button
+                      onClick={() => onOpenBuyModal(signal.symbol, signal.currentPrice || signal.entryPrice, signal.strategyName)}
+                      className="px-3 py-1.5 rounded-[10px] border border-[#16A34A] dark:border-emerald-500/80 bg-[#ECFDF3]/80 dark:bg-emerald-950/40 text-[#16A34A] dark:text-emerald-400 text-[11.5px] font-bold hover:bg-[#ECFDF3] dark:hover:bg-emerald-900/50 active:scale-95 transition-all shadow-3xs flex items-center gap-1 cursor-pointer"
+                      title="This stock is in your portfolio. Click to add more shares or adjust position."
+                    >
+                      <span>Bought</span>
+                      <span>✓</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onOpenBuyModal(signal.symbol, signal.currentPrice || signal.entryPrice, signal.strategyName)}
+                      className="px-3.5 py-1.5 rounded-[10px] bg-[#14151A] dark:bg-slate-100 text-white dark:text-slate-900 text-[11.5px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-xs cursor-pointer"
+                    >
+                      Mark bought
+                    </button>
+                  )}
                 </div>
               </div>
             );
