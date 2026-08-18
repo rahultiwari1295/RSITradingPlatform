@@ -110,8 +110,15 @@ export default function App() {
             }, { merge: true });
           }
           setIsCloudLoaded(true);
-        } catch (err) {
+        } catch (err: any) {
           console.error("Error loading Firestore data:", err);
+          
+          // If the client is offline (or blocked by iframe privacy settings),
+          // fallback gracefully to an empty state so the user isn't stuck.
+          if (err.message && err.message.toLowerCase().includes('client is offline')) {
+            showToast("Warning: Offline or storage blocked. Your portfolio changes may not save.");
+            setIsCloudLoaded(true); // Allow local usage even if cloud fails
+          }
         }
       };
       loadUserData();

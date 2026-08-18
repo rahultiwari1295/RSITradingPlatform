@@ -27,7 +27,11 @@ export default function LoginView() {
         await signInWithEmailAndPassword(auth, email, password);
       }
     } catch (err: any) {
-      setError(err.message || "An error occurred during authentication.");
+      if (err.message && err.message.toLowerCase().includes('database is closing') || err.message.includes('hidden')) {
+        setError("Your browser is blocking storage in this preview window. Please click the 'Open in new tab' button (top right of the preview) to log in.");
+      } else {
+        setError(err.message || "An error occurred during authentication.");
+      }
     } finally {
       setLoading(false);
     }
@@ -42,6 +46,8 @@ export default function LoginView() {
     } catch (err: any) {
       if (err.code === 'auth/unauthorized-domain') {
         setError(`Domain not authorized. Please add "${window.location.hostname}" to Firebase Authorized Domains.`);
+      } else if (err.message && err.message.toLowerCase().includes('database is closing') || err.message.includes('hidden')) {
+        setError("Your browser is blocking storage in this preview window. Please click the 'Open in new tab' button (top right of the preview) to log in.");
       } else {
         setError(err.message || "Google sign-in failed.");
       }
