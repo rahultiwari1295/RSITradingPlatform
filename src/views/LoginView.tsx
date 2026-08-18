@@ -30,6 +30,8 @@ export default function LoginView() {
       console.error("Login Error:", err);
       if (err.code === 'auth/unauthorized-domain') {
         setError(`Domain not authorized. Please add "${window.location.hostname}" to Firebase Authorized Domains.`);
+      } else if (err.message && err.message.toLowerCase().includes('database is closing')) {
+        setError("Your browser's local storage is corrupted or blocked. Please clear your site data for this page (click the lock icon in the URL bar -> Site Settings -> Clear data), or turn off Incognito mode.");
       } else {
         setError(err.message || "An error occurred during authentication.");
       }
@@ -48,6 +50,8 @@ export default function LoginView() {
       console.error("Google Login Error:", err);
       if (err.code === 'auth/unauthorized-domain') {
         setError(`Domain not authorized. Please add "${window.location.hostname}" to Firebase Authorized Domains.`);
+      } else if (err.message && err.message.toLowerCase().includes('database is closing')) {
+        setError("Your browser's local storage is corrupted or blocked. Please clear your site data for this page (click the lock icon in the URL bar -> Site Settings -> Clear data), or turn off Incognito mode.");
       } else {
         setError(err.message || "Google sign-in failed.");
       }
