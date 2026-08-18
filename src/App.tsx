@@ -34,6 +34,8 @@ import {
   initialBacktests
 } from "./data/mockData";
 import { useAuth } from "./contexts/AuthContext";
+import { db } from "./lib/firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import LoginView from "./views/LoginView";
 import { LogOut } from "lucide-react";
 
@@ -85,32 +87,49 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3200);
   };
 
-  // Fetch per-user portfolio from API when authenticated
+  const [isCloudLoaded, setIsCloudLoaded] = useState(false);
+
+  // Fetch per-user portfolio and history from Firestore when authenticated
   useEffect(() => {
     if (user) {
-      const username = user.email ? user.email.split('@')[0] : user.uid;
-      fetch(`/api/portfolio/${username}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success && data.portfolio.length > 0) {
-            setPortfolio(data.portfolio);
+      const loadUserData = async () => {
+        try {
+          const userDocRef = doc(db, "users", user.uid);
+          const docSnap = await getDoc(userDocRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.portfolio) setPortfolio(data.portfolio);
+            if (data.completedHistory) setCompletedHistory(data.completedHistory);
+          } else {
+            // If document doesn't exist, start with empty arrays and write it
+            await setDoc(userDocRef, {
+              email: user.email,
+              createdAt: Date.now(),
+              portfolio: [],
+              completedHistory: []
+            }, { merge: true });
           }
-          // Currently the placeholder returns empty array, so we keep using local storage or mock data if empty
-          console.log(`Portfolio API Response for ${username}:`, data);
-        })
-        .catch(err => console.error("Error fetching portfolio:", err));
+          setIsCloudLoaded(true);
+        } catch (err) {
+          console.error("Error loading Firestore data:", err);
+        }
+      };
+      loadUserData();
+    } else {
+      setIsCloudLoaded(false);
+      setPortfolio([]);
+      setCompletedHistory([]);
     }
   }, [user]);
 
-  // Persist portfolio to localStorage
+  // Persist portfolio & history to Firestore whenever they change
   useEffect(() => {
-    localStorage.setItem("qs_portfolio", JSON.stringify(portfolio));
-  }, [portfolio]);
-
-  // Persist trade history to localStorage
-  useEffect(() => {
-    localStorage.setItem("qs_completed_history", JSON.stringify(completedHistory));
-  }, [completedHistory]);
+    if (user && isCloudLoaded) {
+      const userDocRef = doc(db, "users", user.uid);
+      setDoc(userDocRef, { portfolio, completedHistory }, { merge: true })
+        .catch(err => console.error("Failed to save to Firestore:", err));
+    }
+  }, [portfolio, completedHistory, user, isCloudLoaded]);
 
   // Fetch live Wix Studio data with proxy fallback
   const fetchLiveTerminalData = async () => {
