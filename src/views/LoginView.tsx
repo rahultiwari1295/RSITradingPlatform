@@ -40,7 +40,11 @@ export default function LoginView() {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
     } catch (err: any) {
-      setError(err.message || "Google sign-in failed.");
+      if (err.code === 'auth/unauthorized-domain') {
+        setError(`Domain not authorized. Please add "${window.location.hostname}" to Firebase Authorized Domains.`);
+      } else {
+        setError(err.message || "Google sign-in failed.");
+      }
     } finally {
       setLoading(false);
     }
