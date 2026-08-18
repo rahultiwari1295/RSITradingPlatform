@@ -1,23 +1,23 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import * as admin from 'firebase-admin';
 
-// Initialize Firebase Admin for Push Notifications
-if (!admin.apps || !admin.apps.length) {
-  try {
-    if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-      admin.initializeApp({
-        credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)),
-      });
-      console.log("Firebase Admin initialized successfully.");
-    } else {
-      console.warn("FIREBASE_SERVICE_ACCOUNT_KEY is missing. Push notifications will not work.");
-    }
-  } catch (err) {
-    console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY", err);
-  }
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Initialize Firebase Admin for Push Notifications inside the handler for Serverless contexts
+  if (!admin.apps || !admin.apps.length) {
+    try {
+      if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+        admin.initializeApp({
+          credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)),
+        });
+        console.log("Firebase Admin initialized successfully.");
+      } else {
+        console.warn("FIREBASE_SERVICE_ACCOUNT_KEY is missing. Push notifications will not work.");
+      }
+    } catch (err) {
+      console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY", err);
+    }
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
