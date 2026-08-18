@@ -18,7 +18,7 @@ export default function StrategiesView({
   // Summary metrics
   const totalTrades = strategies.reduce((acc, curr) => acc + (curr.totalTrades || 0), 0);
   const totalWins = strategies.reduce((acc, curr) => acc + (curr.wins || 0), 0);
-  const blendedWinRate = totalTrades > 0 ? (totalWins / totalTrades) * 100 : 75.8;
+  const blendedWinRate = totalTrades > 0 ? (totalWins / totalTrades) * 100 : 0;
   const bestPf = strategies.reduce((max, curr) => Math.max(max, curr.profitFactor || 0), 0);
   const topStrategy = [...strategies].sort((a, b) => (b.winRate || 0) - (a.winRate || 0))[0];
 
@@ -55,10 +55,10 @@ export default function StrategiesView({
           </>
         }
         stats={[
-          { value: totalTrades || 451, label: "Total trades" },
-          { value: bestPf > 0 ? bestPf.toFixed(2) : "6.22", label: "Best PF" },
+          { value: totalTrades.toString(), label: "Total trades" },
+          { value: bestPf.toFixed(2), label: "Best PF" },
           {
-            value: topStrategy ? topStrategy.strategyName : "Snapback",
+            value: topStrategy ? topStrategy.strategyName : "None",
             label: "Top performer",
             valueColor: "#8BF694"
           }

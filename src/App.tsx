@@ -33,8 +33,13 @@ import {
   initialPortfolio,
   initialBacktests
 } from "./data/mockData";
+import { useAuth } from "./contexts/AuthContext";
+import LoginView from "./views/LoginView";
+import { LogOut } from "lucide-react";
 
 export default function App() {
+  const { user, loading: authLoading, logout } = useAuth();
+  
   // Navigation & View Mode
   const [activeTab, setActiveTab] = useState<TabType>("signals");
 
@@ -53,32 +58,12 @@ export default function App() {
     }
   }, [darkMode]);
 
-  // Data States (initialized with realistic datasets)
-  const [signals, setSignals] = useState<InTradeTrade[]>(initialSignals);
-  const [strategies, setStrategies] = useState<StrategySummary[]>(initialStrategies);
-  const [portfolio, setPortfolio] = useState<ManualPortfolioTrade[]>(() => {
-    const saved = localStorage.getItem("qs_portfolio");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return initialPortfolio;
-      }
-    }
-    return initialPortfolio;
-  });
-  const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>(initialBacktests);
-  const [completedHistory, setCompletedHistory] = useState<CompletedTrade[]>(() => {
-    const saved = localStorage.getItem("qs_completed_history");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return [];
-      }
-    }
-    return [];
-  });
+  // Data States (initialized with empty arrays to only show API responses)
+  const [signals, setSignals] = useState<InTradeTrade[]>([]);
+  const [strategies, setStrategies] = useState<StrategySummary[]>([]);
+  const [portfolio, setPortfolio] = useState<ManualPortfolioTrade[]>([]);
+  const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([]);
+  const [completedHistory, setCompletedHistory] = useState<CompletedTrade[]>([]);
 
   // Network sync states
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
@@ -99,6 +84,23 @@ export default function App() {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3200);
   };
+
+  // Fetch per-user portfolio from API when authenticated
+  useEffect(() => {
+    if (user) {
+      const username = user.email ? user.email.split('@')[0] : user.uid;
+      fetch(`/api/portfolio/${username}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.portfolio.length > 0) {
+            setPortfolio(data.portfolio);
+          }
+          // Currently the placeholder returns empty array, so we keep using local storage or mock data if empty
+          console.log(`Portfolio API Response for ${username}:`, data);
+        })
+        .catch(err => console.error("Error fetching portfolio:", err));
+    }
+  }, [user]);
 
   // Persist portfolio to localStorage
   useEffect(() => {
@@ -138,13 +140,13 @@ export default function App() {
     }
 
     if (result && (result.success || result.generatedAt || result.inTradeTrades)) {
-      if (Array.isArray(result.inTradeTrades) && result.inTradeTrades.length > 0) {
+      if (Array.isArray(result.inTradeTrades)) {
         setSignals(result.inTradeTrades);
       }
-      if (Array.isArray(result.strategySummary) && result.strategySummary.length > 0) {
+      if (Array.isArray(result.strategySummary)) {
         setStrategies(result.strategySummary);
       }
-      if (Array.isArray(result.closedTrades) && result.closedTrades.length > 0) {
+      if (Array.isArray(result.closedTrades)) {
         setClosedTrades(result.closedTrades);
       }
       setLastSyncedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
@@ -297,6 +299,18 @@ export default function App() {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FAFAFC] dark:bg-[#0E0F14]">
+        <RefreshCw className="w-6 h-6 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginView />;
+  }
+
   return (
     <div className="min-h-screen bg-[#FAFAFC] dark:bg-[#0E0F14] text-[#14151A] dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       
@@ -339,6 +353,15 @@ export default function App() {
               title="Toggle Light/Dark Theme"
             >
               {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
+            </button>
+
+            {/* Logout button */}
+            <button
+              onClick={logout}
+              className="p-2 rounded-[11px] bg-[#F6F7F9] dark:bg-slate-800 hover:bg-[#FEF3F2] hover:text-[#F04438] dark:hover:bg-red-900/30 dark:hover:text-red-400 text-[#56586A] dark:text-slate-300 transition-colors cursor-pointer ml-2"
+              title="Sign Out"
+            >
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>

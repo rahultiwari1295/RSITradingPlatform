@@ -112,6 +112,8 @@ export default function SignalsView({
     }
   });
 
+  const uniqueStrategiesCount = new Set(signals.map(s => s.strategyName).filter(Boolean)).size;
+
   return (
     <div className="w-full pb-6">
       {/* Top Row */}
@@ -136,7 +138,7 @@ export default function SignalsView({
         headline={
           <>
             {totalCount} active signals across{" "}
-            <b className="text-[#8BF694] font-bold">10 strategies</b>
+            <b className="text-[#8BF694] font-bold">{uniqueStrategiesCount} strategies</b>
           </>
         }
         stats={[

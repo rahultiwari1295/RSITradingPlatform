@@ -97,6 +97,20 @@ async function startServer() {
     });
   });
 
+  // Placeholder endpoint for fetching portfolio by username
+  app.get("/api/portfolio/:username", (req, res) => {
+    const { username } = req.params;
+    console.log(`Fetching placeholder portfolio for username: ${username}`);
+    
+    // In the future, this will connect to the real database to fetch the user's portfolio.
+    return res.json({
+      success: true,
+      username,
+      portfolio: [], // Sending an empty portfolio array as a placeholder
+      message: `Fetched portfolio data for ${username}`
+    });
+  });
+
   // Vite integration middleware context
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

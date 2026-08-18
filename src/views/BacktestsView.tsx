@@ -24,15 +24,15 @@ export default function BacktestsView({
   // Hero stats calculations
   const totalExits = closedTrades.length;
   const winsCount = closedTrades.filter(t => t.pnlLabel === "WIN" || (t.returnPct ?? 0) > 0).length;
-  const winRate = totalExits > 0 ? (winsCount / totalExits) * 100 : 75.8;
+  const winRate = totalExits > 0 ? (winsCount / totalExits) * 100 : 0;
   const avgReturn = totalExits > 0
     ? closedTrades.reduce((acc, curr) => acc + (curr.returnPct || 0), 0) / totalExits
-    : 8.97;
+    : 0;
 
   // Profit factor calculation
   const grossWin = closedTrades.filter(t => (t.returnPct || 0) > 0).reduce((acc, curr) => acc + (curr.returnPct || 0), 0);
   const grossLoss = Math.abs(closedTrades.filter(t => (t.returnPct || 0) < 0).reduce((acc, curr) => acc + (curr.returnPct || 0), 0));
-  const profitFactor = grossLoss > 0 ? grossWin / grossLoss : 6.22;
+  const profitFactor = grossLoss > 0 ? grossWin / grossLoss : 0;
 
   // Filter trades
   const filteredTrades = closedTrades.filter(t => {
@@ -57,13 +57,13 @@ export default function BacktestsView({
         eyebrow="Proof of edge"
         headline={
           <>
-            {totalExits > 0 ? totalExits : 451} exits analyzed, averaging{" "}
+            {totalExits} exits analyzed, averaging{" "}
             <b className="text-[#8BF694] font-bold">{formatPercent(avgReturn)}</b> per trade
           </>
         }
         stats={[
           { value: `${winRate.toFixed(1)}%`, label: "Win rate" },
-          { value: profitFactor > 0 ? profitFactor.toFixed(2) : "6.22", label: "Profit factor" },
+          { value: profitFactor.toFixed(2), label: "Profit factor" },
           { value: "32d", label: "Avg hold" }
         ]}
         className="mb-5"
