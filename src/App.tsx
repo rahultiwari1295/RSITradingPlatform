@@ -37,13 +37,30 @@ import { useAuth } from "./contexts/AuthContext";
 import { db } from "./lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import LoginView from "./views/LoginView";
-import { LogOut } from "lucide-react";
+import { LogOut, Bell, BellRing } from "lucide-react";
+import { requestPushPermission } from "./lib/pushNotifications";
 
 export default function App() {
   const { user, loading: authLoading, logout } = useAuth();
   
   // Navigation & View Mode
   const [activeTab, setActiveTab] = useState<TabType>("signals");
+
+  // Push notifications state
+  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() => {
+    return typeof window !== "undefined" && "Notification" in window ? Notification.permission === "granted" : false;
+  });
+
+  const handleEnablePush = async () => {
+    if (!user) return;
+    const success = await requestPushPermission(user.uid);
+    if (success) {
+      setNotificationsEnabled(true);
+      showToast("Push notifications enabled!");
+    } else {
+      showToast("Failed to enable push notifications (check browser permissions).");
+    }
+  };
 
   // Theme support
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -369,6 +386,16 @@ export default function App() {
 
           {/* Action Controls */}
           <div className="flex items-center gap-2">
+            {/* Push Notifications button */}
+            <button
+              onClick={handleEnablePush}
+              disabled={notificationsEnabled}
+              className={`p-2 rounded-[11px] transition-colors cursor-pointer ${notificationsEnabled ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 opacity-50 cursor-default' : 'bg-[#F6F7F9] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[#56586A] dark:text-slate-300'}`}
+              title={notificationsEnabled ? "Push Notifications Active" : "Enable Push Notifications"}
+            >
+              {notificationsEnabled ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+            </button>
+
             {/* Refresh button */}
             <button
               onClick={fetchLiveTerminalData}
