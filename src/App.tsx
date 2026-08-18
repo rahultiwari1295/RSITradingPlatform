@@ -113,11 +113,15 @@ export default function App() {
         } catch (err: any) {
           console.error("Error loading Firestore data:", err);
           
-          // If the client is offline (or blocked by iframe privacy settings),
-          // fallback gracefully to an empty state so the user isn't stuck.
           if (err.message && err.message.toLowerCase().includes('client is offline')) {
             showToast("Warning: Offline or storage blocked. Your portfolio changes may not save.");
             setIsCloudLoaded(true); // Allow local usage even if cloud fails
+          } else if (err.code === 'permission-denied' || err.message.includes('Missing or insufficient permissions')) {
+            showToast("Database Error: Permission denied. Please check your Firebase rules.");
+            setIsCloudLoaded(true); // Allow local usage
+          } else {
+             showToast(`Database Error: ${err.message}`);
+             setIsCloudLoaded(true);
           }
         }
       };
@@ -134,7 +138,10 @@ export default function App() {
     if (user && isCloudLoaded) {
       const userDocRef = doc(db, "users", user.uid);
       setDoc(userDocRef, { portfolio, completedHistory }, { merge: true })
-        .catch(err => console.error("Failed to save to Firestore:", err));
+        .catch(err => {
+          console.error("Failed to save to Firestore:", err);
+          showToast(`Failed to save: ${err.message || "Unknown error"}`);
+        });
     }
   }, [portfolio, completedHistory, user, isCloudLoaded]);
 
