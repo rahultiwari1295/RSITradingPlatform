@@ -37,7 +37,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // 1. Fetch active device tokens from Firestore
-    const db = getFirestore();
+    // Using the specific databaseId from the frontend config
+    const db = getFirestore(getApps()[0], 'ai-studio-angelonetradingt-56679b74-b747-4c8d-b456-56830ab0579c');
     const snapshot = await db.collection('device_tokens').get();
     const tokens = snapshot.docs.map(doc => doc.data().token).filter(Boolean);
 
