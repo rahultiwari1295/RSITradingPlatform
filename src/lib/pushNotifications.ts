@@ -12,7 +12,7 @@ export async function requestPushPermission(userId: string) {
 
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
-      const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+      const vapidKey = (import.meta as any).env.VITE_FIREBASE_VAPID_KEY;
       if (!vapidKey) {
         console.warn("VITE_FIREBASE_VAPID_KEY is missing. Cannot get FCM token.");
         return false;

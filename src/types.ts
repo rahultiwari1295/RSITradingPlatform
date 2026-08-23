@@ -46,16 +46,19 @@ export interface ToBuySignal {
   symbol: string;
   type?: string;
   date?: string;
-  price: number;
+  entryDate?: string;
+  price?: number;
+  currentPrice?: number;
+  entryPrice?: number;
+  currentROI?: number;
   strategyName?: string;
+  sector?: string;
+  compositeScore?: number;
   mlProbability?: number;
   mlGrade?: string;
   mlAction?: string;
   rankScore?: number;
   rankGrade?: string;
-  sector?: string;
-  // Enhanced scores
-  compositeScore?: number;
   technicalScore?: number;
   riskScore?: number;
   confidence?: number;
@@ -63,6 +66,15 @@ export interface ToBuySignal {
   marketScore?: number;
   researchScore?: number | null;
   alsoTriggeredBy?: string[];
+  stars?: number;
+  starsDisplay?: string;
+  action?: string;
+  actionLabel?: string;
+  actionColor?: string;
+  slippageText?: string;
+  footerLine?: string;
+  waitReason?: string;
+  missedNote?: string;
   [key: string]: any;
 }
 

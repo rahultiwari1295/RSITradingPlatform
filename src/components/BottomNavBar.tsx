@@ -1,7 +1,7 @@
 import React from "react";
-import { TrendingUp, Briefcase, Sliders, LineChart, Layers } from "lucide-react";
+import { TrendingUp, Briefcase, LineChart, Home } from "lucide-react";
 
-export type TabType = "signals" | "strategies" | "portfolio" | "backtest";
+export type TabType = "home" | "signals" | "portfolio" | "backtest";
 
 interface BottomNavBarProps {
   activeTab: TabType;
@@ -15,8 +15,8 @@ export default function BottomNavBar({
   needsAttentionCount = 0
 }: BottomNavBarProps) {
   const items: { id: TabType; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: "home", label: "Home", icon: Home },
     { id: "signals", label: "Signals", icon: TrendingUp },
-    { id: "strategies", label: "Strategies", icon: Layers },
     { id: "portfolio", label: "Portfolio", icon: Briefcase },
     { id: "backtest", label: "Backtests", icon: LineChart },
   ];

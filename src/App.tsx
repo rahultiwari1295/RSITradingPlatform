@@ -16,10 +16,11 @@ import {
   ClosedTrade,
   ManualPortfolioTrade,
   StrategySummary,
-  CompletedTrade
+  CompletedTrade,
+  ToBuySignal
 } from "./types";
 import SignalsView from "./views/SignalsView";
-import StrategiesView from "./views/StrategiesView";
+import HomeView from "./views/HomeView";
 import PortfolioView from "./views/PortfolioView";
 import BacktestsView from "./views/BacktestsView";
 import BottomNavBar, { TabType } from "./components/BottomNavBar";
@@ -27,6 +28,7 @@ import BuyModal from "./components/Modals/BuyModal";
 import SellModal from "./components/Modals/SellModal";
 import AddPositionModal from "./components/Modals/AddPositionModal";
 import ChartModal from "./components/Modals/ChartModal";
+
 import {
   initialSignals,
   initialStrategies,
@@ -44,7 +46,7 @@ export default function App() {
   const { user, loading: authLoading, logout } = useAuth();
   
   // Navigation & View Mode
-  const [activeTab, setActiveTab] = useState<TabType>("signals");
+  const [activeTab, setActiveTab] = useState<TabType>("home");
 
   // Push notifications state
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() => {
@@ -78,6 +80,7 @@ export default function App() {
   }, [darkMode]);
 
   // Data States (initialized with empty arrays to only show API responses)
+  const [toBuySignals, setToBuySignals] = useState<ToBuySignal[]>([]);
   const [signals, setSignals] = useState<InTradeTrade[]>([]);
   const [strategies, setStrategies] = useState<StrategySummary[]>([]);
   const [portfolio, setPortfolio] = useState<ManualPortfolioTrade[]>([]);
@@ -189,7 +192,10 @@ export default function App() {
       }
     }
 
-    if (result && (result.success || result.generatedAt || result.inTradeTrades)) {
+    if (result && (result.success || result.generatedAt || result.inTradeTrades || result.toBuySignals)) {
+      if (Array.isArray(result.toBuySignals)) {
+        setToBuySignals(result.toBuySignals);
+      }
       if (Array.isArray(result.inTradeTrades)) {
         setSignals(result.inTradeTrades);
       }
@@ -307,6 +313,17 @@ export default function App() {
   // Render view body
   const renderScreenContent = () => {
     switch (activeTab) {
+      case "home":
+        return (
+          <HomeView
+            toBuySignals={toBuySignals}
+            portfolioSymbols={portfolio.map(p => p.symbol)}
+            onOpenChart={(sym) => setSelectedChartSymbol(sym)}
+            onMarkBought={(sym, price, strat) => handleBuySubmit({ symbol: sym, buyPrice: price, quantity: 1, strategyName: strat })}
+            onRefresh={fetchLiveTerminalData}
+            isSyncing={isSyncing}
+          />
+        );
       case "signals":
         return (
           <SignalsView
@@ -316,15 +333,6 @@ export default function App() {
             onOpenBuyModal={(sym, price, strat) => setBuyModalData({ symbol: sym, price, strategyName: strat })}
             onRefresh={fetchLiveTerminalData}
             isSyncing={isSyncing}
-          />
-        );
-      case "strategies":
-        return (
-          <StrategiesView
-            strategies={strategies}
-            onSelectStrategy={(stratName) => {
-              setActiveTab("signals");
-            }}
           />
         );
       case "portfolio":

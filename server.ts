@@ -1,14 +1,16 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import * as admin from 'firebase-admin';
+import { initializeApp, getApps, cert } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
+import { getMessaging } from "firebase-admin/messaging";
 
 // Initialize Firebase Admin for Push Notifications
-if (!admin.apps || !admin.apps.length) {
+if (!getApps().length) {
   try {
     if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-      admin.initializeApp({
-        credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)),
+      initializeApp({
+        credential: cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)),
       });
       console.log("Firebase Admin initialized successfully.");
     } else {
@@ -35,12 +37,12 @@ async function startServer() {
 
       const { title, body, symbol, action, price, compositeScore, strategyName, tradeReturnPercent, exitReason } = req.body;
 
-      if (!admin.apps || !admin.apps.length) {
+      if (!getApps().length) {
         return res.status(500).json({ error: "Firebase Admin is not configured." });
       }
 
       // 1. Fetch active device tokens from Firestore
-      const snapshot = await admin.firestore().collection('device_tokens').get();
+      const snapshot = await getFirestore().collection('device_tokens').get();
       const tokens = snapshot.docs.map(doc => doc.data().token).filter(Boolean);
 
       if (tokens.length === 0) {
@@ -61,7 +63,7 @@ async function startServer() {
         tokens: tokens,
       };
 
-      const response = await admin.messaging().sendEachForMulticast(message);
+      const response = await getMessaging().sendEachForMulticast(message);
       
       // Clean up invalid tokens
       if (response.failureCount > 0) {
@@ -73,7 +75,7 @@ async function startServer() {
         });
         
         // Remove failed tokens from Firestore
-        const batch = admin.firestore().batch();
+        const batch = getFirestore().batch();
         snapshot.docs.forEach((doc) => {
           if (failedTokens.includes(doc.data().token)) {
             batch.delete(doc.ref);
