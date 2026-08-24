@@ -15,8 +15,8 @@ export default function BottomNavBar({
   needsAttentionCount = 0
 }: BottomNavBarProps) {
   const items: { id: TabType; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-    { id: "home", label: "Home", icon: Home },
-    { id: "signals", label: "Signals", icon: TrendingUp },
+    { id: "home", label: "To Buy", icon: Home },
+    { id: "signals", label: "Active", icon: TrendingUp },
     { id: "portfolio", label: "Portfolio", icon: Briefcase },
     { id: "backtest", label: "Backtests", icon: LineChart },
   ];

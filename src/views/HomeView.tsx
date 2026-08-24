@@ -25,6 +25,7 @@ interface HomeViewProps {
   signals?: any[]; // legacy fallback
   portfolioSymbols?: string[];
   onOpenChart?: (symbol: string) => void;
+  onOpenBuyModal?: (symbol: string, currentPrice: number, strategyName?: string) => void;
   onMarkBought?: (symbol: string, price: number, strategyName?: string) => void;
   onRefresh?: () => void;
   isSyncing?: boolean;
@@ -37,6 +38,7 @@ export default function HomeView({
   signals: legacySignals = [],
   portfolioSymbols = [],
   onOpenChart,
+  onOpenBuyModal,
   onMarkBought,
   onRefresh,
   isSyncing = false
@@ -272,6 +274,11 @@ export default function HomeView({
 
   const handleToggleBought = (id: string, symbol: string, entryPrice: number, strategy: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (onOpenBuyModal) {
+      onOpenBuyModal(symbol, entryPrice, strategy);
+      return;
+    }
+
     const current = !!boughtStatus[id] || portfolioSymbols.includes(symbol);
     setBoughtStatus(prev => ({ ...prev, [id]: !current }));
 
@@ -638,62 +645,7 @@ export default function HomeView({
           })}
         </div>
       )}
-
-      {/* POPUP MODAL: Interactive TradingView Chart */}
-      {selectedChartSymbol && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="w-full max-w-3xl max-h-[90vh] bg-white dark:bg-slate-900 rounded-[22px] border border-[#ECEEF2] dark:border-slate-800 shadow-2xl overflow-y-auto flex flex-col">
-            
-            {/* Modal Header */}
-            <div className="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 py-3.5 border-b border-[#ECEEF2] dark:border-slate-800 flex items-center justify-between gap-3">
-              <button
-                onClick={() => setSelectedChartSymbol(null)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] bg-[#14151A] text-white hover:bg-[#23253A] font-bold text-[12px] transition-all cursor-pointer shadow-xs active:scale-95"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Back</span>
-              </button>
-
-              <div className="font-extrabold text-[16px] text-[#14151A] dark:text-slate-100 flex items-center gap-2">
-                <span>BSE:{selectedChartSymbol}</span>
-                <span className="text-[11px] font-bold bg-[#EEF0FE] text-[#6366F1] px-2 py-0.5 rounded-full">
-                  Live Terminal
-                </span>
-              </div>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-3 sm:p-5 flex flex-col gap-4">
-              <div className="border border-[#ECEEF2] dark:border-slate-800 rounded-[16px] p-3.5 bg-white dark:bg-slate-900 shadow-xs">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-bold text-[13.5px] text-[#14151A] dark:text-slate-100">
-                    BSE:{selectedChartSymbol} Interactive Chart
-                  </span>
-                  <a
-                    href={`https://www.tradingview.com/chart/?symbol=BSE:${selectedChartSymbol}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[#6366F1] font-bold text-[11.5px] flex items-center gap-1 hover:underline"
-                  >
-                    <span>Full Screen</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-                <div className="rounded-[12px] overflow-hidden border border-[#ECEEF2] dark:border-slate-800 h-[360px] bg-[#F8F9FB] dark:bg-slate-950">
-                  <iframe
-                    src={`https://s.tradingview.com/widgetembed/?symbol=BSE:${selectedChartSymbol}&interval=D&theme=light&style=1&timezone=Asia/Kolkata&locale=en&hide_side_toolbar=0&studies=%5B%22RSI%40tv-basicstudies%22%2C%22MASimple%40tv-basicstudies%22%5D&toolbarbg=f8f9fb`}
-                    width="100%"
-                    height="100%"
-                    frameBorder="0"
-                    allowFullScreen
-                    title={`TradingView Chart for BSE:${selectedChartSymbol}`}
-                  ></iframe>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
+

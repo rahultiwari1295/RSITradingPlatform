@@ -288,6 +288,17 @@ export default function App() {
     showToast(`Exited ${data.symbol} for ${pnl >= 0 ? "+" : ""}${pnlPct.toFixed(1)}% return`);
   };
 
+  // Delete completed history trade handler
+  const handleDeleteCompletedTrade = (tradeIdOrIndex: string | number) => {
+    setCompletedHistory(prev => {
+      if (typeof tradeIdOrIndex === "number") {
+        return prev.filter((_, idx) => idx !== tradeIdOrIndex);
+      }
+      return prev.filter(t => (t.tradeId || t.symbol) !== tradeIdOrIndex);
+    });
+    showToast("Completed trade record deleted");
+  };
+
   // Untracked attention count
   const needsAttentionCount = portfolio.filter(p => !p.isActiveInStrategy).length;
 
@@ -319,7 +330,7 @@ export default function App() {
             toBuySignals={toBuySignals}
             portfolioSymbols={portfolio.map(p => p.symbol)}
             onOpenChart={(sym) => setSelectedChartSymbol(sym)}
-            onMarkBought={(sym, price, strat) => handleBuySubmit({ symbol: sym, buyPrice: price, quantity: 1, strategyName: strat })}
+            onOpenBuyModal={(sym, price, strat) => setBuyModalData({ symbol: sym, price, strategyName: strat })}
             onRefresh={fetchLiveTerminalData}
             isSyncing={isSyncing}
           />
@@ -343,6 +354,7 @@ export default function App() {
             onOpenAddModal={() => setIsAddPositionOpen(true)}
             onOpenSellModal={(trade) => setSellModalTrade(trade)}
             onOpenChart={(sym) => setSelectedChartSymbol(sym)}
+            onDeleteCompletedTrade={handleDeleteCompletedTrade}
           />
         );
       case "backtest":
