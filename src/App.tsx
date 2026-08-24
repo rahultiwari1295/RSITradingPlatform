@@ -469,17 +469,27 @@ export default function App() {
           onNext={handleNextChart}
           isBought={portfolio.some(p => p.symbol === selectedChartSymbol)}
           onMarkBought={(sym) => {
+            const match = (toBuySignals.find(s => s.symbol === sym) ||
+              signals.find(s => s.symbol === sym) ||
+              selectedTradeDetails) as any;
             setBuyModalData({
               symbol: sym,
-              price: (selectedTradeDetails as any)?.currentPrice || (selectedTradeDetails as any)?.entryPrice || 100,
-              strategyName: (selectedTradeDetails as any)?.strategyName
+              price: match?.currentPrice || match?.entryPrice || match?.price || 100,
+              strategyName: match?.strategyName
             });
           }}
           tradeDetails={{
-            currentPrice: (selectedTradeDetails as any)?.currentPrice || (selectedTradeDetails as any)?.entryPrice,
-            entryPrice: (selectedTradeDetails as any)?.entryPrice || (selectedTradeDetails as any)?.buyPrice,
-            currentROI: (selectedTradeDetails as any)?.currentROI,
-            strategyName: (selectedTradeDetails as any)?.strategyName
+            currentPrice: (selectedTradeDetails as any)?.currentPrice || (selectedTradeDetails as any)?.price || (selectedTradeDetails as any)?.entryPrice,
+            entryPrice: (selectedTradeDetails as any)?.entryPrice || (selectedTradeDetails as any)?.buyPrice || (selectedTradeDetails as any)?.price,
+            currentROI: (selectedTradeDetails as any)?.currentROI ?? (selectedTradeDetails as any)?.pnlPct,
+            strategyName: (selectedTradeDetails as any)?.strategyName,
+            target1Price: (selectedTradeDetails as any)?.target1Price,
+            target1Pct: (selectedTradeDetails as any)?.target1Pct,
+            stopPrice: (selectedTradeDetails as any)?.stopPrice,
+            stopPct: (selectedTradeDetails as any)?.stopPct,
+            t1RiskReward: (selectedTradeDetails as any)?.t1RiskReward,
+            technicalScore: (selectedTradeDetails as any)?.technicalScore,
+            stars: (selectedTradeDetails as any)?.stars
           }}
           darkMode={darkMode}
         />

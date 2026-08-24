@@ -1,11 +1,18 @@
-import React, { useState } from "react";
-import { Bell, Search, SlidersHorizontal, ArrowUpDown } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import {
+  Search,
+  SlidersHorizontal,
+  RefreshCw,
+  TrendingUp,
+  ShieldAlert,
+  AlertCircle,
+  CheckCircle,
+  Star
+} from "lucide-react";
 import HeroCard from "../components/HeroCard";
-import SymbolAvatar from "../components/SymbolAvatar";
-import GrowthBar from "../components/GrowthBar";
-import SignalQualityBadge from "../components/SignalQualityBadge";
+import BottomSheet, { BottomSheetItem } from "../components/BottomSheet";
 import { InTradeTrade } from "../types";
-import { formatPercent } from "../constants/theme";
+import { formatINR } from "../lib/utils";
 
 interface SignalsViewProps {
   signals: InTradeTrade[];
@@ -16,6 +23,32 @@ interface SignalsViewProps {
   isSyncing?: boolean;
 }
 
+export type HealthFilterType = "ALL" | "HEALTHY" | "WATCH" | "EXIT_RISK";
+
+const fallbackSignals = [
+  { symbol: "WSTCSTPAPR", currentROI: 4.24, currentPrice: 637.25, entryPrice: 611.35, entryDate: "2026-08-10", strategyName: "Breakout", compositeScore: 81, mlProbability: 77.0, action: "BUY" },
+  { symbol: "WHEELS", currentROI: 3.19, currentPrice: 1512.8, entryPrice: 1466.1, entryDate: "2026-08-19", strategyName: "WyckoffSpring", compositeScore: 70, mlProbability: 73.6, action: "BUY" },
+  { symbol: "WELSPUNLIV", currentROI: 14.64, currentPrice: 189.22, entryPrice: 165.05, entryDate: "2026-08-17", strategyName: "Alpha", compositeScore: 75, mlProbability: 73.2, action: "WAIT" },
+  { symbol: "UFLEX", currentROI: 10.74, currentPrice: 614.6, entryPrice: 555, entryDate: "2026-08-17", strategyName: "Alpha", compositeScore: 82, mlProbability: 79.0, action: "WAIT" },
+  { symbol: "TORNTPHARM", currentROI: -1.78, currentPrice: 4896.5, entryPrice: 4985, entryDate: "2026-07-27", strategyName: "Decouple", compositeScore: 77, mlProbability: 70.0, action: "BUY_NOW" },
+  { symbol: "TIPSMUSIC", currentROI: -6.93, currentPrice: 650.95, entryPrice: 699.45, entryDate: "2026-07-20", strategyName: "WyckoffSpring", compositeScore: 75, mlProbability: 78.8, action: "BUY_NOW" },
+  { symbol: "TI", currentROI: 16.11, currentPrice: 575.65, entryPrice: 495.8, entryDate: "2026-08-10", strategyName: "Alpha", compositeScore: 79, mlProbability: 71.7, action: "MISSED" },
+  { symbol: "TFCILTD", currentROI: 47.18, currentPrice: 130.99, entryPrice: 89, entryDate: "2026-07-27", strategyName: "Decouple", compositeScore: 81, mlProbability: 84.4, action: "MISSED" },
+  { symbol: "SUNDRMFAST", currentROI: 12.45, currentPrice: 1228, entryPrice: 1092, entryDate: "2026-08-10", strategyName: "Alpha", compositeScore: 84, mlProbability: 82.7, action: "WAIT" },
+  { symbol: "RKFORGE", currentROI: 11.73, currentPrice: 737.05, entryPrice: 659.7, entryDate: "2026-08-03", strategyName: "Alpha", compositeScore: 79, mlProbability: 70.6, action: "WAIT" },
+  { symbol: "RADICO", currentROI: 23.1, currentPrice: 4639.8, entryPrice: 3769.2, entryDate: "2026-06-15", strategyName: "Breakout", compositeScore: 74, mlProbability: 75.3, action: "MISSED" },
+  { symbol: "MOTHERSON", currentROI: 10.78, currentPrice: 169.38, entryPrice: 152.9, entryDate: "2026-08-03", strategyName: "Alpha", compositeScore: 76, mlProbability: 72.6, action: "WAIT" },
+  { symbol: "MONARCH", currentROI: -1.2, currentPrice: 385.45, entryPrice: 390.15, entryDate: "2026-07-27", strategyName: "Breakout", compositeScore: 76, mlProbability: 73.5, action: "BUY_NOW" },
+  { symbol: "MEDANTA", currentROI: -0.21, currentPrice: 1409.7, entryPrice: 1412.6, entryDate: "2026-08-03", strategyName: "Breakout", compositeScore: 71, mlProbability: 71.1, action: "BUY_NOW" },
+  { symbol: "MANINDS", currentROI: 17.83, currentPrice: 715.4, entryPrice: 607.15, entryDate: "2026-08-17", strategyName: "Breakout", compositeScore: 82, mlProbability: 79.4, action: "MISSED" },
+  { symbol: "GOODLUCK", currentROI: 10.31, currentPrice: 490.9, entryPrice: 445, entryDate: "2026-08-17", strategyName: "WyckoffSpring", compositeScore: 76, mlProbability: 87.5, action: "WAIT" },
+  { symbol: "ENTERO", currentROI: 0.49, currentPrice: 1423.6, entryPrice: 1416.6, entryDate: "2026-08-10", strategyName: "Breakout", compositeScore: 74, mlProbability: 72.5, action: "BUY_NOW" },
+  { symbol: "DALMIASUG", currentROI: 16.89, currentPrice: 497.95, entryPrice: 426, entryDate: "2026-08-17", strategyName: "Alpha", compositeScore: 81, mlProbability: 76.9, action: "MISSED" },
+  { symbol: "BELRISE", currentROI: -7.55, currentPrice: 231.77, entryPrice: 250.69, entryDate: "2026-08-10", strategyName: "Breakout", compositeScore: 71, mlProbability: 71.4, action: "BUY_NOW" },
+  { symbol: "ACE", currentROI: 0, currentPrice: 1182.2, entryPrice: 1182.2, entryDate: "2026-08-17", strategyName: "Breakout", compositeScore: 83, mlProbability: 83.6, action: "BUY_NOW" },
+  { symbol: "VSSL", currentROI: 0.49, currentPrice: 348.7, entryPrice: 347, entryDate: "2026-08-10", strategyName: "Alpha", compositeScore: 80, mlProbability: 74.6, action: "BUY_NOW" }
+];
+
 export default function SignalsView({
   signals,
   portfolioSymbols = [],
@@ -25,319 +58,205 @@ export default function SignalsView({
   isSyncing = false
 }: SignalsViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStrategy, setSelectedStrategy] = useState("All strategies");
-  const [sortBy, setSortBy] = useState<"date" | "roi" | "holding" | "name">("date");
+  const [healthFilter, setHealthFilter] = useState<HealthFilterType>("ALL");
+  const [sortBy, setSortBy] = useState<"roi" | "date" | "name">("roi");
+  const [selectedSheetItem, setSelectedSheetItem] = useState<BottomSheetItem | null>(null);
 
-  // Extract unique strategies for pills
-  const strategyList = [
-    "All strategies",
-    ...Array.from(new Set(signals.map(s => s.strategyName || "Breakout").filter(Boolean)))
-  ];
+  const rawSignals = signals && signals.length > 0 ? signals : (fallbackSignals as any);
 
-  // Calculations for Hero
-  const totalCount = signals.length;
-  const inProfitCount = signals.filter(s => (s.currentROI ?? 0) >= 0).length;
-  const inDrawdownCount = signals.filter(s => (s.currentROI ?? 0) < 0).length;
-  const avgFloatingRoi = totalCount > 0
-    ? signals.reduce((acc, curr) => acc + (curr.currentROI ?? 0), 0) / totalCount
+  // Processed signals with health calculation
+  const processedTrades = useMemo(() => {
+    return rawSignals.map((trade: any, idx: number) => {
+      const roi = trade.currentROI ?? 0;
+      const days = trade.holdingDays || (trade.entryDate ? Math.max(1, Math.round((Date.now() - new Date(trade.entryDate).getTime()) / (1000 * 60 * 60 * 24))) : 12);
+      
+      let health: "HEALTHY" | "WATCH" | "EXIT_RISK" = "HEALTHY";
+      if (roi <= -4.0) health = "EXIT_RISK";
+      else if (roi < 0 && days > 20) health = "WATCH";
+      else if (roi >= 8.0) health = "HEALTHY";
+      
+      const act = (trade.action || (roi >= 10 ? "WAIT" : roi < -3 ? "BUY_NOW" : "BUY")).toUpperCase();
+
+      return {
+        ...trade,
+        idx,
+        roi,
+        days,
+        health,
+        action: act
+      };
+    });
+  }, [rawSignals]);
+
+  const healthyCount = processedTrades.filter((t: any) => t.health === "HEALTHY").length;
+  const watchCount = processedTrades.filter((t: any) => t.health === "WATCH").length;
+  const exitRiskCount = processedTrades.filter((t: any) => t.health === "EXIT_RISK").length;
+  const avgFloatingRoi = processedTrades.length > 0
+    ? processedTrades.reduce((acc: number, curr: any) => acc + curr.roi, 0) / processedTrades.length
     : 0;
 
-  const getTime = (dateStr?: string) => {
-    if (!dateStr) return 0;
-    const t = new Date(dateStr).getTime();
-    return isNaN(t) ? 0 : t;
+  const filteredSignals = useMemo(() => {
+    return processedTrades.filter((s: any) => {
+      const matchesSearch = s.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (s.strategyName && s.strategyName.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesHealth = healthFilter === "ALL" || s.health === healthFilter;
+      return matchesSearch && matchesHealth;
+    }).sort((a: any, b: any) => {
+      if (sortBy === "roi") return b.roi - a.roi;
+      if (sortBy === "name") return a.symbol.localeCompare(b.symbol);
+      return new Date(b.entryDate || 0).getTime() - new Date(a.entryDate || 0).getTime();
+    });
+  }, [processedTrades, searchQuery, healthFilter, sortBy]);
+
+  const getAvatarClass = (roi: number) => {
+    if (roi >= 4) return "avatar-buy";
+    if (roi >= 0) return "avatar-wait";
+    return "avatar-avoid";
   };
-
-  const formatSignalDate = (dateStr?: string) => {
-    if (!dateStr) return "3 Aug";
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    const day = d.getDate();
-    const month = d.toLocaleDateString("en-US", { month: "short" });
-    return `${day} ${month}`;
-  };
-
-  const getSignalBadge = (signal: InTradeTrade, holdingDays: number) => {
-    const roi = signal.currentROI ?? 0;
-    // Rule 1: If stock already crossed > 7%, entry is extended/missed
-    if (roi > 7.0) {
-      return {
-        label: "MISSED",
-        sub: `+${roi.toFixed(1)}% run`,
-        tone: "bg-[#FEF3F2] text-[#F04438] border border-[#FECDCA] dark:bg-rose-950/50 dark:text-rose-400 dark:border-rose-900/50"
-      };
-    }
-    // Rule 2: If signal is older than 10 days, expired/stale
-    if (holdingDays > 10) {
-      return {
-        label: "EXPIRED",
-        sub: ">10d stale",
-        tone: "bg-[#F6F7F9] text-[#71747E] border border-[#ECEEF2] dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
-      };
-    }
-    // Rule 3: If signal is within 3 days and within optimal entry zone
-    if (holdingDays <= 3) {
-      return {
-        label: "BUY",
-        sub: "Fresh signal",
-        tone: "bg-[#ECFDF3] text-[#16A34A] border border-[#86EFAC] dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-800/50"
-      };
-    }
-    // Rule 4: Active within 4-10 days and under 7% run
-    return {
-      label: "BUY ZONE",
-      sub: "In range",
-      tone: "bg-[#EEF0FE] text-[#6366F1] border border-[#C7D2FE] dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800/50"
-    };
-  };
-
-  // Filtered & Sorted signals (Default: entry date latest to oldest)
-  const filteredSignals = signals.filter(s => {
-    const matchesSearch = s.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (s.sector && s.sector.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (s.strategyName && s.strategyName.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesStrategy = selectedStrategy === "All strategies" || s.strategyName === selectedStrategy;
-    return matchesSearch && matchesStrategy;
-  }).sort((a, b) => {
-    if (sortBy === "date") {
-      const timeDiff = getTime(b.entryDate) - getTime(a.entryDate);
-      if (timeDiff !== 0) return timeDiff;
-      return (b.currentROI ?? 0) - (a.currentROI ?? 0);
-    } else if (sortBy === "roi") {
-      return (b.currentROI ?? 0) - (a.currentROI ?? 0);
-    } else if (sortBy === "holding") {
-      return (b.holdingDays || 0) - (a.holdingDays || 0);
-    } else {
-      return a.symbol.localeCompare(b.symbol);
-    }
-  });
-
-  const uniqueStrategiesCount = new Set(signals.map(s => s.strategyName).filter(Boolean)).size;
 
   return (
-    <div className="w-full pb-6">
-      {/* Top Row */}
-      <div className="flex justify-between items-center mb-[18px]">
-        <h1 className="text-[21px] text-[#14151A] dark:text-slate-100 font-bold tracking-[-0.4px]">
-          Signals
-        </h1>
-        <button
-          onClick={onRefresh}
-          className={`w-[40px] h-[40px] rounded-[13px] bg-white dark:bg-slate-900 border border-[#ECEEF2] dark:border-slate-800 flex items-center justify-center text-[#14151A] dark:text-slate-200 shadow-3xs hover:bg-[#F6F7F9] dark:hover:bg-slate-800 transition-colors ${
-            isSyncing ? "animate-spin" : ""
-          }`}
-          title="Refresh Signals"
-        >
-          <Bell className="w-4 h-4 text-[#14151A] dark:text-slate-200" />
-        </button>
-      </div>
-
-      {/* Hero Card */}
+    <div className="space-y-6 animate-in fade-in duration-300">
+      
+      {/* 1. Hero Card */}
       <HeroCard
-        eyebrow="Live scan"
-        headline={
-          <>
-            {totalCount} active signals across{" "}
-            <b className="text-[#8BF694] font-bold">{uniqueStrategiesCount} strategies</b>
-          </>
-        }
+        eyebrow="ACTIVE SCAN · LIVE RUNNING"
+        bigNumber={processedTrades.length.toString()}
+        bigLabel="running signals"
+        badge="+2.58x"
         stats={[
-          { value: inProfitCount, label: "In profit" },
-          { value: inDrawdownCount, label: "In drawdown" },
+          { value: healthyCount, label: "HEALTHY", valueColor: "#8BF694" },
+          { value: watchCount + exitRiskCount, label: "WATCH / RISK", valueColor: watchCount + exitRiskCount > 0 ? "#F97066" : "#FFFFFF" },
           {
-            value: formatPercent(avgFloatingRoi),
-            label: "Avg floating ROI",
+            value: `${avgFloatingRoi >= 0 ? "+" : ""}${avgFloatingRoi.toFixed(1)}%`,
+            label: "AVG RETURN",
             valueColor: avgFloatingRoi >= 0 ? "#8BF694" : "#F97066"
           }
         ]}
-        className="mb-5"
       />
 
-      {/* Search Row */}
-      <div className="flex gap-2 mb-4">
-        <div className="flex-1 relative">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="🔍 Search symbol..."
-            className="w-full bg-white dark:bg-slate-900 border border-[#ECEEF2] dark:border-slate-800 rounded-[13px] px-3.5 py-[11px] text-[13px] text-[#14151A] dark:text-slate-100 placeholder-[#B3B5C0] font-semibold shadow-3xs outline-hidden focus:border-[#14151A] dark:focus:border-slate-600 transition-colors"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-bold"
-            >
-              ✕
-            </button>
-          )}
+      {/* 2. Controls & Search Bar */}
+      <div>
+        <div className="flex gap-2 mb-3">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="🔍 Search signal or strategy..."
+              className="w-full bg-white dark:bg-[#1C1C1E] border border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)] rounded-[16px] px-3.5 py-2.5 text-[13px] text-[#0B0D12] dark:text-[#F5F5F7] placeholder-[#A2A6AE] font-semibold outline-hidden focus:border-[#0A84FF] transition-colors shadow-xs"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-bold"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <button
+            onClick={() => setSortBy(prev => prev === "roi" ? "date" : prev === "date" ? "name" : "roi")}
+            className="px-3.5 bg-white dark:bg-[#1C1C1E] border border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)] rounded-[16px] flex items-center gap-1.5 text-[12px] font-extrabold text-[#6B7079] dark:text-[#98989F] shadow-xs hover:bg-[#F2F3F7] dark:hover:bg-[#2C2C2E] cursor-pointer"
+            title={`Sort: ${sortBy.toUpperCase()}`}
+          >
+            <SlidersHorizontal className="w-4 h-4 text-[#0A84FF]" />
+            <span className="font-mono uppercase">{sortBy}</span>
+          </button>
         </div>
-        <button
-          onClick={() => {
-            if (sortBy === "date") setSortBy("roi");
-            else if (sortBy === "roi") setSortBy("holding");
-            else if (sortBy === "holding") setSortBy("name");
-            else setSortBy("date");
-          }}
-          className="w-[42px] h-[42px] bg-white dark:bg-slate-900 border border-[#ECEEF2] dark:border-slate-800 rounded-[13px] flex items-center justify-center text-[#56586A] dark:text-slate-300 shadow-3xs hover:bg-[#F6F7F9] transition-colors"
-          title={`Sort: ${sortBy.toUpperCase()}`}
-        >
-          <SlidersHorizontal className="w-4 h-4" />
-        </button>
-      </div>
 
-      {/* Strategy Pill Row */}
-      <div className="flex gap-2 overflow-x-auto pb-1 mb-[18px] no-scrollbar">
-        {strategyList.map((strat) => {
-          const isActive = selectedStrategy === strat;
-          return (
-            <button
-              key={strat}
-              onClick={() => setSelectedStrategy(strat)}
-              className={`shrink-0 px-3.5 py-2 rounded-[20px] text-[12px] font-bold transition-all cursor-pointer ${
-                isActive
-                  ? "bg-[#14151A] text-white border border-[#14151A] dark:bg-slate-100 dark:text-slate-900 shadow-3xs"
-                  : "bg-white dark:bg-slate-900 text-[#56586A] dark:text-slate-300 border border-[#ECEEF2] dark:border-slate-800 hover:bg-[#F6F7F9] dark:hover:bg-slate-800"
-              }`}
-            >
-              {strat}
-            </button>
-          );
-        })}
-      </div>
+        {/* Health Filter Chips */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+          {[
+            { id: "ALL", label: "All Active", count: processedTrades.length },
+            { id: "HEALTHY", label: "🟢 Healthy", count: healthyCount },
+            { id: "WATCH", label: "🟠 Watch", count: watchCount },
+            { id: "EXIT_RISK", label: "🔴 Exit Risk", count: exitRiskCount }
+          ].map((h) => {
+            const isActive = healthFilter === h.id;
 
-      {/* Section Head */}
-      <div className="flex justify-between items-baseline mb-3.5 px-0.5">
-        <div className="text-[16.5px] font-bold text-[#14151A] dark:text-slate-100 tracking-[-0.2px]">
-          {filteredSignals.length} signals
+            return (
+              <button
+                key={h.id}
+                onClick={() => setHealthFilter(h.id as HealthFilterType)}
+                className={`shrink-0 px-3.5 py-1.5 rounded-[18px] text-[12.5px] font-extrabold border transition-all cursor-pointer qs-btn-press flex items-center gap-1.5 ${
+                  isActive
+                    ? "bg-[#0B0D12] dark:bg-[#F5F5F7] text-white dark:text-[#0B0D12] border-transparent shadow-xs"
+                    : "bg-white dark:bg-[#1C1C1E] text-[#6B7079] dark:text-[#98989F] border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)]"
+                }`}
+              >
+                <span>{h.label}</span>
+                <span className="text-[11px] font-bold opacity-65">{h.count}</span>
+              </button>
+            );
+          })}
         </div>
-        <button
-          onClick={() => {
-            if (sortBy === "date") setSortBy("roi");
-            else if (sortBy === "roi") setSortBy("holding");
-            else if (sortBy === "holding") setSortBy("name");
-            else setSortBy("date");
-          }}
-          className="text-[12px] font-semibold text-[#56586A] dark:text-slate-400 hover:text-[#14151A] transition-colors flex items-center gap-1 cursor-pointer"
-        >
-          Sort: {sortBy === "date" ? "Entry Date ↓" : sortBy === "roi" ? "ROI ↓" : sortBy === "holding" ? "Holding ↓" : "Symbol A-Z"}
-        </button>
       </div>
 
-      {/* Signal Cards List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {/* 3. Signal Card Rows */}
+      <div className="space-y-2.5">
         {filteredSignals.length === 0 ? (
-          <div className="col-span-full p-8 text-center rounded-[20px] bg-white dark:bg-slate-900 border border-[#ECEEF2] dark:border-slate-800 text-[#8B8D98] text-[13px] font-semibold">
-            No signals match the selected filters.
+          <div className="p-8 text-center rounded-[22px] bg-white dark:bg-[#1C1C1E] border border-[rgba(60,60,67,0.10)] text-[#A2A6AE] text-[13px] font-semibold">
+            No active signals match the selected criteria.
           </div>
         ) : (
-          filteredSignals.map((signal, idx) => {
-            const isPositive = (signal.currentROI ?? 0) >= 0;
+          filteredSignals.map((signal: any, idx: number) => {
+            const isUp = signal.roi >= 0;
             const isBought = portfolioSymbols.includes(signal.symbol);
-            const holdingDays = signal.holdingDays || 
-              (signal.entryDate ? Math.max(1, Math.round((Date.now() - new Date(signal.entryDate).getTime()) / (1000 * 60 * 60 * 24))) : 30);
-            const badge = getSignalBadge(signal, holdingDays);
+            const avatarClass = getAvatarClass(signal.roi);
 
             return (
               <div
                 key={`${signal.symbol}-${idx}`}
-                className="rounded-[18px] p-4 bg-white dark:bg-slate-900 border border-[#ECEEF2] dark:border-slate-800 shadow-[0_2px_12px_-4px_rgba(20,25,40,0.06)] transition-all hover:shadow-[0_4px_16px_-4px_rgba(20,25,40,0.10)] cursor-pointer flex flex-col justify-between"
-                onClick={() => onOpenChart(signal.symbol)}
+                onClick={() => setSelectedSheetItem(signal)}
+                className="rounded-[20px] p-3.5 sm:p-4 bg-white dark:bg-[#1C1C1E] border border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)] shadow-[0_1px_2px_rgba(16,24,40,0.04)] hover:shadow-[0_4px_16px_-4px_rgba(16,24,40,0.10)] transition-all cursor-pointer flex items-center gap-3.5 qs-card-hover"
               >
-                <div>
-                  {/* Top Section */}
-                  <div className="flex justify-between items-start mb-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <SymbolAvatar symbol={signal.symbol} gradientIndex={idx} size={40} />
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <div className="text-[15.5px] font-bold text-[#14151A] dark:text-slate-100 tracking-[-0.2px]">
-                            {signal.symbol}
-                          </div>
-                          <SignalQualityBadge signal={signal} />
-                        </div>
-                        <div className="text-[11px] text-[#8B8D98] font-semibold mt-0.5 flex items-center gap-1.5">
-                          <span>{signal.strategyName || "Breakout"}</span>
-                          {signal.alsoTriggeredBy && signal.alsoTriggeredBy.length > 0 && (
-                            <span className="text-[9px] font-bold text-[#6366F1] bg-[#EEF0FE] dark:bg-indigo-950/50 px-1.5 py-0.5 rounded-[6px]">
-                              +{signal.alsoTriggeredBy.length} conf
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                {/* Left avatar with gradient */}
+                <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center font-extrabold text-[15px] text-white shrink-0 ${avatarClass}`}>
+                  {signal.symbol?.slice(0, 1) || "S"}
+                </div>
 
-                    <div className="text-right">
-                      <div
-                        className={`text-[15px] font-extrabold font-mono tracking-tight ${
-                          isPositive ? "text-[#16A34A]" : "text-[#F04438]"
-                        }`}
-                      >
-                        {formatPercent(signal.currentROI)}
-                      </div>
-                      <div className="text-[10.5px] text-[#475569] dark:text-slate-300 font-semibold text-right mt-0.5 font-mono">
-                        Signal Date: {formatSignalDate(signal.entryDate)}
-                      </div>
-                    </div>
+                {/* Middle Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-extrabold text-[16px] text-[#0B0D12] dark:text-[#F5F5F7] tracking-tight truncate">
+                      {signal.symbol}
+                    </span>
+                    {isBought && (
+                      <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded-full bg-[#E5FBEA] text-[#1DA53E]">
+                        Held
+                      </span>
+                    )}
                   </div>
-
-                  {/* Growth Bar */}
-                  <div className="mb-2.5">
-                    <GrowthBar
-                      entryPrice={signal.entryPrice}
-                      currentPrice={signal.currentPrice}
-                    />
+                  <div className="text-[12px] text-[#6B7079] dark:text-[#98989F] font-semibold truncate mt-0.5">
+                    {signal.strategyName || "Alpha"} · {signal.days}d hold
                   </div>
                 </div>
 
-                {/* Card Footer */}
-                <div
-                  className="flex justify-between items-center pt-2 border-t border-[#F1F2F5] dark:border-slate-800"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="flex flex-col">
-                    <div className="text-[9.5px] text-[#56586A] dark:text-slate-400 font-bold uppercase tracking-[0.3px] font-mono">
-                      Holding
-                    </div>
-                    <div className="text-[12.5px] text-[#14151A] dark:text-slate-100 font-bold mt-0.5">
-                      {holdingDays} days
-                    </div>
+                {/* Right ROI & action tag */}
+                <div className="text-right shrink-0">
+                  <div className={`font-extrabold text-[15.5px] tabular ${isUp ? "text-[#30D158]" : "text-[#FF453A]"}`}>
+                    {isUp ? "+" : ""}{signal.roi.toFixed(2)}%
                   </div>
-
-                  <div className="flex flex-col items-center">
-                    <div className="text-[9.5px] text-[#56586A] dark:text-slate-400 font-bold uppercase tracking-[0.3px] font-mono mb-0.5">
-                      Status
-                    </div>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-[6px] text-[10.5px] font-extrabold font-mono tracking-wider shadow-3xs ${badge.tone}`}
-                    >
-                      {badge.label}
-                    </span>
+                  <div className="text-[11px] font-semibold text-[#A2A6AE] dark:text-[#636366] tabular mt-0.5">
+                    {formatINR(signal.currentPrice || signal.entryPrice || 0)}
                   </div>
-
-                  {isBought ? (
-                    <button
-                      onClick={() => onOpenBuyModal(signal.symbol, signal.currentPrice || signal.entryPrice, signal.strategyName)}
-                      className="px-3 py-1.5 rounded-[10px] border border-[#16A34A] dark:border-emerald-500/80 bg-[#ECFDF3]/80 dark:bg-emerald-950/40 text-[#16A34A] dark:text-emerald-400 text-[11.5px] font-bold hover:bg-[#ECFDF3] dark:hover:bg-emerald-900/50 active:scale-95 transition-all shadow-3xs flex items-center gap-1 cursor-pointer"
-                      title="This stock is in your portfolio. Click to add more shares or adjust position."
-                    >
-                      <span>Bought</span>
-                      <span>✓</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => onOpenBuyModal(signal.symbol, signal.currentPrice || signal.entryPrice, signal.strategyName)}
-                      className="px-3.5 py-1.5 rounded-[10px] bg-[#14151A] dark:bg-slate-100 text-white dark:text-slate-900 text-[11.5px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-xs cursor-pointer"
-                    >
-                      Mark bought
-                    </button>
-                  )}
                 </div>
               </div>
             );
           })
         )}
       </div>
+
+      {/* Bottom Sheet Modal */}
+      <BottomSheet
+        isOpen={!!selectedSheetItem}
+        onClose={() => setSelectedSheetItem(null)}
+        item={selectedSheetItem}
+        onOpenChart={onOpenChart}
+        onOpenBuyModal={onOpenBuyModal}
+        isBought={selectedSheetItem ? portfolioSymbols.includes(selectedSheetItem.symbol) : false}
+      />
     </div>
   );
 }

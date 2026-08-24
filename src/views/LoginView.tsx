@@ -6,7 +6,7 @@ import {
   createUserWithEmailAndPassword 
 } from "firebase/auth";
 import { auth } from "../lib/firebase";
-import { Mail, Lock, User as UserIcon } from "lucide-react";
+import { Mail, Lock, ArrowRight } from "lucide-react";
 
 export default function LoginView() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -31,7 +31,7 @@ export default function LoginView() {
       if (err.code === 'auth/unauthorized-domain') {
         setError(`Domain not authorized. Please add "${window.location.hostname}" to Firebase Authorized Domains.`);
       } else if (err.message && err.message.toLowerCase().includes('database is closing')) {
-        setError("Your browser's local storage is corrupted or blocked. Please clear your site data for this page (click the lock icon in the URL bar -> Site Settings -> Clear data), or turn off Incognito mode.");
+        setError("Your browser's local storage is corrupted or blocked. Please clear your site data for this page.");
       } else {
         setError(err.message || "An error occurred during authentication.");
       }
@@ -51,7 +51,7 @@ export default function LoginView() {
       if (err.code === 'auth/unauthorized-domain') {
         setError(`Domain not authorized. Please add "${window.location.hostname}" to Firebase Authorized Domains.`);
       } else if (err.message && err.message.toLowerCase().includes('database is closing')) {
-        setError("Your browser's local storage is corrupted or blocked. Please clear your site data for this page (click the lock icon in the URL bar -> Site Settings -> Clear data), or turn off Incognito mode.");
+        setError("Your browser's local storage is corrupted or blocked. Please clear your site data.");
       } else {
         setError(err.message || "Google sign-in failed.");
       }
@@ -61,23 +61,23 @@ export default function LoginView() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFC] dark:bg-[#0E0F14] px-4 py-12 transition-colors duration-200">
-      <div className="w-full max-w-md bg-white dark:bg-[#1A1B23] p-8 rounded-[24px] shadow-sm border border-[#ECEEF2] dark:border-slate-800">
+    <div className="min-h-screen flex items-center justify-center bg-[#F2F3F7] dark:bg-[#0B0D12] px-4 py-12 transition-colors duration-200">
+      <div className="w-full max-w-md bg-white dark:bg-[#1C1C1E] p-7 sm:p-8 rounded-[28px] shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)]">
         
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-[14px] bg-[#14151A] dark:bg-indigo-600 text-white flex items-center justify-center font-extrabold text-lg shadow-xs mb-4">
+          <div className="w-13 h-13 rounded-[18px] bg-[#0A84FF] text-white flex items-center justify-center font-extrabold text-[20px] shadow-sm mb-3.5">
             QS
           </div>
-          <h1 className="text-[21px] font-bold text-[#14151A] dark:text-slate-100 tracking-[-0.4px]">
-            {isSignUp ? "Create an Account" : "Welcome Back"}
+          <h1 className="text-[22px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tracking-tight">
+            {isSignUp ? "Create your account" : "Welcome back"}
           </h1>
-          <p className="text-[13px] text-[#56586A] dark:text-slate-400 mt-1">
-            Sign in to access your trading portfolio
+          <p className="text-[13px] text-[#6B7079] dark:text-[#98989F] font-semibold mt-1 text-center">
+            Sign in to access real-time quantified trading signals
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 p-3 rounded-[12px] bg-[#FEF3F2] dark:bg-red-950/30 border border-[#FECDCA] dark:border-red-900/50 text-[#F04438] dark:text-red-400 text-[12.5px] font-semibold text-center">
+          <div className="mb-5 p-3 rounded-[14px] bg-[#FFEBEA] dark:bg-[#3A1719] border border-[rgba(255,69,58,0.25)] text-[#E0342A] dark:text-[#FF453A] text-[12px] font-bold text-center">
             {error}
           </div>
         )}
@@ -85,7 +85,7 @@ export default function LoginView() {
         <button
           onClick={handleGoogleLogin}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 bg-white dark:bg-[#14151A] border border-[#ECEEF2] dark:border-slate-700 hover:bg-[#F6F7F9] dark:hover:bg-slate-800 text-[#14151A] dark:text-slate-100 font-bold text-[13px] py-3 px-4 rounded-[14px] transition-colors mb-6 disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2.5 bg-white dark:bg-[#2C2C2E] border border-[rgba(60,60,67,0.12)] dark:border-[rgba(255,255,255,0.08)] hover:bg-[#F2F3F7] text-[#0B0D12] dark:text-[#F5F5F7] font-extrabold text-[13.5px] py-3 px-4 rounded-[16px] transition-all mb-5 disabled:opacity-50 cursor-pointer shadow-xs active:scale-[0.98]"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -96,48 +96,48 @@ export default function LoginView() {
           Continue with Google
         </button>
 
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex-1 h-px bg-[#F1F2F5] dark:bg-slate-800"></div>
-          <span className="text-[11px] font-semibold text-[#8B8D98] dark:text-slate-500 uppercase tracking-wider">
-            Or continue with email
+        <div className="flex items-center gap-3 mb-5">
+          <div className="flex-1 h-px bg-[rgba(60,60,67,0.08)] dark:bg-[rgba(255,255,255,0.08)]"></div>
+          <span className="text-[11px] font-bold text-[#A2A6AE] uppercase tracking-wider">
+            or email
           </span>
-          <div className="flex-1 h-px bg-[#F1F2F5] dark:bg-slate-800"></div>
+          <div className="flex-1 h-px bg-[rgba(60,60,67,0.08)] dark:bg-[rgba(255,255,255,0.08)]"></div>
         </div>
 
-        <form onSubmit={handleEmailAuth} className="space-y-4">
+        <form onSubmit={handleEmailAuth} className="space-y-3.5">
           <div>
-            <label className="block text-[10.5px] font-bold text-[#8B8D98] dark:text-slate-400 uppercase tracking-[0.3px] mb-1.5">
+            <label className="block text-[11px] font-extrabold text-[#6B7079] dark:text-[#98989F] uppercase tracking-wider mb-1.5">
               Email Address
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <Mail className="w-4 h-4 text-[#B3B5C0] dark:text-slate-500" />
+                <Mail className="w-4 h-4 text-[#A2A6AE]" />
               </div>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full bg-[#FAFAFC] dark:bg-[#0E0F14] border border-[#ECEEF2] dark:border-slate-700 text-[#14151A] dark:text-slate-100 text-[13px] rounded-[12px] py-2.5 pl-10 pr-4 focus:outline-none focus:border-[#6366F1] dark:focus:border-indigo-500 transition-colors"
-                placeholder="you@example.com"
+                className="w-full bg-[#F2F3F7] dark:bg-[#2C2C2E] border border-transparent focus:border-[#0A84FF] text-[#0B0D12] dark:text-[#F5F5F7] text-[13.5px] font-semibold rounded-[14px] py-2.5 pl-10 pr-4 outline-hidden transition-all"
+                placeholder="name@example.com"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-[10.5px] font-bold text-[#8B8D98] dark:text-slate-400 uppercase tracking-[0.3px] mb-1.5">
+            <label className="block text-[11px] font-extrabold text-[#6B7079] dark:text-[#98989F] uppercase tracking-wider mb-1.5">
               Password
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <Lock className="w-4 h-4 text-[#B3B5C0] dark:text-slate-500" />
+                <Lock className="w-4 h-4 text-[#A2A6AE]" />
               </div>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full bg-[#FAFAFC] dark:bg-[#0E0F14] border border-[#ECEEF2] dark:border-slate-700 text-[#14151A] dark:text-slate-100 text-[13px] rounded-[12px] py-2.5 pl-10 pr-4 focus:outline-none focus:border-[#6366F1] dark:focus:border-indigo-500 transition-colors"
+                className="w-full bg-[#F2F3F7] dark:bg-[#2C2C2E] border border-transparent focus:border-[#0A84FF] text-[#0B0D12] dark:text-[#F5F5F7] text-[13.5px] font-semibold rounded-[14px] py-2.5 pl-10 pr-4 outline-hidden transition-all"
                 placeholder="••••••••"
               />
             </div>
@@ -146,9 +146,10 @@ export default function LoginView() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#14151A] dark:bg-indigo-600 hover:bg-black dark:hover:bg-indigo-700 text-white font-bold text-[13px] py-3 px-4 rounded-[14px] transition-colors mt-2 disabled:opacity-50"
+            className="w-full bg-[#0B0D12] dark:bg-[#F5F5F7] hover:opacity-90 text-white dark:text-[#0B0D12] font-extrabold text-[13.5px] py-3.5 px-4 rounded-[16px] transition-all mt-2 disabled:opacity-50 cursor-pointer shadow-xs active:scale-[0.98] flex items-center justify-center gap-1.5"
           >
-            {loading ? "Processing..." : isSignUp ? "Sign Up" : "Sign In"}
+            <span>{loading ? "Processing..." : isSignUp ? "Create Account" : "Sign In"}</span>
+            <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
@@ -156,7 +157,7 @@ export default function LoginView() {
           <button
             type="button"
             onClick={() => setIsSignUp(!isSignUp)}
-            className="text-[12.5px] font-semibold text-[#56586A] dark:text-slate-400 hover:text-[#14151A] dark:hover:text-slate-200 transition-colors"
+            className="text-[13px] font-bold text-[#0A84FF] hover:underline transition-colors cursor-pointer"
           >
             {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
           </button>

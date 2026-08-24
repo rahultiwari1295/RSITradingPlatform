@@ -9,10 +9,13 @@ import {
   Minimize2,
   TrendingUp,
   TrendingDown,
-  Clock
+  Target,
+  ShieldAlert,
+  Bot
 } from "lucide-react";
 import TradingViewWidget from "../TradingViewWidget";
 import { formatINR, formatPercent } from "../../constants/theme";
+import { computeTradePlan, getStrategyTrackRecord } from "../../constants/strategies";
 
 interface ChartModalProps {
   symbol: string;
@@ -27,6 +30,14 @@ interface ChartModalProps {
     entryPrice?: number;
     currentROI?: number;
     strategyName?: string;
+    target1Price?: number;
+    target1Pct?: number;
+    stopPrice?: number;
+    stopPct?: number;
+    t1RiskReward?: string;
+    mlProbability?: number;
+    technicalScore?: number;
+    stars?: number;
   };
   darkMode?: boolean;
 }
@@ -62,6 +73,19 @@ export default function ChartModal({
   const roi = tradeDetails?.currentROI ?? 0;
   const isPositive = roi >= 0;
 
+  const tradePlan = computeTradePlan({
+    entryPrice: tradeDetails?.entryPrice || tradeDetails?.currentPrice,
+    price: tradeDetails?.currentPrice,
+    strategyName: tradeDetails?.strategyName,
+    target1Price: tradeDetails?.target1Price,
+    target1Pct: tradeDetails?.target1Pct,
+    stopPrice: tradeDetails?.stopPrice,
+    stopPct: tradeDetails?.stopPct,
+    t1RiskReward: tradeDetails?.t1RiskReward
+  });
+
+  const track = tradePlan.strategyTrack;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm animate-in fade-in duration-200 p-0 sm:p-2">
       <div
@@ -84,14 +108,12 @@ export default function ChartModal({
                 <h2 className="text-[17px] sm:text-[19px] font-extrabold text-[#14151A] dark:text-slate-100 tracking-tight">
                   BSE:{symbol}
                 </h2>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-[6px] bg-[#EEF0FE] text-[#6366F1] uppercase">
-                  Cash Market
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-[6px] bg-[#EEF0FE] text-[#6366F1] uppercase font-mono">
+                  Cash
                 </span>
-                {tradeDetails?.strategyName && (
-                  <span className="text-[10.5px] font-bold text-[#8B8D98] hidden md:inline">
-                    &bull; {tradeDetails.strategyName}
-                  </span>
-                )}
+                <span className="text-[11px] font-bold text-[#56586A] dark:text-slate-300 hidden md:inline">
+                  {track.icon} {track.displayName} · {track.winRate.toFixed(1)}% WR
+                </span>
               </div>
 
               <div className="flex items-center gap-2 text-[11.5px] font-mono mt-0.5">
@@ -217,15 +239,53 @@ export default function ChartModal({
         </div>
 
         {/* Embedded Full-Height TradingView Chart Container */}
-        <div className="flex-1 w-full h-[calc(100vh-65px)] bg-slate-950 relative">
+        <div className="flex-1 w-full bg-slate-950 relative min-h-[300px]">
           <TradingViewWidget
             symbol={symbol}
             interval={interval}
             theme={darkMode ? "dark" : "light"}
           />
         </div>
+
+        {/* Trade Execution Plan Strip at Bottom */}
+        <div className="px-4 py-2.5 bg-white dark:bg-slate-900 border-t border-[#ECEEF2] dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 shrink-0">
+          <div className="flex items-center gap-3 sm:gap-6 flex-wrap text-[11.5px] font-semibold text-[#56586A] dark:text-slate-300">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-[#8B8D98] font-mono block">Entry Plan</span>
+              <span className="font-extrabold text-[#14151A] dark:text-slate-100 font-mono text-[12.5px]">
+                {formatINR(tradePlan.entryPrice)}
+              </span>
+            </div>
+
+            <div>
+              <span className="text-[10px] uppercase font-bold text-[#8B8D98] font-mono block">Target 1</span>
+              <span className="font-extrabold text-[#16A34A] font-mono text-[12.5px]">
+                {formatINR(tradePlan.target1Price)} (+{tradePlan.target1Pct.toFixed(0)}%)
+              </span>
+            </div>
+
+            <div>
+              <span className="text-[10px] uppercase font-bold text-[#8B8D98] font-mono block">Stop Loss</span>
+              <span className="font-extrabold text-[#F04438] font-mono text-[12.5px]">
+                {formatINR(tradePlan.stopPrice)} ({tradePlan.stopPct.toFixed(1)}%)
+              </span>
+            </div>
+
+            <div>
+              <span className="text-[10px] uppercase font-bold text-[#8B8D98] font-mono block">T1 R:R</span>
+              <span className="font-extrabold text-[#6366F1] dark:text-indigo-400 font-mono text-[12.5px]">
+                {tradePlan.t1RiskReward}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-[11px] font-semibold text-[#8B8D98] dark:text-slate-400">
+            <span>📈 Typical winner +{track.typicalWinnerPct.toFixed(1)}%</span>
+            <span>•</span>
+            <span className="text-[#6366F1] font-mono">Dynamic trailing stop active</span>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
-

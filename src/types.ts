@@ -75,6 +75,19 @@ export interface ToBuySignal {
   footerLine?: string;
   waitReason?: string;
   missedNote?: string;
+  // Engine-defined trade plan
+  target1Price?: number;
+  target1Pct?: number;
+  stopPrice?: number;
+  stopPct?: number;
+  t1RiskReward?: string;
+  // Strategy track record
+  strategyWinRate?: number;
+  strategyTradeCount?: number;
+  strategySampleLabel?: string;
+  typicalWinnerPct?: number;
+  volumeVsAverage?: number;
+  isStarred?: boolean;
   [key: string]: any;
 }
 
@@ -105,6 +118,16 @@ export interface InTradeTrade {
   marketScore?: number;
   researchScore?: number | null;
   alsoTriggeredBy?: string[];
+  // Health & Trade plan
+  target1Price?: number;
+  target1Pct?: number;
+  stopPrice?: number;
+  stopPct?: number;
+  t1RiskReward?: string;
+  activeHealthStatus?: "HEALTHY" | "WATCH" | "EXIT_RISK";
+  trailingStopDistance?: number;
+  volumeVsAverage?: number;
+  holdingDays?: number;
   [key: string]: any;
 }
 
