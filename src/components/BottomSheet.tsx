@@ -1,5 +1,5 @@
 import React from "react";
-import { X, TrendingUp, AlertTriangle, Clock, LineChart } from "lucide-react";
+import { X, TrendingUp, AlertTriangle, Clock, LineChart, Star } from "lucide-react";
 import { formatINR } from "../lib/utils";
 
 export interface BottomSheetItem {
@@ -15,6 +15,7 @@ export interface BottomSheetItem {
   action?: string; // "BUY", "BUY_NOW", "WAIT", "MISSED", etc.
   compositeScore?: number;
   mlProbability?: number;
+  stars?: number;
   holdingDays?: number;
   pnlLabel?: string;
   exitReason?: string;
@@ -85,7 +86,8 @@ export default function BottomSheet({
     actionDesc = item.missedNote || "Price has moved past safe risk-reward boundaries. Let this move conclude.";
   }
 
-  const score = item.compositeScore ?? (item.mlProbability ? Math.round(item.mlProbability * 100) : 76);
+  const score = item.compositeScore ?? (item.mlProbability ? (item.mlProbability <= 1 ? Math.round(item.mlProbability * 100) : Math.round(item.mlProbability)) : 76);
+  const stars = typeof item.stars === "number" && item.stars > 0 ? item.stars : (score >= 82 ? 5.0 : score >= 76 ? 4.5 : score >= 70 ? 4.0 : 3.5);
 
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-end sm:items-center">
@@ -107,8 +109,12 @@ export default function BottomSheet({
           {/* Header */}
           <div className="flex justify-between items-start mb-3.5">
             <div>
-              <div className="text-[22px] font-extrabold text-[#14151A] dark:text-white tracking-tight flex items-center gap-2">
-                {item.symbol}
+              <div className="text-[22px] font-extrabold text-[#14151A] dark:text-white tracking-tight flex items-center gap-2 flex-wrap">
+                <span>{item.symbol}</span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-mono">
+                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                  {stars.toFixed(1)}
+                </span>
                 {isBought && (
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ECFDF3] text-[#16A34A] border border-[#86EFAC]/40 font-mono">
                     HELD ✓
@@ -172,10 +178,10 @@ export default function BottomSheet({
             </div>
           </div>
 
-          {/* Conviction Score */}
+          {/* Trade Confidence Score */}
           <div className="mb-4">
             <div className="flex justify-between items-center mb-1.5 text-[10.5px] font-bold uppercase tracking-wider text-[#8B8D98] font-mono">
-              <span>Algorithmic Conviction</span>
+              <span>Trade Confidence</span>
               <span className="text-[#14151A] dark:text-white">{score}/100</span>
             </div>
             <div className="h-2 rounded-full bg-[#F1F2F5] dark:bg-white/10 overflow-hidden">
