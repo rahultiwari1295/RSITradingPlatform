@@ -166,18 +166,24 @@ export interface ClosedTrade {
 
 export interface ManualPortfolioTrade {
   tradeId?: string;
+  id?: string;
   symbol: string;
   buyPrice: number;
   quantity?: number;
-  totalInvested?: number;
-  strategyName?: string;
   date?: string;
-  broker?: string;
-  currentPrice?: number | null;
-  currentROI?: number | null;
-  isActiveInStrategy: boolean;
+  buyDate?: string;
+  currentPrice?: number;
+  currentROI?: number;
+  strategyName?: string;
+  totalInvested?: number;
   daysHeld?: number;
+  isActiveInStrategy?: boolean;
+  stopLoss?: number;
+  targetPrice?: number;
+  [key: string]: any;
 }
+
+export type UserTrade = ManualPortfolioTrade;
 
 export interface CompletedTrade {
   tradeId: string;

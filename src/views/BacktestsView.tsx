@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ClosedTrade } from "../types";
+import HeroCard from "../components/HeroCard";
 import BottomSheet, { BottomSheetItem } from "../components/BottomSheet";
 import { formatINR } from "../lib/utils";
 
@@ -20,16 +21,13 @@ const strategySummaryData = [
   { strategyName: "NR7", totalTrades: 49, winRate: 49.0, avgReturnPct: 0.15, profitFactor: 1.03, avgHoldDays: 17 }
 ];
 
-const stratGradients = [
-  ["#0A84FF", "#5E5CE6"],
-  ["#AF52DE", "#FF375F"],
-  ["#FF9500", "#FFD60A"],
-  ["#30D158", "#40C8E0"],
-  ["#FF375F", "#FF9500"],
-  ["#5E5CE6", "#AF52DE"],
-  ["#40C8E0", "#0A84FF"],
-  ["#FFD60A", "#FF9500"],
-  ["#30D158", "#0A84FF"]
+const avatarGradients = [
+  "from-[#818CF8] to-[#6366F1]",
+  "from-[#FB923C] to-[#EA580C]",
+  "from-[#34D399] to-[#059669]",
+  "from-[#F87171] to-[#EF4444]",
+  "from-[#A78BFA] to-[#8B5CF6]",
+  "from-[#22D3EE] to-[#06B6D4]"
 ];
 
 const fallbackClosedTrades = [
@@ -66,26 +64,42 @@ export default function BacktestsView({
   });
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-5 animate-in fade-in duration-300">
       
-      {/* Sub tabs: Playbook vs Closed History */}
-      <div className="flex gap-2 p-1 rounded-[16px] bg-white dark:bg-[#1C1C1E] border border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)] shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+      {/* 1. Hero Card */}
+      <HeroCard
+        eyebrow="BACKTESTED ALPHA · VERIFIED RULES"
+        headline={
+          <span>
+            9 core strategies delivering <span className="text-[#8BF694]">2.58x profit factor</span> across market cycles.
+          </span>
+        }
+        badge="Verified Audit"
+        stats={[
+          { value: "67.7%", label: "WIN RATE" },
+          { value: "+10.4%", label: "AVG WIN", valueColor: "#8BF694" },
+          { value: "-8.4%", label: "AVG LOSS", valueColor: "#F97066" }
+        ]}
+      />
+
+      {/* 2. Sub tabs */}
+      <div className="flex gap-1.5 p-1 rounded-[16px] bg-white dark:bg-[#14161E] border border-[#ECEEF2] dark:border-white/[0.08] qs-card-shadow">
         <button
           onClick={() => setActiveSubTab("playbook")}
-          className={`flex-1 py-2 px-3 rounded-[12px] text-[13px] font-extrabold transition-all cursor-pointer ${
+          className={`flex-1 py-2 px-3 rounded-[12px] text-[13px] font-bold transition-all cursor-pointer ${
             activeSubTab === "playbook"
-              ? "bg-[#0B0D12] dark:bg-[#F5F5F7] text-white dark:text-[#0B0D12] shadow-xs"
-              : "text-[#6B7079] dark:text-[#98989F] hover:text-[#0B0D12]"
+              ? "bg-[#14151A] dark:bg-white text-white dark:text-[#14151A] shadow-xs"
+              : "text-[#56586A] dark:text-[#8B8D98] hover:text-[#14151A]"
           }`}
         >
-          The Playbook
+          The Playbook (9)
         </button>
         <button
           onClick={() => setActiveSubTab("history")}
-          className={`flex-1 py-2 px-3 rounded-[12px] text-[13px] font-extrabold transition-all cursor-pointer ${
+          className={`flex-1 py-2 px-3 rounded-[12px] text-[13px] font-bold transition-all cursor-pointer ${
             activeSubTab === "history"
-              ? "bg-[#0B0D12] dark:bg-[#F5F5F7] text-white dark:text-[#0B0D12] shadow-xs"
-              : "text-[#6B7079] dark:text-[#98989F] hover:text-[#0B0D12]"
+              ? "bg-[#14151A] dark:bg-white text-white dark:text-[#14151A] shadow-xs"
+              : "text-[#56586A] dark:text-[#8B8D98] hover:text-[#14151A]"
           }`}
         >
           Closed Trades ({tradesList.length})
@@ -93,132 +107,63 @@ export default function BacktestsView({
       </div>
 
       {activeSubTab === "playbook" ? (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Header */}
-          <div>
-            <h1 className="text-[24px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tracking-tight">
-              The playbook
-            </h1>
-            <p className="text-[13.5px] text-[#6B7079] dark:text-[#98989F] font-semibold mt-0.5">
-              9 strategies ranked by real performance across 762 trades
-            </p>
+          <div className="flex items-center justify-between">
+            <h2 className="text-[17px] font-bold text-[#14151A] dark:text-white tracking-tight">
+              Ranked Execution Models
+            </h2>
+            <span className="text-[12px] font-mono text-[#8B8D98]">
+              762 sample size
+            </span>
           </div>
 
-          {/* Record Card — 2.58x Profit Factor */}
-          <div className="rounded-[26px] p-5 sm:p-6 bg-white dark:bg-[#1C1C1E] border border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)] shadow-[0_4px_16px_-4px_rgba(16,24,40,0.10)]">
-            <div className="flex items-baseline gap-1 mb-1">
-              <span className="text-[38px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tracking-tight tabular leading-none">
-                2.58
-              </span>
-              <span className="text-[18px] font-bold text-[#A2A6AE] dark:text-[#636366]">
-                x
-              </span>
-            </div>
-            <p className="text-[13px] text-[#6B7079] dark:text-[#98989F] font-semibold mb-4">
-              Profit factor — every ₹1 lost, ₹2.58 made back
-            </p>
-
-            <div className="grid grid-cols-3 gap-2.5">
-              <div className="p-3 rounded-[16px] bg-[#E8F2FF] dark:bg-[#0F2942]">
-                <div className="text-[18px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tabular">
-                  67.7%
-                </div>
-                <div className="text-[10.5px] font-bold text-[#6B7079] dark:text-[#98989F] uppercase tracking-wide mt-0.5">
-                  WIN RATE
-                </div>
-              </div>
-
-              <div className="p-3 rounded-[16px] bg-[#E5FBEA] dark:bg-[#0E2C17]">
-                <div className="text-[18px] font-extrabold text-[#1DA53E] tabular">
-                  +10.4%
-                </div>
-                <div className="text-[10.5px] font-bold text-[#6B7079] dark:text-[#98989F] uppercase tracking-wide mt-0.5">
-                  AVG WIN
-                </div>
-              </div>
-
-              <div className="p-3 rounded-[16px] bg-[#FFE9EF] dark:bg-[#3A1622]">
-                <div className="text-[18px] font-extrabold text-[#FF375F] tabular">
-                  -8.4%
-                </div>
-                <div className="text-[10.5px] font-bold text-[#6B7079] dark:text-[#98989F] uppercase tracking-wide mt-0.5">
-                  AVG LOSS
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Ranked Strategy Rows */}
-          <div className="space-y-3">
+          {/* Strategy Rows */}
+          <div className="space-y-2.5">
             {strategySummaryData.map((s, idx) => {
-              const grad = stratGradients[idx % stratGradients.length];
+              const gradClass = avatarGradients[idx % avatarGradients.length];
 
               return (
                 <div
                   key={s.strategyName}
-                  className="rounded-[20px] p-4 bg-white dark:bg-[#1C1C1E] border border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)] shadow-[0_1px_2px_rgba(16,24,40,0.04)] hover:shadow-[0_4px_12px_-2px_rgba(16,24,40,0.08)] transition-all qs-card-hover"
+                  className="rounded-[20px] p-4 bg-white dark:bg-[#14161E] border border-[#ECEEF2] dark:border-white/[0.08] qs-card-shadow qs-card-hover transition-all"
                 >
-                  <div className="flex justify-between items-center mb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div
-                        className="w-2.5 h-2.5 rounded-full"
-                        style={{ background: grad[0] }}
-                      />
-                      <span className="text-[15.5px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7]">
-                        {s.strategyName}
-                      </span>
-                    </div>
-                    <span className="text-[11px] font-bold text-[#A2A6AE] dark:text-[#636366] bg-[rgba(60,60,67,0.08)] dark:bg-[rgba(255,255,255,0.08)] px-2 py-0.5 rounded-[8px]">
-                      #{idx + 1}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-2 mb-3">
-                    <div>
-                      <div className="text-[16px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tabular">
-                        {s.winRate}%
+                  <div className="flex items-center justify-between gap-3 mb-2.5">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-10 h-10 rounded-[12px] bg-gradient-to-br ${gradClass} text-white flex items-center justify-center font-bold text-[13px] shadow-xs shrink-0 font-mono`}>
+                        {s.strategyName.slice(0, 2).toUpperCase()}
                       </div>
-                      <div className="text-[10px] font-bold text-[#A2A6AE] dark:text-[#636366] uppercase tracking-wide">
-                        Win rate
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-[15.5px] text-[#14151A] dark:text-white tracking-tight">
+                            {s.strategyName}
+                          </span>
+                          <span className="text-[10px] font-bold text-[#56586A] dark:text-[#8B8D98] bg-[#F1F2F5] dark:bg-white/[0.06] px-1.5 py-0.5 rounded-[6px] font-mono">
+                            #{idx + 1}
+                          </span>
+                        </div>
+                        <div className="text-[12px] text-[#56586A] dark:text-[#8B8D98] font-medium mt-0.5">
+                          {s.totalTrades} verified trades · ~{s.avgHoldDays}d hold
+                        </div>
                       </div>
                     </div>
 
-                    <div>
-                      <div className="text-[16px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tabular">
-                        {s.profitFactor >= 10 ? "99+" : `${s.profitFactor.toFixed(2)}x`}
+                    <div className="text-right shrink-0">
+                      <div className="text-[15px] font-extrabold text-[#16A34A] dark:text-emerald-400 font-mono tabular">
+                        {s.winRate.toFixed(1)}% WR
                       </div>
-                      <div className="text-[10px] font-bold text-[#A2A6AE] dark:text-[#636366] uppercase tracking-wide">
-                        Profit factor
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-[16px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tabular">
-                        {s.totalTrades}
-                      </div>
-                      <div className="text-[10px] font-bold text-[#A2A6AE] dark:text-[#636366] uppercase tracking-wide">
-                        Trades
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="text-[16px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tabular">
-                        {s.avgHoldDays}d
-                      </div>
-                      <div className="text-[10px] font-bold text-[#A2A6AE] dark:text-[#636366] uppercase tracking-wide">
-                        Hold
+                      <div className="text-[11.5px] text-[#56586A] dark:text-[#8B8D98] font-mono">
+                        {s.profitFactor}x PF
                       </div>
                     </div>
                   </div>
 
-                  {/* Colored progress bar */}
-                  <div className="h-2 rounded-full bg-[rgba(60,60,67,0.08)] dark:bg-[rgba(255,255,255,0.07)] overflow-hidden">
+                  {/* Visual Win-rate Bar */}
+                  <div className="h-1.5 rounded-full bg-[#F1F2F5] dark:bg-white/10 overflow-hidden">
                     <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${s.winRate}%`,
-                        background: `linear-gradient(90deg, ${grad[0]}, ${grad[1]})`
-                      }}
+                      className="h-full rounded-full bg-gradient-to-r from-[#6366F1] to-[#10B981]"
+                      style={{ width: `${s.winRate}%` }}
                     />
                   </div>
                 </div>
@@ -228,83 +173,82 @@ export default function BacktestsView({
         </div>
       ) : (
         /* History View */
-        <div className="space-y-4">
-          <div>
-            <h1 className="text-[24px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tracking-tight">
-              Closed trades
-            </h1>
-            <p className="text-[13.5px] text-[#6B7079] dark:text-[#98989F] font-semibold mt-0.5">
-              Most recent first · 3,038 all-time records
-            </p>
-          </div>
-
+        <div className="space-y-3">
           {/* Filter Pills */}
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             <button
               onClick={() => setHistoryFilter("all")}
-              className={`px-3.5 py-1.5 rounded-[16px] text-[13px] font-extrabold border transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all cursor-pointer ${
                 historyFilter === "all"
-                  ? "bg-[#0B0D12] dark:bg-[#F5F5F7] text-white dark:text-[#0B0D12] border-transparent shadow-xs"
-                  : "bg-white dark:bg-[#1C1C1E] text-[#6B7079] dark:text-[#98989F] border-[rgba(60,60,67,0.10)]"
+                  ? "bg-[#14151A] dark:bg-white text-white dark:text-[#14151A] shadow-xs"
+                  : "bg-white dark:bg-[#14161E] text-[#56586A] dark:text-[#8B8D98] border border-[#ECEEF2] dark:border-white/[0.08]"
               }`}
             >
-              All
+              All ({tradesList.length})
             </button>
             <button
               onClick={() => setHistoryFilter("win")}
-              className={`px-3.5 py-1.5 rounded-[16px] text-[13px] font-extrabold border transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all cursor-pointer ${
                 historyFilter === "win"
-                  ? "bg-[#0B0D12] dark:bg-[#F5F5F7] text-white dark:text-[#0B0D12] border-transparent shadow-xs"
-                  : "bg-white dark:bg-[#1C1C1E] text-[#6B7079] dark:text-[#98989F] border-[rgba(60,60,67,0.10)]"
+                  ? "bg-[#14151A] dark:bg-white text-white dark:text-[#14151A] shadow-xs"
+                  : "bg-white dark:bg-[#14161E] text-[#56586A] dark:text-[#8B8D98] border border-[#ECEEF2] dark:border-white/[0.08]"
               }`}
             >
               🟢 Wins
             </button>
             <button
               onClick={() => setHistoryFilter("loss")}
-              className={`px-3.5 py-1.5 rounded-[16px] text-[13px] font-extrabold border transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all cursor-pointer ${
                 historyFilter === "loss"
-                  ? "bg-[#0B0D12] dark:bg-[#F5F5F7] text-white dark:text-[#0B0D12] border-transparent shadow-xs"
-                  : "bg-white dark:bg-[#1C1C1E] text-[#6B7079] dark:text-[#98989F] border-[rgba(60,60,67,0.10)]"
+                  ? "bg-[#14151A] dark:bg-white text-white dark:text-[#14151A] shadow-xs"
+                  : "bg-white dark:bg-[#14161E] text-[#56586A] dark:text-[#8B8D98] border border-[#ECEEF2] dark:border-white/[0.08]"
               }`}
             >
               🔴 Losses
             </button>
           </div>
 
-          {/* Closed trade list */}
           <div className="space-y-2.5">
             {filteredHistory.map((t: any, idx: number) => {
-              const isUp = (t.returnPct ?? 0) >= 0;
+              const isWin = (t.returnPct ?? 0) >= 0;
+              const gradClass = avatarGradients[idx % avatarGradients.length];
+
               return (
                 <div
-                  key={`${t.symbol}-${idx}`}
+                  key={idx}
                   onClick={() => setSelectedSheetItem(t)}
-                  className="rounded-[20px] p-3.5 sm:p-4 bg-white dark:bg-[#1C1C1E] border border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)] shadow-[0_1px_2px_rgba(16,24,40,0.04)] hover:shadow-[0_4px_16px_-4px_rgba(16,24,40,0.10)] transition-all cursor-pointer flex items-center gap-3.5 qs-card-hover"
+                  className="rounded-[18px] p-3.5 bg-white dark:bg-[#14161E] border border-[#ECEEF2] dark:border-white/[0.08] qs-card-shadow qs-card-hover transition-all cursor-pointer flex items-center justify-between gap-3"
                 >
-                  <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center font-extrabold text-[15px] text-white shrink-0 ${
-                    isUp ? "avatar-buy" : "avatar-avoid"
-                  }`}>
-                    {t.symbol?.slice(0, 1) || "S"}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="font-extrabold text-[16px] text-[#0B0D12] dark:text-[#F5F5F7] tracking-tight truncate">
-                      {t.symbol}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-9 h-9 rounded-[10px] bg-gradient-to-br ${gradClass} text-white flex items-center justify-center font-bold text-[12px] shadow-xs shrink-0 font-mono`}>
+                      {t.symbol?.slice(0, 2) || "ST"}
                     </div>
-                    <div className="text-[12px] text-[#6B7079] dark:text-[#98989F] font-semibold truncate mt-0.5">
-                      {t.strategyName || "Breakout"} · {t.holdingDays || 10}d · {t.exitDate || "Closed"}
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-[15px] text-[#14151A] dark:text-white tracking-tight truncate">
+                          {t.symbol}
+                        </span>
+                        <span className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded-[6px] border ${
+                          isWin
+                            ? "bg-[#ECFDF3] text-[#16A34A] border-[#86EFAC]/40 dark:bg-emerald-950/40 dark:text-emerald-400"
+                            : "bg-[#FEF3F2] text-[#F04438] border-[#FECDCA]/40 dark:bg-rose-950/40 dark:text-rose-400"
+                        }`}>
+                          {isWin ? "WIN" : "LOSS"}
+                        </span>
+                      </div>
+                      <div className="text-[12px] text-[#56586A] dark:text-[#8B8D98] font-medium mt-0.5 truncate">
+                        {t.strategyName || "Breakout"} · {t.holdingDays}d hold
+                      </div>
                     </div>
                   </div>
 
                   <div className="text-right shrink-0">
-                    <div className={`font-extrabold text-[15.5px] tabular ${isUp ? "text-[#30D158]" : "text-[#FF453A]"}`}>
-                      {isUp ? "+" : ""}{(t.returnPct ?? 0).toFixed(2)}%
+                    <div className={`font-extrabold text-[15px] font-mono tabular ${isWin ? "text-[#16A34A] dark:text-emerald-400" : "text-[#F04438] dark:text-rose-400"}`}>
+                      {isWin ? "+" : ""}{(t.returnPct ?? 0).toFixed(1)}%
                     </div>
-                    <div className={`text-[10.5px] font-extrabold px-2 py-0.5 rounded-[8px] mt-0.5 inline-block ${
-                      isUp ? "bg-[#E5FBEA] text-[#1DA53E]" : "bg-[#FFEBEA] text-[#E0342A]"
-                    }`}>
-                      {t.pnlLabel || (isUp ? "WIN" : "LOSS")}
+                    <div className="text-[11px] text-[#8B8D98] font-mono">
+                      {formatINR(t.exitPrice || 0)}
                     </div>
                   </div>
                 </div>
@@ -314,7 +258,7 @@ export default function BacktestsView({
         </div>
       )}
 
-      {/* Interactive Bottom Sheet */}
+      {/* Bottom Sheet Details */}
       <BottomSheet
         isOpen={!!selectedSheetItem}
         onClose={() => setSelectedSheetItem(null)}

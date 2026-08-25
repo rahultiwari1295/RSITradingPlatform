@@ -7,7 +7,9 @@ import {
   ShieldAlert,
   AlertCircle,
   CheckCircle,
-  Star
+  Star,
+  LineChart,
+  ArrowRight
 } from "lucide-react";
 import HeroCard from "../components/HeroCard";
 import BottomSheet, { BottomSheetItem } from "../components/BottomSheet";
@@ -49,6 +51,15 @@ const fallbackSignals = [
   { symbol: "VSSL", currentROI: 0.49, currentPrice: 348.7, entryPrice: 347, entryDate: "2026-08-10", strategyName: "Alpha", compositeScore: 80, mlProbability: 74.6, action: "BUY_NOW" }
 ];
 
+const avatarGradients = [
+  "from-[#818CF8] to-[#6366F1]",
+  "from-[#FB923C] to-[#EA580C]",
+  "from-[#34D399] to-[#059669]",
+  "from-[#F87171] to-[#EF4444]",
+  "from-[#A78BFA] to-[#8B5CF6]",
+  "from-[#22D3EE] to-[#06B6D4]"
+];
+
 export default function SignalsView({
   signals,
   portfolioSymbols = [],
@@ -73,7 +84,7 @@ export default function SignalsView({
       let health: "HEALTHY" | "WATCH" | "EXIT_RISK" = "HEALTHY";
       if (roi <= -4.0) health = "EXIT_RISK";
       else if (roi < 0 && days > 20) health = "WATCH";
-      else if (roi >= 8.0) health = "HEALTHY";
+      else if (roi >= 6.0) health = "HEALTHY";
       
       const act = (trade.action || (roi >= 10 ? "WAIT" : roi < -3 ? "BUY_NOW" : "BUY")).toUpperCase();
 
@@ -108,21 +119,18 @@ export default function SignalsView({
     });
   }, [processedTrades, searchQuery, healthFilter, sortBy]);
 
-  const getAvatarClass = (roi: number) => {
-    if (roi >= 4) return "avatar-buy";
-    if (roi >= 0) return "avatar-wait";
-    return "avatar-avoid";
-  };
-
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-5 animate-in fade-in duration-300">
       
       {/* 1. Hero Card */}
       <HeroCard
-        eyebrow="ACTIVE SCAN · LIVE RUNNING"
-        bigNumber={processedTrades.length.toString()}
-        bigLabel="running signals"
-        badge="+2.58x"
+        eyebrow="ACTIVE SIGNALS · SCANNING LIVE"
+        headline={
+          <span>
+            Tracking <span className="text-[#8BF694]">{processedTrades.length} setups</span> with trailing stop logic.
+          </span>
+        }
+        badge="Live Terminal"
         stats={[
           { value: healthyCount, label: "HEALTHY", valueColor: "#8BF694" },
           { value: watchCount + exitRiskCount, label: "WATCH / RISK", valueColor: watchCount + exitRiskCount > 0 ? "#F97066" : "#FFFFFF" },
@@ -134,118 +142,170 @@ export default function SignalsView({
         ]}
       />
 
-      {/* 2. Controls & Search Bar */}
-      <div>
-        <div className="flex gap-2 mb-3">
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="🔍 Search signal or strategy..."
-              className="w-full bg-white dark:bg-[#1C1C1E] border border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)] rounded-[16px] px-3.5 py-2.5 text-[13px] text-[#0B0D12] dark:text-[#F5F5F7] placeholder-[#A2A6AE] font-semibold outline-hidden focus:border-[#0A84FF] transition-colors shadow-xs"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-bold"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          <button
-            onClick={() => setSortBy(prev => prev === "roi" ? "date" : prev === "date" ? "name" : "roi")}
-            className="px-3.5 bg-white dark:bg-[#1C1C1E] border border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)] rounded-[16px] flex items-center gap-1.5 text-[12px] font-extrabold text-[#6B7079] dark:text-[#98989F] shadow-xs hover:bg-[#F2F3F7] dark:hover:bg-[#2C2C2E] cursor-pointer"
-            title={`Sort: ${sortBy.toUpperCase()}`}
-          >
-            <SlidersHorizontal className="w-4 h-4 text-[#0A84FF]" />
-            <span className="font-mono uppercase">{sortBy}</span>
-          </button>
+      {/* 2. Search & Sort Controls */}
+      <div className="flex gap-2">
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search active symbols or strategies..."
+            className="w-full bg-white dark:bg-[#14161E] border border-[#ECEEF2] dark:border-white/[0.08] rounded-[14px] px-3.5 py-2.5 text-[13px] text-[#14151A] dark:text-white placeholder-[#8B8D98] font-medium outline-hidden focus:border-[#6366F1] transition-colors qs-card-shadow"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#8B8D98] font-bold"
+            >
+              ✕
+            </button>
+          )}
         </div>
 
-        {/* Health Filter Chips */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-          {[
-            { id: "ALL", label: "All Active", count: processedTrades.length },
-            { id: "HEALTHY", label: "🟢 Healthy", count: healthyCount },
-            { id: "WATCH", label: "🟠 Watch", count: watchCount },
-            { id: "EXIT_RISK", label: "🔴 Exit Risk", count: exitRiskCount }
-          ].map((h) => {
-            const isActive = healthFilter === h.id;
-
-            return (
-              <button
-                key={h.id}
-                onClick={() => setHealthFilter(h.id as HealthFilterType)}
-                className={`shrink-0 px-3.5 py-1.5 rounded-[18px] text-[12.5px] font-extrabold border transition-all cursor-pointer qs-btn-press flex items-center gap-1.5 ${
-                  isActive
-                    ? "bg-[#0B0D12] dark:bg-[#F5F5F7] text-white dark:text-[#0B0D12] border-transparent shadow-xs"
-                    : "bg-white dark:bg-[#1C1C1E] text-[#6B7079] dark:text-[#98989F] border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)]"
-                }`}
-              >
-                <span>{h.label}</span>
-                <span className="text-[11px] font-bold opacity-65">{h.count}</span>
-              </button>
-            );
-          })}
-        </div>
+        <button
+          onClick={() => setSortBy(prev => prev === "roi" ? "date" : prev === "date" ? "name" : "roi")}
+          className="px-3.5 bg-white dark:bg-[#14161E] border border-[#ECEEF2] dark:border-white/[0.08] rounded-[14px] flex items-center gap-1.5 text-[12px] font-bold text-[#56586A] dark:text-[#8B8D98] qs-card-shadow hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors cursor-pointer"
+        >
+          <SlidersHorizontal className="w-3.5 h-3.5" />
+          <span className="capitalize">{sortBy}</span>
+        </button>
       </div>
 
-      {/* 3. Signal Card Rows */}
+      {/* 3. Health Filter Chips */}
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+        <button
+          onClick={() => setHealthFilter("ALL")}
+          className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold transition-all cursor-pointer qs-btn-press flex items-center gap-1.5 ${
+            healthFilter === "ALL"
+              ? "bg-[#14151A] dark:bg-white text-white dark:text-[#14151A] shadow-xs"
+              : "bg-white dark:bg-[#14161E] text-[#56586A] dark:text-[#8B8D98] border border-[#ECEEF2] dark:border-white/[0.08]"
+          }`}
+        >
+          All <span className="opacity-60 font-mono text-[10.5px]">{processedTrades.length}</span>
+        </button>
+
+        <button
+          onClick={() => setHealthFilter("HEALTHY")}
+          className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold transition-all cursor-pointer qs-btn-press flex items-center gap-1.5 ${
+            healthFilter === "HEALTHY"
+              ? "bg-[#14151A] dark:bg-white text-white dark:text-[#14151A] shadow-xs"
+              : "bg-white dark:bg-[#14161E] text-[#56586A] dark:text-[#8B8D98] border border-[#ECEEF2] dark:border-white/[0.08]"
+          }`}
+        >
+          🟢 Healthy <span className="opacity-60 font-mono text-[10.5px]">{healthyCount}</span>
+        </button>
+
+        <button
+          onClick={() => setHealthFilter("WATCH")}
+          className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold transition-all cursor-pointer qs-btn-press flex items-center gap-1.5 ${
+            healthFilter === "WATCH"
+              ? "bg-[#14151A] dark:bg-white text-white dark:text-[#14151A] shadow-xs"
+              : "bg-white dark:bg-[#14161E] text-[#56586A] dark:text-[#8B8D98] border border-[#ECEEF2] dark:border-white/[0.08]"
+          }`}
+        >
+          🟠 Watch <span className="opacity-60 font-mono text-[10.5px]">{watchCount}</span>
+        </button>
+
+        <button
+          onClick={() => setHealthFilter("EXIT_RISK")}
+          className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold transition-all cursor-pointer qs-btn-press flex items-center gap-1.5 ${
+            healthFilter === "EXIT_RISK"
+              ? "bg-[#14151A] dark:bg-white text-white dark:text-[#14151A] shadow-xs"
+              : "bg-white dark:bg-[#14161E] text-[#56586A] dark:text-[#8B8D98] border border-[#ECEEF2] dark:border-white/[0.08]"
+          }`}
+        >
+          🔴 Exit Risk <span className="opacity-60 font-mono text-[10.5px]">{exitRiskCount}</span>
+        </button>
+      </div>
+
+      {/* 4. Active Signals List */}
       <div className="space-y-2.5">
-        {filteredSignals.length === 0 ? (
-          <div className="p-8 text-center rounded-[22px] bg-white dark:bg-[#1C1C1E] border border-[rgba(60,60,67,0.10)] text-[#A2A6AE] text-[13px] font-semibold">
-            No active signals match the selected criteria.
-          </div>
-        ) : (
-          filteredSignals.map((signal: any, idx: number) => {
-            const isUp = signal.roi >= 0;
-            const isBought = portfolioSymbols.includes(signal.symbol);
-            const avatarClass = getAvatarClass(signal.roi);
+        {filteredSignals.map((t: any, idx: number) => {
+          const isUp = t.roi >= 0;
+          const isBought = portfolioSymbols.includes(t.symbol);
+          const gradClass = avatarGradients[idx % avatarGradients.length];
 
-            return (
-              <div
-                key={`${signal.symbol}-${idx}`}
-                onClick={() => setSelectedSheetItem(signal)}
-                className="rounded-[20px] p-3.5 sm:p-4 bg-white dark:bg-[#1C1C1E] border border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)] shadow-[0_1px_2px_rgba(16,24,40,0.04)] hover:shadow-[0_4px_16px_-4px_rgba(16,24,40,0.10)] transition-all cursor-pointer flex items-center gap-3.5 qs-card-hover"
-              >
-                {/* Left avatar with gradient */}
-                <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center font-extrabold text-[15px] text-white shrink-0 ${avatarClass}`}>
-                  {signal.symbol?.slice(0, 1) || "S"}
-                </div>
+          return (
+            <div
+              key={`${t.symbol}-${idx}`}
+              onClick={() => setSelectedSheetItem(t)}
+              className="rounded-[20px] p-4 bg-white dark:bg-[#14161E] border border-[#ECEEF2] dark:border-white/[0.08] qs-card-shadow qs-card-hover transition-all cursor-pointer"
+            >
+              {/* Header row */}
+              <div className="flex items-center justify-between gap-3 mb-2.5">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-10 h-10 rounded-[12px] bg-gradient-to-br ${gradClass} text-white flex items-center justify-center font-bold text-[13px] shadow-xs shrink-0 font-mono`}>
+                    {t.symbol?.slice(0, 2) || "ST"}
+                  </div>
 
-                {/* Middle Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-extrabold text-[16px] text-[#0B0D12] dark:text-[#F5F5F7] tracking-tight truncate">
-                      {signal.symbol}
-                    </span>
-                    {isBought && (
-                      <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded-full bg-[#E5FBEA] text-[#1DA53E]">
-                        Held
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-[15.5px] text-[#14151A] dark:text-white tracking-tight truncate">
+                        {t.symbol}
                       </span>
-                    )}
-                  </div>
-                  <div className="text-[12px] text-[#6B7079] dark:text-[#98989F] font-semibold truncate mt-0.5">
-                    {signal.strategyName || "Alpha"} · {signal.days}d hold
+                      {isBought && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-[#ECFDF3] text-[#16A34A] border border-[#86EFAC]/40 font-mono">
+                          HELD
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[12px] text-[#56586A] dark:text-[#8B8D98] font-medium truncate mt-0.5">
+                      {t.strategyName || "Breakout"} · Entered {t.entryDate || "Active"}
+                    </div>
                   </div>
                 </div>
 
-                {/* Right ROI & action tag */}
                 <div className="text-right shrink-0">
-                  <div className={`font-extrabold text-[15.5px] tabular ${isUp ? "text-[#30D158]" : "text-[#FF453A]"}`}>
-                    {isUp ? "+" : ""}{signal.roi.toFixed(2)}%
+                  <div className="text-[15px] font-extrabold text-[#14151A] dark:text-white font-mono tabular">
+                    {formatINR(t.currentPrice || t.entryPrice || 0)}
                   </div>
-                  <div className="text-[11px] font-semibold text-[#A2A6AE] dark:text-[#636366] tabular mt-0.5">
-                    {formatINR(signal.currentPrice || signal.entryPrice || 0)}
+                  <div className={`text-[12px] font-bold font-mono tabular ${isUp ? "text-[#16A34A] dark:text-emerald-400" : "text-[#F04438] dark:text-rose-400"}`}>
+                    {isUp ? "+" : ""}{t.roi.toFixed(2)}%
                   </div>
                 </div>
               </div>
-            );
-          })
-        )}
+
+              {/* Trajectory Growth Bar */}
+              <div className="bg-[#F1F2F5] dark:bg-white/[0.04] rounded-[12px] p-2.5 mb-2.5">
+                <div className="flex justify-between items-center text-[10.5px] font-semibold text-[#8B8D98] font-mono mb-1">
+                  <span>ENTRY {formatINR(t.entryPrice || 0)}</span>
+                  <span>{t.days}d in trade</span>
+                  <span className={isUp ? "text-[#16A34A] font-bold" : "text-[#F04438] font-bold"}>
+                    {isUp ? "TARGET RUN" : "IN DRAWDOWN"}
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      isUp ? "bg-[#16A34A]" : "bg-[#F04438]"
+                    }`}
+                    style={{
+                      width: `${Math.min(100, Math.max(12, 50 + t.roi * 2.5))}%`
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons row */}
+              <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => onOpenChart(t.symbol)}
+                  className="flex-1 py-2 px-3 rounded-[10px] bg-[#F1F2F5] dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/10 text-[#14151A] dark:text-white text-[12px] font-bold transition-colors cursor-pointer qs-btn-press text-center flex items-center justify-center gap-1.5"
+                >
+                  <LineChart className="w-3.5 h-3.5 text-[#6366F1]" />
+                  Chart
+                </button>
+                <button
+                  onClick={() => setSelectedSheetItem(t)}
+                  className="flex-1 py-2 px-3 rounded-[10px] bg-[#14151A] dark:bg-white text-white dark:text-[#14151A] text-[12px] font-bold hover:opacity-90 transition-opacity cursor-pointer qs-btn-press text-center flex items-center justify-center gap-1"
+                >
+                  Details
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Bottom Sheet Modal */}

@@ -1,14 +1,12 @@
 import React, { useState, useMemo } from "react";
 import {
-  Sparkles,
   HelpCircle,
-  TrendingUp,
   Star,
   RefreshCw,
   Clock,
-  AlertTriangle,
   ArrowRight,
-  ExternalLink
+  TrendingUp,
+  LineChart
 } from "lucide-react";
 import { ToBuySignal } from "../types";
 import HeroCard from "../components/HeroCard";
@@ -64,6 +62,16 @@ const sampleClosedTrades = [
   { symbol: "AEGISLOG", returnPct: 82.31, pnlLabel: "WIN", entryPrice: 759, exitPrice: 1383.7, entryDate: "2026-06-08", exitDate: "2026-07-07", holdingDays: 29, strategyName: "Alpha", exitReason: "MFE_TRAIL_L4" }
 ];
 
+// Gradient palette for symbol avatar tiles
+const avatarGradients = [
+  "from-[#818CF8] to-[#6366F1]", // indigo
+  "from-[#FB923C] to-[#EA580C]", // orange
+  "from-[#34D399] to-[#059669]", // green
+  "from-[#F87171] to-[#EF4444]", // red
+  "from-[#A78BFA] to-[#8B5CF6]", // violet
+  "from-[#22D3EE] to-[#06B6D4]"  // cyan
+];
+
 export default function HomeView({
   toBuySignals,
   portfolioSymbols,
@@ -72,10 +80,8 @@ export default function HomeView({
   onRefresh,
   isSyncing
 }: HomeViewProps) {
-  // Use incoming live API signals or fallback
   const rawList = toBuySignals && toBuySignals.length > 0 ? toBuySignals : (fallbackToBuySignals as any);
 
-  // Active filter state
   const [filter, setFilter] = useState<"all" | "buy" | "wait" | "avoid">("all");
   const [starredSymbols, setStarredSymbols] = useState<Set<string>>(new Set());
   const [selectedSheetItem, setSelectedSheetItem] = useState<BottomSheetItem | null>(null);
@@ -92,13 +98,35 @@ export default function HomeView({
 
   // Helper action metadata
   const getActionMeta = (action?: string) => {
-    if (action === "BUY" || action === "BUY_NOW") {
-      return { key: "buy", label: action === "BUY_NOW" ? "Buy now" : "Buy", bg: "bg-[#E5FBEA]", text: "text-[#1DA53E]", dot: "bg-[#30D158]" };
+    const act = (action || "BUY").toUpperCase();
+    if (act === "BUY" || act === "BUY_NOW") {
+      return {
+        key: "buy",
+        label: act === "BUY_NOW" ? "Buy now" : "Buy",
+        bg: "bg-[#ECFDF3] dark:bg-emerald-950/40",
+        text: "text-[#16A34A] dark:text-emerald-400",
+        border: "border-[#86EFAC]/60 dark:border-emerald-800/40",
+        dot: "bg-[#16A34A]"
+      };
     }
-    if (action === "WAIT") {
-      return { key: "wait", label: "Extended", bg: "bg-[#FFF2DF]", text: "text-[#D97D00]", dot: "bg-[#FF9500]" };
+    if (act === "WAIT") {
+      return {
+        key: "wait",
+        label: "Extended",
+        bg: "bg-[#FFFBEB] dark:bg-amber-950/40",
+        text: "text-[#D97706] dark:text-amber-400",
+        border: "border-[#FDE68A]/60 dark:border-amber-800/40",
+        dot: "bg-[#D97706]"
+      };
     }
-    return { key: "avoid", label: "Overextended", bg: "bg-[#FFEBEA]", text: "text-[#E0342A]", dot: "bg-[#FF453A]" };
+    return {
+      key: "avoid",
+      label: "Overextended",
+      bg: "bg-[#FEF3F2] dark:bg-rose-950/40",
+      text: "text-[#F04438] dark:text-rose-400",
+      border: "border-[#FECDCA]/60 dark:border-rose-800/40",
+      dot: "bg-[#F04438]"
+    };
   };
 
   // Filtered positions
@@ -125,265 +153,259 @@ export default function HomeView({
     return { all: rawList.length, buy: buyCount, wait: waitCount, avoid: avoidCount };
   }, [rawList]);
 
-  // Featured opportunity (First BUY / BUY_NOW item or first in list)
+  // Featured opportunity
   const featuredItem = useMemo(() => {
     return rawList.find((s: any) => (s.action || "").toUpperCase().includes("BUY")) || rawList[0];
   }, [rawList]);
 
   const featuredMeta = getActionMeta(featuredItem?.action);
-  const featuredScore = featuredItem?.compositeScore || (featuredItem?.mlProbability ? Math.round(featuredItem.mlProbability * (featuredItem.mlProbability <= 1 ? 100 : 1)) : 70);
+  const featuredScore = featuredItem?.compositeScore || (featuredItem?.mlProbability ? Math.round(featuredItem.mlProbability * (featuredItem.mlProbability <= 1 ? 100 : 1)) : 76);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-5 animate-in fade-in duration-300">
       
-      {/* 1. HERO — Gradient Portfolio Card (Wallet Style) */}
+      {/* 1. HERO — Editorial Dark Slate Surface */}
       <HeroCard
         eyebrow="TRACK RECORD · ALL TIME"
-        bigNumber="67.7"
-        bigLabel="% win rate"
-        badge="2.58x"
+        headline={
+          <span>
+            Real performance across <span className="text-[#8BF694]">762 trades</span> with verified rules.
+          </span>
+        }
+        badge="2.58x PF"
         stats={[
-          { value: "3,038", label: "CLOSED" },
+          { value: "67.7%", label: "WIN RATE" },
           { value: "+10.4%", label: "AVG WIN", valueColor: "#8BF694" },
           { value: "2.5 WK", label: "AVG HOLD" }
         ]}
       />
 
-      {/* 2. Confidence / Education Card */}
-      <div className="rounded-[24px] p-4 sm:p-4.5 flex items-center gap-3.5 bg-gradient-to-br from-[#E4F8FC] to-[#E8F2FF] dark:from-[#0E2E36] dark:to-[#0F2942] border border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)] shadow-[0_1px_3px_rgba(16,24,40,0.04)]">
-        <div className="w-11 h-11 rounded-[14px] flex items-center justify-center shrink-0 bg-gradient-to-br from-[#40C8E0] to-[#0A84FF] text-white shadow-[0_6px_14px_-4px_rgba(10,132,255,0.5)]">
-          <HelpCircle className="w-5 h-5 stroke-[2.2]" />
+      {/* 2. Educational / Flow Guide Card */}
+      <div className="rounded-[20px] p-4 bg-white dark:bg-[#14161E] border border-[#ECEEF2] dark:border-white/[0.08] qs-card-shadow flex items-center gap-3.5">
+        <div className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 bg-[#EEF0FE] dark:bg-indigo-950/60 text-[#6366F1] dark:text-indigo-400">
+          <HelpCircle className="w-5 h-5 stroke-[2]" />
         </div>
-        <div>
-          <div className="text-[14.5px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tracking-tight mb-0.5">
-            New here? Just follow the color.
+        <div className="min-w-0 flex-1">
+          <div className="text-[13.5px] font-bold text-[#14151A] dark:text-white tracking-tight">
+            How to read these signals
           </div>
-          <div className="text-[12.5px] text-[#6B7079] dark:text-[#98989F] font-semibold leading-snug">
-            🟢 Buy · 🟠 Wait for a dip · 🔴 Don't chase. Tap any card for the full story.
+          <div className="text-[12px] text-[#56586A] dark:text-[#8B8D98] font-medium leading-normal mt-0.5">
+            <span className="text-[#16A34A] font-bold">🟢 Buy</span> fresh entries · <span className="text-[#D97706] font-bold">🟠 Extended</span> wait for dip · <span className="text-[#F04438] font-bold">🔴 Overextended</span> avoid chasing.
           </div>
         </div>
       </div>
 
-      {/* 3. Act Now — Opportunity Card */}
+      {/* 3. Featured High-Conviction Opportunity */}
       {featuredItem && (
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2.5">
             <div className="flex items-center gap-2">
-              <span className="text-[20px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tracking-tight">
-                Act now
-              </span>
-              <span className="text-[12px] font-extrabold text-white bg-[#FF375F] rounded-full px-2.5 py-0.5 shadow-xs">
-                {counts.buy}
+              <h2 className="text-[17px] font-bold text-[#14151A] dark:text-white tracking-tight">
+                Top Flagged Setup
+              </h2>
+              <span className="text-[10px] font-bold text-white bg-[#14151A] dark:bg-indigo-600 rounded-full px-2 py-0.5 font-mono">
+                {counts.buy} READY
               </span>
             </div>
+
             {onRefresh && (
               <button
                 onClick={onRefresh}
                 disabled={isSyncing}
-                className="text-[13px] font-bold text-[#0A84FF] hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-[12px] font-bold text-[#6366F1] dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
-                Live Scan
+                <span>Live scan</span>
               </button>
             )}
           </div>
-          <p className="text-[13px] text-[#6B7079] dark:text-[#98989F] font-semibold -mt-2 mb-3.5">
-            Fresh entries flagged today
-          </p>
 
           <div
             onClick={() => setSelectedSheetItem(featuredItem)}
-            className="relative overflow-hidden rounded-[26px] p-5 bg-white dark:bg-[#1C1C1E] border border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)] shadow-[0_4px_16px_-4px_rgba(16,24,40,0.10)] hover:shadow-[0_8px_24px_-6px_rgba(16,24,40,0.15)] transition-all cursor-pointer qs-card-hover"
+            className="rounded-[22px] p-5 bg-white dark:bg-[#14161E] border border-[#ECEEF2] dark:border-white/[0.08] qs-card-shadow qs-card-hover cursor-pointer"
           >
-            {/* Top right subtle glow */}
-            <div className="pointer-events-none absolute -top-10 -right-10 w-36 h-36 rounded-full bg-[radial-gradient(circle,rgba(48,209,88,0.16),transparent_70%)]" />
-
-            {/* Top row: Symbol info + price */}
-            <div className="relative z-1 flex justify-between items-start mb-4">
+            {/* Top row: Symbol info & Price */}
+            <div className="flex justify-between items-start mb-3.5">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-[16px] bg-gradient-to-br from-[#FFD60A] to-[#FF9500] text-white flex items-center justify-center font-extrabold text-[18px] shadow-[0_8px_16px_-4px_rgba(255,149,0,0.45)]">
-                  {featuredItem.symbol?.slice(0, 1) || "S"}
+                <div className="w-11 h-11 rounded-[14px] bg-gradient-to-br from-[#818CF8] to-[#6366F1] text-white flex items-center justify-center font-bold text-[14px] shadow-xs">
+                  {featuredItem.symbol?.slice(0, 2) || "ST"}
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[19px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tracking-tight">
+                    <span className="text-[17px] font-bold text-[#14151A] dark:text-white tracking-tight">
                       {featuredItem.symbol}
                     </span>
                     <button
                       onClick={(e) => toggleStar(featuredItem.symbol, e)}
-                      className="p-1 text-[#A2A6AE] hover:text-amber-400 cursor-pointer"
+                      className="p-0.5 text-[#B3B5C0] hover:text-amber-400 cursor-pointer"
                     >
-                      <Star className={`w-4 h-4 ${starredSymbols.has(featuredItem.symbol) ? "fill-amber-400 text-amber-400" : ""}`} />
+                      <Star className={`w-3.5 h-3.5 ${starredSymbols.has(featuredItem.symbol) ? "fill-amber-400 text-amber-400" : ""}`} />
                     </button>
                   </div>
-                  <div className="text-[12.5px] text-[#6B7079] dark:text-[#98989F] font-semibold">
-                    {featuredItem.strategyName || "Wyckoff Spring"} · {featuredItem.sector || "Diversified"}
+                  <div className="text-[12px] text-[#56586A] dark:text-[#8B8D98] font-medium">
+                    {featuredItem.strategyName || "Breakout"} · {featuredItem.sector || "Equities"}
                   </div>
                 </div>
               </div>
 
               <div className="text-right">
-                <div className="text-[19px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tabular">
+                <div className="text-[17px] font-extrabold text-[#14151A] dark:text-white font-mono tabular">
                   {formatINR(featuredItem.currentPrice || featuredItem.entryPrice || 0)}
                 </div>
-                <div className={`text-[13px] font-extrabold ${(featuredItem.currentROI ?? 0) >= 0 ? "text-[#30D158]" : "text-[#FF453A]"} tabular`}>
-                  {(featuredItem.currentROI ?? 0) >= 0 ? "↑ " : "↓ "}{Math.abs(featuredItem.currentROI ?? 3.2).toFixed(1)}%
+                <div className={`text-[12px] font-bold font-mono tabular ${(featuredItem.currentROI ?? 0) >= 0 ? "text-[#16A34A] dark:text-emerald-400" : "text-[#F04438] dark:text-rose-400"}`}>
+                  {(featuredItem.currentROI ?? 0) >= 0 ? "+" : ""}{(featuredItem.currentROI ?? 0).toFixed(2)}%
                 </div>
               </div>
             </div>
 
-            {/* Meter row */}
-            <div className="relative z-1 mb-4">
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-2 rounded-full bg-[rgba(60,60,67,0.08)] dark:bg-[rgba(255,255,255,0.07)] overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.max(10, Math.min(100, featuredScore))}%`,
-                      background: "linear-gradient(90deg, #FF9500, #30D158)"
-                    }}
-                  />
-                </div>
-                <div className="text-[13px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tabular">
-                  {featuredScore}/100
-                </div>
+            {/* Conviction score bar */}
+            <div className="mb-3.5">
+              <div className="flex justify-between items-center text-[10.5px] font-bold text-[#8B8D98] uppercase font-mono tracking-wider mb-1.5">
+                <span>Algorithmic Conviction</span>
+                <span className="text-[#14151A] dark:text-white font-mono font-extrabold">{featuredScore}/100</span>
+              </div>
+              <div className="h-2 rounded-full bg-[#F1F2F5] dark:bg-white/10 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-[#6366F1] to-[#10B981]"
+                  style={{ width: `${Math.max(10, Math.min(100, featuredScore))}%` }}
+                />
               </div>
             </div>
 
-            {/* Action pill row */}
-            <div className="relative z-1 flex items-center gap-2 mb-4 flex-wrap">
-              <span className={`inline-flex items-center gap-1.5 text-[12px] font-extrabold px-3 py-1.5 rounded-[14px] ${featuredMeta.bg} ${featuredMeta.text}`}>
-                <span className={`w-2 h-2 rounded-full ${featuredMeta.dot}`} />
+            {/* Status tags */}
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-[8px] border ${featuredMeta.bg} ${featuredMeta.text} ${featuredMeta.border}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${featuredMeta.dot}`} />
                 {featuredMeta.label}
               </span>
-              <span className="inline-flex items-center gap-1 text-[12px] font-bold text-[#6B7079] dark:text-[#98989F] bg-[rgba(60,60,67,0.08)] dark:bg-[rgba(255,255,255,0.08)] px-3 py-1.5 rounded-[14px]">
-                🤖 {featuredItem.mlProbability ? `${(featuredItem.mlProbability > 1 ? featuredItem.mlProbability : featuredItem.mlProbability * 100).toFixed(1)}%` : "73.6%"} confidence
+              <span className="inline-flex items-center text-[11px] font-semibold text-[#56586A] dark:text-[#8B8D98] bg-[#F1F2F5] dark:bg-white/[0.06] px-2.5 py-1 rounded-[8px] font-mono">
+                ML Prob {featuredItem.mlProbability ? `${(featuredItem.mlProbability > 1 ? featuredItem.mlProbability : featuredItem.mlProbability * 100).toFixed(1)}%` : "74.5%"}
               </span>
             </div>
 
-            {/* CTA row */}
-            <div className="relative z-1 flex gap-2.5" onClick={(e) => e.stopPropagation()}>
+            {/* Action buttons */}
+            <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={() => onOpenChart(featuredItem.symbol)}
-                className="flex-1 py-3 px-4 rounded-[16px] bg-[rgba(60,60,67,0.08)] dark:bg-[rgba(255,255,255,0.08)] hover:bg-[rgba(60,60,67,0.12)] text-[#0B0D12] dark:text-[#F5F5F7] text-[14px] font-extrabold transition-colors cursor-pointer qs-btn-press text-center"
+                className="flex-1 py-2.5 px-3 rounded-[12px] bg-[#F1F2F5] dark:bg-white/[0.08] hover:bg-slate-200 dark:hover:bg-white/15 text-[#14151A] dark:text-white text-[13px] font-bold transition-colors cursor-pointer qs-btn-press text-center flex items-center justify-center gap-1.5"
               >
+                <LineChart className="w-4 h-4 text-[#6366F1]" />
                 Chart
               </button>
               <button
                 onClick={() => setSelectedSheetItem(featuredItem)}
-                className="flex-1 py-3 px-4 rounded-[16px] bg-gradient-to-r from-[#0A84FF] to-[#5E5CE6] text-white text-[14px] font-extrabold shadow-[0_8px_18px_-6px_rgba(10,132,255,0.5)] hover:opacity-95 transition-opacity cursor-pointer qs-btn-press text-center"
+                className="flex-1 py-2.5 px-3 rounded-[12px] bg-[#14151A] dark:bg-white text-white dark:text-[#14151A] text-[13px] font-bold shadow-xs hover:opacity-90 transition-opacity cursor-pointer qs-btn-press text-center flex items-center justify-center gap-1"
               >
-                View signal
+                View Signal
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 4. Open Positions / Scanned Setups */}
+      {/* 4. Filterable List of Open Opportunities */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-[20px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tracking-tight">
-              Open positions
-            </span>
-            <span className="text-[12px] font-extrabold text-white bg-[#0A84FF] rounded-full px-2.5 py-0.5 shadow-xs">
-              {counts.all}
-            </span>
-          </div>
+        <div className="flex items-center justify-between mb-2.5">
+          <h2 className="text-[17px] font-bold text-[#14151A] dark:text-white tracking-tight">
+            Scanned Setups
+          </h2>
+          <span className="text-[12px] font-mono text-[#8B8D98]">
+            {filteredList.length} items
+          </span>
         </div>
 
-        {/* Filter chips scrollbar */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-3.5">
+        {/* Filter Pills */}
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 mb-3">
           <button
             onClick={() => setFilter("all")}
-            className={`shrink-0 px-3.5 py-2 rounded-[18px] text-[13px] font-extrabold border transition-all cursor-pointer qs-btn-press flex items-center gap-1.5 ${
+            className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold transition-all cursor-pointer qs-btn-press flex items-center gap-1.5 ${
               filter === "all"
-                ? "bg-[#0B0D12] dark:bg-[#F5F5F7] text-white dark:text-[#0B0D12] border-transparent shadow-xs"
-                : "bg-white dark:bg-[#1C1C1E] text-[#6B7079] dark:text-[#98989F] border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)]"
+                ? "bg-[#14151A] dark:bg-white text-white dark:text-[#14151A] shadow-xs"
+                : "bg-white dark:bg-[#14161E] text-[#56586A] dark:text-[#8B8D98] border border-[#ECEEF2] dark:border-white/[0.08]"
             }`}
           >
-            All <span className="opacity-60 text-[11px] font-bold">{counts.all}</span>
+            All <span className="opacity-60 font-mono text-[10.5px]">{counts.all}</span>
           </button>
 
           <button
             onClick={() => setFilter("buy")}
-            className={`shrink-0 px-3.5 py-2 rounded-[18px] text-[13px] font-extrabold border transition-all cursor-pointer qs-btn-press flex items-center gap-1.5 ${
+            className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold transition-all cursor-pointer qs-btn-press flex items-center gap-1.5 ${
               filter === "buy"
-                ? "bg-[#0B0D12] dark:bg-[#F5F5F7] text-white dark:text-[#0B0D12] border-transparent shadow-xs"
-                : "bg-white dark:bg-[#1C1C1E] text-[#6B7079] dark:text-[#98989F] border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)]"
+                ? "bg-[#14151A] dark:bg-white text-white dark:text-[#14151A] shadow-xs"
+                : "bg-white dark:bg-[#14161E] text-[#56586A] dark:text-[#8B8D98] border border-[#ECEEF2] dark:border-white/[0.08]"
             }`}
           >
-            🟢 Add now <span className="opacity-60 text-[11px] font-bold">{counts.buy}</span>
+            🟢 Add now <span className="opacity-60 font-mono text-[10.5px]">{counts.buy}</span>
           </button>
 
           <button
             onClick={() => setFilter("wait")}
-            className={`shrink-0 px-3.5 py-2 rounded-[18px] text-[13px] font-extrabold border transition-all cursor-pointer qs-btn-press flex items-center gap-1.5 ${
+            className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold transition-all cursor-pointer qs-btn-press flex items-center gap-1.5 ${
               filter === "wait"
-                ? "bg-[#0B0D12] dark:bg-[#F5F5F7] text-white dark:text-[#0B0D12] border-transparent shadow-xs"
-                : "bg-white dark:bg-[#1C1C1E] text-[#6B7079] dark:text-[#98989F] border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)]"
+                ? "bg-[#14151A] dark:bg-white text-white dark:text-[#14151A] shadow-xs"
+                : "bg-white dark:bg-[#14161E] text-[#56586A] dark:text-[#8B8D98] border border-[#ECEEF2] dark:border-white/[0.08]"
             }`}
           >
-            🟠 Extended <span className="opacity-60 text-[11px] font-bold">{counts.wait}</span>
+            🟠 Extended <span className="opacity-60 font-mono text-[10.5px]">{counts.wait}</span>
           </button>
 
           <button
             onClick={() => setFilter("avoid")}
-            className={`shrink-0 px-3.5 py-2 rounded-[18px] text-[13px] font-extrabold border transition-all cursor-pointer qs-btn-press flex items-center gap-1.5 ${
+            className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold transition-all cursor-pointer qs-btn-press flex items-center gap-1.5 ${
               filter === "avoid"
-                ? "bg-[#0B0D12] dark:bg-[#F5F5F7] text-white dark:text-[#0B0D12] border-transparent shadow-xs"
-                : "bg-white dark:bg-[#1C1C1E] text-[#6B7079] dark:text-[#98989F] border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)]"
+                ? "bg-[#14151A] dark:bg-white text-white dark:text-[#14151A] shadow-xs"
+                : "bg-white dark:bg-[#14161E] text-[#56586A] dark:text-[#8B8D98] border border-[#ECEEF2] dark:border-white/[0.08]"
             }`}
           >
-            🔴 Overextended <span className="opacity-60 text-[11px] font-bold">{counts.avoid}</span>
+            🔴 Overextended <span className="opacity-60 font-mono text-[10.5px]">{counts.avoid}</span>
           </button>
         </div>
 
         {/* Position card rows */}
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {filteredList.map((t: any, idx: number) => {
             const meta = getActionMeta(t.action);
             const isUp = (t.currentROI ?? 0) >= 0;
-            const days = t.daysAgo || (t.entryDate ? Math.max(1, Math.round((Date.now() - new Date(t.entryDate).getTime()) / (1000 * 60 * 60 * 24))) : 5);
+            const days = t.daysAgo || (t.entryDate ? Math.max(1, Math.round((Date.now() - new Date(t.entryDate).getTime()) / (1000 * 60 * 60 * 24))) : 4);
             const isBought = portfolioSymbols.includes(t.symbol);
+            const gradClass = avatarGradients[idx % avatarGradients.length];
 
             return (
               <div
                 key={`${t.symbol}-${idx}`}
                 onClick={() => setSelectedSheetItem(t)}
-                className="rounded-[20px] p-3.5 sm:p-4 bg-white dark:bg-[#1C1C1E] border border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)] shadow-[0_1px_2px_rgba(16,24,40,0.04)] hover:shadow-[0_4px_16px_-4px_rgba(16,24,40,0.10)] transition-all cursor-pointer flex items-center gap-3.5 qs-card-hover"
+                className="rounded-[18px] p-3.5 bg-white dark:bg-[#14161E] border border-[#ECEEF2] dark:border-white/[0.08] qs-card-shadow qs-card-hover transition-all cursor-pointer flex items-center justify-between gap-3"
               >
-                {/* Left Avatar with state gradient */}
-                <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center font-extrabold text-[15px] text-white shrink-0 ${
-                  meta.key === "buy" ? "avatar-buy" : meta.key === "wait" ? "avatar-wait" : "avatar-avoid"
-                }`}>
-                  {t.symbol?.slice(0, 1) || "S"}
-                </div>
+                {/* Left: Avatar + Details */}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className={`w-10 h-10 rounded-[12px] bg-gradient-to-br ${gradClass} text-white flex items-center justify-center font-bold text-[13px] shadow-xs shrink-0 font-mono`}>
+                    {t.symbol?.slice(0, 2) || "ST"}
+                  </div>
 
-                {/* Middle Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-extrabold text-[16px] text-[#0B0D12] dark:text-[#F5F5F7] tracking-tight truncate">
-                      {t.symbol}
-                    </span>
-                    {isBought && (
-                      <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded-full bg-[#E5FBEA] text-[#1DA53E]">
-                        Held
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-[15px] text-[#14151A] dark:text-white tracking-tight truncate">
+                        {t.symbol}
                       </span>
-                    )}
-                  </div>
-                  <div className="text-[12px] text-[#6B7079] dark:text-[#98989F] font-semibold truncate mt-0.5">
-                    {t.strategyName || "Breakout"} · {days}d ago
+                      {isBought && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-[#ECFDF3] text-[#16A34A] border border-[#86EFAC]/40 font-mono">
+                          HELD
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[12px] text-[#56586A] dark:text-[#8B8D98] font-medium truncate mt-0.5">
+                      {t.strategyName || "Breakout"} · {days}d ago
+                    </div>
                   </div>
                 </div>
 
-                {/* Right ROI & state tag */}
+                {/* Right: ROI & Action tag */}
                 <div className="text-right shrink-0">
-                  <div className={`font-extrabold text-[15.5px] tabular ${isUp ? "text-[#30D158]" : "text-[#FF453A]"}`}>
+                  <div className={`font-extrabold text-[14.5px] font-mono tabular ${isUp ? "text-[#16A34A] dark:text-emerald-400" : "text-[#F04438] dark:text-rose-400"}`}>
                     {isUp ? "+" : ""}{(t.currentROI ?? 0).toFixed(2)}%
                   </div>
-                  <div className={`text-[10.5px] font-extrabold px-2 py-0.5 rounded-[8px] mt-0.5 inline-block ${meta.bg} ${meta.text}`}>
+                  <div className={`text-[10px] font-bold px-2 py-0.5 rounded-[6px] mt-0.5 inline-block border ${meta.bg} ${meta.text} ${meta.border}`}>
                     {meta.label}
                   </div>
                 </div>
@@ -393,40 +415,40 @@ export default function HomeView({
         </div>
       </div>
 
-      {/* 5. Recently Closed Trades — Ticker Card Scroll */}
+      {/* 5. Recently Closed Trades */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-[20px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tracking-tight">
-            Recently closed
-          </div>
-          <span className="text-[13px] font-bold text-[#0A84FF]">
-            History
+        <div className="flex items-center justify-between mb-2.5">
+          <h2 className="text-[17px] font-bold text-[#14151A] dark:text-white tracking-tight">
+            Recently Closed
+          </h2>
+          <span className="text-[12px] font-bold text-[#6366F1] dark:text-indigo-400">
+            Verified
           </span>
         </div>
 
-        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-2">
           {sampleClosedTrades.map((c, i) => {
             const isWin = c.returnPct >= 0;
             return (
               <div
                 key={i}
                 onClick={() => setSelectedSheetItem(c as any)}
-                className={`shrink-0 w-[140px] rounded-[22px] p-4 text-white cursor-pointer qs-card-hover ${
-                  isWin
-                    ? "bg-gradient-to-br from-[#34D399] to-[#059669] shadow-[0_10px_20px_-8px_rgba(5,150,105,0.5)]"
-                    : "bg-gradient-to-br from-[#64748B] to-[#475569] shadow-[0_10px_20px_-8px_rgba(71,85,105,0.4)]"
-                }`}
+                className="shrink-0 w-[136px] rounded-[18px] p-3.5 bg-white dark:bg-[#14161E] border border-[#ECEEF2] dark:border-white/[0.08] qs-card-shadow qs-card-hover cursor-pointer"
               >
-                <div className="font-extrabold text-[14px] truncate opacity-95 mb-1.5">
+                <div className="font-bold text-[13px] text-[#14151A] dark:text-white truncate mb-1">
                   {c.symbol}
                 </div>
-                <div className="font-extrabold text-[22px] tracking-tight tabular leading-none">
+                <div className={`font-extrabold text-[18px] font-mono tabular leading-tight ${isWin ? "text-[#16A34A] dark:text-emerald-400" : "text-[#F04438] dark:text-rose-400"}`}>
                   {isWin ? "+" : ""}{c.returnPct.toFixed(1)}%
                 </div>
-                <div className="text-[11px] opacity-80 font-bold mt-2">
+                <div className="text-[11px] text-[#8B8D98] font-medium mt-1 font-mono">
                   {c.holdingDays}d hold
                 </div>
-                <div className="inline-block mt-2 text-[10px] font-extrabold px-2 py-0.5 rounded-[8px] bg-white/25">
+                <div className={`inline-block mt-2 text-[9px] font-extrabold px-1.5 py-0.5 rounded-[6px] border ${
+                  isWin
+                    ? "bg-[#ECFDF3] text-[#16A34A] border-[#86EFAC]/40 dark:bg-emerald-950/40 dark:text-emerald-400"
+                    : "bg-[#FEF3F2] text-[#F04438] border-[#FECDCA]/40 dark:bg-rose-950/40 dark:text-rose-400"
+                }`}>
                   {c.pnlLabel}
                 </div>
               </div>
@@ -435,7 +457,7 @@ export default function HomeView({
         </div>
       </div>
 
-      {/* Bottom Sheet Detail */}
+      {/* Bottom Sheet Details */}
       <BottomSheet
         isOpen={!!selectedSheetItem}
         onClose={() => setSelectedSheetItem(null)}

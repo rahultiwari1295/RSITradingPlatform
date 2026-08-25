@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, TrendingUp, Briefcase, BarChart3, Clock } from "lucide-react";
+import { Home, TrendingUp, Briefcase, BarChart3 } from "lucide-react";
 
 export type TabType = "home" | "signals" | "portfolio" | "backtest";
 
@@ -22,7 +22,7 @@ export default function BottomNavBar({
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/75 dark:bg-[#141416]/85 backdrop-blur-[24px] saturate-[180%] border-t border-[rgba(60,60,67,0.10)] dark:border-[rgba(255,255,255,0.08)] select-none transition-colors pb-[max(10px,env(safe-area-inset-bottom))] pt-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/85 dark:bg-[#14161E]/90 backdrop-blur-md border-t border-[#ECEEF2] dark:border-white/[0.08] select-none transition-colors pb-[max(12px,env(safe-area-inset-bottom))] pt-2.5">
       <div className="w-full max-w-[430px] md:max-w-2xl lg:max-w-4xl mx-auto flex items-center justify-around px-2">
         {items.map((item) => {
           const isActive = activeTab === item.id;
@@ -33,18 +33,20 @@ export default function BottomNavBar({
               key={item.id}
               onClick={() => onSelectTab(item.id)}
               className={`flex-1 flex flex-col items-center gap-1 py-1 transition-all cursor-pointer qs-btn-press ${
-                isActive ? "text-[#0A84FF] scale-105" : "text-[#A2A6AE] dark:text-[#636366] hover:text-[#6B7079] dark:hover:text-[#98989F]"
+                isActive ? "text-[#14151A] dark:text-white" : "text-[#8B8D98] hover:text-[#56586A] dark:hover:text-slate-300"
               }`}
             >
               <div className="relative flex items-center justify-center">
-                <Icon className={`w-6 h-6 transition-transform duration-200 ${isActive ? "stroke-[#0A84FF] stroke-[2.4]" : "stroke-current stroke-[2]"}`} />
+                <div className={`p-1.5 rounded-[12px] transition-colors ${isActive ? "bg-[#F1F2F5] dark:bg-white/10" : ""}`}>
+                  <Icon className={`w-5 h-5 transition-transform ${isActive ? "stroke-[2.5]" : "stroke-[1.8]"}`} />
+                </div>
                 {item.id === "portfolio" && needsAttentionCount > 0 && (
-                  <span className="absolute -top-1 -right-2 w-4 h-4 rounded-full bg-[#FF453A] text-white text-[9px] font-extrabold flex items-center justify-center shadow-xs">
+                  <span className="absolute -top-0.5 -right-1 w-4 h-4 rounded-full bg-[#F04438] text-white text-[9px] font-extrabold flex items-center justify-center shadow-xs font-mono">
                     {needsAttentionCount}
                   </span>
                 )}
               </div>
-              <span className={`text-[10.5px] tracking-tight ${isActive ? "font-extrabold text-[#0A84FF]" : "font-semibold"}`}>
+              <span className={`text-[11px] tracking-tight ${isActive ? "font-bold" : "font-medium"}`}>
                 {item.label}
               </span>
             </button>
@@ -54,4 +56,3 @@ export default function BottomNavBar({
     </nav>
   );
 }
-

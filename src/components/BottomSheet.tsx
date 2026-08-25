@@ -1,5 +1,5 @@
 import React from "react";
-import { X, TrendingUp, AlertTriangle, Clock, Bot, LineChart, CheckCircle2, ShieldAlert } from "lucide-react";
+import { X, TrendingUp, AlertTriangle, Clock, LineChart } from "lucide-react";
 import { formatINR } from "../lib/utils";
 
 export interface BottomSheetItem {
@@ -55,42 +55,37 @@ export default function BottomSheet({
 
   // Action mapping
   let actionKey = "buy";
-  let actionTitle = "Good entry right now";
-  let actionDesc = "Price has pulled back near the flagged entry — this is where the strategy expects you to step in.";
+  let actionTitle = "Prime Entry Zone";
+  let actionDesc = "Price is hovering near the ideal entry trigger with verified institutional volume support.";
 
   if (isClosedTrade) {
     actionKey = isRoiPositive ? "buy" : "avoid";
-    actionTitle = item.pnlLabel === "WIN" ? "Trade closed in profit" : "Trade closed in loss";
+    actionTitle = item.pnlLabel === "WIN" ? "Trade Closed in Profit" : "Trade Closed in Loss";
     
     const reasonMap: Record<string, string> = {
-      MFE_TRAIL_L1: "Trailing stop locked in profit near the peak.",
-      MFE_TRAIL_L2: "Trailing stop locked in profit near the peak.",
-      MFE_TRAIL_L3: "Trailing stop locked in profit after a strong run.",
-      MFE_TRAIL_L4: "Trailing stop locked in a modest profit.",
-      SMART_EARLY_STOP: "Cut early — the setup weakened faster than expected.",
-      HARD_STOP_HIT: "Hit the maximum loss limit and closed automatically.",
-      TIME_DECAY_STALL: "Held too long without progress, so it was closed.",
-      ZERO_MOMENTUM: "Momentum faded — closed to free up capital.",
-      TARGET_HIT: "Reached strategy Target 1 successfully.",
-      TRAIL_STOP: "Trailing stop hit to protect gains."
+      MFE_TRAIL_L1: "Trailing stop locked in profit near peak trajectory.",
+      MFE_TRAIL_L2: "Trailing stop locked in profit near peak trajectory.",
+      MFE_TRAIL_L3: "Trailing stop locked in profit after strong momentum run.",
+      MFE_TRAIL_L4: "Trailing stop locked in modest gains.",
+      SMART_EARLY_STOP: "Early risk cut — momentum deteriorated faster than threshold.",
+      HARD_STOP_HIT: "Maximum risk limit reached — closed automatically to protect capital.",
+      TIME_DECAY_STALL: "Position consolidated past maximum expected duration.",
+      ZERO_MOMENTUM: "Volume dried up — capital reallocated.",
+      TARGET_HIT: "Successfully hit Target 1 exit limit.",
+      TRAIL_STOP: "Trailing stop activated to preserve capital."
     };
-    actionDesc = (item.exitReason && reasonMap[item.exitReason]) || "Position closed per strategy risk management rules.";
+    actionDesc = (item.exitReason && reasonMap[item.exitReason]) || "Position closed strictly following risk management rules.";
   } else if (item.action === "WAIT") {
     actionKey = "wait";
-    actionTitle = "Extended — wait for a dip";
-    actionDesc = item.waitReason || "This trade has already run up. Chasing here means paying more for the same risk. Wait for a pullback.";
-  } else if (item.action === "MISSED") {
+    actionTitle = "Extended — Wait for Pullback";
+    actionDesc = item.waitReason || "This setup has already advanced significantly. Wait for a retest before committing capital.";
+  } else if (item.action === "MISSED" || item.action === "AVOID") {
     actionKey = "avoid";
-    actionTitle = "Overextended — don't chase";
-    actionDesc = item.missedNote || "The move has gone well beyond a normal entry range. Entering now means poor risk-to-reward.";
+    actionTitle = "Overextended — Avoid Chasing";
+    actionDesc = item.missedNote || "Price has moved past safe risk-reward boundaries. Let this move conclude.";
   }
 
-  const score = item.compositeScore ?? (item.mlProbability ? Math.round(item.mlProbability * 100) : 75);
-  const scoreGradient = score >= 80 
-    ? "linear-gradient(90deg, #30D158, #0ABF6B)"
-    : score >= 65
-    ? "linear-gradient(90deg, #FF9500, #FFD60A)"
-    : "linear-gradient(90deg, #FF453A, #FF375F)";
+  const score = item.compositeScore ?? (item.mlProbability ? Math.round(item.mlProbability * 100) : 76);
 
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-end sm:items-center">
@@ -101,164 +96,157 @@ export default function BottomSheet({
       />
 
       {/* Sheet Container */}
-      <div className="relative w-full max-w-[440px] bg-white dark:bg-[#1C1C1E] rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col z-10 animate-in slide-in-from-bottom duration-300 border border-black/5 dark:border-white/10">
+      <div className="relative w-full max-w-[440px] bg-white dark:bg-[#14161E] rounded-t-[28px] sm:rounded-[28px] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col z-10 animate-in slide-in-from-bottom duration-200 border border-[#ECEEF2] dark:border-white/10">
         
         {/* Handle Bar */}
-        <div className="w-10 h-1.5 rounded-full bg-[#E5E5EA] dark:bg-[#38383A] mx-auto mt-3.5 mb-1 shrink-0" />
+        <div className="w-10 h-1.2 rounded-full bg-[#E5E5EA] dark:bg-white/20 mx-auto mt-3 mb-1 shrink-0" />
 
         {/* Scrollable Content */}
-        <div className="overflow-y-auto px-5 sm:px-6 pt-2 pb-8 no-scrollbar">
+        <div className="overflow-y-auto px-5 sm:px-6 pt-2 pb-7 no-scrollbar">
           
           {/* Header */}
-          <div className="flex justify-between items-start mb-4">
+          <div className="flex justify-between items-start mb-3.5">
             <div>
-              <div className="text-[26px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tracking-tight flex items-center gap-2">
+              <div className="text-[22px] font-extrabold text-[#14151A] dark:text-white tracking-tight flex items-center gap-2">
                 {item.symbol}
                 {isBought && (
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#E5FBEA] text-[#1DA53E] border border-[#30D158]/30">
-                    Holding ✓
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#ECFDF3] text-[#16A34A] border border-[#86EFAC]/40 font-mono">
+                    HELD ✓
                   </span>
                 )}
               </div>
-              <div className="text-[13px] text-[#6B7079] dark:text-[#98989F] font-semibold mt-0.5">
-                {item.strategyName || "Algorithmic"} strategy · {isClosedTrade ? `Closed ${item.exitDate || "Recently"}` : `Entered ${item.entryDate || "Active"}`}
+              <div className="text-[12.5px] text-[#56586A] dark:text-[#8B8D98] font-medium mt-0.5">
+                {item.strategyName || "Algorithmic"} model · {isClosedTrade ? `Closed ${item.exitDate || "Recently"}` : `Triggered ${item.entryDate || "Active"}`}
               </div>
             </div>
 
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-[#F2F3F7] dark:bg-[#2C2C2E] flex items-center justify-center text-[#6B7079] dark:text-[#98989F] hover:text-[#0B0D12] dark:hover:text-white transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-full bg-[#F1F2F5] dark:bg-white/10 flex items-center justify-center text-[#56586A] dark:text-white hover:opacity-80 transition-opacity cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Price & ROI Hero */}
-          <div className="flex items-baseline gap-3 mb-5">
-            <div className="text-[32px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tracking-tight tabular">
+          {/* Price & ROI */}
+          <div className="flex items-baseline gap-3 mb-4">
+            <div className="text-[30px] font-extrabold text-[#14151A] dark:text-white tracking-tight tabular font-mono">
               {formatINR(isClosedTrade ? (item.exitPrice || item.currentPrice || 0) : (item.currentPrice || item.entryPrice || 0))}
             </div>
-            <div className={`text-[16px] font-extrabold tabular ${isRoiPositive ? "text-[#30D158]" : "text-[#FF453A]"}`}>
-              {isRoiPositive ? "↑ +" : "↓ "}{Math.abs(roi).toFixed(2)}%
+            <div className={`text-[15px] font-extrabold font-mono tabular ${isRoiPositive ? "text-[#16A34A] dark:text-emerald-400" : "text-[#F04438] dark:text-rose-400"}`}>
+              {isRoiPositive ? "+" : ""}{roi.toFixed(2)}%
             </div>
             {item.holdingDays !== undefined && (
-              <div className="text-[12.5px] font-semibold text-[#A2A6AE] dark:text-[#636366] ml-auto">
+              <div className="text-[12px] font-semibold text-[#8B8D98] ml-auto font-mono">
                 {item.holdingDays}d hold
               </div>
             )}
           </div>
 
-          {/* State Banner */}
-          <div className={`rounded-[20px] p-4 mb-5 flex items-start gap-3.5 border ${
+          {/* Action Condition Banner */}
+          <div className={`rounded-[16px] p-3.5 mb-4 flex items-start gap-3 border ${
             actionKey === "buy"
-              ? "bg-gradient-to-br from-[#E5FBEA] to-[#E4F8FC] dark:from-[#0E2C17] dark:to-[#0E2E36] border-[#30D158]/20"
+              ? "bg-[#ECFDF3] dark:bg-emerald-950/30 border-[#86EFAC]/60 dark:border-emerald-800/40"
               : actionKey === "wait"
-              ? "bg-gradient-to-br from-[#FFF2DF] to-[#FFE9EF] dark:from-[#3A2A0C] dark:to-[#3A1622] border-[#FF9500]/20"
-              : "bg-gradient-to-br from-[#FFEBEA] to-[#FFE9EF] dark:from-[#3A1512] dark:to-[#3A1622] border-[#FF453A]/20"
+              ? "bg-[#FFFBEB] dark:bg-amber-950/30 border-[#FDE68A]/60 dark:border-amber-800/40"
+              : "bg-[#FEF3F2] dark:bg-rose-950/30 border-[#FECDCA]/60 dark:border-rose-800/40"
           }`}>
-            <div className={`w-9 h-9 rounded-[12px] flex items-center justify-center shrink-0 text-white shadow-xs ${
-              actionKey === "buy" ? "bg-[#30D158]" : actionKey === "wait" ? "bg-[#FF9500]" : "bg-[#FF453A]"
+            <div className={`w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0 text-white shadow-xs ${
+              actionKey === "buy" ? "bg-[#16A34A]" : actionKey === "wait" ? "bg-[#D97706]" : "bg-[#F04438]"
             }`}>
               {actionKey === "buy" ? (
-                <TrendingUp className="w-5 h-5" />
+                <TrendingUp className="w-4 h-4" />
               ) : actionKey === "wait" ? (
-                <Clock className="w-5 h-5" />
+                <Clock className="w-4 h-4" />
               ) : (
-                <AlertTriangle className="w-5 h-5" />
+                <AlertTriangle className="w-4 h-4" />
               )}
             </div>
             <div>
-              <div className="text-[14.5px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] mb-0.5">
+              <div className="text-[13.5px] font-bold text-[#14151A] dark:text-white mb-0.5">
                 {actionTitle}
               </div>
-              <div className="text-[12.5px] text-[#6B7079] dark:text-[#98989F] font-semibold leading-relaxed">
+              <div className="text-[12px] text-[#56586A] dark:text-[#8B8D98] font-medium leading-relaxed">
                 {actionDesc}
               </div>
             </div>
           </div>
 
           {/* Conviction Score */}
-          <div className="mb-5">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#A2A6AE] dark:text-[#636366]">
-                Conviction Score
-              </span>
-              <span className="text-[14px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tabular">
-                {score}/100
-              </span>
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-1.5 text-[10.5px] font-bold uppercase tracking-wider text-[#8B8D98] font-mono">
+              <span>Algorithmic Conviction</span>
+              <span className="text-[#14151A] dark:text-white">{score}/100</span>
             </div>
-            <div className="h-2.5 rounded-full bg-[#E5E5EA] dark:bg-[#2C2C2E] overflow-hidden">
+            <div className="h-2 rounded-full bg-[#F1F2F5] dark:bg-white/10 overflow-hidden">
               <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${Math.min(100, Math.max(10, score))}%`,
-                  background: scoreGradient
-                }}
+                className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-[#6366F1] to-[#10B981]"
+                style={{ width: `${Math.min(100, Math.max(10, score))}%` }}
               />
             </div>
           </div>
 
           {/* 2x2 Metric Grid */}
-          <div className="grid grid-cols-2 gap-2.5 mb-5">
-            <div className="p-3.5 rounded-[16px] bg-[#E8F2FF] dark:bg-[#0F2942]">
-              <div className="text-[10.5px] font-bold text-[#6B7079] dark:text-[#98989F] uppercase tracking-wide mb-1">
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className="p-3 rounded-[14px] bg-[#F1F2F5] dark:bg-white/[0.04]">
+              <div className="text-[10px] font-bold text-[#8B8D98] uppercase tracking-wider mb-0.5 font-mono">
                 Entry Price
               </div>
-              <div className="text-[16px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tabular">
+              <div className="text-[15px] font-extrabold text-[#14151A] dark:text-white font-mono tabular">
                 {formatINR(item.entryPrice || 0)}
               </div>
             </div>
 
-            <div className="p-3.5 rounded-[16px] bg-[#E5FBEA] dark:bg-[#0E2C17]">
-              <div className="text-[10.5px] font-bold text-[#6B7079] dark:text-[#98989F] uppercase tracking-wide mb-1">
+            <div className="p-3 rounded-[14px] bg-[#F1F2F5] dark:bg-white/[0.04]">
+              <div className="text-[10px] font-bold text-[#8B8D98] uppercase tracking-wider mb-0.5 font-mono">
                 {isClosedTrade ? "Exit Price" : "Current Price"}
               </div>
-              <div className="text-[16px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tabular">
+              <div className="text-[15px] font-extrabold text-[#14151A] dark:text-white font-mono tabular">
                 {formatINR(isClosedTrade ? (item.exitPrice || 0) : (item.currentPrice || item.entryPrice || 0))}
               </div>
             </div>
 
-            <div className="p-3.5 rounded-[16px] bg-[#F4E9FB] dark:bg-[#2B1E3B]">
-              <div className="text-[10.5px] font-bold text-[#6B7079] dark:text-[#98989F] uppercase tracking-wide mb-1">
-                ML Confidence
+            <div className="p-3 rounded-[14px] bg-[#F1F2F5] dark:bg-white/[0.04]">
+              <div className="text-[10px] font-bold text-[#8B8D98] uppercase tracking-wider mb-0.5 font-mono">
+                ML Probability
               </div>
-              <div className="text-[16px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] tabular">
-                {item.mlProbability ? `${(item.mlProbability > 1 ? item.mlProbability : item.mlProbability * 100).toFixed(1)}%` : "78.5%"}
+              <div className="text-[15px] font-extrabold text-[#14151A] dark:text-white font-mono tabular">
+                {item.mlProbability ? `${(item.mlProbability > 1 ? item.mlProbability : item.mlProbability * 100).toFixed(1)}%` : "74.5%"}
               </div>
             </div>
 
-            <div className="p-3.5 rounded-[16px] bg-[#FFF2DF] dark:bg-[#3A2A0C]">
-              <div className="text-[10.5px] font-bold text-[#6B7079] dark:text-[#98989F] uppercase tracking-wide mb-1">
+            <div className="p-3 rounded-[14px] bg-[#F1F2F5] dark:bg-white/[0.04]">
+              <div className="text-[10px] font-bold text-[#8B8D98] uppercase tracking-wider mb-0.5 font-mono">
                 Strategy
               </div>
-              <div className="text-[14.5px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] truncate">
+              <div className="text-[14px] font-extrabold text-[#14151A] dark:text-white truncate">
                 {item.strategyName || "Breakout"}
               </div>
             </div>
           </div>
 
-          {/* Engine Trade Plan Targets if available */}
+          {/* Trade Execution Plan */}
           {item.tradePlan && (
-            <div className="p-3 rounded-[16px] bg-[#F2F3F7] dark:bg-[#2C2C2E] mb-5">
-              <div className="text-[10.5px] font-bold text-[#A2A6AE] uppercase tracking-wider mb-2">
-                Trade Execution Plan
+            <div className="p-3 rounded-[14px] bg-[#F1F2F5] dark:bg-white/[0.04] mb-4">
+              <div className="text-[10px] font-bold text-[#8B8D98] uppercase tracking-wider mb-2 font-mono">
+                Execution Parameters
               </div>
               <div className="grid grid-cols-3 gap-2 text-center text-[12px] font-mono">
                 <div>
-                  <div className="text-[9.5px] text-[#6B7079] font-bold">TARGET 1</div>
-                  <div className="font-extrabold text-[#30D158] mt-0.5">
+                  <div className="text-[9px] text-[#8B8D98] font-bold">TARGET 1</div>
+                  <div className="font-extrabold text-[#16A34A] dark:text-emerald-400 mt-0.5">
                     {item.tradePlan.target1Price ? formatINR(item.tradePlan.target1Price) : "+12%"}
                   </div>
                 </div>
                 <div>
-                  <div className="text-[9.5px] text-[#6B7079] font-bold">STOP LOSS</div>
-                  <div className="font-extrabold text-[#FF453A] mt-0.5">
+                  <div className="text-[9px] text-[#8B8D98] font-bold">STOP LOSS</div>
+                  <div className="font-extrabold text-[#F04438] dark:text-rose-400 mt-0.5">
                     {item.tradePlan.stopPrice ? formatINR(item.tradePlan.stopPrice) : "-6%"}
                   </div>
                 </div>
                 <div>
-                  <div className="text-[9.5px] text-[#6B7079] font-bold">T1 R:R</div>
-                  <div className="font-extrabold text-[#5E5CE6] mt-0.5">
+                  <div className="text-[9px] text-[#8B8D98] font-bold">R:R RATIO</div>
+                  <div className="font-extrabold text-[#6366F1] dark:text-indigo-400 mt-0.5">
                     {item.tradePlan.t1RiskReward || "2.1:1"}
                   </div>
                 </div>
@@ -266,50 +254,18 @@ export default function BottomSheet({
             </div>
           )}
 
-          {/* Why this reading Section */}
-          <div className="mb-6">
-            <div className="text-[13.5px] font-extrabold text-[#0B0D12] dark:text-[#F5F5F7] mb-3">
-              Why this reading
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-[#5E5CE6] mt-1.5 shrink-0" />
-                <div className="text-[13px] text-[#6B7079] dark:text-[#98989F] font-medium leading-relaxed">
-                  <strong className="text-[#0B0D12] dark:text-[#F5F5F7] font-bold">{item.strategyName || "Algorithm"}</strong> looks for institutional volume spikes & pattern breakouts — triggered on {item.entryDate || "recent session"}.
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-[#30D158] mt-1.5 shrink-0" />
-                <div className="text-[13px] text-[#6B7079] dark:text-[#98989F] font-medium leading-relaxed">
-                  Conviction of <strong className="text-[#0B0D12] dark:text-[#F5F5F7] font-bold">{score}/100</strong> combines machine-learning pattern recognition with relative sector momentum.
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
-                  actionKey === "buy" ? "bg-[#30D158]" : actionKey === "wait" ? "bg-[#FF9500]" : "bg-[#FF453A]"
-                }`} />
-                <div className="text-[13px] text-[#6B7079] dark:text-[#98989F] font-medium leading-relaxed">
-                  {actionDesc}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Actions */}
-          <div className="flex gap-2.5 pt-2">
+          {/* Bottom Action buttons */}
+          <div className="flex gap-2 pt-2">
             {onOpenChart && (
               <button
                 onClick={() => {
                   onClose();
                   onOpenChart(item.symbol);
                 }}
-                className="flex-1 py-3 px-4 rounded-[16px] bg-[#F2F3F7] dark:bg-[#2C2C2E] text-[#0B0D12] dark:text-[#F5F5F7] font-extrabold text-[14px] hover:bg-[#E5E5EA] transition-all flex items-center justify-center gap-1.5 cursor-pointer qs-btn-press"
+                className="flex-1 py-2.5 px-3 rounded-[12px] bg-[#F1F2F5] dark:bg-white/[0.08] text-[#14151A] dark:text-white font-bold text-[13px] hover:bg-slate-200 dark:hover:bg-white/15 transition-colors flex items-center justify-center gap-1.5 cursor-pointer qs-btn-press"
               >
-                <LineChart className="w-4 h-4 text-[#0A84FF]" />
-                Chart
+                <LineChart className="w-4 h-4 text-[#6366F1]" />
+                Interactive Chart
               </button>
             )}
 
@@ -323,9 +279,9 @@ export default function BottomSheet({
                     item.strategyName
                   );
                 }}
-                className="flex-1 py-3 px-4 rounded-[16px] bg-gradient-to-r from-[#0A84FF] to-[#5E5CE6] text-white font-extrabold text-[14px] shadow-[0_8px_18px_-6px_rgba(10,132,255,0.5)] hover:opacity-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer qs-btn-press"
+                className="flex-1 py-2.5 px-3 rounded-[12px] bg-[#14151A] dark:bg-white text-white dark:text-[#14151A] font-bold text-[13px] shadow-xs hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5 cursor-pointer qs-btn-press"
               >
-                {isBought ? "Adjust Position" : "Buy / Add Trade"}
+                {isBought ? "Adjust Position" : "Log Trade"}
               </button>
             )}
           </div>
