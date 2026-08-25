@@ -1,9 +1,12 @@
 import express from "express";
+import http from "http";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
+import { marketStream } from "./server/marketSocket";
+import { sheetsSyncEngine } from "./server/sheetsSync";
 
 // Initialize Firebase Admin for Push Notifications
 if (!getApps().length) {
@@ -169,6 +172,82 @@ async function startServer() {
 
   // Vite integration middleware context
 
+  // Market Endpoints for live Index stream and fallback
+  app.get("/api/market/indices", (req, res) => {
+    const snapshot = marketStream.getSnapshot();
+    return res.json({
+      success: true,
+      ...snapshot,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.post("/api/market/configure-angel", (req, res) => {
+    const { apiKey, clientCode, feedToken, jwtToken } = req.body;
+    if (!apiKey || !clientCode || !feedToken) {
+      return res.status(400).json({ error: "Missing apiKey, clientCode, or feedToken" });
+    }
+    marketStream.updateAngelCredentials(apiKey, clientCode, feedToken, jwtToken);
+    return res.json({
+      success: true,
+      message: "Angel One SmartAPI credentials updated. Initiating stream...",
+      status: marketStream.getSnapshot().angelStatus
+    });
+  });
+
+  // Google Sheets Finance Ingestion Endpoints (Cached for 1,000+ parallel users)
+  app.get("/api/sheets/quotes", (req, res) => {
+    const quotes = sheetsSyncEngine.getQuotes();
+    const config = sheetsSyncEngine.getConfig();
+    return res.json({
+      success: true,
+      quotes,
+      config,
+      totalCount: quotes.length,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  app.get("/api/sheets/config", (req, res) => {
+    return res.json({
+      success: true,
+      config: sheetsSyncEngine.getConfig()
+    });
+  });
+
+  app.post("/api/sheets/config", (req, res) => {
+    const { sheetUrlOrId, sheetGid, sheetTabName, syncIntervalSec, isEnabled } = req.body;
+    const result = sheetsSyncEngine.updateConfig({
+      sheetUrlOrId: sheetUrlOrId !== undefined ? sheetUrlOrId : undefined,
+      sheetGid: sheetGid !== undefined ? sheetGid : undefined,
+      sheetTabName: sheetTabName !== undefined ? sheetTabName : undefined,
+      syncIntervalSec: syncIntervalSec !== undefined ? Number(syncIntervalSec) : undefined,
+      isEnabled: isEnabled !== undefined ? Boolean(isEnabled) : undefined
+    });
+    return res.json({
+      success: true,
+      config: result.config,
+      message: "Google Sheets sync configuration updated."
+    });
+  });
+
+  app.post("/api/sheets/sync-now", async (req, res) => {
+    try {
+      const result = await sheetsSyncEngine.syncNow();
+      return res.json({
+        success: result.success,
+        quotes: result.quotes,
+        config: sheetsSyncEngine.getConfig(),
+        error: result.error
+      });
+    } catch (err: any) {
+      return res.status(500).json({
+        success: false,
+        error: err.message
+      });
+    }
+  });
+
   // Manual telegram simulation proxy endpoint
   app.post("/api/simulate-telegram", (req, res) => {
     const { message } = req.body;
@@ -209,8 +288,11 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server successfully started. Running on port ${PORT}`);
+  const server = http.createServer(app);
+  marketStream.attach(server);
+
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server & Market WebSocket successfully started. Running on port ${PORT}`);
   });
 }
 

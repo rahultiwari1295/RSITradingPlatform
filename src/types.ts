@@ -206,6 +206,83 @@ export interface TradeHistory {
   [symbol: string]: CompletedTrade[];
 }
 
+export interface MarketIndex {
+  symbol: string;
+  name: string;
+  category: "benchmark" | "sectoral" | "broad" | "volatility";
+  exchange: "NSE" | "BSE";
+  token: string;
+  ltp: number;
+  prevClose: number;
+  open: number;
+  high: number;
+  low: number;
+  change: number;
+  changePercent: number;
+  volume?: number;
+  advances?: number;
+  declines?: number;
+  unchanged?: number;
+  sparkline: number[];
+  week52High?: number;
+  week52Low?: number;
+  lastUpdated: string;
+}
+
+export interface MarketBreadth {
+  advances: number;
+  declines: number;
+  unchanged: number;
+  advDecRatio: number;
+  marketSentiment: "BULLISH" | "MILDLY_BULLISH" | "NEUTRAL" | "BEARISH" | "HIGH_VOLATILITY";
+  vixLevel: number;
+  totalMarketTurnoverCr?: number;
+}
+
+export interface SheetStockQuote {
+  symbol: string;
+  name?: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  high?: number;
+  low?: number;
+  open?: number;
+  volume?: number;
+  pe?: number;
+  eps?: number;
+  week52High?: number;
+  week52Low?: number;
+  action?: "BUY" | "SELL" | "HOLD" | "WATCH";
+  notes?: string;
+  rawRow?: Record<string, any>;
+  lastSynced: string;
+}
+
+export interface GoogleSheetConfig {
+  sheetUrlOrId: string;
+  sheetGid?: string;
+  sheetTabName?: string;
+  syncIntervalSec: number;
+  isEnabled: boolean;
+  lastSyncTime?: string;
+  lastSyncStatus?: "SUCCESS" | "ERROR" | "IDLE" | "SYNCING";
+  lastSyncError?: string;
+  rowCount: number;
+}
+
+export interface MarketStreamPayload {
+  type: "INDEX_TICK" | "FULL_SNAPSHOT" | "BREADTH_UPDATE" | "STATUS" | "ANGEL_CONNECTED" | "SHEETS_UPDATED" | "PONG";
+  indices?: MarketIndex[];
+  index?: MarketIndex;
+  breadth?: MarketBreadth;
+  sheetQuotes?: SheetStockQuote[];
+  timestamp: string;
+  source: "angel_smartapi" | "high_frequency_engine" | "google_sheets";
+  marketStatus: "OPEN" | "CLOSED" | "PRE_OPEN" | "POST_CLOSE";
+  latencyMs?: number;
+}
+
 export interface TerminalDataResponse {
   success: boolean;
   generatedAt: string;

@@ -9,7 +9,8 @@ import {
   Sun,
   Moon,
   Activity,
-  CheckCircle2
+  CheckCircle2,
+  Zap
 } from "lucide-react";
 import {
   InTradeTrade,
@@ -21,6 +22,7 @@ import {
 } from "./types";
 import SignalsView from "./views/SignalsView";
 import HomeView from "./views/HomeView";
+import MarketView from "./views/MarketView";
 import PortfolioView from "./views/PortfolioView";
 import BacktestsView from "./views/BacktestsView";
 import BottomNavBar, { TabType } from "./components/BottomNavBar";
@@ -28,6 +30,7 @@ import BuyModal from "./components/Modals/BuyModal";
 import SellModal from "./components/Modals/SellModal";
 import AddPositionModal from "./components/Modals/AddPositionModal";
 import ChartModal from "./components/Modals/ChartModal";
+import { useMarketSocket } from "./hooks/useMarketSocket";
 
 import {
   initialSignals,
@@ -47,6 +50,9 @@ export default function App() {
   
   // Navigation & View Mode
   const [activeTab, setActiveTab] = useState<TabType>("home");
+
+  // Real-time Market WebSocket Hook
+  const marketSocket = useMarketSocket();
 
   // Push notifications state
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() => {
@@ -335,6 +341,13 @@ export default function App() {
             isSyncing={isSyncing}
           />
         );
+      case "market":
+        return (
+          <MarketView
+            marketSocket={marketSocket}
+            onOpenChart={(sym) => setSelectedChartSymbol(sym)}
+          />
+        );
       case "signals":
         return (
           <SignalsView
@@ -394,9 +407,14 @@ export default function App() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-[14px] sm:text-[15px] tracking-tight">QuantSync</span>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#ECFDF3] text-[#16A34A] border border-[#86EFAC]/40 font-mono">
-                  LIVE
-                </span>
+                <button
+                  onClick={() => setActiveTab("market")}
+                  className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-[#ECFDF3] dark:bg-emerald-950/50 text-[#16A34A] dark:text-emerald-400 border border-[#86EFAC]/40 flex items-center gap-1 font-mono cursor-pointer hover:bg-[#dcfce7] transition-colors"
+                  title="Live WebSocket Stream Active - Click to view Market"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A] animate-pulse" />
+                  <span>LIVE WS {marketSocket.latencyMs}ms</span>
+                </button>
               </div>
               <p className="text-[10px] text-[#8B8D98] font-mono hidden sm:block">
                 Editorial Fintech Trading Terminal {lastSyncedAt ? `· Synced ${lastSyncedAt}` : ""}
