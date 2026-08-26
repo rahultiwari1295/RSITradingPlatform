@@ -1,26 +1,42 @@
 import express from "express";
-import http from "http";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-import { getMessaging } from "firebase-admin/messaging";
+import { initializeApp, getApps, cert, type App } from "firebase-admin/app";
+import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { getMessaging, type Messaging } from "firebase-admin/messaging";
 import { marketStream } from "./server/marketSocket";
 import { sheetsSyncEngine } from "./server/sheetsSync";
 
-// Initialize Firebase Admin for Push Notifications
-if (!getApps().length) {
+// Lazy initialization helper for Firebase Admin SDK
+let firebaseAdminApp: App | null = null;
+let firebaseFirestore: Firestore | null = null;
+let firebaseMessaging: Messaging | null = null;
+
+function getFirebaseAdmin(): { firestore: Firestore; messaging: Messaging } | null {
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  if (!serviceAccountKey) {
+    return null;
+  }
+
   try {
-    if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-      initializeApp({
-        credential: cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)),
-      });
-      console.log("Firebase Admin initialized successfully.");
-    } else {
-      console.warn("FIREBASE_SERVICE_ACCOUNT_KEY is missing. Push notifications will not work.");
+    if (!firebaseAdminApp) {
+      if (getApps().length > 0) {
+        firebaseAdminApp = getApps()[0];
+      } else {
+        firebaseAdminApp = initializeApp({
+          credential: cert(JSON.parse(serviceAccountKey)),
+        });
+      }
+      firebaseFirestore = getFirestore(firebaseAdminApp);
+      firebaseMessaging = getMessaging(firebaseAdminApp);
     }
+    return {
+      firestore: firebaseFirestore!,
+      messaging: firebaseMessaging!,
+    };
   } catch (err) {
-    console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY", err);
+    console.error("Failed to initialize Firebase Admin SDK:", err);
+    return null;
   }
 }
 
@@ -38,14 +54,17 @@ async function startServer() {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const { title, body, symbol, action, price, compositeScore, strategyName, tradeReturnPercent, exitReason } = req.body;
+      const { title, body, symbol, action, price } = req.body;
 
-      if (!getApps().length) {
-        return res.status(500).json({ error: "Firebase Admin is not configured." });
+      const fb = getFirebaseAdmin();
+      if (!fb) {
+        return res.status(503).json({ error: "Firebase Admin is not configured or service account key is missing." });
       }
 
+      const { firestore, messaging } = fb;
+
       // 1. Fetch active device tokens from Firestore
-      const snapshot = await getFirestore().collection('device_tokens').get();
+      const snapshot = await firestore.collection('device_tokens').get();
       const tokens = snapshot.docs.map(doc => doc.data().token).filter(Boolean);
 
       if (tokens.length === 0) {
@@ -66,7 +85,7 @@ async function startServer() {
         tokens: tokens,
       };
 
-      const response = await getMessaging().sendEachForMulticast(message);
+      const response = await messaging.sendEachForMulticast(message);
       
       // Clean up invalid tokens
       if (response.failureCount > 0) {
@@ -78,7 +97,7 @@ async function startServer() {
         });
         
         // Remove failed tokens from Firestore
-        const batch = getFirestore().batch();
+        const batch = firestore.batch();
         snapshot.docs.forEach((doc) => {
           if (failedTokens.includes(doc.data().token)) {
             batch.delete(doc.ref);
@@ -113,14 +132,22 @@ async function startServer() {
       const rawData = await response.json();
       
       if (rawData) {
+        // Automatic backtracking to Google Sheets LTP:
+        // When response comes into backend, enrich signals and trades with live sheet prices & recalculated ROIs
+        const enrichedToBuySignals = sheetsSyncEngine.enrichWithSheetsLtp(rawData.toBuySignals || []);
+        const enrichedInTradeTrades = sheetsSyncEngine.enrichWithSheetsLtp(rawData.inTradeTrades || []);
+        const enrichedPortfolio = sheetsSyncEngine.enrichWithSheetsLtp(rawData.portfolio || []);
+        const enrichedClosedTrades = sheetsSyncEngine.enrichWithSheetsLtp(rawData.closedTrades || []);
+
         return res.json({
           success: true,
           generatedAt: rawData.generatedAt,
           kpis: rawData.kpis,
-          toBuySignals: rawData.toBuySignals || [],
-          inTradeTrades: rawData.inTradeTrades || [],
-          portfolio: rawData.portfolio || [],
-          closedTrades: rawData.closedTrades || [],
+          toBuySignals: enrichedToBuySignals,
+          inTradeTrades: enrichedInTradeTrades,
+          portfolio: enrichedPortfolio,
+          closedTrades: enrichedClosedTrades,
+          sheetsSynced: true,
           source: "live"
         });
       } else {
@@ -172,26 +199,13 @@ async function startServer() {
 
   // Vite integration middleware context
 
-  // Market Endpoints for live Index stream and fallback
+  // Market Endpoints for live Index data
   app.get("/api/market/indices", (req, res) => {
     const snapshot = marketStream.getSnapshot();
     return res.json({
       success: true,
       ...snapshot,
       timestamp: new Date().toISOString()
-    });
-  });
-
-  app.post("/api/market/configure-angel", (req, res) => {
-    const { apiKey, clientCode, feedToken, jwtToken } = req.body;
-    if (!apiKey || !clientCode || !feedToken) {
-      return res.status(400).json({ error: "Missing apiKey, clientCode, or feedToken" });
-    }
-    marketStream.updateAngelCredentials(apiKey, clientCode, feedToken, jwtToken);
-    return res.json({
-      success: true,
-      message: "Angel One SmartAPI credentials updated. Initiating stream...",
-      status: marketStream.getSnapshot().angelStatus
     });
   });
 
@@ -288,11 +302,8 @@ async function startServer() {
     });
   }
 
-  const server = http.createServer(app);
-  marketStream.attach(server);
-
-  server.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server & Market WebSocket successfully started. Running on port ${PORT}`);
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server successfully started. Running on port ${PORT}`);
   });
 }
 

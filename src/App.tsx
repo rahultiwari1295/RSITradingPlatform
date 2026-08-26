@@ -171,30 +171,30 @@ export default function App() {
     }
   }, [portfolio, completedHistory, user, isCloudLoaded]);
 
-  // Fetch live Wix Studio data with proxy fallback
+  // Fetch live signals & trades (routed through backend proxy to auto-backtrack against Google Sheets LTP)
   const fetchLiveTerminalData = async () => {
     setIsSyncing(true);
     let result: any = null;
 
     try {
-      // Direct Wix API call
-      const res = await fetch("https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData", {
-        headers: { Accept: "application/json" }
-      });
-      if (res.ok) {
-        result = await res.json();
+      // Primary: Server proxy that backtracks Wix signals to Google Sheets LTP data
+      const proxyRes = await fetch("/api/terminal-data");
+      if (proxyRes.ok) {
+        result = await proxyRes.json();
       } else {
-        throw new Error("Direct Wix call returned non-200");
+        throw new Error("Server proxy returned non-200");
       }
     } catch (e) {
-      // Server proxy fallback
+      // Direct Wix API call fallback
       try {
-        const proxyRes = await fetch("/api/terminal-data");
-        if (proxyRes.ok) {
-          result = await proxyRes.json();
+        const directRes = await fetch("https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData", {
+          headers: { Accept: "application/json" }
+        });
+        if (directRes.ok) {
+          result = await directRes.json();
         }
-      } catch (proxyErr) {
-        console.warn("Wix sync failed:", proxyErr);
+      } catch (directErr) {
+        console.warn("Direct Wix sync failed:", directErr);
       }
     }
 
@@ -334,6 +334,7 @@ export default function App() {
         return (
           <HomeView
             toBuySignals={toBuySignals}
+            closedTrades={closedTrades}
             portfolioSymbols={portfolio.map(p => p.symbol)}
             onOpenChart={(sym) => setSelectedChartSymbol(sym)}
             onOpenBuyModal={(sym, price, strat) => setBuyModalData({ symbol: sym, price, strategyName: strat })}
@@ -407,14 +408,6 @@ export default function App() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-[14px] sm:text-[15px] tracking-tight">QuantSync</span>
-                <button
-                  onClick={() => setActiveTab("market")}
-                  className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-[#ECFDF3] dark:bg-emerald-950/50 text-[#16A34A] dark:text-emerald-400 border border-[#86EFAC]/40 flex items-center gap-1 font-mono cursor-pointer hover:bg-[#dcfce7] transition-colors"
-                  title="Live WebSocket Stream Active - Click to view Market"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A] animate-pulse" />
-                  <span>LIVE WS {marketSocket.latencyMs}ms</span>
-                </button>
               </div>
               <p className="text-[10px] text-[#8B8D98] font-mono hidden sm:block">
                 Editorial Fintech Trading Terminal {lastSyncedAt ? `· Synced ${lastSyncedAt}` : ""}

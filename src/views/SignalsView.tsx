@@ -61,7 +61,7 @@ const avatarGradients = [
 ];
 
 export default function SignalsView({
-  signals,
+  signals = [],
   portfolioSymbols = [],
   onOpenChart,
   onOpenBuyModal,
@@ -73,7 +73,7 @@ export default function SignalsView({
   const [sortBy, setSortBy] = useState<"roi" | "date" | "name">("roi");
   const [selectedSheetItem, setSelectedSheetItem] = useState<BottomSheetItem | null>(null);
 
-  const rawSignals = signals && signals.length > 0 ? signals : (fallbackSignals as any);
+  const rawSignals = Array.isArray(signals) ? signals : [];
 
   // Processed signals with health calculation
   const processedTrades = useMemo(() => {
@@ -220,7 +220,19 @@ export default function SignalsView({
 
       {/* 4. Active Signals List */}
       <div className="space-y-2.5">
-        {filteredSignals.map((t: any, idx: number) => {
+        {filteredSignals.length === 0 ? (
+          <div className="rounded-[20px] p-8 text-center bg-white dark:bg-[#14161E] border border-[#ECEEF2] dark:border-white/[0.08] qs-card-shadow">
+            <div className="text-[15px] font-bold text-[#14151A] dark:text-white mb-1">
+              No Active Signals
+            </div>
+            <div className="text-[12.5px] text-[#8B8D98] max-w-sm mx-auto">
+              {searchQuery || healthFilter !== "ALL"
+                ? "No active trades match your search query or filter."
+                : "No in-trade positions are currently being tracked. New signals will appear here when triggered."}
+            </div>
+          </div>
+        ) : (
+          filteredSignals.map((t: any, idx: number) => {
           const isUp = t.roi >= 0;
           const isBought = portfolioSymbols.includes(t.symbol);
           const gradClass = avatarGradients[idx % avatarGradients.length];
@@ -305,7 +317,7 @@ export default function SignalsView({
               </div>
             </div>
           );
-        })}
+        }))}
       </div>
 
       {/* Bottom Sheet Modal */}

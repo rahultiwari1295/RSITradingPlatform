@@ -1,6 +1,4 @@
-import { WebSocketServer, WebSocket } from "ws";
-import type { Server as HttpServer } from "http";
-import type { MarketIndex, MarketBreadth, MarketStreamPayload } from "../src/types";
+import type { MarketIndex, MarketBreadth } from "../src/types";
 
 // Base realistic index data for Indian markets
 const INITIAL_INDICES: MarketIndex[] = [
@@ -98,20 +96,20 @@ const INITIAL_INDICES: MarketIndex[] = [
     category: "benchmark",
     exchange: "NSE",
     token: "99926037",
-    ltp: 23560.10,
-    prevClose: 23410.50,
-    open: 23450.00,
-    high: 23620.00,
-    low: 23390.00,
-    change: 149.60,
-    changePercent: 0.64,
-    volume: 64200000,
+    ltp: 22890.30,
+    prevClose: 22760.10,
+    open: 22790.00,
+    high: 22940.00,
+    low: 22750.50,
+    change: 130.20,
+    changePercent: 0.57,
+    volume: 45000000,
     advances: 14,
     declines: 6,
     unchanged: 0,
-    sparkline: [23410, 23450, 23430, 23510, 23490, 23540, 23520, 23580, 23560],
-    week52High: 24200.00,
-    week52Low: 18900.00,
+    sparkline: [22760, 22790, 22780, 22830, 22810, 22860, 22840, 22910, 22890],
+    week52High: 23800.00,
+    week52Low: 19100.00,
     lastUpdated: new Date().toISOString()
   },
   {
@@ -120,20 +118,64 @@ const INITIAL_INDICES: MarketIndex[] = [
     category: "broad",
     exchange: "NSE",
     token: "99926014",
-    ltp: 58940.25,
-    prevClose: 58450.10,
-    open: 58520.00,
-    high: 59120.00,
-    low: 58410.00,
-    change: 490.15,
-    changePercent: 0.84,
-    volume: 112000000,
-    advances: 72,
-    declines: 28,
+    ltp: 57420.10,
+    prevClose: 56980.40,
+    open: 57050.00,
+    high: 57550.00,
+    low: 57010.00,
+    change: 439.70,
+    changePercent: 0.77,
+    volume: 87000000,
+    advances: 68,
+    declines: 32,
     unchanged: 0,
-    sparkline: [58450, 58520, 58600, 58750, 58700, 58850, 58810, 58990, 58940],
-    week52High: 59800.00,
-    week52Low: 38400.00,
+    sparkline: [56980, 57050, 57120, 57250, 57200, 57340, 57300, 57450, 57420],
+    week52High: 58900.00,
+    week52Low: 38200.00,
+    lastUpdated: new Date().toISOString()
+  },
+  {
+    symbol: "NIFTY SMALLCAP 100",
+    name: "Nifty Smallcap 100",
+    category: "broad",
+    exchange: "NSE",
+    token: "99926001",
+    ltp: 18450.60,
+    prevClose: 18320.00,
+    open: 18360.00,
+    high: 18510.00,
+    low: 18330.00,
+    change: 130.60,
+    changePercent: 0.71,
+    volume: 64000000,
+    advances: 62,
+    declines: 38,
+    unchanged: 0,
+    sparkline: [18320, 18360, 18350, 18410, 18390, 18440, 18420, 18470, 18450],
+    week52High: 19400.00,
+    week52Low: 11900.00,
+    lastUpdated: new Date().toISOString()
+  },
+  {
+    symbol: "NIFTY IT",
+    name: "Nifty IT Sector",
+    category: "sectoral",
+    exchange: "NSE",
+    token: "99926008",
+    ltp: 41280.90,
+    prevClose: 41650.00,
+    open: 41500.00,
+    high: 41620.00,
+    low: 41150.00,
+    change: -369.10,
+    changePercent: -0.89,
+    volume: 24000000,
+    advances: 2,
+    declines: 8,
+    unchanged: 0,
+    sparkline: [41650, 41500, 41420, 41380, 41410, 41320, 41250, 41300, 41280],
+    week52High: 43200.00,
+    week52Low: 29800.00,
     lastUpdated: new Date().toISOString()
   },
   {
@@ -141,65 +183,21 @@ const INITIAL_INDICES: MarketIndex[] = [
     name: "Nifty Automobiles",
     category: "sectoral",
     exchange: "NSE",
-    token: "99926001",
-    ltp: 26180.70,
-    prevClose: 25890.30,
-    open: 25950.00,
-    high: 26290.00,
-    low: 25910.00,
-    change: 290.40,
-    changePercent: 1.12,
-    volume: 24500000,
+    token: "99926007",
+    ltp: 25480.30,
+    prevClose: 25210.00,
+    open: 25280.00,
+    high: 25540.00,
+    low: 25250.00,
+    change: 270.30,
+    changePercent: 1.07,
+    volume: 31000000,
     advances: 12,
     declines: 3,
     unchanged: 0,
-    sparkline: [25890, 25950, 26010, 26090, 26050, 26140, 26110, 26220, 26180],
-    week52High: 26500.00,
-    week52Low: 15600.00,
-    lastUpdated: new Date().toISOString()
-  },
-  {
-    symbol: "NIFTY IT",
-    name: "Nifty Information Tech",
-    category: "sectoral",
-    exchange: "NSE",
-    token: "99926008",
-    ltp: 41850.40,
-    prevClose: 42120.00,
-    open: 42080.00,
-    high: 42150.00,
-    low: 41720.00,
-    change: -269.60,
-    changePercent: -0.64,
-    volume: 19800000,
-    advances: 3,
-    declines: 7,
-    unchanged: 0,
-    sparkline: [42120, 42080, 42020, 41950, 41980, 41890, 41910, 41820, 41850],
-    week52High: 43200.00,
-    week52Low: 30400.00,
-    lastUpdated: new Date().toISOString()
-  },
-  {
-    symbol: "NIFTY METAL",
-    name: "Nifty Metals & Mining",
-    category: "sectoral",
-    exchange: "NSE",
-    token: "99926007",
-    ltp: 9420.60,
-    prevClose: 9280.40,
-    open: 9310.00,
-    high: 9480.00,
-    low: 9295.00,
-    change: 140.20,
-    changePercent: 1.51,
-    volume: 38400000,
-    advances: 13,
-    declines: 2,
-    unchanged: 0,
-    sparkline: [9280, 9310, 9340, 9390, 9375, 9410, 9395, 9445, 9420],
-    week52High: 9900.00,
-    week52Low: 6400.00,
+    sparkline: [25210, 25280, 25310, 25390, 25370, 25440, 25410, 25500, 25480],
+    week52High: 26100.00,
+    week52Low: 15400.00,
     lastUpdated: new Date().toISOString()
   },
   {
@@ -208,365 +206,128 @@ const INITIAL_INDICES: MarketIndex[] = [
     category: "sectoral",
     exchange: "NSE",
     token: "99926011",
-    ltp: 22840.15,
-    prevClose: 22710.80,
-    open: 22750.00,
-    high: 22910.00,
-    low: 22720.00,
-    change: 129.35,
-    changePercent: 0.57,
-    volume: 16200000,
-    advances: 15,
-    declines: 5,
+    ltp: 21940.50,
+    prevClose: 21810.00,
+    open: 21850.00,
+    high: 22020.00,
+    low: 21830.00,
+    change: 130.50,
+    changePercent: 0.60,
+    volume: 19000000,
+    advances: 14,
+    declines: 6,
     unchanged: 0,
-    sparkline: [22710, 22750, 22770, 22820, 22800, 22860, 22830, 22870, 22840],
-    week52High: 23400.00,
-    week52Low: 14800.00,
+    sparkline: [21810, 21850, 21890, 21910, 21900, 21950, 21930, 21970, 21940],
+    week52High: 22800.00,
+    week52Low: 14600.00,
     lastUpdated: new Date().toISOString()
   },
   {
     symbol: "NIFTY FMCG",
-    name: "Nifty Fast Moving Goods",
+    name: "Nifty Fast Moving Consumer Goods",
     category: "sectoral",
     exchange: "NSE",
     token: "99926005",
-    ltp: 63140.90,
-    prevClose: 63310.20,
-    open: 63280.00,
-    high: 63390.00,
-    low: 63020.00,
-    change: -169.30,
-    changePercent: -0.27,
-    volume: 12400000,
-    advances: 5,
-    declines: 10,
+    ltp: 62410.20,
+    prevClose: 62180.00,
+    open: 62220.00,
+    high: 62510.00,
+    low: 62150.00,
+    change: 230.20,
+    changePercent: 0.37,
+    volume: 16000000,
+    advances: 10,
+    declines: 5,
     unchanged: 0,
-    sparkline: [63310, 63280, 63240, 63190, 63220, 63150, 63170, 63110, 63140],
-    week52High: 64800.00,
-    week52Low: 50200.00,
+    sparkline: [62180, 62220, 62270, 62320, 62300, 62380, 62350, 62440, 62410],
+    week52High: 64100.00,
+    week52Low: 51200.00,
+    lastUpdated: new Date().toISOString()
+  },
+  {
+    symbol: "NIFTY METAL",
+    name: "Nifty Metals & Mining",
+    category: "sectoral",
+    exchange: "NSE",
+    token: "99926003",
+    ltp: 9180.75,
+    prevClose: 9090.00,
+    open: 9110.00,
+    high: 9230.00,
+    low: 9095.00,
+    change: 90.75,
+    changePercent: 1.00,
+    volume: 48000000,
+    advances: 11,
+    declines: 4,
+    unchanged: 0,
+    sparkline: [9090, 9110, 9130, 9160, 9145, 9190, 9170, 9210, 9180],
+    week52High: 10100.00,
+    week52Low: 6400.00,
+    lastUpdated: new Date().toISOString()
+  },
+  {
+    symbol: "NIFTY REALTY",
+    name: "Nifty Realty",
+    category: "sectoral",
+    exchange: "NSE",
+    token: "99926012",
+    ltp: 1045.30,
+    prevClose: 1032.00,
+    open: 1035.00,
+    high: 1052.00,
+    low: 1031.00,
+    change: 13.30,
+    changePercent: 1.29,
+    volume: 28000000,
+    advances: 8,
+    declines: 2,
+    unchanged: 0,
+    sparkline: [1032, 1035, 1038, 1042, 1040, 1046, 1043, 1048, 1045],
+    week52High: 1140.00,
+    week52Low: 520.00,
     lastUpdated: new Date().toISOString()
   },
   {
     symbol: "NIFTY ENERGY",
-    name: "Nifty Energy & Power",
+    name: "Nifty Energy & Oil",
     category: "sectoral",
-    exchange: "NSE",
-    token: "99926003",
-    ltp: 41250.30,
-    prevClose: 40980.00,
-    open: 41040.00,
-    high: 41380.00,
-    low: 40950.00,
-    change: 270.30,
-    changePercent: 0.66,
-    volume: 29500000,
-    advances: 8,
-    declines: 2,
-    unchanged: 0,
-    sparkline: [40980, 41040, 41090, 41180, 41150, 41240, 41210, 41290, 41250],
-    week52High: 42900.00,
-    week52Low: 26400.00,
-    lastUpdated: new Date().toISOString()
-  },
-  {
-    symbol: "NIFTY PSU BANK",
-    name: "Nifty Public Sector Banks",
-    category: "sectoral",
-    exchange: "NSE",
-    token: "99926012",
-    ltp: 7120.45,
-    prevClose: 6980.20,
-    open: 7010.00,
-    high: 7180.00,
-    low: 6990.00,
-    change: 140.25,
-    changePercent: 2.01,
-    volume: 48900000,
-    advances: 11,
-    declines: 1,
-    unchanged: 0,
-    sparkline: [6980, 7010, 7040, 7090, 7070, 7130, 7110, 7150, 7120],
-    week52High: 7950.00,
-    week52Low: 4800.00,
-    lastUpdated: new Date().toISOString()
-  },
-  {
-    symbol: "NIFTY 500",
-    name: "Nifty 500 Broad Market",
-    category: "broad",
     exchange: "NSE",
     token: "99926015",
-    ltp: 23180.60,
-    prevClose: 23040.10,
-    open: 23080.00,
-    high: 23240.00,
-    low: 23050.00,
-    change: 140.50,
-    changePercent: 0.61,
-    volume: 340000000,
-    advances: 342,
-    declines: 148,
-    unchanged: 10,
-    sparkline: [23040, 23080, 23110, 23160, 23140, 23190, 23170, 23210, 23180],
-    week52High: 23800.00,
-    week52Low: 16700.00,
+    ltp: 39820.40,
+    prevClose: 39650.00,
+    open: 39700.00,
+    high: 39950.00,
+    low: 39620.00,
+    change: 170.40,
+    changePercent: 0.43,
+    volume: 52000000,
+    advances: 7,
+    declines: 3,
+    unchanged: 0,
+    sparkline: [39650, 39700, 39740, 39790, 39760, 39840, 39810, 39860, 39820],
+    week52High: 41800.00,
+    week52Low: 26400.00,
     lastUpdated: new Date().toISOString()
   }
 ];
 
-export class MarketStreamManager {
-  private wss: WebSocketServer | null = null;
+class MarketDataManager {
   private indices: Map<string, MarketIndex> = new Map();
-  private clients: Set<WebSocket> = new Set();
   private tickInterval: NodeJS.Timeout | null = null;
-  
-  // Angel One SmartAPI configuration
-  private angelConfig: {
-    apiKey: string;
-    clientCode: string;
-    feedToken: string;
-    jwtToken?: string;
-    isEnabled: boolean;
-    connectionState: "DISCONNECTED" | "CONNECTING" | "CONNECTED" | "ERROR";
-    lastError?: string;
-  } = {
-    apiKey: process.env.ANGEL_API_KEY || "",
-    clientCode: process.env.ANGEL_CLIENT_CODE || "",
-    feedToken: process.env.ANGEL_FEED_TOKEN || "",
-    jwtToken: process.env.ANGEL_JWT_TOKEN || "",
-    isEnabled: Boolean(process.env.ANGEL_API_KEY && process.env.ANGEL_FEED_TOKEN),
-    connectionState: "DISCONNECTED"
-  };
-
-  private angelSocket: WebSocket | null = null;
 
   constructor() {
     INITIAL_INDICES.forEach(idx => {
       this.indices.set(idx.symbol, { ...idx });
     });
-  }
-
-  public attach(server: HttpServer) {
-    this.wss = new WebSocketServer({
-      server,
-      path: "/ws/market"
-    });
-
-    this.wss.on("connection", (ws: WebSocket) => {
-      this.clients.add(ws);
-
-      // Send initial full snapshot on connection
-      const snapshot: MarketStreamPayload = {
-        type: "FULL_SNAPSHOT",
-        indices: Array.from(this.indices.values()),
-        breadth: this.getMarketBreadth(),
-        timestamp: new Date().toISOString(),
-        source: this.angelConfig.connectionState === "CONNECTED" ? "angel_smartapi" : "high_frequency_engine",
-        marketStatus: this.getMarketStatus()
-      };
-
-      ws.send(JSON.stringify(snapshot));
-
-      ws.on("message", (message: string) => {
-        try {
-          const data = JSON.parse(message.toString());
-          this.handleClientMessage(ws, data);
-        } catch (e) {
-          // Ignore malformed messages
-        }
-      });
-
-      ws.on("close", () => {
-        this.clients.delete(ws);
-      });
-
-      ws.on("error", () => {
-        this.clients.delete(ws);
-      });
-    });
-
-    // Start tick engine
     this.startEngine();
-
-    // If Angel One credentials exist, attempt SmartAPI connection
-    if (this.angelConfig.isEnabled && this.angelConfig.feedToken) {
-      this.connectToAngelSmartAPI();
-    }
-  }
-
-  private handleClientMessage(ws: WebSocket, data: any) {
-    if (data.type === "PING") {
-      ws.send(JSON.stringify({
-        type: "PONG",
-        clientTimestamp: data.clientTimestamp,
-        serverTimestamp: Date.now()
-      }));
-    } else if (data.type === "GET_SNAPSHOT") {
-      ws.send(JSON.stringify({
-        type: "FULL_SNAPSHOT",
-        indices: Array.from(this.indices.values()),
-        breadth: this.getMarketBreadth(),
-        timestamp: new Date().toISOString(),
-        source: this.angelConfig.connectionState === "CONNECTED" ? "angel_smartapi" : "high_frequency_engine",
-        marketStatus: this.getMarketStatus()
-      }));
-    } else if (data.type === "CONFIGURE_ANGEL") {
-      this.updateAngelCredentials(data.apiKey, data.clientCode, data.feedToken, data.jwtToken);
-    }
-  }
-
-  public updateAngelCredentials(apiKey: string, clientCode: string, feedToken: string, jwtToken?: string) {
-    this.angelConfig = {
-      apiKey,
-      clientCode,
-      feedToken,
-      jwtToken,
-      isEnabled: true,
-      connectionState: "CONNECTING"
-    };
-
-    this.connectToAngelSmartAPI();
-    this.broadcastStatus();
-  }
-
-  private connectToAngelSmartAPI() {
-    try {
-      if (this.angelSocket) {
-        this.angelSocket.removeAllListeners();
-        this.angelSocket.close();
-        this.angelSocket = null;
-      }
-
-      // Official Angel One SmartStream WebSocket endpoints:
-      // wss://smartapisocket.angelone.in/smart-stream
-      // Auth params: headers or initial JSON handshake
-      const socketUrl = "wss://smartapisocket.angelone.in/smart-stream";
-      
-      this.angelConfig.connectionState = "CONNECTING";
-      
-      const ws = new WebSocket(socketUrl, {
-        headers: {
-          "Authorization": `Bearer ${this.angelConfig.jwtToken || this.angelConfig.feedToken}`,
-          "x-api-key": this.angelConfig.apiKey,
-          "x-client-code": this.angelConfig.clientCode,
-          "x-feed-token": this.angelConfig.feedToken
-        },
-        handshakeTimeout: 6000
-      });
-
-      this.angelSocket = ws;
-
-      ws.on("open", () => {
-        this.angelConfig.connectionState = "CONNECTED";
-        this.angelConfig.lastError = undefined;
-        console.log("Angel One SmartAPI WebSocket stream connected successfully.");
-
-        // Subscribe to Index tokens
-        // Action: 1 (Subscribe), Mode: 3 (Full SnapQuote / Depth / LTP)
-        const subscribePayload = {
-          correlationID: `qs-${Date.now()}`,
-          action: 1,
-          params: {
-            mode: 1, // 1 = LTP, 2 = Quote, 3 = SnapQuote
-            tokenList: [
-              { exchangeType: 1, tokens: ["99926000", "99926009", "99926037", "99926014", "99926001", "99926008", "99926007", "99926011", "99926005", "99926003", "99926012", "99926015", "99926017"] },
-              { exchangeType: 3, tokens: ["99919000"] } // BSE Sensex
-            ]
-          }
-        };
-
-        try {
-          ws.send(JSON.stringify(subscribePayload));
-        } catch (err) {
-          console.error("Failed to send subscription to Angel One socket", err);
-        }
-
-        this.broadcastStatus();
-      });
-
-      ws.on("message", (data: any) => {
-        try {
-          this.processAngelPacket(data);
-        } catch (err) {
-          // Binary or JSON parsing
-        }
-      });
-
-      ws.on("error", (err: any) => {
-        console.warn("Angel One WebSocket Stream Notice:", err.message);
-        this.angelConfig.connectionState = "ERROR";
-        this.angelConfig.lastError = err.message;
-        this.broadcastStatus();
-      });
-
-      ws.on("close", () => {
-        if (this.angelConfig.connectionState === "CONNECTED") {
-          this.angelConfig.connectionState = "DISCONNECTED";
-          this.broadcastStatus();
-        }
-      });
-    } catch (e: any) {
-      this.angelConfig.connectionState = "ERROR";
-      this.angelConfig.lastError = e.message;
-      this.broadcastStatus();
-    }
-  }
-
-  private processAngelPacket(raw: any) {
-    try {
-      // If text JSON
-      if (typeof raw === "string") {
-        const parsed = JSON.parse(raw);
-        if (parsed.token && parsed.last_traded_price) {
-          this.updateIndexByToken(parsed.token, parsed.last_traded_price / 100);
-        }
-      }
-    } catch (e) {
-      // Ignore binary unpack
-    }
-  }
-
-  private updateIndexByToken(token: string, newLtp: number) {
-    for (const [symbol, idx] of this.indices.entries()) {
-      if (idx.token === token) {
-        const change = Number((newLtp - idx.prevClose).toFixed(2));
-        const changePercent = Number(((change / idx.prevClose) * 100).toFixed(2));
-        const high = Math.max(idx.high, newLtp);
-        const low = Math.min(idx.low, newLtp);
-        const sparkline = [...idx.sparkline.slice(-15), newLtp];
-
-        const updated: MarketIndex = {
-          ...idx,
-          ltp: newLtp,
-          change,
-          changePercent,
-          high,
-          low,
-          sparkline,
-          lastUpdated: new Date().toISOString()
-        };
-
-        this.indices.set(symbol, updated);
-
-        // Broadcast delta tick to clients
-        this.broadcast({
-          type: "INDEX_TICK",
-          index: updated,
-          timestamp: new Date().toISOString(),
-          source: "angel_smartapi",
-          marketStatus: this.getMarketStatus()
-        });
-        break;
-      }
-    }
   }
 
   private startEngine() {
     if (this.tickInterval) clearInterval(this.tickInterval);
 
-    // High-frequency live tick generator (every 1000ms)
+    // Live tick generator for realistic index price movement
     this.tickInterval = setInterval(() => {
-      // Pick 2-4 indices to update per cycle
       const symbols = Array.from(this.indices.keys());
       const selectedCount = Math.floor(Math.random() * 3) + 2;
       const shuffled = symbols.sort(() => 0.5 - Math.random()).slice(0, selectedCount);
@@ -575,10 +336,9 @@ export class MarketStreamManager {
         const idx = this.indices.get(sym);
         if (!idx) return;
 
-        // Micro tick between -0.08% and +0.08%
         const volatility = sym === "INDIA VIX" ? 0.004 : 0.0006;
         const tickPercent = (Math.random() - 0.48) * volatility;
-        const newLtp = Number((idx.ltp * (1 + tickPercent)).toFixed(sym === "INDIA VIX" ? 2 : 2));
+        const newLtp = Number((idx.ltp * (1 + tickPercent)).toFixed(2));
         const change = Number((newLtp - idx.prevClose).toFixed(2));
         const changePercent = Number(((change / idx.prevClose) * 100).toFixed(2));
         const high = Math.max(idx.high, newLtp);
@@ -597,53 +357,23 @@ export class MarketStreamManager {
         };
 
         this.indices.set(sym, updated);
-
-        // Broadcast tick to all connected UI clients
-        this.broadcast({
-          type: "INDEX_TICK",
-          index: updated,
-          timestamp: new Date().toISOString(),
-          source: this.angelConfig.connectionState === "CONNECTED" ? "angel_smartapi" : "high_frequency_engine",
-          marketStatus: this.getMarketStatus()
-        });
       });
-    }, 1000);
-  }
-
-  public broadcast(payload: MarketStreamPayload) {
-    if (this.clients.size === 0) return;
-    const msg = JSON.stringify(payload);
-    this.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(msg);
-      }
-    });
-  }
-
-  private broadcastStatus() {
-    this.broadcast({
-      type: "STATUS",
-      timestamp: new Date().toISOString(),
-      source: this.angelConfig.connectionState === "CONNECTED" ? "angel_smartapi" : "high_frequency_engine",
-      marketStatus: this.getMarketStatus()
-    });
+    }, 2500);
   }
 
   public getMarketStatus(): "OPEN" | "CLOSED" | "PRE_OPEN" | "POST_CLOSE" {
-    // Check IST time
     const now = new Date();
-    // UTC to IST (+5:30)
     const istOffset = 5.5 * 60 * 60 * 1000;
     const istDate = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + istOffset);
-    const day = istDate.getDay(); // 0 = Sun, 6 = Sat
+    const day = istDate.getDay();
     const hours = istDate.getHours();
     const minutes = istDate.getMinutes();
     const currentMin = hours * 60 + minutes;
 
-    if (day === 0 || day === 6) return "CLOSED"; // Weekend
-    if (currentMin >= 540 && currentMin < 555) return "PRE_OPEN"; // 9:00 - 9:15 AM
-    if (currentMin >= 555 && currentMin <= 930) return "OPEN"; // 9:15 AM - 3:30 PM
-    if (currentMin > 930 && currentMin <= 960) return "POST_CLOSE"; // 3:30 - 4:00 PM
+    if (day === 0 || day === 6) return "CLOSED";
+    if (currentMin >= 540 && currentMin < 555) return "PRE_OPEN";
+    if (currentMin >= 555 && currentMin <= 930) return "OPEN";
+    if (currentMin > 930 && currentMin <= 960) return "POST_CLOSE";
     return "CLOSED";
   }
 
@@ -682,19 +412,13 @@ export class MarketStreamManager {
     indices: MarketIndex[];
     breadth: MarketBreadth;
     status: string;
-    angelStatus: any;
   } {
     return {
       indices: Array.from(this.indices.values()),
       breadth: this.getMarketBreadth(),
-      status: this.getMarketStatus(),
-      angelStatus: {
-        isEnabled: this.angelConfig.isEnabled,
-        connectionState: this.angelConfig.connectionState,
-        lastError: this.angelConfig.lastError
-      }
+      status: this.getMarketStatus()
     };
   }
 }
 
-export const marketStream = new MarketStreamManager();
+export const marketStream = new MarketDataManager();

@@ -1,5 +1,4 @@
 import type { SheetStockQuote, GoogleSheetConfig } from "../src/types";
-import { marketStream } from "./marketSocket";
 
 /**
  * Server-Side Google Sheets & GOOGLEFINANCE Ingestion Engine
@@ -8,7 +7,6 @@ import { marketStream } from "./marketSocket";
  * - Single background polling worker (1 request to Google per 15-30 seconds).
  * - Zero Google API rate-limit errors for end-users.
  * - Sub-5ms in-memory cache responses for all web clients.
- * - Automatic real-time multicast over WebSocket /ws/market.
  */
 
 // Default high-performance demo finance dataset representing =GOOGLEFINANCE() output
@@ -216,6 +214,60 @@ class GoogleSheetsSyncEngine {
     return this.quotes;
   }
 
+  /**
+   * Fast lookup for LTP and quote info by symbol (supports RELIANCE, NSE:RELIANCE, etc.)
+   */
+  public getQuoteBySymbol(symbol: string): SheetStockQuote | undefined {
+    const cleanSym = symbol.trim().toUpperCase().replace(/^NSE:|^BSE:/i, "");
+    return this.quotes.find(q => {
+      const qClean = q.symbol.trim().toUpperCase().replace(/^NSE:|^BSE:/i, "");
+      return qClean === cleanSym || q.symbol.toUpperCase() === symbol.toUpperCase();
+    });
+  }
+
+  /**
+   * Backtracks response objects (toBuySignals, inTradeTrades, portfolio, etc.)
+   * against Google Sheets LTP data and updates them automatically with latest price & calculated ROI.
+   */
+  public enrichWithSheetsLtp<T extends Record<string, any>>(items: T[]): T[] {
+    if (!Array.isArray(items)) return items;
+
+    return items.map(item => {
+      if (!item || !item.symbol) return item;
+      const sheetQuote = this.getQuoteBySymbol(item.symbol);
+      if (!sheetQuote || !sheetQuote.price) return item;
+
+      const latestLtp = sheetQuote.price;
+      const updated: any = { ...item };
+
+      // Update current price / ltp
+      if ("currentPrice" in updated) {
+        updated.currentPrice = latestLtp;
+      }
+      if ("ltp" in updated) {
+        updated.ltp = latestLtp;
+      }
+      if ("price" in updated && !("entryPrice" in updated)) {
+        updated.price = latestLtp;
+      }
+
+      // Recalculate current ROI if entryPrice is present
+      const entryPrice = updated.entryPrice || updated.buyPrice;
+      if (entryPrice && entryPrice > 0) {
+        const roi = Number((((latestLtp - entryPrice) / entryPrice) * 100).toFixed(2));
+        if ("currentROI" in updated) {
+          updated.currentROI = roi;
+        }
+      }
+
+      // Mark source tracking
+      updated.sheetSyncedAt = sheetQuote.lastSynced || new Date().toISOString();
+      updated.sheetLtp = latestLtp;
+
+      return updated as T;
+    });
+  }
+
   public updateConfig(newConfig: Partial<GoogleSheetConfig>): { success: boolean; config: GoogleSheetConfig } {
     this.config = {
       ...this.config,
@@ -334,7 +386,6 @@ class GoogleSheetsSyncEngine {
       this.simulateMicroFluctuations();
       this.config.lastSyncTime = new Date().toISOString();
       this.config.lastSyncStatus = "SUCCESS";
-      this.broadcastQuotes();
       return { success: true, quotes: this.quotes };
     }
 
@@ -373,9 +424,6 @@ class GoogleSheetsSyncEngine {
       this.config.lastSyncStatus = "SUCCESS";
       this.config.lastSyncError = undefined;
       this.config.rowCount = this.quotes.length;
-
-      // Multicast update to all connected 1,000+ UI clients over WebSocket
-      this.broadcastQuotes();
 
       return { success: true, quotes: this.quotes };
     } catch (err: any) {
@@ -503,16 +551,6 @@ class GoogleSheetsSyncEngine {
         low: Math.min(q.low || newPrice, newPrice),
         lastSynced: new Date().toISOString()
       };
-    });
-  }
-
-  private broadcastQuotes() {
-    marketStream.broadcast({
-      type: "SHEETS_UPDATED",
-      sheetQuotes: this.quotes,
-      timestamp: new Date().toISOString(),
-      source: "google_sheets",
-      marketStatus: marketStream.getMarketStatus()
     });
   }
 }
