@@ -105,8 +105,8 @@ export default function ChartModal({
 
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-[17px] sm:text-[19px] font-extrabold text-[#14151A] dark:text-slate-100 tracking-tight">
-                  BSE:{symbol}
+                <h2 className="text-[17px] sm:text-[19px] font-extrabold text-[#14151A] dark:text-slate-100 tracking-tight font-mono">
+                  {symbol}
                 </h2>
                 <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-[6px] bg-[#EEF0FE] text-[#6366F1] uppercase font-mono">
                   Cash
@@ -187,7 +187,7 @@ export default function ChartModal({
 
             {/* TradingView Web Direct Link */}
             <a
-              href={`https://www.tradingview.com/chart/?symbol=BSE:${symbol}`}
+              href={`https://www.tradingview.com/chart/qvyqZrhQ/?symbol=${symbol}`}
               target="_blank"
               rel="noreferrer"
               className="hidden lg:flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-[11px] font-bold text-[#6366F1] bg-[#EEF0FE] dark:bg-indigo-950/60 dark:text-indigo-300 hover:bg-indigo-100 transition-colors"
