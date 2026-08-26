@@ -1,7 +1,7 @@
 import React from "react";
-import { Home, Activity, TrendingUp, Briefcase, BarChart3 } from "lucide-react";
+import { Home, TrendingUp, Briefcase, BarChart3 } from "lucide-react";
 
-export type TabType = "home" | "market" | "signals" | "portfolio" | "backtest";
+export type TabType = "home" | "signals" | "portfolio" | "backtest";
 
 interface BottomNavBarProps {
   activeTab: TabType;
@@ -16,7 +16,6 @@ export default function BottomNavBar({
 }: BottomNavBarProps) {
   const items: { id: TabType; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: "home", label: "Desk", icon: Home },
-    { id: "market", label: "Market", icon: Activity },
     { id: "signals", label: "Signals", icon: TrendingUp },
     { id: "portfolio", label: "Portfolio", icon: Briefcase },
     { id: "backtest", label: "Playbook", icon: BarChart3 },

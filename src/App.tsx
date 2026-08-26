@@ -22,7 +22,6 @@ import {
 } from "./types";
 import SignalsView from "./views/SignalsView";
 import HomeView from "./views/HomeView";
-import MarketView from "./views/MarketView";
 import PortfolioView from "./views/PortfolioView";
 import BacktestsView from "./views/BacktestsView";
 import BottomNavBar, { TabType } from "./components/BottomNavBar";
@@ -30,7 +29,6 @@ import BuyModal from "./components/Modals/BuyModal";
 import SellModal from "./components/Modals/SellModal";
 import AddPositionModal from "./components/Modals/AddPositionModal";
 import ChartModal from "./components/Modals/ChartModal";
-import { useMarketSocket } from "./hooks/useMarketSocket";
 
 import {
   initialSignals,
@@ -50,9 +48,6 @@ export default function App() {
   
   // Navigation & View Mode
   const [activeTab, setActiveTab] = useState<TabType>("home");
-
-  // Real-time Market WebSocket Hook
-  const marketSocket = useMarketSocket();
 
   // Push notifications state
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() => {
@@ -340,13 +335,6 @@ export default function App() {
             onOpenBuyModal={(sym, price, strat) => setBuyModalData({ symbol: sym, price, strategyName: strat })}
             onRefresh={fetchLiveTerminalData}
             isSyncing={isSyncing}
-          />
-        );
-      case "market":
-        return (
-          <MarketView
-            marketSocket={marketSocket}
-            onOpenChart={(sym) => setSelectedChartSymbol(sym)}
           />
         );
       case "signals":
