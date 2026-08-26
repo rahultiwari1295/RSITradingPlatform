@@ -70,6 +70,7 @@ export default function ChartModal({
 
   if (!isOpen || !symbol) return null;
 
+  const cleanSymbol = symbol.trim().toUpperCase().replace(/^(BSE|NSE):/i, "");
   const roi = tradeDetails?.currentROI ?? 0;
   const isPositive = roi >= 0;
 
@@ -187,7 +188,7 @@ export default function ChartModal({
 
             {/* TradingView Web Direct Link */}
             <a
-              href={`https://www.tradingview.com/chart/qvyqZrhQ/?symbol=${symbol}`}
+              href={`https://www.tradingview.com/chart/qvyqZrhQ/?symbol=${cleanSymbol}`}
               target="_blank"
               rel="noreferrer"
               className="hidden lg:flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-[11px] font-bold text-[#6366F1] bg-[#EEF0FE] dark:bg-indigo-950/60 dark:text-indigo-300 hover:bg-indigo-100 transition-colors"

@@ -322,6 +322,11 @@ export default function App() {
   const selectedTradeDetails = signals.find(s => s.symbol === selectedChartSymbol) ||
     portfolio.find(p => p.symbol === selectedChartSymbol);
 
+  const handleOpenChart = (sym: string) => {
+    const cleanSym = (sym || "").trim().toUpperCase().replace(/^(BSE|NSE):/i, "");
+    window.open(`https://www.tradingview.com/chart/qvyqZrhQ/?symbol=${cleanSym}`, "_blank", "noopener,noreferrer");
+  };
+
   // Render view body
   const renderScreenContent = () => {
     switch (activeTab) {
@@ -331,7 +336,7 @@ export default function App() {
             toBuySignals={toBuySignals}
             closedTrades={closedTrades}
             portfolioSymbols={portfolio.map(p => p.symbol)}
-            onOpenChart={(sym) => setSelectedChartSymbol(sym)}
+            onOpenChart={handleOpenChart}
             onOpenBuyModal={(sym, price, strat) => setBuyModalData({ symbol: sym, price, strategyName: strat })}
             onRefresh={fetchLiveTerminalData}
             isSyncing={isSyncing}
@@ -342,7 +347,7 @@ export default function App() {
           <SignalsView
             signals={signals}
             portfolioSymbols={portfolio.map(p => p.symbol)}
-            onOpenChart={(sym) => setSelectedChartSymbol(sym)}
+            onOpenChart={handleOpenChart}
             onOpenBuyModal={(sym, price, strat) => setBuyModalData({ symbol: sym, price, strategyName: strat })}
             onRefresh={fetchLiveTerminalData}
             isSyncing={isSyncing}
@@ -355,7 +360,7 @@ export default function App() {
             completedHistory={completedHistory}
             onOpenAddModal={() => setIsAddPositionOpen(true)}
             onOpenSellModal={(trade) => setSellModalTrade(trade)}
-            onOpenChart={(sym) => setSelectedChartSymbol(sym)}
+            onOpenChart={handleOpenChart}
             onDeleteCompletedTrade={handleDeleteCompletedTrade}
           />
         );
@@ -363,7 +368,7 @@ export default function App() {
         return (
           <BacktestsView
             closedTrades={closedTrades}
-            onOpenChart={(sym) => setSelectedChartSymbol(sym)}
+            onOpenChart={handleOpenChart}
           />
         );
       default:

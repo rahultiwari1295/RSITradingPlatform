@@ -1,6 +1,7 @@
 import React from "react";
 import { X, TrendingUp, AlertTriangle, Clock, LineChart, Star } from "lucide-react";
 import { formatINR } from "../lib/utils";
+import TrendlyneWidgets from "./TrendlyneWidgets";
 
 export interface BottomSheetItem {
   symbol: string;
@@ -98,7 +99,7 @@ export default function BottomSheet({
       />
 
       {/* Sheet Container */}
-      <div className="relative w-full max-w-[440px] bg-white dark:bg-[#14161E] rounded-t-[28px] sm:rounded-[28px] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col z-10 animate-in slide-in-from-bottom duration-200 border border-[#ECEEF2] dark:border-white/10">
+      <div className="relative w-full max-w-[480px] sm:max-w-[540px] bg-white dark:bg-[#14161E] rounded-t-[28px] sm:rounded-[28px] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col z-10 animate-in slide-in-from-bottom duration-200 border border-[#ECEEF2] dark:border-white/10">
         
         {/* Handle Bar */}
         <div className="w-10 h-1.2 rounded-full bg-[#E5E5EA] dark:bg-white/20 mx-auto mt-3 mb-1 shrink-0" />
@@ -260,8 +261,11 @@ export default function BottomSheet({
             </div>
           )}
 
+          {/* Trendlyne Dynamic Widgets */}
+          <TrendlyneWidgets symbol={item.symbol} />
+
           {/* Bottom Action buttons */}
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2 pt-4">
             {onOpenChart && (
               <button
                 onClick={() => {
@@ -271,7 +275,7 @@ export default function BottomSheet({
                 className="flex-1 py-2.5 px-3 rounded-[12px] bg-[#F1F2F5] dark:bg-white/[0.08] text-[#14151A] dark:text-white font-bold text-[13px] hover:bg-slate-200 dark:hover:bg-white/15 transition-colors flex items-center justify-center gap-1.5 cursor-pointer qs-btn-press"
               >
                 <LineChart className="w-4 h-4 text-[#6366F1]" />
-                Interactive Chart
+                TradingView Chart
               </button>
             )}
 
