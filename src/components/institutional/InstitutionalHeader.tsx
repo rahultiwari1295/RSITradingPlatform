@@ -97,15 +97,15 @@ export default function InstitutionalHeader({
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-violet-500/20 text-violet-300 border border-violet-500/30">
                 <Cpu className="w-3 h-3 text-violet-400" />
-                V2 Multi-Strat + V3 Locked 0.52
+                Systematic Strategy Engine
               </span>
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-300">
-              Institutional Alpha Terminal
+              QuantSync Trading Terminal
             </h1>
             <p className="text-xs sm:text-sm text-slate-400 font-medium max-w-2xl mt-1">
-              Real-time systematic telemetry, walk-forward conviction ranking, dynamic trailing exits, and unified execution ledger.
+              Real-time momentum & breakout signals with automated entry rules, trailing stops, and verified performance.
             </p>
           </div>
 
@@ -117,7 +117,7 @@ export default function InstitutionalHeader({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Search symbol or strat..."
+                placeholder="Search symbol or strategy..."
                 className="w-full pl-9 pr-3.5 py-2 rounded-2xl bg-white/10 hover:bg-white/15 focus:bg-white/20 text-xs text-white placeholder:text-slate-400 border border-white/10 focus:border-cyan-400/60 outline-none transition-all"
               />
             </div>
@@ -138,35 +138,35 @@ export default function InstitutionalHeader({
             <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Active Book</span>
             <div className="text-xl font-black text-emerald-400 font-mono mt-0.5 flex items-baseline gap-1">
               {activeCount}
-              <span className="text-[10px] font-normal text-slate-400">positions</span>
+              <span className="text-[10px] font-normal text-slate-400">holding</span>
             </div>
           </div>
 
           <div className="p-2.5 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
             <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Win Rate</span>
             <div className="text-xl font-black text-cyan-400 font-mono mt-0.5">
-              {winRate > 0 ? `${winRate.toFixed(1)}%` : "67.7%"}
+              {winRate > 0 ? `${winRate.toFixed(1)}%` : "—"}
             </div>
           </div>
 
           <div className="p-2.5 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
             <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Profit Factor</span>
             <div className="text-xl font-black text-violet-400 font-mono mt-0.5">
-              {profitFactor > 0 ? `${profitFactor.toFixed(2)}x` : "2.58x"}
+              {profitFactor > 0 ? `${profitFactor.toFixed(2)}x` : "—"}
             </div>
           </div>
 
           <div className="p-2.5 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Cumulative Return</span>
+            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Total Return</span>
             <div className="text-xl font-black text-emerald-300 font-mono mt-0.5">
-              {totalReturn > 0 ? `+${totalReturn.toFixed(1)}%` : "+312.4%"}
+              {totalReturn !== 0 ? `${totalReturn > 0 ? "+" : ""}${Math.round(totalReturn).toLocaleString("en-IN")}%` : "—"}
             </div>
           </div>
 
           <div className="p-2.5 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Closed Sample</span>
+            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Closed Trades</span>
             <div className="text-xl font-black text-slate-200 font-mono mt-0.5 flex items-baseline gap-1">
-              {closedCount || 500}
+              {closedCount > 0 ? closedCount : "—"}
               <span className="text-[10px] font-normal text-slate-400">audited</span>
             </div>
           </div>

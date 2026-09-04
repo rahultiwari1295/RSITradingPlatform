@@ -130,9 +130,9 @@ export default function ActivePositionsBook({
             <thead>
               <tr className="border-b border-slate-200/80 dark:border-white/10 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
                 <th className="py-3 px-3">Symbol / Strategy</th>
-                <th className="py-3 px-3">Entry & LTP</th>
-                <th className="py-3 px-3">Unrealized ROI</th>
-                <th className="py-3 px-3">Trailing Stop / MFE</th>
+                <th className="py-3 px-3">Entry & Current LTP</th>
+                <th className="py-3 px-3">Unrealized P&L (%)</th>
+                <th className="py-3 px-3">Live Engine Status</th>
                 <th className="py-3 px-3">Holding Period</th>
                 <th className="py-3 px-3 text-right">Actions</th>
               </tr>
@@ -141,9 +141,20 @@ export default function ActivePositionsBook({
               {positions.map((pos) => {
                 const ep = Number(pos.entryPrice || 0);
                 const lp = Number(pos.currentPrice || ep);
-                const roi = Number(pos.currentROI || (ep > 0 ? ((lp - ep) / ep) * 100 : 0));
-                const days = Number(pos.holdingDays || 1);
+                const roi = Number(pos.currentROI ?? (ep > 0 ? ((lp - ep) / ep) * 100 : 0));
+                
+                // Calculate actual days from entryDate if holdingDays is missing
+                const calcDays = pos.entryDate
+                  ? Math.max(1, Math.round((Date.now() - new Date(pos.entryDate).getTime()) / (1000 * 60 * 60 * 24)))
+                  : 1;
+                const days = Number(pos.holdingDays || calcDays);
                 const isGain = roi >= 0;
+
+                const userPos = portfolio.find(p => p.symbol === pos.symbol);
+                const userQty = userPos?.quantity;
+
+                // Live engine note or tags
+                const statusNote = pos.footerLine || (pos.footerTags ? pos.footerTags.join(" • ") : (isGain ? "Position Healthy" : "Holding Stop Buffer"));
 
                 return (
                   <tr
@@ -157,6 +168,11 @@ export default function ActivePositionsBook({
                           {pos.symbol}
                         </span>
                         {getPositionStatusBadge(roi, days)}
+                        {userQty && (
+                          <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-md bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/25">
+                            {userQty} shares
+                          </span>
+                        )}
                       </div>
                       <span className="text-[11px] text-slate-400 font-medium block mt-0.5">
                         {pos.strategyName || "Algorithmic Setup"}
@@ -166,10 +182,10 @@ export default function ActivePositionsBook({
                     {/* Entry & Live Price */}
                     <td className="py-3.5 px-3 font-mono">
                       <div className="font-bold text-slate-900 dark:text-white text-xs">
-                        ₹{lp.toLocaleString("en-IN")}
+                        ₹{lp.toLocaleString("en-IN", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
                       </div>
                       <span className="text-[11px] text-slate-400 block">
-                        Entry: ₹{ep.toLocaleString("en-IN")}
+                        Entry ₹{ep.toLocaleString("en-IN", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
                       </span>
                     </td>
 
@@ -194,13 +210,13 @@ export default function ActivePositionsBook({
                       </div>
                     </td>
 
-                    {/* Trailing Stop distance / MFE */}
-                    <td className="py-3.5 px-3 font-mono text-[11px]">
-                      <span className="text-slate-700 dark:text-slate-300 font-semibold block">
-                        Trail: EMA50 -2.4%
+                    {/* Live Engine Status / Confluence Note */}
+                    <td className="py-3.5 px-3 text-[11px]">
+                      <span className={`font-semibold block ${isGain ? "text-slate-800 dark:text-slate-200" : "text-amber-600 dark:text-amber-400"}`}>
+                        {pos.actionLabel || (isGain ? "IN POSITION" : "HOLD")}
                       </span>
-                      <span className="text-slate-400 block">
-                        MFE: +{(roi + 3.2).toFixed(1)}% High
+                      <span className="text-slate-400 block truncate max-w-xs text-[10px] mt-0.5">
+                        {statusNote}
                       </span>
                     </td>
 
@@ -211,19 +227,31 @@ export default function ActivePositionsBook({
                         {days}d held
                       </span>
                       <span className="text-[10px] text-slate-400 font-sans block">
-                        Entry: {pos.entryDate ? pos.entryDate.slice(5) : "Recent"}
+                        Since {pos.entryDate || "Recent"}
                       </span>
                     </td>
 
                     {/* Actions */}
                     <td className="py-3.5 px-3 text-right">
-                      <button
-                        onClick={() => onOpenChart(pos.symbol)}
-                        className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-cyan-500/10 hover:text-cyan-500 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer inline-flex items-center gap-1 font-bold text-xs"
-                      >
-                        <LineChart className="w-3.5 h-3.5 text-cyan-500" />
-                        <span className="hidden sm:inline">Chart</span>
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => onOpenChart(pos.symbol)}
+                          className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-cyan-500/10 hover:text-cyan-500 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer inline-flex items-center gap-1 font-bold text-xs"
+                          title="Open TradingView chart"
+                        >
+                          <LineChart className="w-3.5 h-3.5 text-cyan-500" />
+                          <span className="hidden sm:inline">Chart</span>
+                        </button>
+                        {userPos && onOpenSellModal && (
+                          <button
+                            onClick={() => onOpenSellModal(userPos)}
+                            className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 transition-colors cursor-pointer inline-flex items-center gap-1 font-bold text-xs"
+                            title="Exit position"
+                          >
+                            Exit
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

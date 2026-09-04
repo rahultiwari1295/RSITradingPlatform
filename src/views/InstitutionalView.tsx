@@ -4,8 +4,7 @@ import {
   Zap,
   Briefcase,
   Layers,
-  BarChart3,
-  Sparkles,
+  History,
 } from "lucide-react";
 import {
   ToBuySignal,
@@ -14,16 +13,16 @@ import {
   StrategySummary,
   ManualPortfolioTrade,
   CompletedTrade,
+  TerminalKPIs,
+  TotalSummary,
 } from "../types";
 
 import InstitutionalHeader from "../components/institutional/InstitutionalHeader";
 import EquityGrowthChart from "../components/institutional/EquityGrowthChart";
-import MonthlyPnlMatrix from "../components/institutional/MonthlyPnlMatrix";
 import StrategyAttributionMatrix from "../components/institutional/StrategyAttributionMatrix";
 import SignalRadarGrid from "../components/institutional/SignalRadarGrid";
 import ActivePositionsBook from "../components/institutional/ActivePositionsBook";
-import RDistributionChart from "../components/institutional/RDistributionChart";
-import SleeveCapacityGauges from "../components/institutional/SleeveCapacityGauges";
+import ClosedTradesLedger from "../components/institutional/ClosedTradesLedger";
 
 interface InstitutionalViewProps {
   toBuySignals: ToBuySignal[];
@@ -32,6 +31,8 @@ interface InstitutionalViewProps {
   strategies: StrategySummary[];
   portfolio: ManualPortfolioTrade[];
   completedHistory: CompletedTrade[];
+  kpis?: TerminalKPIs | null;
+  totalSummary?: TotalSummary | null;
   onOpenChart: (symbol: string) => void;
   onOpenBuyModal: (symbol: string, price: number, strategy?: string) => void;
   onOpenSellModal?: (trade: ManualPortfolioTrade) => void;
@@ -46,6 +47,8 @@ export default function InstitutionalView({
   strategies = [],
   portfolio = [],
   completedHistory = [],
+  kpis,
+  totalSummary,
   onOpenChart,
   onOpenBuyModal,
   onOpenSellModal,
@@ -53,11 +56,11 @@ export default function InstitutionalView({
   isSyncing = false,
 }: InstitutionalViewProps) {
   const [activeTab, setActiveTab] = useState<
-    "overview" | "signals" | "positions" | "strategies" | "analytics"
+    "overview" | "signals" | "positions" | "strategies" | "history"
   >("overview");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // Filter signals and positions based on search
+  // Filter signals and positions based on search query
   const filteredSignals = useMemo(() => {
     if (!searchQuery) return toBuySignals;
     const q = searchQuery.toLowerCase();
@@ -78,22 +81,18 @@ export default function InstitutionalView({
     );
   }, [inTradeTrades, searchQuery]);
 
-  // Aggregate stats from closedTrades or fallback
-  const nClosed = closedTrades.length > 0 ? closedTrades.length : 500;
+  // Aggregate stats from live KPIs or actual closedTrades data (zero fake fallbacks)
+  const nClosed = kpis?.totalTradesClosed ?? kpis?.totalTrades ?? closedTrades.length;
   const wins = closedTrades.filter((t) => (t.returnPct ?? 0) >= 0);
-  const winRate = nClosed > 0 ? (wins.length / nClosed) * 100 : 67.7;
-  const sumWin = wins.reduce((acc, t) => acc + (t.returnPct || 0), 0);
-  const sumLoss = Math.abs(
-    closedTrades.filter((t) => (t.returnPct ?? 0) < 0).reduce((acc, t) => acc + (t.returnPct || 0), 0)
-  );
-  const profitFactor = sumLoss > 0 ? sumWin / sumLoss : 2.58;
-  const totalReturn = closedTrades.reduce((acc, t) => acc + (t.returnPct || 0), 0) || 312.4;
+  const winRate = kpis?.winRate ?? (closedTrades.length > 0 ? (wins.length / closedTrades.length) * 100 : 0);
+  const profitFactor = kpis?.profitFactor ?? 0;
+  const totalReturn = kpis?.totalReturnPct ?? closedTrades.reduce((acc, t) => acc + (t.returnPct || 0), 0);
 
   const portfolioSymbols = useMemo(() => portfolio.map((p) => p.symbol), [portfolio]);
 
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-300">
-      {/* 1. Institutional Hero & Live Status Header */}
+      {/* 1. Terminal Header with Live Real-time Status & Verified KPIs */}
       <InstitutionalHeader
         activeCount={inTradeTrades.length}
         toBuyCount={toBuySignals.length}
@@ -154,33 +153,27 @@ export default function InstitutionalView({
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            Strategy Hierarchy
+            Strategies ({strategies.length})
           </button>
 
           <button
-            onClick={() => setActiveTab("analytics")}
+            onClick={() => setActiveTab("history")}
             className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === "analytics"
+              activeTab === "history"
                 ? "bg-amber-500 text-white shadow-xs shadow-amber-500/30"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
-            <BarChart3 className="w-3.5 h-3.5" />
-            Risk & Analytics
+            <History className="w-3.5 h-3.5" />
+            Closed History ({closedTrades.length})
           </button>
         </div>
       </div>
 
-      {/* 3. Conditional Tab View Render */}
+      {/* 3. Conditional Tab Content Render */}
       {activeTab === "overview" && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          {/* Section A: Equity Curve & Alpha vs Benchmark */}
-          <EquityGrowthChart closedTradesCount={nClosed} />
-
-          {/* Section B: Sleeve Capacity Allocations */}
-          <SleeveCapacityGauges />
-
-          {/* Section C: Live Signal Radar & Quick Trades */}
+          {/* Signal Radar Grid: Tactile, intuitive cards with actual prices and trade plan */}
           <SignalRadarGrid
             signals={filteredSignals}
             portfolioSymbols={portfolioSymbols}
@@ -188,7 +181,7 @@ export default function InstitutionalView({
             onOpenBuyModal={onOpenBuyModal}
           />
 
-          {/* Section D: Active Holding Book */}
+          {/* Active Positions Book: Live open positions with real engine status and P&L */}
           <ActivePositionsBook
             inTradeTrades={filteredInTrade}
             portfolio={portfolio}
@@ -196,11 +189,18 @@ export default function InstitutionalView({
             onOpenSellModal={onOpenSellModal}
           />
 
-          {/* Section E: Strategy Attribution Donut */}
-          <StrategyAttributionMatrix strategies={strategies} />
+          {/* Real Cumulative Equity Curve: Plotted only from verified closed trades */}
+          {(closedTrades.length > 0 || completedHistory.length > 0) && (
+            <EquityGrowthChart
+              closedTrades={closedTrades}
+              completedHistory={completedHistory}
+            />
+          )}
 
-          {/* Section F: Monthly PnL Heatmap */}
-          <MonthlyPnlMatrix />
+          {/* Real Strategy Attribution: Audited track record from live strategySummary */}
+          {strategies.length > 0 && (
+            <StrategyAttributionMatrix strategies={strategies} />
+          )}
         </div>
       )}
 
@@ -228,16 +228,29 @@ export default function InstitutionalView({
 
       {activeTab === "strategies" && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          <StrategyAttributionMatrix strategies={strategies} />
-          <SleeveCapacityGauges />
+          {strategies.length > 0 ? (
+            <StrategyAttributionMatrix strategies={strategies} />
+          ) : (
+            <div className="rounded-3xl p-8 text-center bg-white/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-white/10 shadow-xl">
+              <Layers className="w-8 h-8 mx-auto mb-2 text-slate-400 opacity-50" />
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">No strategy track record available</p>
+            </div>
+          )}
         </div>
       )}
 
-      {activeTab === "analytics" && (
+      {activeTab === "history" && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          <EquityGrowthChart closedTradesCount={nClosed} />
-          <MonthlyPnlMatrix />
-          <RDistributionChart closedTrades={closedTrades} />
+          <ClosedTradesLedger
+            closedTrades={closedTrades}
+            onOpenChart={onOpenChart}
+          />
+          {(closedTrades.length > 0 || completedHistory.length > 0) && (
+            <EquityGrowthChart
+              closedTrades={closedTrades}
+              completedHistory={completedHistory}
+            />
+          )}
         </div>
       )}
     </div>

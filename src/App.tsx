@@ -18,7 +18,9 @@ import {
   ManualPortfolioTrade,
   StrategySummary,
   CompletedTrade,
-  ToBuySignal
+  ToBuySignal,
+  TerminalKPIs,
+  TotalSummary
 } from "./types";
 import SignalsView from "./views/SignalsView";
 import HomeView from "./views/HomeView";
@@ -100,6 +102,8 @@ export default function App() {
   const [portfolio, setPortfolio] = useState<ManualPortfolioTrade[]>([]);
   const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([]);
   const [completedHistory, setCompletedHistory] = useState<CompletedTrade[]>([]);
+  const [kpis, setKpis] = useState<TerminalKPIs | null>(null);
+  const [totalSummary, setTotalSummary] = useState<TotalSummary | null>(null);
 
   // Network sync states
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
@@ -218,6 +222,12 @@ export default function App() {
       }
       if (Array.isArray(result.closedTrades)) {
         setClosedTrades(result.closedTrades);
+      }
+      if (result.kpis) {
+        setKpis(result.kpis);
+      }
+      if (result.totalSummary) {
+        setTotalSummary(result.totalSummary);
       }
       setLastSyncedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
       showToast("Live signals synchronized successfully");
@@ -479,6 +489,8 @@ export default function App() {
             strategies={strategies}
             portfolio={portfolio}
             completedHistory={completedHistory}
+            kpis={kpis}
+            totalSummary={totalSummary}
             onOpenChart={handleOpenChart}
             onOpenBuyModal={(sym, price, strat) => setBuyModalData({ symbol: sym, price, strategyName: strat })}
             onOpenSellModal={(trade) => setSellModalTrade(trade)}
