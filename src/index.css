@@ -1,62 +1,86 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
 
 @variant dark (&:where(.dark, .dark *));
 
 :root {
   --bg-page: #FAFAFC;
   --bg-card: #FFFFFF;
-  --border-card: #ECEEF2;
+  --bg-card-hover: #F8F9FB;
+  --border-card: #E8EAF0;
   --divider: #F1F2F5;
 
-  --ink-primary: #14151A;
-  --ink-secondary: #56586A;
-  --ink-tertiary: #8B8D98;
-  --ink-muted: #B3B5C0;
+  --ink-primary: #0F1119;
+  --ink-secondary: #4A4D5E;
+  --ink-tertiary: #7C7F91;
+  --ink-muted: #A8AABB;
 
-  --accent-indigo: #6366F1;
-  --accent-indigo-bg: #EEF0FE;
-  
-  --positive-text: #16A34A;
-  --positive-bg: #ECFDF3;
-  --positive-border: #86EFAC;
+  --accent-primary: #6366F1;
+  --accent-primary-bg: #EEF0FE;
 
-  --negative-text: #F04438;
-  --negative-bg: #FEF3F2;
-  --negative-border: #FECDCA;
+  --positive: #10B981;
+  --positive-bg: #ECFDF5;
+  --positive-border: #6EE7B7;
 
-  --warning-text: #D97706;
+  --negative: #EF4444;
+  --negative-bg: #FEF2F2;
+  --negative-border: #FCA5A5;
+
+  --warning: #F59E0B;
   --warning-bg: #FFFBEB;
   --warning-border: #FDE68A;
 
-  --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Manrope", "Inter", system-ui, sans-serif;
+  --card-radius: 20px;
+  --card-radius-sm: 14px;
+  --card-radius-xs: 10px;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+
+  --shadow-xs: 0 1px 2px rgba(15, 17, 25, 0.04);
+  --shadow-sm: 0 2px 8px -1px rgba(15, 17, 25, 0.06), 0 1px 3px rgba(15, 17, 25, 0.03);
+  --shadow-md: 0 4px 16px -2px rgba(15, 17, 25, 0.08), 0 2px 6px rgba(15, 17, 25, 0.04);
+  --shadow-lg: 0 8px 28px -4px rgba(15, 17, 25, 0.12), 0 4px 10px rgba(15, 17, 25, 0.05);
+  --shadow-xl: 0 16px 48px -6px rgba(15, 17, 25, 0.16), 0 6px 16px rgba(15, 17, 25, 0.06);
 }
 
 .dark {
-  --bg-page: #0B0D12;
-  --bg-card: #14161E;
-  --border-card: rgba(255, 255, 255, 0.08);
-  --divider: rgba(255, 255, 255, 0.06);
+  --bg-page: #0A0C14;
+  --bg-card: #12141E;
+  --bg-card-hover: #181A26;
+  --border-card: rgba(255, 255, 255, 0.07);
+  --divider: rgba(255, 255, 255, 0.05);
 
-  --ink-primary: #F8FAFC;
+  --ink-primary: #F1F3F9;
   --ink-secondary: #94A3B8;
   --ink-tertiary: #64748B;
   --ink-muted: #475569;
 
-  --accent-indigo: #818CF8;
-  --accent-indigo-bg: rgba(99, 102, 241, 0.15);
+  --accent-primary: #818CF8;
+  --accent-primary-bg: rgba(99, 102, 241, 0.12);
 
-  --positive-text: #4ADE80;
-  --positive-bg: rgba(34, 197, 94, 0.12);
-  --positive-border: rgba(74, 222, 128, 0.25);
+  --positive: #34D399;
+  --positive-bg: rgba(16, 185, 129, 0.12);
+  --positive-border: rgba(52, 211, 153, 0.25);
 
-  --negative-text: #F87171;
+  --negative: #F87171;
   --negative-bg: rgba(239, 68, 68, 0.12);
   --negative-border: rgba(248, 113, 113, 0.25);
 
-  --warning-text: #FBBF24;
+  --warning: #FBBF24;
   --warning-bg: rgba(245, 158, 11, 0.12);
   --warning-border: rgba(251, 191, 36, 0.25);
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.5);
 }
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
 
 @utility no-scrollbar {
   &::-webkit-scrollbar {
@@ -66,18 +90,34 @@
   scrollbar-width: none;
 }
 
+/* ============================================
+   BASE LAYER
+   ============================================ */
+
 @layer base {
   * {
     border-color: var(--border-card);
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     background-color: var(--bg-page);
     color: var(--ink-primary);
-    font-family: var(--font-family);
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.011em;
+    line-height: 1.5;
   }
+}
+
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+
+.font-mono {
+  font-family: var(--font-mono) !important;
 }
 
 .tabular {
@@ -85,34 +125,195 @@
   font-feature-settings: "tnum" 1;
 }
 
-/* Refined, non-cartoonish elevation and micro-interactions */
-.qs-card-shadow {
-  box-shadow: 0 2px 10px -2px rgba(20, 21, 26, 0.04), 0 1px 3px rgba(20, 21, 26, 0.02);
+/* ============================================
+   CARD SYSTEM
+   ============================================ */
+
+.qs-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.dark .qs-card-shadow {
-  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.35);
+.qs-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: rgba(99, 102, 241, 0.2);
+  transform: translateY(-1px);
 }
 
-.qs-card-hover {
-  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease;
+.dark .qs-card:hover {
+  border-color: rgba(129, 140, 248, 0.15);
 }
 
-.qs-card-hover:hover {
-  transform: translateY(-1.5px);
-  box-shadow: 0 8px 20px -4px rgba(20, 21, 26, 0.08), 0 2px 6px rgba(20, 21, 26, 0.03);
+.qs-card-flat {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-xs);
 }
 
-.dark .qs-card-hover:hover {
-  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.5);
-  border-color: rgba(255, 255, 255, 0.14);
+/* Glass Card for Hero Sections */
+.qs-glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-md);
 }
+
+.dark .qs-glass {
+  background: rgba(18, 20, 30, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ============================================
+   BUTTON PRESS MICRO-INTERACTION
+   ============================================ */
 
 .qs-btn-press {
-  transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.12s ease;
+  transition: transform 0.1s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.1s ease;
 }
 
 .qs-btn-press:active {
   transform: scale(0.97);
 }
 
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease both;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-slide-right {
+  animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* Staggered entrance for card grids */
+.stagger-1 { animation-delay: 0.03s; }
+.stagger-2 { animation-delay: 0.06s; }
+.stagger-3 { animation-delay: 0.09s; }
+.stagger-4 { animation-delay: 0.12s; }
+.stagger-5 { animation-delay: 0.15s; }
+.stagger-6 { animation-delay: 0.18s; }
+.stagger-7 { animation-delay: 0.21s; }
+.stagger-8 { animation-delay: 0.24s; }
+.stagger-9 { animation-delay: 0.27s; }
+.stagger-10 { animation-delay: 0.30s; }
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.12);
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+}
+
+/* ============================================
+   RESPONSIVE CARD GRID
+   ============================================ */
+
+.signal-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .signal-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .signal-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+}
+
+/* Legacy compat aliases */
+.qs-card-shadow { box-shadow: var(--shadow-sm); }
+.dark .qs-card-shadow { box-shadow: var(--shadow-md); }
+.qs-card-hover { transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+.qs-card-hover:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.dark .qs-card-hover:hover { box-shadow: var(--shadow-lg); border-color: rgba(255,255,255,0.12); }

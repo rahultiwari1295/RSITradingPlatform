@@ -1,6 +1,6 @@
 /**
- * QuantSync / AngelOne Algorithmic Trading Terminal
- * Implements the QuantSync Light Editorial Fintech Design System
+ * QuantSync V2 — Institutional Trading Terminal
+ * Single unified interface with premium design
  */
 
 import React, { useState, useEffect } from "react";
@@ -8,9 +8,10 @@ import {
   RefreshCw,
   Sun,
   Moon,
-  Activity,
   CheckCircle2,
-  Zap
+  LogOut,
+  Bell,
+  BellRing,
 } from "lucide-react";
 import {
   InTradeTrade,
@@ -22,47 +23,20 @@ import {
   TerminalKPIs,
   TotalSummary
 } from "./types";
-import SignalsView from "./views/SignalsView";
-import HomeView from "./views/HomeView";
-import PortfolioView from "./views/PortfolioView";
-import BacktestsView from "./views/BacktestsView";
-import BottomNavBar, { TabType } from "./components/BottomNavBar";
+import InstitutionalView from "./views/InstitutionalView";
 import BuyModal from "./components/Modals/BuyModal";
 import SellModal from "./components/Modals/SellModal";
 import AddPositionModal from "./components/Modals/AddPositionModal";
 import ChartModal from "./components/Modals/ChartModal";
 
-import {
-  initialSignals,
-  initialStrategies,
-  initialPortfolio,
-  initialBacktests
-} from "./data/mockData";
 import { useAuth } from "./contexts/AuthContext";
 import { db } from "./lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import LoginView from "./views/LoginView";
-import { LogOut, Bell, BellRing } from "lucide-react";
 import { requestPushPermission } from "./lib/pushNotifications";
-import UIModeSwitch, { UIMode } from "./components/UIModeSwitch";
-import InstitutionalView from "./views/InstitutionalView";
 
 export default function App() {
   const { user, loading: authLoading, logout } = useAuth();
-  
-  // Navigation & View Mode
-  const [activeTab, setActiveTab] = useState<TabType>("home");
-
-  // UI Mode: Classic (Old) vs Institutional (New)
-  const [uiMode, setUiMode] = useState<UIMode>(() => {
-    return (localStorage.getItem("qs_ui_mode") as UIMode) || "new";
-  });
-
-  const handleUiModeChange = (newMode: UIMode) => {
-    setUiMode(newMode);
-    localStorage.setItem("qs_ui_mode", newMode);
-    showToast(newMode === "new" ? "Switched to Institutional iOS Terminal" : "Switched to Classic Editorial View");
-  };
 
   // Push notifications state
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() => {
@@ -95,7 +69,7 @@ export default function App() {
     }
   }, [darkMode]);
 
-  // Data States (initialized with empty arrays to only show API responses)
+  // Data States (initialized with empty arrays — only shows real API responses)
   const [toBuySignals, setToBuySignals] = useState<ToBuySignal[]>([]);
   const [signals, setSignals] = useState<InTradeTrade[]>([]);
   const [strategies, setStrategies] = useState<StrategySummary[]>([]);
@@ -323,9 +297,6 @@ export default function App() {
     showToast("Completed trade record deleted");
   };
 
-  // Untracked attention count
-  const needsAttentionCount = portfolio.filter(p => !p.isActiveInStrategy).length;
-
   // Chart navigation helpers
   const allCurrentSymbols = signals.map(s => s.symbol);
   const currentSymbolIdx = selectedChartSymbol ? allCurrentSymbols.indexOf(selectedChartSymbol) : -1;
@@ -350,59 +321,13 @@ export default function App() {
     window.open(`https://www.tradingview.com/chart/qvyqZrhQ/?symbol=${cleanSym}`, "_blank", "noopener,noreferrer");
   };
 
-  // Render view body
-  const renderScreenContent = () => {
-    switch (activeTab) {
-      case "home":
-        return (
-          <HomeView
-            toBuySignals={toBuySignals}
-            closedTrades={closedTrades}
-            portfolioSymbols={portfolio.map(p => p.symbol)}
-            onOpenChart={handleOpenChart}
-            onOpenBuyModal={(sym, price, strat) => setBuyModalData({ symbol: sym, price, strategyName: strat })}
-            onRefresh={fetchLiveTerminalData}
-            isSyncing={isSyncing}
-          />
-        );
-      case "signals":
-        return (
-          <SignalsView
-            signals={signals}
-            portfolioSymbols={portfolio.map(p => p.symbol)}
-            onOpenChart={handleOpenChart}
-            onOpenBuyModal={(sym, price, strat) => setBuyModalData({ symbol: sym, price, strategyName: strat })}
-            onRefresh={fetchLiveTerminalData}
-            isSyncing={isSyncing}
-          />
-        );
-      case "portfolio":
-        return (
-          <PortfolioView
-            portfolio={portfolio}
-            completedHistory={completedHistory}
-            onOpenAddModal={() => setIsAddPositionOpen(true)}
-            onOpenSellModal={(trade) => setSellModalTrade(trade)}
-            onOpenChart={handleOpenChart}
-            onDeleteCompletedTrade={handleDeleteCompletedTrade}
-          />
-        );
-      case "backtest":
-        return (
-          <BacktestsView
-            closedTrades={closedTrades}
-            onOpenChart={handleOpenChart}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAFAFC] dark:bg-[#0E0F14]">
-        <RefreshCw className="w-6 h-6 animate-spin text-indigo-600" />
+      <div className="min-h-screen flex items-center justify-center bg-[#FAFAFC] dark:bg-[#0A0C14]">
+        <div className="flex flex-col items-center gap-3">
+          <RefreshCw className="w-6 h-6 animate-spin text-indigo-500" />
+          <span className="text-sm font-medium text-slate-500">Loading terminal...</span>
+        </div>
       </div>
     );
   }
@@ -412,65 +337,59 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAFC] dark:bg-[#0E0F14] text-[#14151A] dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
+    <div className="min-h-screen bg-[#FAFAFC] dark:bg-[#0A0C14] text-[#0F1119] dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       
-      {/* Top Global Navigation & Settings Header */}
-      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-[#ECEEF2] dark:border-slate-800 px-3 sm:px-6 py-2.5 sticky top-0 z-40 shadow-3xs">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="w-8 h-8 rounded-[10px] bg-[#14151A] dark:bg-indigo-600 text-white flex items-center justify-center font-extrabold text-xs shadow-xs">
+      {/* Compact Global Header */}
+      <header className="bg-white/80 dark:bg-[#12141E]/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-white/[0.06] px-3 sm:px-6 py-2 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
+          {/* Logo */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center font-black text-[11px] shadow-sm">
               QS
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-[14px] sm:text-[15px] tracking-tight">QuantSync</span>
-              </div>
-              <p className="text-[10px] text-[#8B8D98] font-mono hidden md:block">
-                {uiMode === "new" ? "Institutional iOS Trading Terminal" : "Editorial Fintech Trading Terminal"} {lastSyncedAt ? `· Synced ${lastSyncedAt}` : ""}
-              </p>
+              <span className="font-bold text-[14px] tracking-tight block leading-tight">QuantSync</span>
+              <span className="text-[10px] text-slate-400 font-medium hidden sm:block">
+                Trading Terminal {lastSyncedAt ? `· ${lastSyncedAt}` : ""}
+              </span>
             </div>
           </div>
 
-          {/* Top UI Switch: Classic (Old) vs Institutional (New) */}
-          <div className="flex items-center justify-center">
-            <UIModeSwitch mode={uiMode} onChange={handleUiModeChange} />
-          </div>
-
           {/* Action Controls */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* Push Notifications button */}
+          <div className="flex items-center gap-1.5">
+            {/* Push Notifications */}
             <button
               onClick={handleEnablePush}
               disabled={notificationsEnabled}
-              className={`p-2 rounded-[11px] transition-colors cursor-pointer ${notificationsEnabled ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 opacity-50 cursor-default' : 'bg-[#F6F7F9] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[#56586A] dark:text-slate-300'}`}
+              className={`p-2 rounded-xl transition-all cursor-pointer ${notificationsEnabled ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 opacity-50 cursor-default' : 'bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400'}`}
               title={notificationsEnabled ? "Push Notifications Active" : "Enable Push Notifications"}
             >
               {notificationsEnabled ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
             </button>
 
-            {/* Refresh button */}
+            {/* Refresh */}
             <button
               onClick={fetchLiveTerminalData}
               disabled={isSyncing}
-              className="p-2 rounded-[11px] bg-[#F6F7F9] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[#56586A] dark:text-slate-300 transition-colors cursor-pointer"
+              className="p-2 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 transition-all cursor-pointer"
               title="Refresh Live Signals"
             >
-              <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin text-[#6366F1]" : ""}`} />
+              <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin text-indigo-500" : ""}`} />
             </button>
 
-            {/* Theme switcher */}
+            {/* Theme */}
             <button
               onClick={() => setDarkMode(prev => !prev)}
-              className="p-2 rounded-[11px] bg-[#F6F7F9] dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[#56586A] dark:text-slate-300 transition-colors cursor-pointer"
-              title="Toggle Light/Dark Theme"
+              className="p-2 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 transition-all cursor-pointer"
+              title="Toggle Theme"
             >
-              {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
+              {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-500" />}
             </button>
 
-            {/* Logout button */}
+            {/* Logout */}
             <button
               onClick={logout}
-              className="p-2 rounded-[11px] bg-[#F6F7F9] dark:bg-slate-800 hover:bg-[#FEF3F2] hover:text-[#F04438] dark:hover:bg-red-900/30 dark:hover:text-red-400 text-[#56586A] dark:text-slate-300 transition-colors cursor-pointer ml-1"
+              className="p-2 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 text-slate-500 dark:text-slate-400 transition-all cursor-pointer ml-0.5"
               title="Sign Out"
             >
               <LogOut className="w-4 h-4" />
@@ -479,39 +398,24 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Content Area */}
-      {uiMode === "new" ? (
-        <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-20">
-          <InstitutionalView
-            toBuySignals={toBuySignals}
-            inTradeTrades={signals}
-            closedTrades={closedTrades}
-            strategies={strategies}
-            portfolio={portfolio}
-            completedHistory={completedHistory}
-            kpis={kpis}
-            totalSummary={totalSummary}
-            onOpenChart={handleOpenChart}
-            onOpenBuyModal={(sym, price, strat) => setBuyModalData({ symbol: sym, price, strategyName: strat })}
-            onOpenSellModal={(trade) => setSellModalTrade(trade)}
-            lastSyncedAt={lastSyncedAt}
-            isSyncing={isSyncing}
-          />
-        </main>
-      ) : (
-        <>
-          <main className="flex-1 w-full max-w-xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto px-3.5 sm:px-5 pt-3.5 sm:pt-5 pb-[104px]">
-            {renderScreenContent()}
-          </main>
-
-          {/* Screen Fixed Bottom Navigation (Classic Mode) */}
-          <BottomNavBar
-            activeTab={activeTab}
-            onSelectTab={setActiveTab}
-            needsAttentionCount={needsAttentionCount}
-          />
-        </>
-      )}
+      {/* Main Content — Institutional Terminal */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-8">
+        <InstitutionalView
+          toBuySignals={toBuySignals}
+          inTradeTrades={signals}
+          closedTrades={closedTrades}
+          strategies={strategies}
+          portfolio={portfolio}
+          completedHistory={completedHistory}
+          kpis={kpis}
+          totalSummary={totalSummary}
+          onOpenChart={handleOpenChart}
+          onOpenBuyModal={(sym, price, strat) => setBuyModalData({ symbol: sym, price, strategyName: strat })}
+          onOpenSellModal={(trade) => setSellModalTrade(trade)}
+          lastSyncedAt={lastSyncedAt}
+          isSyncing={isSyncing}
+        />
+      </main>
 
       {/* Interactive Modals */}
       {selectedChartSymbol && (
@@ -577,10 +481,10 @@ export default function App() {
         />
       )}
 
-      {/* Global Toast Banner */}
+      {/* Global Toast */}
       {toastMessage && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-[#14151A] text-white px-4 py-2.5 rounded-[14px] text-[12.5px] font-bold shadow-xl flex items-center gap-2 border border-slate-700 animate-in fade-in slide-in-from-bottom-2">
-          <CheckCircle2 className="w-4 h-4 text-[#8BF694]" />
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2.5 rounded-2xl text-[12px] font-bold shadow-xl flex items-center gap-2 animate-fade-in-up">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 dark:text-emerald-600" />
           <span>{toastMessage}</span>
         </div>
       )}

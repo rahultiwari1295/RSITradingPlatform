@@ -5,6 +5,9 @@ import {
   Briefcase,
   Layers,
   History,
+  TrendingUp,
+  Target,
+  Brain,
 } from "lucide-react";
 import {
   ToBuySignal,
@@ -40,6 +43,16 @@ interface InstitutionalViewProps {
   isSyncing?: boolean;
 }
 
+type TabKey = "overview" | "signals" | "positions" | "strategies" | "history";
+
+const tabs: { key: TabKey; label: string; icon: React.ElementType; color: string; activeColor: string }[] = [
+  { key: "overview", label: "Overview", icon: LayoutDashboard, color: "text-slate-600 dark:text-slate-400", activeColor: "bg-slate-900 dark:bg-white text-white dark:text-slate-950" },
+  { key: "signals", label: "Signals", icon: Zap, color: "text-slate-600 dark:text-slate-400", activeColor: "bg-emerald-500 text-white shadow-sm shadow-emerald-500/25" },
+  { key: "positions", label: "Active", icon: Briefcase, color: "text-slate-600 dark:text-slate-400", activeColor: "bg-cyan-500 text-white shadow-sm shadow-cyan-500/25" },
+  { key: "strategies", label: "Strategies", icon: Layers, color: "text-slate-600 dark:text-slate-400", activeColor: "bg-violet-500 text-white shadow-sm shadow-violet-500/25" },
+  { key: "history", label: "Closed", icon: History, color: "text-slate-600 dark:text-slate-400", activeColor: "bg-amber-500 text-white shadow-sm shadow-amber-500/25" },
+];
+
 export default function InstitutionalView({
   toBuySignals = [],
   inTradeTrades = [],
@@ -55,9 +68,7 @@ export default function InstitutionalView({
   lastSyncedAt,
   isSyncing = false,
 }: InstitutionalViewProps) {
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "signals" | "positions" | "strategies" | "history"
-  >("overview");
+  const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Filter signals and positions based on search query
@@ -65,9 +76,7 @@ export default function InstitutionalView({
     if (!searchQuery) return toBuySignals;
     const q = searchQuery.toLowerCase();
     return toBuySignals.filter(
-      (s) =>
-        s.symbol.toLowerCase().includes(q) ||
-        (s.strategyName && s.strategyName.toLowerCase().includes(q))
+      (s) => s.symbol.toLowerCase().includes(q) || (s.strategyName && s.strategyName.toLowerCase().includes(q))
     );
   }, [toBuySignals, searchQuery]);
 
@@ -75,24 +84,79 @@ export default function InstitutionalView({
     if (!searchQuery) return inTradeTrades;
     const q = searchQuery.toLowerCase();
     return inTradeTrades.filter(
-      (t) =>
-        t.symbol.toLowerCase().includes(q) ||
-        (t.strategyName && t.strategyName.toLowerCase().includes(q))
+      (t) => t.symbol.toLowerCase().includes(q) || (t.strategyName && t.strategyName.toLowerCase().includes(q))
     );
   }, [inTradeTrades, searchQuery]);
 
-  // Aggregate stats from live KPIs or actual closedTrades data (zero fake fallbacks)
-  const nClosed = kpis?.totalTradesClosed ?? kpis?.totalTrades ?? closedTrades.length;
+  // Aggregate stats from live data
+  const nClosed = (kpis as any)?.totalTradesClosed ?? (kpis as any)?.totalTrades ?? closedTrades.length;
   const wins = closedTrades.filter((t) => (t.returnPct ?? 0) >= 0);
-  const winRate = kpis?.winRate ?? (closedTrades.length > 0 ? (wins.length / closedTrades.length) * 100 : 0);
-  const profitFactor = kpis?.profitFactor ?? 0;
-  const totalReturn = kpis?.totalReturnPct ?? closedTrades.reduce((acc, t) => acc + (t.returnPct || 0), 0);
+  const winRate = (kpis as any)?.winRate ?? (closedTrades.length > 0 ? (wins.length / closedTrades.length) * 100 : 0);
+  const profitFactor = (kpis as any)?.profitFactor ?? 0;
+  const totalReturn = (kpis as any)?.totalReturnPct ?? closedTrades.reduce((acc, t) => acc + (t.returnPct || 0), 0);
 
   const portfolioSymbols = useMemo(() => portfolio.map((p) => p.symbol), [portfolio]);
 
+  // Compute tab-specific banner stats
+  const avgInTradeROI = filteredInTrade.length > 0
+    ? filteredInTrade.reduce((acc, t) => acc + (t.currentROI || 0), 0) / filteredInTrade.length
+    : 0;
+  const compounders = filteredInTrade.filter(t => (t.currentROI || 0) >= 25).length;
+
+  // Buy-count from signals
+  const buyNowCount = filteredSignals.filter(s => {
+    const act = (s.action || "BUY_NOW").toUpperCase();
+    return act === "BUY" || act === "BUY_NOW";
+  }).length;
+
+  const avgMLSignals = filteredSignals.length > 0
+    ? filteredSignals.reduce((acc, s) => {
+        const ml = s.mlProbability ? (s.mlProbability > 1 ? s.mlProbability : s.mlProbability * 100) : 0;
+        return acc + ml;
+      }, 0) / filteredSignals.length
+    : 0;
+
+  // Tab info banner content
+  const getTabBanner = (): { icon: React.ElementType; text: string; color: string } | null => {
+    switch (activeTab) {
+      case "signals":
+        if (filteredSignals.length === 0) return null;
+        return {
+          icon: Zap,
+          text: `${filteredSignals.length} signals dispatched · ${buyNowCount} BUY NOW${avgMLSignals > 0 ? ` · ML avg ${avgMLSignals.toFixed(0)}%` : ""}`,
+          color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/15",
+        };
+      case "positions":
+        if (filteredInTrade.length === 0) return null;
+        return {
+          icon: TrendingUp,
+          text: `${filteredInTrade.length} positions · Avg ROI ${avgInTradeROI >= 0 ? "+" : ""}${avgInTradeROI.toFixed(1)}%${compounders > 0 ? ` · ${compounders} compounder${compounders > 1 ? "s" : ""}` : ""}`,
+          color: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/15",
+        };
+      case "history":
+        if (closedTrades.length === 0) return null;
+        return {
+          icon: Target,
+          text: `${closedTrades.length} closed · ${winRate.toFixed(0)}% win rate${totalReturn ? ` · ${totalReturn > 0 ? "+" : ""}${Math.round(totalReturn)}% total return` : ""}`,
+          color: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/15",
+        };
+      case "strategies":
+        if (strategies.length === 0) return null;
+        return {
+          icon: Brain,
+          text: `${strategies.length} active strategies tracked with audited performance`,
+          color: "bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/15",
+        };
+      default:
+        return null;
+    }
+  };
+
+  const banner = getTabBanner();
+
   return (
-    <div className="space-y-6 pb-12 animate-in fade-in duration-300">
-      {/* 1. Terminal Header with Live Real-time Status & Verified KPIs */}
+    <div className="space-y-5 pb-8 animate-fade-in">
+      {/* 1. Header with KPIs */}
       <InstitutionalHeader
         activeCount={inTradeTrades.length}
         toBuyCount={toBuySignals.length}
@@ -105,75 +169,49 @@ export default function InstitutionalView({
         onSearchChange={setSearchQuery}
       />
 
-      {/* 2. Apple iOS Segmented Sub-Navigation Pills */}
-      <div className="flex items-center justify-start sm:justify-center overflow-x-auto no-scrollbar py-1">
-        <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 shadow-md shadow-slate-900/5">
-          <button
-            onClick={() => setActiveTab("overview")}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === "overview"
-                ? "bg-slate-900 dark:bg-white text-white dark:text-slate-950 shadow-xs"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            <LayoutDashboard className="w-3.5 h-3.5" />
-            Overview
-          </button>
+      {/* 2. Tab Navigation */}
+      <div className="flex items-center justify-start sm:justify-center overflow-x-auto no-scrollbar py-0.5">
+        <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-white/[0.06]" style={{ boxShadow: 'var(--shadow-sm)' }}>
+          {tabs.map(({ key, label, icon: Icon, color, activeColor }) => {
+            const count = key === "signals" ? filteredSignals.length
+              : key === "positions" ? filteredInTrade.length
+              : key === "strategies" ? strategies.length
+              : key === "history" ? closedTrades.length
+              : null;
 
-          <button
-            onClick={() => setActiveTab("signals")}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === "signals"
-                ? "bg-emerald-500 text-white shadow-xs shadow-emerald-500/30"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            <Zap className="w-3.5 h-3.5" />
-            Signal Radar ({filteredSignals.length})
-          </button>
-
-          <button
-            onClick={() => setActiveTab("positions")}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === "positions"
-                ? "bg-cyan-500 text-white shadow-xs shadow-cyan-500/30"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            <Briefcase className="w-3.5 h-3.5" />
-            Active Book ({filteredInTrade.length})
-          </button>
-
-          <button
-            onClick={() => setActiveTab("strategies")}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === "strategies"
-                ? "bg-violet-500 text-white shadow-xs shadow-violet-500/30"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            Strategies ({strategies.length})
-          </button>
-
-          <button
-            onClick={() => setActiveTab("history")}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === "history"
-                ? "bg-amber-500 text-white shadow-xs shadow-amber-500/30"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            <History className="w-3.5 h-3.5" />
-            Closed History ({closedTrades.length})
-          </button>
+            return (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap qs-btn-press ${
+                  activeTab === key ? activeColor : `${color} hover:text-slate-900 dark:hover:text-white`
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {label}
+                {count !== null && count > 0 && (
+                  <span className={`text-[10px] font-mono ${activeTab === key ? "opacity-70" : "opacity-50"}`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* 3. Conditional Tab Content Render */}
+      {/* 3. Tab Info Banner */}
+      {banner && (
+        <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-[11px] font-semibold animate-fade-in ${banner.color}`}>
+          <banner.icon className="w-3.5 h-3.5 shrink-0" />
+          <span>{banner.text}</span>
+        </div>
+      )}
+
+      {/* 4. Tab Content */}
       {activeTab === "overview" && (
-        <div className="space-y-6 animate-in fade-in duration-200">
-          {/* Signal Radar Grid: Tactile, intuitive cards with actual prices and trade plan */}
+        <div className="space-y-6 animate-fade-in-up">
+          {/* Signal Radar (condensed preview) */}
           <SignalRadarGrid
             signals={filteredSignals}
             portfolioSymbols={portfolioSymbols}
@@ -181,7 +219,7 @@ export default function InstitutionalView({
             onOpenBuyModal={onOpenBuyModal}
           />
 
-          {/* Active Positions Book: Live open positions with real engine status and P&L */}
+          {/* Active Positions */}
           <ActivePositionsBook
             inTradeTrades={filteredInTrade}
             portfolio={portfolio}
@@ -189,7 +227,7 @@ export default function InstitutionalView({
             onOpenSellModal={onOpenSellModal}
           />
 
-          {/* Real Cumulative Equity Curve: Plotted only from verified closed trades */}
+          {/* Equity Curve */}
           {(closedTrades.length > 0 || completedHistory.length > 0) && (
             <EquityGrowthChart
               closedTrades={closedTrades}
@@ -197,7 +235,7 @@ export default function InstitutionalView({
             />
           )}
 
-          {/* Real Strategy Attribution: Audited track record from live strategySummary */}
+          {/* Strategy Attribution */}
           {strategies.length > 0 && (
             <StrategyAttributionMatrix strategies={strategies} />
           )}
@@ -205,7 +243,7 @@ export default function InstitutionalView({
       )}
 
       {activeTab === "signals" && (
-        <div className="space-y-6 animate-in fade-in duration-200">
+        <div className="animate-fade-in-up">
           <SignalRadarGrid
             signals={filteredSignals}
             portfolioSymbols={portfolioSymbols}
@@ -216,7 +254,7 @@ export default function InstitutionalView({
       )}
 
       {activeTab === "positions" && (
-        <div className="space-y-6 animate-in fade-in duration-200">
+        <div className="animate-fade-in-up">
           <ActivePositionsBook
             inTradeTrades={filteredInTrade}
             portfolio={portfolio}
@@ -227,20 +265,21 @@ export default function InstitutionalView({
       )}
 
       {activeTab === "strategies" && (
-        <div className="space-y-6 animate-in fade-in duration-200">
+        <div className="animate-fade-in-up">
           {strategies.length > 0 ? (
             <StrategyAttributionMatrix strategies={strategies} />
           ) : (
-            <div className="rounded-3xl p-8 text-center bg-white/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-white/10 shadow-xl">
-              <Layers className="w-8 h-8 mx-auto mb-2 text-slate-400 opacity-50" />
-              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">No strategy track record available</p>
+            <div className="rounded-2xl p-8 text-center bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/[0.06]">
+              <Layers className="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
+              <p className="text-sm font-bold text-slate-600 dark:text-slate-300">No strategy data available</p>
+              <p className="text-xs text-slate-400 mt-0.5">Strategy performance will appear after trades are processed.</p>
             </div>
           )}
         </div>
       )}
 
       {activeTab === "history" && (
-        <div className="space-y-6 animate-in fade-in duration-200">
+        <div className="space-y-6 animate-fade-in-up">
           <ClosedTradesLedger
             closedTrades={closedTrades}
             onOpenChart={onOpenChart}
