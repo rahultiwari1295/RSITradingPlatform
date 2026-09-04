@@ -60,7 +60,7 @@ export default function PortfolioView({
   const [selectedSheetItem, setSelectedSheetItem] = useState<BottomSheetItem | null>(null);
 
   const rawHoldings = portfolio || (userTrades as any) || [];
-  const activeHoldings = rawHoldings.length > 0 ? rawHoldings : fallbackPortfolio;
+  const activeHoldings = rawHoldings;
   const historyList = completedHistory || (closedTrades as any) || [];
 
   // Aggregate stats
