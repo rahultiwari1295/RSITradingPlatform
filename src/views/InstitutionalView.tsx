@@ -47,6 +47,8 @@ interface InstitutionalViewProps {
   onOpenSellModal?: (trade: ManualPortfolioTrade) => void;
   lastSyncedAt?: string | null;
   isSyncing?: boolean;
+  engineVersion?: "v2" | "v3";
+  onVersionChange?: (version: "v2" | "v3") => void;
 }
 
 type TabKey = "overview" | "active" | "history" | "portfolio";
@@ -72,6 +74,8 @@ export default function InstitutionalView({
   onOpenSellModal,
   lastSyncedAt,
   isSyncing = false,
+  engineVersion = "v2",
+  onVersionChange,
 }: InstitutionalViewProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [activeSubFilter, setActiveSubFilter] = useState<"ALL" | "FRESH_BUYS" | "RUNNING">("ALL");
@@ -157,12 +161,73 @@ export default function InstitutionalView({
       {/* ─── TAB 1: HOME (EXECUTIVE DASHBOARD) ─── */}
       {activeTab === "overview" && (
         <div className="space-y-6 animate-fade-in-up">
+          {/* Engine Selector Bar (V2 vs V3) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/[0.06] backdrop-blur-xl">
+            <div className="flex items-center gap-2.5">
+              <span className={`w-2.5 h-2.5 rounded-full ${engineVersion === "v3" ? "bg-violet-500 animate-pulse" : "bg-emerald-500 animate-pulse"}`} />
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                    {engineVersion === "v3" ? "QuantSync-V3 (NextGen State Machine)" : "QuantSync-V2 (Institutional Production)"}
+                  </span>
+                  <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase font-mono ${engineVersion === "v3" ? "bg-violet-500/15 text-violet-600 dark:text-violet-400 border border-violet-500/20" : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"}`}>
+                    Live Angel API
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  {engineVersion === "v3"
+                    ? "Streaming from terminalDataV3 endpoint with weekly/daily state transition model."
+                    : "Streaming from terminalData VPS endpoint with active portfolio & trailing stops."}
+                </p>
+              </div>
+            </div>
+
+            {/* Switch Buttons */}
+            {onVersionChange && (
+              <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-white/[0.04] self-start sm:self-auto shrink-0">
+                <button
+                  onClick={() => onVersionChange("v2")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    engineVersion === "v2"
+                      ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-white/[0.06]"
+                      : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white"
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${engineVersion === "v2" ? "bg-emerald-500" : "bg-slate-400"}`} />
+                  V2 Engine
+                </button>
+                <button
+                  onClick={() => onVersionChange("v3")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    engineVersion === "v3"
+                      ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-white/[0.06]"
+                      : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white"
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${engineVersion === "v3" ? "bg-violet-500" : "bg-slate-400"}`} />
+                  V3 Engine
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Realized Cumulative Equity Growth */}
-          {(closedTrades.length > 0 || completedHistory.length > 0) && (
+          {(closedTrades.length > 0 || completedHistory.length > 0) ? (
             <EquityGrowthChart
               closedTrades={closedTrades}
               completedHistory={completedHistory}
             />
+          ) : (
+            <div className="rounded-2xl p-6 text-center bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/[0.06]">
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                {engineVersion === "v3" ? "QuantSync V3 Engine Active" : "No Closed Trades Yet"}
+              </p>
+              <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                {engineVersion === "v3"
+                  ? "Connected to Angel V3 API (1,355 stocks evaluated). Live closed trades and equity performance will appear here as trades complete."
+                  : "Closed trade history will populate once positions exit."}
+              </p>
+            </div>
           )}
 
           {/* Action Center: Fresh Buys vs Active Runners Highlights */}

@@ -157,14 +157,16 @@ export default function App() {
     }
   }, [portfolio, completedHistory, user, isCloudLoaded]);
 
+  const [engineVersion, setEngineVersion] = useState<"v2" | "v3">("v2");
+
   // Fetch live signals & trades (routed through backend proxy to auto-backtrack against Google Sheets LTP)
-  const fetchLiveTerminalData = async () => {
+  const fetchLiveTerminalData = async (version: "v2" | "v3" = engineVersion) => {
     setIsSyncing(true);
     let result: any = null;
 
     try {
       // Primary: Server proxy that backtracks Wix signals to Google Sheets LTP data
-      const proxyRes = await fetch("/api/terminal-data");
+      const proxyRes = await fetch(`/api/terminal-data?version=${version}`);
       if (proxyRes.ok) {
         result = await proxyRes.json();
       } else {
@@ -173,38 +175,29 @@ export default function App() {
     } catch (e) {
       // Direct Wix API call fallback
       try {
-        const directRes = await fetch("https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData", {
+        const directUrl = version === "v3"
+          ? "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalDataV3"
+          : "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData";
+        const directRes = await fetch(directUrl, {
           headers: { Accept: "application/json" }
         });
         if (directRes.ok) {
           result = await directRes.json();
         }
       } catch (directErr) {
-        console.warn("Direct Wix sync failed:", directErr);
+        console.warn(`Direct Wix (${version}) sync failed:`, directErr);
       }
     }
 
-    if (result && (result.success || result.generatedAt || result.inTradeTrades || result.toBuySignals)) {
-      if (Array.isArray(result.toBuySignals)) {
-        setToBuySignals(result.toBuySignals);
-      }
-      if (Array.isArray(result.inTradeTrades)) {
-        setSignals(result.inTradeTrades);
-      }
-      if (Array.isArray(result.strategySummary)) {
-        setStrategies(result.strategySummary);
-      }
-      if (Array.isArray(result.closedTrades)) {
-        setClosedTrades(result.closedTrades);
-      }
-      if (result.kpis) {
-        setKpis(result.kpis);
-      }
-      if (result.totalSummary) {
-        setTotalSummary(result.totalSummary);
-      }
+    if (result && (result.success !== false)) {
+      setToBuySignals(Array.isArray(result.toBuySignals) ? result.toBuySignals : []);
+      setSignals(Array.isArray(result.inTradeTrades) ? result.inTradeTrades : []);
+      setStrategies(Array.isArray(result.strategySummary) ? result.strategySummary : []);
+      setClosedTrades(Array.isArray(result.closedTrades) ? result.closedTrades : []);
+      setKpis(result.kpis || null);
+      setTotalSummary(result.totalSummary || null);
       setLastSyncedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
-      showToast("Live signals synchronized successfully");
+      showToast(`Synchronized ${version.toUpperCase()} Angel API`);
     } else {
       setLastSyncedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
     }
@@ -212,8 +205,13 @@ export default function App() {
     setIsSyncing(false);
   };
 
+  const handleVersionChange = (newVersion: "v2" | "v3") => {
+    setEngineVersion(newVersion);
+    fetchLiveTerminalData(newVersion);
+  };
+
   useEffect(() => {
-    fetchLiveTerminalData();
+    fetchLiveTerminalData("v2");
   }, []);
 
   // Buy submission handler
@@ -357,6 +355,32 @@ export default function App() {
 
           {/* Action Controls */}
           <div className="flex items-center gap-1.5">
+            {/* V2 / V3 Engine Selector */}
+            <div className="flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] mr-0.5">
+              <button
+                onClick={() => handleVersionChange("v2")}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wider transition-all cursor-pointer ${
+                  engineVersion === "v2"
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                }`}
+                title="Switch to QuantSync V2 Production Engine"
+              >
+                V2
+              </button>
+              <button
+                onClick={() => handleVersionChange("v3")}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wider transition-all cursor-pointer ${
+                  engineVersion === "v3"
+                    ? "bg-violet-600 text-white shadow-xs"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                }`}
+                title="Switch to QuantSync V3 NextGen Engine"
+              >
+                V3
+              </button>
+            </div>
+
             {/* Push Notifications */}
             <button
               onClick={handleEnablePush}
@@ -369,10 +393,10 @@ export default function App() {
 
             {/* Refresh */}
             <button
-              onClick={fetchLiveTerminalData}
+              onClick={() => fetchLiveTerminalData(engineVersion)}
               disabled={isSyncing}
               className="p-2 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 transition-all cursor-pointer"
-              title="Refresh Live Signals"
+              title={`Refresh Live Signals (${engineVersion.toUpperCase()})`}
             >
               <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin text-indigo-500" : ""}`} />
             </button>
@@ -401,6 +425,8 @@ export default function App() {
       {/* Main Content — Institutional Terminal */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-8">
         <InstitutionalView
+          engineVersion={engineVersion}
+          onVersionChange={handleVersionChange}
           toBuySignals={toBuySignals}
           inTradeTrades={signals}
           closedTrades={closedTrades}
