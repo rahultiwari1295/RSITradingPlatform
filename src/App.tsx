@@ -42,12 +42,25 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import LoginView from "./views/LoginView";
 import { LogOut, Bell, BellRing } from "lucide-react";
 import { requestPushPermission } from "./lib/pushNotifications";
+import UIModeSwitch, { UIMode } from "./components/UIModeSwitch";
+import InstitutionalView from "./views/InstitutionalView";
 
 export default function App() {
   const { user, loading: authLoading, logout } = useAuth();
   
   // Navigation & View Mode
   const [activeTab, setActiveTab] = useState<TabType>("home");
+
+  // UI Mode: Classic (Old) vs Institutional (New)
+  const [uiMode, setUiMode] = useState<UIMode>(() => {
+    return (localStorage.getItem("qs_ui_mode") as UIMode) || "new";
+  });
+
+  const handleUiModeChange = (newMode: UIMode) => {
+    setUiMode(newMode);
+    localStorage.setItem("qs_ui_mode", newMode);
+    showToast(newMode === "new" ? "Switched to Institutional iOS Terminal" : "Switched to Classic Editorial View");
+  };
 
   // Push notifications state
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() => {
@@ -392,9 +405,9 @@ export default function App() {
     <div className="min-h-screen bg-[#FAFAFC] dark:bg-[#0E0F14] text-[#14151A] dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       
       {/* Top Global Navigation & Settings Header */}
-      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-[#ECEEF2] dark:border-slate-800 px-4 py-2.5 sm:px-6 sticky top-0 z-40 shadow-3xs">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-[#ECEEF2] dark:border-slate-800 px-3 sm:px-6 py-2.5 sticky top-0 z-40 shadow-3xs">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             <div className="w-8 h-8 rounded-[10px] bg-[#14151A] dark:bg-indigo-600 text-white flex items-center justify-center font-extrabold text-xs shadow-xs">
               QS
             </div>
@@ -402,14 +415,19 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <span className="font-bold text-[14px] sm:text-[15px] tracking-tight">QuantSync</span>
               </div>
-              <p className="text-[10px] text-[#8B8D98] font-mono hidden sm:block">
-                Editorial Fintech Trading Terminal {lastSyncedAt ? `· Synced ${lastSyncedAt}` : ""}
+              <p className="text-[10px] text-[#8B8D98] font-mono hidden md:block">
+                {uiMode === "new" ? "Institutional iOS Trading Terminal" : "Editorial Fintech Trading Terminal"} {lastSyncedAt ? `· Synced ${lastSyncedAt}` : ""}
               </p>
             </div>
           </div>
 
+          {/* Top UI Switch: Classic (Old) vs Institutional (New) */}
+          <div className="flex items-center justify-center">
+            <UIModeSwitch mode={uiMode} onChange={handleUiModeChange} />
+          </div>
+
           {/* Action Controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Push Notifications button */}
             <button
               onClick={handleEnablePush}
@@ -442,7 +460,7 @@ export default function App() {
             {/* Logout button */}
             <button
               onClick={logout}
-              className="p-2 rounded-[11px] bg-[#F6F7F9] dark:bg-slate-800 hover:bg-[#FEF3F2] hover:text-[#F04438] dark:hover:bg-red-900/30 dark:hover:text-red-400 text-[#56586A] dark:text-slate-300 transition-colors cursor-pointer ml-2"
+              className="p-2 rounded-[11px] bg-[#F6F7F9] dark:bg-slate-800 hover:bg-[#FEF3F2] hover:text-[#F04438] dark:hover:bg-red-900/30 dark:hover:text-red-400 text-[#56586A] dark:text-slate-300 transition-colors cursor-pointer ml-1"
               title="Sign Out"
             >
               <LogOut className="w-4 h-4" />
@@ -452,16 +470,36 @@ export default function App() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto px-3.5 sm:px-5 pt-3.5 sm:pt-5 pb-[104px]">
-        {renderScreenContent()}
-      </main>
+      {uiMode === "new" ? (
+        <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-20">
+          <InstitutionalView
+            toBuySignals={toBuySignals}
+            inTradeTrades={signals}
+            closedTrades={closedTrades}
+            strategies={strategies}
+            portfolio={portfolio}
+            completedHistory={completedHistory}
+            onOpenChart={handleOpenChart}
+            onOpenBuyModal={(sym, price, strat) => setBuyModalData({ symbol: sym, price, strategyName: strat })}
+            onOpenSellModal={(trade) => setSellModalTrade(trade)}
+            lastSyncedAt={lastSyncedAt}
+            isSyncing={isSyncing}
+          />
+        </main>
+      ) : (
+        <>
+          <main className="flex-1 w-full max-w-xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto px-3.5 sm:px-5 pt-3.5 sm:pt-5 pb-[104px]">
+            {renderScreenContent()}
+          </main>
 
-      {/* Screen Fixed Bottom Navigation */}
-      <BottomNavBar
-        activeTab={activeTab}
-        onSelectTab={setActiveTab}
-        needsAttentionCount={needsAttentionCount}
-      />
+          {/* Screen Fixed Bottom Navigation (Classic Mode) */}
+          <BottomNavBar
+            activeTab={activeTab}
+            onSelectTab={setActiveTab}
+            needsAttentionCount={needsAttentionCount}
+          />
+        </>
+      )}
 
       {/* Interactive Modals */}
       {selectedChartSymbol && (
