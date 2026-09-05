@@ -3,7 +3,7 @@ import { Activity, Clock, Cpu, Search } from "lucide-react";
 
 interface InstitutionalHeaderProps {
   activeCount: number;
-  toBuyCount: number;
+  toBuyCount?: number;
   closedCount: number;
   winRate: number;
   profitFactor: number;
@@ -15,7 +15,6 @@ interface InstitutionalHeaderProps {
 
 export default function InstitutionalHeader({
   activeCount,
-  toBuyCount,
   closedCount,
   winRate,
   profitFactor,
@@ -69,7 +68,6 @@ export default function InstitutionalHeader({
   }, []);
 
   const kpiItems = [
-    { label: "Signals", value: toBuyCount, color: "text-amber-500 dark:text-amber-400" },
     { label: "Active", value: activeCount, color: "text-emerald-500 dark:text-emerald-400" },
     { label: "Win Rate", value: winRate > 0 ? `${winRate.toFixed(0)}%` : "—", color: "text-cyan-500 dark:text-cyan-400" },
     { label: "PF", value: profitFactor > 0 ? `${profitFactor.toFixed(1)}x` : "—", color: "text-violet-500 dark:text-violet-400" },

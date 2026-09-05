@@ -53,7 +53,7 @@ export default function ActivePositionsBook({
       <div className="rounded-2xl p-8 text-center bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/[0.06] animate-fade-in">
         <Briefcase className="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
         <p className="text-sm font-bold text-slate-600 dark:text-slate-300">No active positions</p>
-        <p className="text-xs text-slate-400 mt-0.5">Check Signal Radar for fresh trade triggers.</p>
+        <p className="text-xs text-slate-400 mt-0.5">Active strategy trades will appear here as the engine enters new positions.</p>
       </div>
     );
   }
