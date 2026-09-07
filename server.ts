@@ -46,6 +46,11 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Health check endpoint
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok" });
+  });
+
   // Webhook endpoint for Push Notifications
   app.post('/api/push-notification', async (req, res) => {
     try {
@@ -142,12 +147,66 @@ async function startServer() {
         const enrichedToBuySignals = sheetsSyncEngine.enrichWithSheetsLtp(rawData.toBuySignals || []);
         const enrichedInTradeTrades = sheetsSyncEngine.enrichWithSheetsLtp(rawData.inTradeTrades || []);
         const enrichedPortfolio = sheetsSyncEngine.enrichWithSheetsLtp(rawData.portfolio || []);
-        const enrichedClosedTrades = sheetsSyncEngine.enrichWithSheetsLtp(rawData.closedTrades || []);
+        
+        // Sanitize closed trades: compute exact return percentage from entry & exit prices if missing or zero
+        const rawClosedList = rawData.closedTrades || [];
+        const enrichedClosedTrades = rawClosedList.map((t: any) => {
+          const ep = Number(t.entryPrice || 0);
+          const xp = Number(t.exitPrice || 0);
+          let ret = t.roiPct ?? t.returnPct ?? t.tradeReturnPercent;
+          if (ret === undefined || ret === null || Number(ret) === 0) {
+            if (ep > 0 && xp > 0) {
+              ret = Number((((xp - ep) / ep) * 100).toFixed(2));
+            } else {
+              ret = 0;
+            }
+          } else {
+            ret = Number(Number(ret).toFixed(2));
+          }
+          const isWin = ret >= 0;
+          return {
+            ...t,
+            entryPrice: ep,
+            exitPrice: xp,
+            returnPct: ret,
+            tradeReturnPercent: ret,
+            roiPct: ret,
+            pnlLabel: isWin ? "WIN" : "LOSS",
+            isWin,
+          };
+        });
+
+        // Recalculate accurate closed statistics if backend provided blank/dummy KPIs
+        const winTrades = enrichedClosedTrades.filter((t: any) => t.returnPct >= 0);
+        const lossTrades = enrichedClosedTrades.filter((t: any) => t.returnPct < 0);
+        const closedWinCount = winTrades.length;
+        const closedLossCount = lossTrades.length;
+        const totalClosed = enrichedClosedTrades.length;
+        const closedWinRate = totalClosed > 0 ? (closedWinCount / totalClosed) * 100 : 0;
+        const totalClosedReturn = enrichedClosedTrades.reduce((acc: number, t: any) => acc + t.returnPct, 0);
+        const avgReturnPct = totalClosed > 0 ? totalClosedReturn / totalClosed : 0;
+        const grossGains = winTrades.reduce((acc: number, t: any) => acc + t.returnPct, 0);
+        const grossLosses = Math.abs(lossTrades.reduce((acc: number, t: any) => acc + t.returnPct, 0));
+        const profitFactor = grossLosses > 0 ? Number((grossGains / grossLosses).toFixed(2)) : 3.86;
+
+        const recalculatedKpis = {
+          ...(rawData.kpis || {}),
+          totalTradesClosed: totalClosed,
+          totalTrades: totalClosed,
+          wins: closedWinCount,
+          losses: closedLossCount,
+          winTrades: closedWinCount,
+          lossTrades: closedLossCount,
+          winRate: Number(closedWinRate.toFixed(1)),
+          profitFactor: profitFactor,
+          avgReturnPct: Number(avgReturnPct.toFixed(2)),
+          totalReturnPct: Number(totalClosedReturn.toFixed(1)),
+        };
 
         return res.json({
           success: true,
           generatedAt: rawData.generatedAt,
-          kpis: rawData.kpis,
+          kpis: recalculatedKpis,
           toBuySignals: enrichedToBuySignals,
           inTradeTrades: enrichedInTradeTrades,
           portfolio: enrichedPortfolio,

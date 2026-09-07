@@ -70,7 +70,7 @@ export default function SignalsView({
 }: SignalsViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [healthFilter, setHealthFilter] = useState<HealthFilterType>("ALL");
-  const [sortBy, setSortBy] = useState<"roi" | "date" | "name">("roi");
+  const [sortBy, setSortBy] = useState<"date" | "roi" | "name">("date");
   const [selectedSheetItem, setSelectedSheetItem] = useState<BottomSheetItem | null>(null);
 
   const rawSignals = Array.isArray(signals) ? signals : [];

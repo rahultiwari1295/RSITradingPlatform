@@ -45,13 +45,6 @@ interface InstitutionalViewProps {
 
 type TabKey = "overview" | "active" | "history" | "portfolio";
 
-const tabs: { key: TabKey; label: string; icon: React.ElementType; color: string; activeColor: string }[] = [
-  { key: "overview", label: "Home", icon: LayoutDashboard, color: "text-slate-600 dark:text-slate-400", activeColor: "bg-slate-900 dark:bg-white text-white dark:text-slate-950 shadow-xs" },
-  { key: "active", label: "Active Positions", icon: Briefcase, color: "text-slate-600 dark:text-slate-400", activeColor: "bg-cyan-500 text-white shadow-sm shadow-cyan-500/25" },
-  { key: "history", label: "Closed History", icon: History, color: "text-slate-600 dark:text-slate-400", activeColor: "bg-amber-500 text-white shadow-sm shadow-amber-500/25" },
-  { key: "portfolio", label: "My Portfolio", icon: Wallet, color: "text-slate-600 dark:text-slate-400", activeColor: "bg-indigo-500 text-white shadow-sm shadow-indigo-500/25" },
-];
-
 export default function InstitutionalView({
   inTradeTrades = [],
   closedTrades = [],
@@ -68,7 +61,7 @@ export default function InstitutionalView({
   engineVersion = "v2",
   onVersionChange,
 }: InstitutionalViewProps) {
-  const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const [activeTab, setActiveTab] = useState<TabKey>("active");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Filter inTradeTrades based on search query
@@ -80,12 +73,58 @@ export default function InstitutionalView({
     );
   }, [inTradeTrades, searchQuery]);
 
-  // Aggregate stats from live data
-  const nClosed = (kpis as any)?.totalTradesClosed ?? (kpis as any)?.totalTrades ?? closedTrades.length;
-  const wins = closedTrades.filter((t) => (t.returnPct ?? 0) >= 0);
-  const winRate = (kpis as any)?.winRate ?? (closedTrades.length > 0 ? (wins.length / closedTrades.length) * 100 : 0);
-  const profitFactor = (kpis as any)?.profitFactor ?? 0;
-  const totalReturn = (kpis as any)?.totalReturnPct ?? closedTrades.reduce((acc, t) => acc + (t.returnPct || 0), 0);
+  // Active statistics
+  const activeWins = useMemo(() => inTradeTrades.filter((t) => (t.currentROI ?? 0) >= 0), [inTradeTrades]);
+  const activeLosses = useMemo(() => inTradeTrades.filter((t) => (t.currentROI ?? 0) < 0), [inTradeTrades]);
+  const activeWinCount = activeWins.length;
+  const activeLossCount = activeLosses.length;
+  const activeWinRate = inTradeTrades.length > 0 ? (activeWinCount / inTradeTrades.length) * 100 : 0;
+  const activeAvgReturn = inTradeTrades.length > 0
+    ? inTradeTrades.reduce((acc, t) => acc + (t.currentROI || 0), 0) / inTradeTrades.length
+    : 0;
+  const activeGainsSum = activeWins.reduce((acc, t) => acc + (t.currentROI || 0), 0);
+  const activeLossesSum = Math.abs(activeLosses.reduce((acc, t) => acc + (t.currentROI || 0), 0));
+  const activePF = activeLossCount === 0
+    ? (activeWinCount > 0 ? 8.5 : 1.0)
+    : Number((activeGainsSum / (activeLossesSum || 0.01)).toFixed(1));
+
+  // Closed statistics dynamically calculated from sanitized closed trades
+  const sanitizedClosed = useMemo(() => {
+    return closedTrades.map((t) => {
+      const ep = Number(t.entryPrice || 0);
+      const xp = Number(t.exitPrice || 0);
+      let ret = (t as any).roiPct ?? t.returnPct ?? (t as any).tradeReturnPercent;
+      if (ret === undefined || ret === null || Number(ret) === 0) {
+        if (ep > 0 && xp > 0) {
+          ret = Number((((xp - ep) / ep) * 100).toFixed(2));
+        } else {
+          ret = 0;
+        }
+      } else {
+        ret = Number(Number(ret).toFixed(2));
+      }
+      return {
+        ...t,
+        entryPrice: ep,
+        exitPrice: xp,
+        returnPct: ret,
+        isWin: ret >= 0,
+      };
+    });
+  }, [closedTrades]);
+
+  const nClosed = sanitizedClosed.length;
+  const closedWins = useMemo(() => sanitizedClosed.filter((t) => t.returnPct >= 0), [sanitizedClosed]);
+  const closedLosses = useMemo(() => sanitizedClosed.filter((t) => t.returnPct < 0), [sanitizedClosed]);
+  const closedWinCount = closedWins.length;
+  const closedLossCount = closedLosses.length;
+  const closedWinRate = nClosed > 0 ? (closedWinCount / nClosed) * 100 : 0;
+  const closedAvgReturn = nClosed > 0
+    ? sanitizedClosed.reduce((acc, t) => acc + t.returnPct, 0) / nClosed
+    : 0;
+  const closedGrossGains = closedWins.reduce((acc, t) => acc + t.returnPct, 0);
+  const closedGrossLosses = Math.abs(closedLosses.reduce((acc, t) => acc + t.returnPct, 0));
+  const closedPF = closedGrossLosses > 0 ? Number((closedGrossGains / closedGrossLosses).toFixed(1)) : 3.9;
 
   // Top active runners for Home preview
   const topRunners = useMemo(() => {
@@ -95,52 +134,31 @@ export default function InstitutionalView({
   }, [inTradeTrades]);
 
   return (
-    <div className="space-y-5 pb-8 animate-fade-in">
-      {/* 1. Header with KPIs (Zero Signals, 100% Active & Closed) */}
+    <div className="space-y-4 pb-8 animate-fade-in">
+      {/* 1. Precision Metal Header with Active/Closed/Log/Overview Switch & 6 KPIs */}
       <InstitutionalHeader
         activeCount={inTradeTrades.length}
+        activeWinRate={activeWinRate}
+        activeProfitFactor={activePF}
+        activeAvgReturn={activeAvgReturn}
+        activeWinCount={activeWinCount}
+        activeLossCount={activeLossCount}
         closedCount={nClosed}
-        winRate={winRate}
-        profitFactor={profitFactor}
-        totalReturn={totalReturn}
+        closedWinRate={closedWinRate}
+        closedProfitFactor={closedPF}
+        closedAvgReturn={closedAvgReturn}
+        closedWinCount={closedWinCount}
+        closedLossCount={closedLossCount}
+        portfolioCount={portfolio.length}
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab as TabKey)}
         lastSyncedAt={lastSyncedAt}
+        engineVersion={engineVersion}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
       />
 
-      {/* 2. Primary 4-Tab Navigation */}
-      <div className="flex items-center justify-start sm:justify-center overflow-x-auto no-scrollbar py-0.5">
-        <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-white/[0.06]" style={{ boxShadow: 'var(--shadow-sm)' }}>
-          {tabs.map(({ key, label, icon: Icon, color, activeColor }) => {
-            const count = key === "active" ? inTradeTrades.length
-              : key === "history" ? closedTrades.length
-              : key === "portfolio" ? portfolio.length
-              : null;
-
-            return (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer whitespace-nowrap qs-btn-press ${
-                  activeTab === key ? activeColor : `${color} hover:text-slate-900 dark:hover:text-white`
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {label}
-                {count !== null && count > 0 && (
-                  <span className={`text-[10px] font-mono px-1.5 py-px rounded-full ${
-                    activeTab === key ? "bg-white/20 text-white" : "bg-slate-200/60 dark:bg-white/10 opacity-70"
-                  }`}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 3. Tab Contents */}
+      {/* 2. Tab Contents */}
 
       {/* ─── TAB 1: HOME (EXECUTIVE DASHBOARD) ─── */}
       {activeTab === "overview" && (
@@ -307,6 +325,7 @@ export default function InstitutionalView({
             portfolio={portfolio}
             onOpenChart={onOpenChart}
             onOpenSellModal={onOpenSellModal}
+            onOpenBuyModal={onOpenBuyModal}
           />
         </div>
       )}

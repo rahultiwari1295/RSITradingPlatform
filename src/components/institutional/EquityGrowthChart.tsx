@@ -31,11 +31,25 @@ export default function EquityGrowthChart({
 
     // Filter trades with valid return percentages
     const validTrades = trades
-      .map((t: any) => ({
-        symbol: t.symbol,
-        returnPct: Number(t.returnPct ?? t.pnlPct ?? t.tradeReturnPercent ?? 0),
-        date: t.exitDate || t.sellDate || t.entryDate || "2026-08-01",
-      }))
+      .map((t: any) => {
+        const ep = Number(t.entryPrice || 0);
+        const xp = Number(t.exitPrice || 0);
+        let ret = (t as any).roiPct ?? t.returnPct ?? (t as any).tradeReturnPercent ?? t.pnlPct;
+        if (ret === undefined || ret === null || Number(ret) === 0) {
+          if (ep > 0 && xp > 0) {
+            ret = Number((((xp - ep) / ep) * 100).toFixed(2));
+          } else {
+            ret = 0;
+          }
+        } else {
+          ret = Number(Number(ret).toFixed(2));
+        }
+        return {
+          symbol: t.symbol,
+          returnPct: ret,
+          date: t.exitDate || t.sellDate || t.entryDate || "2026-08-01",
+        };
+      })
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     let runningReturn = 0;
