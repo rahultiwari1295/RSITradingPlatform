@@ -169,16 +169,16 @@ export default function App() {
     }
   }, [portfolio, completedHistory, user, isCloudLoaded]);
 
-  const [engineVersion, setEngineVersion] = useState<"v2" | "v3">("v2");
+  const engineVersion = "v2";
 
   // Fetch live signals & trades (routed through backend proxy to auto-backtrack against Google Sheets LTP)
-  const fetchLiveTerminalData = async (version: "v2" | "v3" = engineVersion) => {
+  const fetchLiveTerminalData = async () => {
     setIsSyncing(true);
     let result: any = null;
 
     try {
       // Primary: Server proxy that backtracks Wix signals to Google Sheets LTP data
-      const proxyRes = await fetch(`/api/terminal-data?version=${version}`);
+      const proxyRes = await fetch(`/api/terminal-data?version=v2`);
       if (proxyRes.ok) {
         result = await proxyRes.json();
       } else {
@@ -187,9 +187,7 @@ export default function App() {
     } catch (e) {
       // Direct Wix API call fallback
       try {
-        const directUrl = version === "v3"
-          ? "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalDataV3"
-          : "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData";
+        const directUrl = "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData";
         const directRes = await fetch(directUrl, {
           headers: { Accept: "application/json" }
         });
@@ -197,7 +195,7 @@ export default function App() {
           result = await directRes.json();
         }
       } catch (directErr) {
-        console.warn(`Direct Wix (${version}) sync failed:`, directErr);
+        console.warn(`Direct Wix sync failed:`, directErr);
       }
     }
 
@@ -265,7 +263,7 @@ export default function App() {
 
       setTotalSummary(result.totalSummary || null);
       setLastSyncedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
-      showToast(`Synchronized ${version.toUpperCase()} Angel API`);
+      showToast("Synchronized V2 Market Feed");
     } else {
       setLastSyncedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
     }
@@ -273,13 +271,8 @@ export default function App() {
     setIsSyncing(false);
   };
 
-  const handleVersionChange = (newVersion: "v2" | "v3") => {
-    setEngineVersion(newVersion);
-    fetchLiveTerminalData(newVersion);
-  };
-
   useEffect(() => {
-    fetchLiveTerminalData("v2");
+    fetchLiveTerminalData();
   }, []);
 
   // Buy submission handler
@@ -419,30 +412,9 @@ export default function App() {
 
           {/* Action Controls */}
           <div className="flex items-center gap-1.5">
-            {/* V2 / V3 Engine Selector */}
-            <div className="flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] mr-0.5">
-              <button
-                onClick={() => handleVersionChange("v2")}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wider transition-all cursor-pointer ${
-                  engineVersion === "v2"
-                    ? "bg-indigo-600 text-white shadow-xs"
-                    : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                }`}
-                title="Switch to QuantSync V2 Production Engine"
-              >
-                V2
-              </button>
-              <button
-                onClick={() => handleVersionChange("v3")}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wider transition-all cursor-pointer ${
-                  engineVersion === "v3"
-                    ? "bg-violet-600 text-white shadow-xs"
-                    : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                }`}
-                title="Switch to QuantSync V3 NextGen Engine"
-              >
-                V3
-              </button>
+            {/* V2 Engine Badge */}
+            <div className="flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wider bg-indigo-600 text-white shadow-xs mr-0.5">
+              V2
             </div>
 
             {/* Push Notifications */}
@@ -497,7 +469,6 @@ export default function App() {
       <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-8">
         <InstitutionalView
           engineVersion={engineVersion}
-          onVersionChange={handleVersionChange}
           toBuySignals={toBuySignals}
           inTradeTrades={signals}
           closedTrades={closedTrades}

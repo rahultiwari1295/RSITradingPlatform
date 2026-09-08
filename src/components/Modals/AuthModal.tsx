@@ -111,8 +111,8 @@ export default function AuthModal({
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
             {reasonMessage || (isSignUp 
-              ? "Sign up to unlock automated Angel One broker sync, personal trade ledger, and live breakout alerts."
-              : "Sign in to access your synchronized portfolio and trading preferences.")}
+              ? "Sign up to unlock your personal Paper Trade ledger, live exit alerts, and persistent tracking."
+              : "Sign in to access your saved paper trades and performance analytics.")}
           </p>
         </div>
 
@@ -121,7 +121,7 @@ export default function AuthModal({
           <div className="mb-4 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/70 dark:border-white/[0.05] space-y-1.5 text-[11px] text-slate-600 dark:text-slate-300">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-              <span>1-Click Angel One broker trade execution</span>
+              <span>Personal Paper Trade tracking & P&L analytics</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />

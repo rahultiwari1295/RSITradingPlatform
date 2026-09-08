@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Briefcase, LayoutGrid, Table } from "lucide-react";
 import { InTradeTrade, ManualPortfolioTrade } from "../../types";
 import QuantSyncAlertCard from "./QuantSyncAlertCard";
+import { getSignalStatus } from "../../lib/signalStatus";
 
 interface ActivePositionsBookProps {
   inTradeTrades: InTradeTrade[];
@@ -196,6 +197,7 @@ export default function ActivePositionsBook({
                   >
                     ROI {sortBy === "roi" && "▾"}
                   </th>
+                  <th className="py-3 px-3">Signal (Status)</th>
                   <th
                     className="py-3 px-3 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200 select-none"
                     onClick={() => setSortBy("days")}
@@ -241,6 +243,19 @@ export default function ActivePositionsBook({
                         <span className={`font-black text-xs ${isGain ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
                           {isGain ? "+" : ""}{roi.toFixed(2)}%
                         </span>
+                      </td>
+                      <td className="py-3 px-3">
+                        {(() => {
+                          const status = getSignalStatus("active", days, roi);
+                          return (
+                            <span
+                              className={`inline-block px-1.5 py-0.5 rounded text-[9.5px] font-black uppercase tracking-wider border shadow-2xs ${status.badgeClass}`}
+                              title={status.tooltip}
+                            >
+                              {status.label}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="py-3 px-3 font-mono text-xs font-semibold text-slate-600 dark:text-slate-300">
                         {days}d

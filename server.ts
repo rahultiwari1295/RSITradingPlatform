@@ -121,10 +121,7 @@ async function startServer() {
   // Express API Proxy — strictly fetching from raw Wix Studio endpoint
   app.get("/api/terminal-data", async (req, res) => {
     try {
-      const requestedVersion = req.query.version === 'v3' ? 'v3' : 'v2';
-      const wixEndpoint = requestedVersion === 'v3'
-        ? "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalDataV3"
-        : "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData";
+      const wixEndpoint = "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData";
 
       const response = await fetch(wixEndpoint, {
         method: "GET",

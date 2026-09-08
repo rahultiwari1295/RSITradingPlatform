@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Clock, Cpu, Search, CheckCircle2, XCircle } from "lucide-react";
+import { Clock, Cpu, Search, CheckCircle2, XCircle, BookOpen } from "lucide-react";
 
 interface InstitutionalHeaderProps {
   // Active metrics
@@ -27,7 +27,7 @@ interface InstitutionalHeaderProps {
   searchQuery: string;
   onSearchChange: (q: string) => void;
   lastSyncedAt?: string | null;
-  engineVersion?: "v2" | "v3";
+  engineVersion?: string;
 }
 
 export default function InstitutionalHeader({
@@ -140,12 +140,11 @@ export default function InstitutionalHeader({
     },
   ];
 
-  // Primary unified navigation tabs: Active, Closed, Paper Trade (portfolio), Overview
+  // Primary unified navigation tabs: Active, Closed, Paper Trade (portfolio)
   const navTabs = [
     { id: "active", label: "Active", count: activeCount, dotColor: "bg-emerald-500" },
     { id: "history", label: "Closed", count: closedCount, dotColor: "bg-amber-500" },
     { id: "portfolio", label: "Paper Trade", count: portfolioCount, dotColor: "bg-indigo-500" },
-    { id: "overview", label: "Overview", count: null, dotColor: "bg-cyan-500" },
   ];
 
   return (
@@ -154,8 +153,8 @@ export default function InstitutionalHeader({
       <div className="relative overflow-hidden rounded-2xl p-3 sm:p-4 transition-all duration-200 bg-gradient-to-b from-white via-[#f7f8fa] to-[#eaedf3] border border-[#cbd3df] shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_4px_16px_-2px_rgba(15,23,42,0.08)] dark:bg-gradient-to-br dark:from-slate-900 dark:via-[#0D1017] dark:to-slate-950 dark:border-white/[0.06] dark:shadow-[0_4px_24px_-4px_rgba(0,0,0,0.3)] text-slate-900 dark:text-white">
         {/* Top Control Bar: Status on Left + Unified Segmented Switch on Right */}
         <div className="flex flex-wrap items-center justify-between gap-2.5">
-          {/* Left: Status Badges */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Left: Status Badges + How to Use Button */}
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             {/* Live Indicator */}
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25">
               <span className={`w-1.5 h-1.5 rounded-full ${marketPhase.color} animate-pulse`} />
@@ -168,14 +167,29 @@ export default function InstitutionalHeader({
               {istTime || "—"} IST
             </span>
 
+            {/* How to Use button right beside the time */}
+            <button
+              type="button"
+              onClick={() => onTabChange?.("overview")}
+              title="Click to read the simple beginner guide: How we select stocks, daily 3:15 PM routine, paper trading, and exit rules."
+              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold tracking-tight transition-all cursor-pointer shadow-xs active:scale-95 ${
+                activeTab === "overview"
+                  ? "bg-indigo-600 text-white border border-indigo-600 shadow-indigo-500/25 ring-2 ring-indigo-500/30"
+                  : "bg-gradient-to-r from-amber-50 to-indigo-50 hover:from-amber-100 hover:to-indigo-100 text-slate-900 border border-indigo-300/90 dark:from-indigo-950/70 dark:to-purple-950/70 dark:hover:from-indigo-900/70 dark:text-indigo-200 dark:border-indigo-500/40"
+              }`}
+            >
+              <BookOpen className={`w-3 h-3 ${activeTab === "overview" ? "text-white" : "text-indigo-600 dark:text-indigo-400"} shrink-0`} />
+              <span>How to Use</span>
+            </button>
+
             {/* Engine Tag */}
-            <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/20">
-              <Cpu className="w-3 h-3 text-violet-600 dark:text-violet-400" />
-              {engineVersion === "v3" ? "V3" : "V2"}
+            <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
+              <Cpu className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+              V2
             </span>
           </div>
 
-          {/* Right: Unified Segmented Switch (ACTIVE / CLOSED / LOG / OVERVIEW) */}
+          {/* Right: Unified Segmented Switch (ACTIVE / CLOSED / PAPER TRADE) */}
           <div className="flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-white/[0.06] border border-slate-300/80 dark:border-white/[0.08] shadow-inner ml-auto overflow-x-auto no-scrollbar">
             {navTabs.map((tab) => {
               const isActive = activeTab === tab.id;
@@ -201,52 +215,56 @@ export default function InstitutionalHeader({
           </div>
         </div>
 
-        {/* Middle: Clean Search Bar */}
-        <div className="relative w-full my-2.5">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-400 pointer-events-none" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search symbol or strategy..."
-            className="w-full pl-9 pr-8 py-1.5 rounded-xl bg-white/90 dark:bg-white/[0.06] hover:bg-white dark:hover:bg-white/[0.1] focus:bg-white text-xs text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-300/90 dark:border-white/[0.08] focus:border-cyan-500 dark:focus:border-cyan-400 outline-none transition-all shadow-2xs"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => onSearchChange("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs font-bold cursor-pointer"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-
-        {/* Bottom: 6-Metric High-Precision Metallic Ribbon (Pure Value, No Sub-Labels) */}
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2 pt-2 border-t border-slate-300/70 dark:border-white/[0.06]">
-          {kpis.map((kpi) => {
-            const Icon = kpi.icon;
-            return (
-              <div
-                key={kpi.label}
-                className="flex flex-col justify-between p-2 sm:p-2.5 rounded-xl bg-white/85 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.05] shadow-[0_1px_2px_rgba(0,0,0,0.03),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-none hover:border-slate-300 dark:hover:border-white/[0.1] transition-all"
+        {/* Middle: Clean Search Bar (Only shown on Active, Closed, Paper Trade pages) */}
+        {activeTab !== "overview" && (
+          <div className="relative w-full my-2.5">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Search symbol or strategy..."
+              className="w-full pl-9 pr-8 py-1.5 rounded-xl bg-white/90 dark:bg-white/[0.06] hover:bg-white dark:hover:bg-white/[0.1] focus:bg-white text-xs text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-300/90 dark:border-white/[0.08] focus:border-cyan-500 dark:focus:border-cyan-400 outline-none transition-all shadow-2xs"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => onSearchChange("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs font-bold cursor-pointer"
               >
-                <div className="flex items-center justify-between gap-1 mb-1">
-                  <span className="text-[9.5px] sm:text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 truncate">
-                    {kpi.label}
-                  </span>
-                  {Icon && <Icon className={`w-3 h-3 ${kpi.color} opacity-80 shrink-0`} />}
-                </div>
+                ✕
+              </button>
+            )}
+          </div>
+        )}
 
-                <div className="mt-0.5">
-                  <span className={`text-base sm:text-xl font-black font-mono tabular tracking-tight leading-none ${kpi.color}`}>
-                    {kpi.value}
-                  </span>
+        {/* Bottom: 6-Metric High-Precision Metallic Ribbon (Pure Value, No Sub-Labels) - Only on active/closed/paper trade */}
+        {activeTab !== "overview" && (
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2 pt-2 border-t border-slate-300/70 dark:border-white/[0.06]">
+            {kpis.map((kpi) => {
+              const Icon = kpi.icon;
+              return (
+                <div
+                  key={kpi.label}
+                  className="flex flex-col justify-between p-2 sm:p-2.5 rounded-xl bg-white/85 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.05] shadow-[0_1px_2px_rgba(0,0,0,0.03),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-none hover:border-slate-300 dark:hover:border-white/[0.1] transition-all"
+                >
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <span className="text-[9.5px] sm:text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 truncate">
+                      {kpi.label}
+                    </span>
+                    {Icon && <Icon className={`w-3 h-3 ${kpi.color} opacity-80 shrink-0`} />}
+                  </div>
+
+                  <div className="mt-0.5">
+                    <span className={`text-base sm:text-xl font-black font-mono tabular tracking-tight leading-none ${kpi.color}`}>
+                      {kpi.value}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

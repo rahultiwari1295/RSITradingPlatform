@@ -1,5 +1,6 @@
 import React from "react";
 import { LineChart, ExternalLink } from "lucide-react";
+import { getSignalStatus } from "../../lib/signalStatus";
 
 export interface QuantSyncAlertCardProps {
   mode: "active" | "closed";
@@ -68,6 +69,7 @@ export default function QuantSyncAlertCard({
 
   const entryDateFormatted = formatCompactDate(entryDate);
   const exitDateFormatted = formatCompactDate(exitDate);
+  const statusInfo = getSignalStatus(mode, holdingDays, returnPct);
 
   return (
     <div
@@ -188,15 +190,21 @@ export default function QuantSyncAlertCard({
         </div>
       </div>
 
-      {/* 4. Foot: Clean 2-Line Bilateral Entry & Current Grid */}
+      {/* 4. Foot: Clean 2-Line Bilateral Signal Date ( Status ) & Current Grid */}
       <div className="foot pt-1.5 sm:pt-2 border-t border-slate-300/70 shadow-[0_1px_0_rgba(255,255,255,0.8)] dark:border-white/[0.08] dark:shadow-none flex items-baseline justify-between gap-3">
-        {/* Left: ENTRY (e.g. 01/02 @ ₹80.23) */}
+        {/* Left: Signal Date ( Status ) (e.g. 04/09 @ ₹591.10) */}
         <div className="text-left">
           <div
-            className="text-[9px] font-bold tracking-[0.06em] uppercase text-slate-500 dark:text-[#9a9aa4]"
+            className="text-[9px] font-bold tracking-[0.05em] uppercase flex items-center gap-1 text-slate-500 dark:text-[#9a9aa4]"
             style={{ fontFamily: "'JetBrains Mono', monospace" }}
           >
-            ENTRY
+            <span>SIGNAL DATE</span>
+            <span
+              className={`px-1.5 py-0.2 rounded text-[8px] sm:text-[8.5px] font-black uppercase tracking-wider border shadow-2xs ${statusInfo.badgeClass}`}
+              title={statusInfo.tooltip}
+            >
+              ({statusInfo.label})
+            </span>
           </div>
           <div className="text-[12.5px] sm:text-[13px] font-bold font-mono text-slate-900 dark:text-[#f0f0f2] mt-0.5">
             {entryDateFormatted ? `${entryDateFormatted} @ ` : ""}{formatINR(entryPrice)}
