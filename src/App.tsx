@@ -28,6 +28,7 @@ import BuyModal from "./components/Modals/BuyModal";
 import SellModal from "./components/Modals/SellModal";
 import AddPositionModal from "./components/Modals/AddPositionModal";
 import ChartModal from "./components/Modals/ChartModal";
+import AuthModal from "./components/Modals/AuthModal";
 
 import { useAuth } from "./contexts/AuthContext";
 import { db } from "./lib/firebase";
@@ -37,6 +38,17 @@ import { requestPushPermission } from "./lib/pushNotifications";
 
 export default function App() {
   const { user, loading: authLoading, logout } = useAuth();
+
+  // Auth modal state for visitors
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<"signin" | "signup">("signup");
+  const [authReason, setAuthReason] = useState<string | undefined>(undefined);
+
+  const handleOpenAuth = (mode: "signin" | "signup" = "signup", reason?: string) => {
+    setAuthModalMode(mode);
+    setAuthReason(reason);
+    setIsAuthModalOpen(true);
+  };
 
   // Push notifications state
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() => {
@@ -386,10 +398,6 @@ export default function App() {
     );
   }
 
-  if (!user) {
-    return <LoginView />;
-  }
-
   return (
     <div className="min-h-screen bg-[#FAFAFC] dark:bg-[#0A0C14] text-[#0F1119] dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       
@@ -466,14 +474,36 @@ export default function App() {
               {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-500" />}
             </button>
 
-            {/* Logout */}
-            <button
-              onClick={logout}
-              className="p-2 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 text-slate-500 dark:text-slate-400 transition-all cursor-pointer ml-0.5"
-              title="Sign Out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+            {/* Auth Actions: Logged In vs Visitor */}
+            {user ? (
+              <div className="flex items-center gap-1.5 ml-0.5">
+                <span className="hidden md:inline-block text-[11px] font-semibold text-slate-500 dark:text-slate-400 max-w-[130px] truncate" title={user.email || ""}>
+                  {user.email}
+                </span>
+                <button
+                  onClick={logout}
+                  className="p-2 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 text-slate-500 dark:text-slate-400 transition-all cursor-pointer"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 ml-1">
+                <button
+                  onClick={() => handleOpenAuth("signin")}
+                  className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => handleOpenAuth("signup")}
+                  className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+                >
+                  Sign Up Free
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -492,10 +522,18 @@ export default function App() {
           kpis={kpis}
           totalSummary={totalSummary}
           onOpenChart={handleOpenChart}
-          onOpenBuyModal={(sym, price, strat) => setBuyModalData({ symbol: sym, price, strategyName: strat })}
+          onOpenBuyModal={(sym, price, strat) => {
+            if (!user) {
+              handleOpenAuth("signup", "Sign up or log in to buy positions and log trades to your portfolio.");
+              return;
+            }
+            setBuyModalData({ symbol: sym, price, strategyName: strat });
+          }}
           onOpenSellModal={(trade) => setSellModalTrade(trade)}
           lastSyncedAt={lastSyncedAt}
           isSyncing={isSyncing}
+          user={user}
+          onOpenAuthModal={(mode) => handleOpenAuth(mode)}
         />
       </main>
 
@@ -562,6 +600,17 @@ export default function App() {
           onSubmit={handleBuySubmit}
         />
       )}
+
+      {/* Auth Modal for Visitors */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setAuthReason(undefined);
+        }}
+        initialMode={authModalMode}
+        reasonMessage={authReason}
+      />
 
       {/* Global Toast */}
       {toastMessage && (

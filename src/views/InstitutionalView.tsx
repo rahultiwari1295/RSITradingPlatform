@@ -41,6 +41,8 @@ interface InstitutionalViewProps {
   engineVersion?: "v2" | "v3";
   onVersionChange?: (version: "v2" | "v3") => void;
   toBuySignals?: any[]; // optional backward compatibility, not rendered
+  user?: any;
+  onOpenAuthModal?: (mode: "signin" | "signup") => void;
 }
 
 type TabKey = "overview" | "active" | "history" | "portfolio";
@@ -60,6 +62,8 @@ export default function InstitutionalView({
   isSyncing = false,
   engineVersion = "v2",
   onVersionChange,
+  user,
+  onOpenAuthModal,
 }: InstitutionalViewProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("active");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -349,14 +353,44 @@ export default function InstitutionalView({
       {/* ─── TAB 4: MY PORTFOLIO (USER'S PERSONAL TRADES & P&L) ─── */}
       {activeTab === "portfolio" && (
         <div className="animate-fade-in-up">
-          <PortfolioView
-            portfolio={portfolio}
-            completedHistory={completedHistory}
-            closedTrades={closedTrades}
-            onOpenBuyModal={onOpenBuyModal}
-            onOpenSellModal={(trade) => onOpenSellModal && onOpenSellModal(trade)}
-            onOpenChart={onOpenChart}
-          />
+          {!user ? (
+            <div className="rounded-2xl p-8 text-center bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/[0.06] backdrop-blur-xl max-w-lg mx-auto space-y-4 my-6 shadow-xs">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center mx-auto">
+                <Briefcase className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Personal Portfolio & Trade Ledger
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                  Create a free account or sign in to synchronize your Angel One broker orders, track live trailing stops, and preserve your trade history.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-2">
+                <button
+                  onClick={() => onOpenAuthModal && onOpenAuthModal("signup")}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-all shadow-xs cursor-pointer active:scale-[0.98]"
+                >
+                  Create Free Account
+                </button>
+                <button
+                  onClick={() => onOpenAuthModal && onOpenAuthModal("signin")}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-white/[0.08] hover:bg-slate-200 dark:hover:bg-white/[0.12] text-slate-700 dark:text-slate-200 font-bold text-xs transition-all cursor-pointer"
+                >
+                  Sign In
+                </button>
+              </div>
+            </div>
+          ) : (
+            <PortfolioView
+              portfolio={portfolio}
+              completedHistory={completedHistory}
+              closedTrades={closedTrades}
+              onOpenBuyModal={onOpenBuyModal}
+              onOpenSellModal={(trade) => onOpenSellModal && onOpenSellModal(trade)}
+              onOpenChart={onOpenChart}
+            />
+          )}
         </div>
       )}
     </div>
