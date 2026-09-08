@@ -474,8 +474,8 @@ export default function App() {
               {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-500" />}
             </button>
 
-            {/* Auth Actions: Logged In vs Visitor */}
-            {user ? (
+            {/* Logout (if signed in) */}
+            {user && (
               <div className="flex items-center gap-1.5 ml-0.5">
                 <span className="hidden md:inline-block text-[11px] font-semibold text-slate-500 dark:text-slate-400 max-w-[130px] truncate" title={user.email || ""}>
                   {user.email}
@@ -486,21 +486,6 @@ export default function App() {
                   title="Sign Out"
                 >
                   <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 ml-1">
-                <button
-                  onClick={() => handleOpenAuth("signin")}
-                  className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
-                >
-                  Sign In
-                </button>
-                <button
-                  onClick={() => handleOpenAuth("signup")}
-                  className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
-                >
-                  Sign Up Free
                 </button>
               </div>
             )}

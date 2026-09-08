@@ -140,11 +140,11 @@ export default function InstitutionalHeader({
     },
   ];
 
-  // Primary unified navigation tabs: Active, Closed, Log (portfolio), Overview
+  // Primary unified navigation tabs: Active, Closed, Paper Trade (portfolio), Overview
   const navTabs = [
     { id: "active", label: "Active", count: activeCount, dotColor: "bg-emerald-500" },
     { id: "history", label: "Closed", count: closedCount, dotColor: "bg-amber-500" },
-    { id: "portfolio", label: "Log", count: portfolioCount, dotColor: "bg-indigo-500" },
+    { id: "portfolio", label: "Paper Trade", count: portfolioCount, dotColor: "bg-indigo-500" },
     { id: "overview", label: "Overview", count: null, dotColor: "bg-cyan-500" },
   ];
 
