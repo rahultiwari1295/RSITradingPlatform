@@ -288,7 +288,7 @@ export default function InstitutionalView({
                               )}
                             </div>
                             <span className="text-[10px] text-slate-400 block mt-0.5">
-                              {item.strategyName || "Momentum"} · {days}d in trade
+                              {item.strategyName || "Momentum"} · ({days} Day Old)
                             </span>
                           </div>
 

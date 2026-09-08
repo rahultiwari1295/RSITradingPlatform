@@ -8,7 +8,7 @@ export type SignalStatusKey =
 
 export interface SignalStatusInfo {
   key: SignalStatusKey;
-  label: string; // e.g. "Best Buy", "Good to Buy", "Late to Buy", "Missed", "Skip", "Closed"
+  label: string; // 1-word status: "BEST", "GOOD", "LATE", "MISSED", "SKIP", "CLOSED"
   badgeClass: string;
   dotColor: string;
   actionGuidance: string; // "Ideal time to enter", "Little late to buy - don't enter", etc.
@@ -18,11 +18,11 @@ export interface SignalStatusInfo {
 
 /**
  * Evaluates the status of an alert based on holding days and return percentage:
- * - Best Buy: Fresh signal (≤ 3 days) and hasn't increased much (≤ 3%).
- * - Good to Buy: Fresh signal (≤ 3 days) with healthy moderate gain (+3% to +5%).
- * - Late to Buy: 4+ days old OR gain is +5% to +7% ("Little late to buy, higher risk").
- * - Missed: Stock has already surged +7%+ ("Big rally, do NOT chase now").
- * - Skip: Old signal (6+ days) with stagnant movement (<2%) or testing stop loss ("Skip entering").
+ * - BEST: Fresh signal (≤ 3 days) and hasn't increased much (≤ 3%).
+ * - GOOD: Fresh signal (≤ 3 days) with healthy moderate gain (+3% to +5%).
+ * - LATE: 4+ days old OR gain is +5% to +7% ("Little late, higher risk of pullback").
+ * - MISSED: Stock has already surged +7%+ ("Big rally, do NOT chase now").
+ * - SKIP: Old signal (6+ days) with stagnant movement (<2%) or testing stop loss ("Skip entering").
  */
 export function getSignalStatus(
   mode: "active" | "closed",
@@ -32,7 +32,7 @@ export function getSignalStatus(
   if (mode === "closed") {
     return {
       key: "closed",
-      label: "Closed",
+      label: "CLOSED",
       badgeClass:
         "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700",
       dotColor: "bg-slate-400",
@@ -42,11 +42,11 @@ export function getSignalStatus(
     };
   }
 
-  // 1. Missed: Stock has already surged +7% or more from entry
+  // 1. MISSED: Stock has already surged +7% or more from entry
   if (returnPct >= 7.0) {
     return {
       key: "missed",
-      label: "Missed",
+      label: "MISSED",
       badgeClass:
         "bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300 border-purple-300 dark:border-purple-700/60",
       dotColor: "bg-purple-500",
@@ -56,11 +56,11 @@ export function getSignalStatus(
     };
   }
 
-  // 2. Skip: Old signal (6+ days) that is stagnant (<2%), or deep pullback
+  // 2. SKIP: Old signal (6+ days) that is stagnant (<2%), or deep pullback
   if ((holdingDays >= 6 && returnPct < 2.0) || returnPct <= -3.5) {
     return {
       key: "skip",
-      label: "Skip",
+      label: "SKIP",
       badgeClass:
         "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700",
       dotColor: "bg-slate-500",
@@ -70,11 +70,11 @@ export function getSignalStatus(
     };
   }
 
-  // 3. Late to Buy: 4+ days old, or price moved up between +5% and +7%
+  // 3. LATE: 4+ days old, or price moved up between +5% and +7%
   if ((holdingDays >= 4 && returnPct >= 3.0) || returnPct >= 5.0) {
     return {
       key: "late_buy",
-      label: "Late to Buy",
+      label: "LATE",
       badgeClass:
         "bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border-amber-300 dark:border-amber-700/60",
       dotColor: "bg-amber-500",
@@ -84,11 +84,11 @@ export function getSignalStatus(
     };
   }
 
-  // 4. Best Buy: Fresh signal (1-3 days) and price hasn't increased much (<= +3%)
+  // 4. BEST: Fresh signal (1-3 days) and price hasn't increased much (<= +3%)
   if (holdingDays <= 3 && returnPct <= 3.0) {
     return {
       key: "best_buy",
-      label: "Best Buy",
+      label: "BEST",
       badgeClass:
         "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700/60",
       dotColor: "bg-emerald-500",
@@ -98,11 +98,11 @@ export function getSignalStatus(
     };
   }
 
-  // 5. Good to Buy: Fresh signal up moderately (+3% to +5%)
+  // 5. GOOD: Fresh signal up moderately (+3% to +5%)
   if (holdingDays <= 3 && returnPct > 3.0 && returnPct < 5.0) {
     return {
       key: "good_buy",
-      label: "Good to Buy",
+      label: "GOOD",
       badgeClass:
         "bg-teal-100 text-teal-800 dark:bg-teal-950/70 dark:text-teal-300 border-teal-300 dark:border-teal-700/60",
       dotColor: "bg-teal-500",
@@ -116,7 +116,7 @@ export function getSignalStatus(
   if (holdingDays >= 4) {
     return {
       key: "late_buy",
-      label: "Late to Buy",
+      label: "LATE",
       badgeClass:
         "bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border-amber-300 dark:border-amber-700/60",
       dotColor: "bg-amber-500",
@@ -128,7 +128,7 @@ export function getSignalStatus(
 
   return {
     key: "good_buy",
-    label: "Good to Buy",
+    label: "GOOD",
     badgeClass:
       "bg-teal-100 text-teal-800 dark:bg-teal-950/70 dark:text-teal-300 border-teal-300 dark:border-teal-700/60",
     dotColor: "bg-teal-500",
@@ -140,7 +140,7 @@ export function getSignalStatus(
 
 export const SIGNAL_STATUS_DECISION_TABLE = [
   {
-    status: "Best Buy",
+    status: "BEST",
     badgeClass:
       "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700/60",
     dotColor: "bg-emerald-500",
@@ -149,7 +149,7 @@ export const SIGNAL_STATUS_DECISION_TABLE = [
     userAction: "✅ Ideal to Enter! Highest reward-to-risk ratio.",
   },
   {
-    status: "Good to Buy",
+    status: "GOOD",
     badgeClass:
       "bg-teal-100 text-teal-800 dark:bg-teal-950/70 dark:text-teal-300 border-teal-300 dark:border-teal-700/60",
     dotColor: "bg-teal-500",
@@ -158,7 +158,7 @@ export const SIGNAL_STATUS_DECISION_TABLE = [
     userAction: "👍 Safe to Enter. Strong momentum with room to run.",
   },
   {
-    status: "Late to Buy",
+    status: "LATE",
     badgeClass:
       "bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border-amber-300 dark:border-amber-700/60",
     dotColor: "bg-amber-500",
@@ -167,7 +167,7 @@ export const SIGNAL_STATUS_DECISION_TABLE = [
     userAction: "⚠️ Do NOT Enter (or keep size very small). Risk of pullback is high.",
   },
   {
-    status: "Missed",
+    status: "MISSED",
     badgeClass:
       "bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300 border-purple-300 dark:border-purple-700/60",
     dotColor: "bg-purple-500",
@@ -176,7 +176,7 @@ export const SIGNAL_STATUS_DECISION_TABLE = [
     userAction: "🚫 Do NOT Chase! The train has left the station. Wait for next signal.",
   },
   {
-    status: "Skip",
+    status: "SKIP",
     badgeClass:
       "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700",
     dotColor: "bg-slate-500",

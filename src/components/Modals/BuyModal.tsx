@@ -54,7 +54,7 @@ export default function BuyModal({
           </div>
           <div>
             <h3 className="text-[17px] font-bold text-[#14151A] dark:text-slate-100">
-              Mark {symbol} Bought
+              Add {symbol} to Paper Trade
             </h3>
             <p className="text-[11.5px] text-[#8B8D98] font-semibold">
               Strategy: {strategyName || "Manual Trade"}
@@ -65,7 +65,7 @@ export default function BuyModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-[10px] font-bold text-[#8B8D98] uppercase tracking-wider mb-1 font-mono">
-              Buy Price (INR)
+              Entry Price (INR)
             </label>
             <input
               type="number"
@@ -110,7 +110,7 @@ export default function BuyModal({
               type="submit"
               className="flex-1 py-3 rounded-[12px] bg-[#14151A] dark:bg-slate-100 text-white dark:text-slate-900 font-bold text-[13px] hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5 shadow-md shadow-slate-900/10"
             >
-              <Check className="w-4 h-4" /> Save Position
+              <Check className="w-4 h-4" /> Add Position
             </button>
           </div>
         </form>

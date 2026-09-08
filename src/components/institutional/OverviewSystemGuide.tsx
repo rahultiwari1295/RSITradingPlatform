@@ -128,7 +128,7 @@ export default function OverviewSystemGuide() {
             <div className="p-3 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-indigo-50 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-indigo-950/40 border border-emerald-300/80 dark:border-emerald-500/30 shadow-xs flex items-center gap-2.5">
               <span className="text-lg shrink-0 leading-none">💡</span>
               <p className="text-xs text-slate-800 dark:text-slate-200 leading-snug">
-                <strong className="text-emerald-700 dark:text-emerald-400 font-bold">Rule:</strong> Only buy when status is <strong className="text-emerald-700 dark:text-emerald-400 font-bold">Best Buy</strong> or <strong className="text-teal-700 dark:text-teal-400 font-bold">Good to Buy</strong>. If it says <strong className="text-amber-700 dark:text-amber-400 font-bold">Late</strong>, <strong className="text-purple-700 dark:text-purple-400 font-bold">Missed</strong>, or <strong className="text-slate-600 dark:text-slate-300 font-bold">Skip</strong>, do not enter—wait for the next fresh signal.
+                <strong className="text-emerald-700 dark:text-emerald-400 font-bold">Rule:</strong> Only buy when card status is <strong className="text-emerald-700 dark:text-emerald-400 font-bold">BEST</strong> or <strong className="text-teal-700 dark:text-teal-400 font-bold">GOOD</strong>. If it says <strong className="text-amber-700 dark:text-amber-400 font-bold">LATE</strong>, <strong className="text-purple-700 dark:text-purple-400 font-bold">MISSED</strong>, or <strong className="text-slate-600 dark:text-slate-300 font-bold">SKIP</strong>, do not enter—wait for the next fresh signal.
               </p>
             </div>
 
@@ -183,15 +183,15 @@ export default function OverviewSystemGuide() {
                 <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[11px] font-black">
                   2
                 </span>
-                Signal Status Guide (Card Footer)
+                Signal Status Guide (Card Top Right, before ADD)
               </h5>
 
               <div className="space-y-2">
-                {/* 1. Best Buy */}
+                {/* 1. BEST */}
                 <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/90 border border-emerald-200 dark:border-emerald-800/40 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
                   <div className="flex items-center gap-2">
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 shrink-0">
-                      ● Best Buy
+                      ● BEST
                     </span>
                     <span className="font-bold text-slate-900 dark:text-white">Ideal time to buy!</span>
                   </div>
@@ -200,11 +200,11 @@ export default function OverviewSystemGuide() {
                   </span>
                 </div>
 
-                {/* 2. Good to Buy */}
+                {/* 2. GOOD */}
                 <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/90 border border-teal-200 dark:border-teal-800/40 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
                   <div className="flex items-center gap-2">
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-teal-100 text-teal-800 dark:bg-teal-950/80 dark:text-teal-300 border border-teal-300 shrink-0">
-                      ● Good to Buy
+                      ● GOOD
                     </span>
                     <span className="font-bold text-slate-900 dark:text-white">Safe to enter.</span>
                   </div>
@@ -213,11 +213,11 @@ export default function OverviewSystemGuide() {
                   </span>
                 </div>
 
-                {/* 3. Late to Buy */}
+                {/* 3. LATE */}
                 <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/90 border border-amber-200 dark:border-amber-800/40 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
                   <div className="flex items-center gap-2">
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 shrink-0">
-                      ● Late to Buy
+                      ● LATE
                     </span>
                     <span className="font-bold text-slate-900 dark:text-white">Little late. Do not enter.</span>
                   </div>
@@ -226,11 +226,11 @@ export default function OverviewSystemGuide() {
                   </span>
                 </div>
 
-                {/* 4. Missed */}
+                {/* 4. MISSED */}
                 <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/90 border border-purple-200 dark:border-purple-800/40 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
                   <div className="flex items-center gap-2">
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-300 shrink-0">
-                      ● Missed
+                      ● MISSED
                     </span>
                     <span className="font-bold text-slate-900 dark:text-white">Entry window closed.</span>
                   </div>
@@ -239,11 +239,11 @@ export default function OverviewSystemGuide() {
                   </span>
                 </div>
 
-                {/* 5. Skip */}
+                {/* 5. SKIP */}
                 <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
                   <div className="flex items-center gap-2">
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 shrink-0">
-                      ● Skip
+                      ● SKIP
                     </span>
                     <span className="font-bold text-slate-900 dark:text-white">Avoid entering.</span>
                   </div>
@@ -648,14 +648,14 @@ export default function OverviewSystemGuide() {
                 <div className="p-4 rounded-2xl bg-white dark:bg-slate-800/90 border border-indigo-200/80 dark:border-indigo-500/20 shadow-xs">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <h5 className="font-black text-xs sm:text-sm text-slate-900 dark:text-white">
-                      2. Click &quot;BUY&quot; to Practice (Takes 10 Seconds)
+                      2. Click &quot;ADD&quot; to Practice (Takes 10 Seconds)
                     </h5>
                     <span className="text-[11px] font-mono font-bold text-indigo-600 dark:text-indigo-400">
                       100% Free Practice
                     </span>
                   </div>
                   <p className="text-xs text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed">
-                    Simply tap the green <strong>BUY</strong> button on the card. You don&apos;t need to risk any real money. The app immediately saves it in your personal <strong>Paper Trade notebook</strong> at the exact current price so you can watch how it performs like a game.
+                    Simply tap the green <strong>ADD</strong> button on the card. You don&apos;t need to risk any real money. The app immediately saves it in your personal <strong>Paper Trade notebook</strong> at the exact current price so you can watch how it performs like a game.
                   </p>
                 </div>
               </div>
@@ -1003,7 +1003,7 @@ export default function OverviewSystemGuide() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed">
-                    Whenever you see a stock in the <strong>Active</strong> tab, just tap the green <strong>&quot;BUY&quot;</strong> button. The app writes it into your personal practice diary with the exact buying price and time. You get to play with live market prices without risking a single rupee of your real hard-earned money!
+                    Whenever you see a stock in the <strong>Active</strong> tab, just tap the green <strong>&quot;ADD&quot;</strong> button. The app writes it into your personal practice diary with the exact buying price and time. You get to play with live market prices without risking a single rupee of your real hard-earned money!
                   </p>
                 </div>
               </div>

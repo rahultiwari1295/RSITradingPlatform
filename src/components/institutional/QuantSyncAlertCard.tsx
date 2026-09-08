@@ -78,7 +78,7 @@ export default function QuantSyncAlertCard({
         fontFamily: "'Manrope', sans-serif",
       }}
     >
-      {/* 1. Row Top: Small Strategy Text & 3 Items on Right: (Held Days) Buy Chart */}
+      {/* 1. Row Top: Strategy Name on Left & Status Badge + Buy + Chart on Right */}
       <div className="row-top flex items-center justify-between gap-2 mb-1 sm:mb-1.5">
         <span
           className="brand text-[9px] sm:text-[9.5px] font-bold tracking-[0.05em] text-slate-600 dark:text-[#9a9aa4] uppercase truncate max-w-[42%] sm:max-w-[48%]"
@@ -87,17 +87,19 @@ export default function QuantSyncAlertCard({
           {cleanStrategy}
         </span>
 
-        {/* 3 Right Items: (Held Days) + Buy + Chart */}
+        {/* Right Items: 1-Word Status Badge (e.g. LATE, BEST) + Buy + Chart */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Held count */}
-          <span
-            className="text-[10px] sm:text-[10.5px] font-bold font-mono text-slate-600 dark:text-[#a1a1aa] whitespace-nowrap"
-            title={`Held for ${holdingDays} ${holdingDays === 1 ? "day" : "days"}`}
-          >
-            ({holdingDays} {holdingDays === 1 ? "Day" : "Days"})
-          </span>
+          {/* 1-Word Status Badge placed just before ADD and CHART */}
+          {mode === "active" && (
+            <span
+              className={`px-2 py-0.5 rounded-full text-[9px] sm:text-[9.5px] font-black uppercase tracking-wider border shadow-2xs whitespace-nowrap ${statusInfo.badgeClass}`}
+              title={statusInfo.tooltip}
+            >
+              {statusInfo.label}
+            </span>
+          )}
 
-          {/* Buy Button */}
+          {/* Add to Paper Trade Button */}
           {mode === "active" && (
             <button
               type="button"
@@ -111,9 +113,9 @@ export default function QuantSyncAlertCard({
               }}
               className="px-2 py-0.5 rounded-md bg-emerald-600/10 hover:bg-emerald-600/20 active:scale-95 text-[#0a6e3a] dark:text-emerald-400 border border-emerald-600/25 dark:border-emerald-500/20 text-[10px] font-bold flex items-center gap-0.5 transition-all cursor-pointer shadow-2xs"
               style={{ fontFamily: "'JetBrains Mono', monospace" }}
-              title={`Buy ${symbol}`}
+              title={`Add ${symbol} to Paper Trade`}
             >
-              BUY
+              ADD
             </button>
           )}
 
@@ -190,21 +192,20 @@ export default function QuantSyncAlertCard({
         </div>
       </div>
 
-      {/* 4. Foot: Clean 2-Line Bilateral Signal Date ( Status ) & Current Grid */}
+      {/* 4. Foot: Clean 2-Line Bilateral Signal Date ( Day Old ) & Current Grid */}
       <div className="foot pt-1.5 sm:pt-2 border-t border-slate-300/70 shadow-[0_1px_0_rgba(255,255,255,0.8)] dark:border-white/[0.08] dark:shadow-none flex items-baseline justify-between gap-3">
-        {/* Left: Signal Date ( Status ) (e.g. 04/09 @ ₹591.10) */}
+        {/* Left: Signal Date (X Day Old) (e.g. 04/09 @ ₹591.10) */}
         <div className="text-left">
           <div
             className="text-[9px] font-bold tracking-[0.05em] uppercase flex items-center gap-1 text-slate-500 dark:text-[#9a9aa4]"
             style={{ fontFamily: "'JetBrains Mono', monospace" }}
           >
             <span>SIGNAL DATE</span>
-            <span
-              className={`px-1.5 py-0.2 rounded text-[8px] sm:text-[8.5px] font-black uppercase tracking-wider border shadow-2xs ${statusInfo.badgeClass}`}
-              title={statusInfo.tooltip}
-            >
-              ({statusInfo.label})
-            </span>
+            {mode === "active" && (
+              <span className="text-[9px] font-bold font-mono text-slate-600 dark:text-[#a1a1aa] whitespace-nowrap">
+                ({holdingDays} Day Old)
+              </span>
+            )}
           </div>
           <div className="text-[12.5px] sm:text-[13px] font-bold font-mono text-slate-900 dark:text-[#f0f0f2] mt-0.5">
             {entryDateFormatted ? `${entryDateFormatted} @ ` : ""}{formatINR(entryPrice)}
