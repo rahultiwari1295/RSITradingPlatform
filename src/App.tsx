@@ -429,7 +429,7 @@ export default function App() {
 
             {/* Refresh */}
             <button
-              onClick={() => fetchLiveTerminalData(engineVersion)}
+              onClick={() => fetchLiveTerminalData()}
               disabled={isSyncing}
               className="p-2 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 transition-all cursor-pointer"
               title={`Refresh Live Signals (${engineVersion.toUpperCase()})`}

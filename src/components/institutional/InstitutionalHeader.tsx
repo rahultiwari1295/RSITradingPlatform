@@ -140,47 +140,59 @@ export default function InstitutionalHeader({
     },
   ];
 
-  // Primary unified navigation tabs: Active, Closed, Paper Trade (portfolio)
+  // Primary unified navigation tabs: Active, Closed, Paper Trade (portfolio) with dedicated light accent styling
   const navTabs = [
-    { id: "active", label: "Active", count: activeCount, dotColor: "bg-emerald-500" },
-    { id: "history", label: "Closed", count: closedCount, dotColor: "bg-amber-500" },
-    { id: "portfolio", label: "Paper Trade", count: portfolioCount, dotColor: "bg-indigo-500" },
+    {
+      id: "active",
+      label: "Active",
+      count: activeCount,
+      dotColor: "bg-emerald-500",
+      activeStyles: "bg-emerald-600 text-white border-emerald-700 shadow-sm shadow-emerald-500/25 ring-2 ring-emerald-500/30 dark:bg-emerald-500 dark:text-slate-950 dark:border-emerald-400",
+      inactiveStyles: "bg-emerald-50/80 hover:bg-emerald-100 text-emerald-900 border-emerald-200/90 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-800/50",
+      activeCountStyles: "bg-white/25 text-white dark:bg-black/20 dark:text-slate-950",
+      inactiveCountStyles: "bg-emerald-100/90 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300",
+    },
+    {
+      id: "history",
+      label: "Closed",
+      count: closedCount,
+      dotColor: "bg-amber-500",
+      activeStyles: "bg-amber-500 text-white border-amber-600 shadow-sm shadow-amber-500/25 ring-2 ring-amber-500/30 dark:bg-amber-400 dark:text-slate-950 dark:border-amber-300",
+      inactiveStyles: "bg-amber-50/80 hover:bg-amber-100 text-amber-900 border-amber-200/90 dark:bg-amber-950/40 dark:hover:bg-amber-950/70 dark:text-amber-300 dark:border-amber-800/50",
+      activeCountStyles: "bg-white/25 text-white dark:bg-black/20 dark:text-slate-950",
+      inactiveCountStyles: "bg-amber-100/90 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300",
+    },
+    {
+      id: "portfolio",
+      label: "Paper Trade",
+      count: portfolioCount,
+      dotColor: "bg-indigo-500",
+      activeStyles: "bg-indigo-600 text-white border-indigo-700 shadow-sm shadow-indigo-500/25 ring-2 ring-indigo-500/30 dark:bg-indigo-500 dark:text-white dark:border-indigo-400",
+      inactiveStyles: "bg-indigo-50/80 hover:bg-indigo-100 text-indigo-900 border-indigo-200/90 dark:bg-indigo-950/40 dark:hover:bg-indigo-950/70 dark:text-indigo-300 dark:border-indigo-800/50",
+      activeCountStyles: "bg-white/25 text-white dark:bg-white/20 dark:text-white",
+      inactiveCountStyles: "bg-indigo-100/90 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300",
+    },
   ];
 
   return (
     <div className="animate-fade-in-up">
       {/* Precision Metal Header Container */}
       <div className="relative overflow-hidden rounded-2xl p-3 sm:p-4 transition-all duration-200 bg-gradient-to-b from-white via-[#f7f8fa] to-[#eaedf3] border border-[#cbd3df] shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_4px_16px_-2px_rgba(15,23,42,0.08)] dark:bg-gradient-to-br dark:from-slate-900 dark:via-[#0D1017] dark:to-slate-950 dark:border-white/[0.06] dark:shadow-[0_4px_24px_-4px_rgba(0,0,0,0.3)] text-slate-900 dark:text-white">
-        {/* Top Control Bar: Status on Left + Unified Segmented Switch on Right */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5">
-          {/* Left: Status Badges + How to Use Button */}
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            {/* Live Indicator */}
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25">
+        {/* Top Control Bar: Left: Closed/Live Status & Time | Right: How to Use */}
+        <div className="flex items-center justify-between gap-2.5 pb-2.5 border-b border-slate-200/70 dark:border-white/[0.06]">
+          {/* Left: Status Badges (Closed / Time / V2) */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Live/Closed Indicator */}
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 shadow-2xs">
               <span className={`w-1.5 h-1.5 rounded-full ${marketPhase.color} animate-pulse`} />
               {marketPhase.label}
             </span>
 
             {/* IST Clock */}
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white/80 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-slate-300/80 dark:border-white/[0.06] shadow-2xs">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-mono font-bold bg-white dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-slate-300/80 dark:border-white/[0.06] shadow-2xs">
               <Clock className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
               {istTime || "—"} IST
             </span>
-
-            {/* How to Use button right beside the time */}
-            <button
-              type="button"
-              onClick={() => onTabChange?.("overview")}
-              title="Click to read the simple beginner guide: How we select stocks, daily 3:15 PM routine, paper trading, and exit rules."
-              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-extrabold tracking-tight transition-all cursor-pointer shadow-xs active:scale-95 ${
-                activeTab === "overview"
-                  ? "bg-indigo-600 text-white border border-indigo-600 shadow-indigo-500/25 ring-2 ring-indigo-500/30"
-                  : "bg-gradient-to-r from-amber-50 to-indigo-50 hover:from-amber-100 hover:to-indigo-100 text-slate-900 border border-indigo-300/90 dark:from-indigo-950/70 dark:to-purple-950/70 dark:hover:from-indigo-900/70 dark:text-indigo-200 dark:border-indigo-500/40"
-              }`}
-            >
-              <BookOpen className={`w-3 h-3 ${activeTab === "overview" ? "text-white" : "text-indigo-600 dark:text-indigo-400"} shrink-0`} />
-              <span>How to Use</span>
-            </button>
 
             {/* Engine Tag */}
             <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
@@ -189,30 +201,49 @@ export default function InstitutionalHeader({
             </span>
           </div>
 
-          {/* Right: Unified Segmented Switch (ACTIVE / CLOSED / PAPER TRADE) */}
-          <div className="flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-white/[0.06] border border-slate-300/80 dark:border-white/[0.08] shadow-inner ml-auto overflow-x-auto no-scrollbar">
-            {navTabs.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => onTabChange?.(tab.id)}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10.5px] font-extrabold uppercase tracking-wide transition-all cursor-pointer whitespace-nowrap ${
-                    isActive
-                      ? "bg-white text-slate-900 shadow-xs border border-slate-300/90 dark:bg-white/15 dark:text-white dark:border-white/10"
-                      : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
-                  }`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${isActive ? tab.dotColor : "bg-slate-400/80"}`} />
-                  {tab.label}
-                  {tab.count !== null && tab.count !== undefined && (
-                    <span className="font-mono text-[10px] opacity-80">({tab.count})</span>
-                  )}
-                </button>
-              );
-            })}
+          {/* Right: How to Use button */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => onTabChange?.("overview")}
+              title="Click to read the simple beginner guide: How we select stocks, daily 3:15 PM routine, paper trading, and exit rules."
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold tracking-tight transition-all cursor-pointer shadow-xs active:scale-95 ${
+                activeTab === "overview"
+                  ? "bg-indigo-600 text-white border border-indigo-600 shadow-indigo-500/25 ring-2 ring-indigo-500/30"
+                  : "bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200/90 dark:bg-white/[0.06] dark:hover:bg-indigo-950/60 dark:text-indigo-200 dark:border-indigo-500/30"
+              }`}
+            >
+              <BookOpen className={`w-3.5 h-3.5 ${activeTab === "overview" ? "text-white" : "text-indigo-600 dark:text-indigo-400"} shrink-0`} />
+              <span>How to Use</span>
+            </button>
           </div>
+        </div>
+
+        {/* Row 2: Unified Segmented Switch (ACTIVE / CLOSED / PAPER TRADE) with premium light colors */}
+        <div className="flex items-center gap-2 pt-2.5 overflow-x-auto no-scrollbar">
+          {navTabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => onTabChange?.(tab.id)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap border ${
+                  isActive ? tab.activeStyles : tab.inactiveStyles
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${isActive ? (tab.id === 'history' ? 'bg-white' : tab.dotColor) : tab.dotColor}`} />
+                <span>{tab.label}</span>
+                {tab.count !== null && tab.count !== undefined && (
+                  <span className={`px-1.5 py-0.5 rounded-md font-mono text-[10.5px] font-bold ${
+                    isActive ? tab.activeCountStyles : tab.inactiveCountStyles
+                  }`}>
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Middle: Clean Search Bar (Only shown on Active, Closed, Paper Trade pages) */}

@@ -102,14 +102,14 @@ export default function OverviewSystemGuide() {
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h4 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
-                  How to use the app? (The 3 Pages &amp; Card Statuses)
+                  How to use the app? (3 Pages &amp; Card Statuses)
                 </h4>
                 <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 font-mono">
                   Start Here
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                Active vs Closed vs Paper Trade pages, and what each card status (Best Buy, Late to Buy, Missed) means
+                Quick guide: The 3 pages and when to enter or avoid a signal.
               </p>
             </div>
           </div>
@@ -123,200 +123,133 @@ export default function OverviewSystemGuide() {
         </button>
 
         {openItems.basics && (
-          <div className="p-4 sm:p-6 pt-3 border-t border-slate-100 dark:border-white/[0.06] bg-slate-50/50 dark:bg-slate-900/40 animate-fade-in space-y-6">
-            {/* Quick Golden Rule Banner */}
-            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-indigo-50 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-indigo-950/40 border border-emerald-300/80 dark:border-emerald-500/30 shadow-xs flex items-start gap-3">
-              <span className="text-xl shrink-0 leading-none mt-0.5">💡</span>
-              <div className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed">
-                <strong className="text-emerald-700 dark:text-emerald-400 text-[13px] block mb-0.5">
-                  The Simple Golden Rule of Entering Signals:
-                </strong>
-                If a stock card says <strong className="text-emerald-700 dark:text-emerald-400 font-black">Best Buy</strong> or <strong className="text-teal-700 dark:text-teal-400 font-black">Good to Buy</strong>, it is in the sweet spot to enter. If it says <strong className="text-amber-700 dark:text-amber-400 font-black">Late to Buy</strong> or <strong className="text-purple-700 dark:text-purple-400 font-black">Missed</strong>, do NOT enter or chase—the stock has already surged. Wait patiently for the next fresh signal!
-              </div>
+          <div className="p-4 sm:p-5 pt-3 border-t border-slate-100 dark:border-white/[0.06] bg-slate-50/50 dark:bg-slate-900/40 animate-fade-in space-y-4">
+            {/* Quick Golden Rule Banner (1-2 lines) */}
+            <div className="p-3 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-indigo-50 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-indigo-950/40 border border-emerald-300/80 dark:border-emerald-500/30 shadow-xs flex items-center gap-2.5">
+              <span className="text-lg shrink-0 leading-none">💡</span>
+              <p className="text-xs text-slate-800 dark:text-slate-200 leading-snug">
+                <strong className="text-emerald-700 dark:text-emerald-400 font-bold">Rule:</strong> Only buy when status is <strong className="text-emerald-700 dark:text-emerald-400 font-bold">Best Buy</strong> or <strong className="text-teal-700 dark:text-teal-400 font-bold">Good to Buy</strong>. If it says <strong className="text-amber-700 dark:text-amber-400 font-bold">Late</strong>, <strong className="text-purple-700 dark:text-purple-400 font-bold">Missed</strong>, or <strong className="text-slate-600 dark:text-slate-300 font-bold">Skip</strong>, do not enter—wait for the next fresh signal.
+              </p>
             </div>
 
-            {/* PART 1: The 3 Pages Explained */}
+            {/* PART 1: The 3 Pages (1-2 lines per page) */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black font-mono shadow-xs">
+              <h5 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[11px] font-black">
                   1
                 </span>
-                <h5 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
-                  The 3 Main Pages (Tabs in Top-Right Header)
-                </h5>
-              </div>
+                The 3 Pages
+              </h5>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                 {/* Active */}
-                <div className="p-4 rounded-2xl bg-white dark:bg-slate-800/90 border border-emerald-300/80 dark:border-emerald-500/30 shadow-xs">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-                        1. Active Page
-                      </span>
-                    </div>
-                    <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 font-mono">
-                      Live Signals
-                    </span>
+                <div className="p-3 rounded-xl bg-white dark:bg-slate-800/90 border border-emerald-200 dark:border-emerald-800/40 shadow-2xs">
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-slate-900 dark:text-white mb-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    Active Signals
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                    This is your live market watchlist. It displays all stock trade signals that are currently active in the market right now. You can check live prices, current returns, how many days the stock has been held, and its color-coded status tag telling you if it is safe to enter.
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-snug">
+                    Live market signals running right now. Check status before entering.
                   </p>
                 </div>
 
                 {/* Closed */}
-                <div className="p-4 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-white/[0.08] shadow-xs">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                      <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-                        2. Closed Page
-                      </span>
-                    </div>
-                    <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 font-mono">
-                      Past 500 Trades
-                    </span>
+                <div className="p-3 rounded-xl bg-white dark:bg-slate-800/90 border border-amber-200 dark:border-amber-800/40 shadow-2xs">
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-slate-900 dark:text-white mb-1">
+                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    Closed Trades
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                    This is our complete audited record of the past 500 finished trades. Every single completed signal is transparently recorded with the exact entry date, buy price, exit date, sell price, holding duration, and net rupee profit/loss so you can verify the system&#39;s track record.
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-snug">
+                    Audited past 500 finished trades with verified prices and net returns.
                   </p>
                 </div>
 
                 {/* Paper Trade */}
-                <div className="p-4 rounded-2xl bg-white dark:bg-slate-800/90 border border-indigo-300/80 dark:border-indigo-500/30 shadow-xs">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                      <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-                        3. Paper Trade
-                      </span>
-                    </div>
-                    <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-300 font-mono">
-                      Practice Sandbox
-                    </span>
+                <div className="p-3 rounded-xl bg-white dark:bg-slate-800/90 border border-indigo-200 dark:border-indigo-800/40 shadow-2xs">
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-slate-900 dark:text-white mb-1">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                    Paper Trade
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                    This is your personal virtual practice notebook. Whenever you see a signal you like on the Active page, tap the green <strong>BUY</strong> button. It adds the stock here so you can practice risk-free, see personal profit/loss, and build confidence before using real capital.
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-snug">
+                    Virtual portfolio to practice signals risk-free before using real capital.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* PART 2: What Each Card Status Means (In Simple Paragraphs) */}
+            {/* PART 2: What Each Card Status Means (1-2 lines per status) */}
             <div>
-              <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black font-mono shadow-xs">
-                    2
-                  </span>
-                  <h5 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
-                    What Each Card Status Means (Written in Simple Words)
-                  </h5>
-                </div>
-                <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
-                  Shown in card footer as: SIGNAL DATE ( STATUS )
+              <h5 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[11px] font-black">
+                  2
                 </span>
-              </div>
+                Signal Status Guide (Card Footer)
+              </h5>
 
-              <p className="text-xs text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
-                In every stock card footer, we tell you whether to enter or avoid. Here is what each status means:
-              </p>
-
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {/* 1. Best Buy */}
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/90 border border-emerald-300/80 dark:border-emerald-500/30 shadow-2xs flex flex-col sm:flex-row sm:items-start gap-3">
-                  <div className="shrink-0 sm:w-36">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60 shadow-2xs">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      Best Buy
+                <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/90 border border-emerald-200 dark:border-emerald-800/40 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 shrink-0">
+                      ● Best Buy
                     </span>
-                    <div className="text-[10.5px] font-bold text-emerald-700 dark:text-emerald-400 mt-1">
-                      Age: 1 to 3 days | Gain ≤ 3%
-                    </div>
+                    <span className="font-bold text-slate-900 dark:text-white">Ideal time to buy!</span>
                   </div>
-                  <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed min-w-0">
-                    <strong className="text-slate-900 dark:text-white block mb-0.5">
-                      Ideal time to buy! Lowest risk, highest upside.
-                    </strong>
-                    The stock has just triggered an institutional breakout within the last 1 to 3 trading sessions and has not yet moved up by more than 3% from the entry price. This is the sweet spot because you enter right at the base price with minimum downside risk.
-                  </div>
+                  <span className="text-slate-600 dark:text-slate-300">
+                    Fresh signal (1–3 days, gain ≤3%). Lowest risk, enter near base price.
+                  </span>
                 </div>
 
                 {/* 2. Good to Buy */}
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/90 border border-teal-300/80 dark:border-teal-500/30 shadow-2xs flex flex-col sm:flex-row sm:items-start gap-3">
-                  <div className="shrink-0 sm:w-36">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-black uppercase tracking-wider bg-teal-100 text-teal-800 dark:bg-teal-950/70 dark:text-teal-300 border border-teal-300 dark:border-teal-700/60 shadow-2xs">
-                      <span className="w-2 h-2 rounded-full bg-teal-500" />
-                      Good to Buy
+                <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/90 border border-teal-200 dark:border-teal-800/40 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-teal-100 text-teal-800 dark:bg-teal-950/80 dark:text-teal-300 border border-teal-300 shrink-0">
+                      ● Good to Buy
                     </span>
-                    <div className="text-[10.5px] font-bold text-teal-700 dark:text-teal-400 mt-1">
-                      Age: 1 to 3 days | Gain +3% to +5%
-                    </div>
+                    <span className="font-bold text-slate-900 dark:text-white">Safe to enter.</span>
                   </div>
-                  <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed min-w-0">
-                    <strong className="text-slate-900 dark:text-white block mb-0.5">
-                      Safe and good to enter. Momentum is confirmed.
-                    </strong>
-                    The signal is recent and the stock has started moving up nicely with healthy buyer volume. There is still ample upside runway remaining before reaching target levels.
-                  </div>
+                  <span className="text-slate-600 dark:text-slate-300">
+                    Recent signal (gain 3%–5%). Upward momentum is confirmed with upside left.
+                  </span>
                 </div>
 
                 {/* 3. Late to Buy */}
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/90 border border-amber-300/80 dark:border-amber-500/30 shadow-2xs flex flex-col sm:flex-row sm:items-start gap-3">
-                  <div className="shrink-0 sm:w-36">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 shadow-2xs">
-                      <span className="w-2 h-2 rounded-full bg-amber-500" />
-                      Late to Buy
+                <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/90 border border-amber-200 dark:border-amber-800/40 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 shrink-0">
+                      ● Late to Buy
                     </span>
-                    <div className="text-[10.5px] font-bold text-amber-700 dark:text-amber-400 mt-1">
-                      Age: 4+ days | Gain +5% to +7%
-                    </div>
+                    <span className="font-bold text-slate-900 dark:text-white">Little late. Do not enter.</span>
                   </div>
-                  <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed min-w-0">
-                    <strong className="text-slate-900 dark:text-white block mb-0.5">
-                      Little late to enter. High risk of a short-term pullback.
-                    </strong>
-                    The stock has already spent 4 or more days in the trade or already surged +5% to +7% from entry. Entering now means buying near the top of the initial swing where short-term profit-taking can pull the price back. We recommend you do NOT enter or keep your position size very small.
-                  </div>
+                  <span className="text-slate-600 dark:text-slate-300">
+                    Age 4+ days or moved +5%–7%. High chance of pullback; avoid chasing.
+                  </span>
                 </div>
 
                 {/* 4. Missed */}
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/90 border border-purple-300/80 dark:border-purple-500/30 shadow-2xs flex flex-col sm:flex-row sm:items-start gap-3">
-                  <div className="shrink-0 sm:w-36">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-black uppercase tracking-wider bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300 border border-purple-300 dark:border-purple-700/60 shadow-2xs">
-                      <span className="w-2 h-2 rounded-full bg-purple-500" />
-                      Missed
+                <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/90 border border-purple-200 dark:border-purple-800/40 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-300 shrink-0">
+                      ● Missed
                     </span>
-                    <div className="text-[10.5px] font-bold text-purple-700 dark:text-purple-400 mt-1">
-                      Gain &gt; +7% (Big Rally)
-                    </div>
+                    <span className="font-bold text-slate-900 dark:text-white">Entry window closed.</span>
                   </div>
-                  <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed min-w-0">
-                    <strong className="text-slate-900 dark:text-white block mb-0.5">
-                      Do NOT enter or chase! The move has already completed.
-                    </strong>
-                    The stock has already surged past +7% and is approaching the target zone. While this is a wonderful win for traders who entered early, entering now is dangerous because the train has already left the station. Wait calmly for the next fresh signal.
-                  </div>
+                  <span className="text-slate-600 dark:text-slate-300">
+                    Stock already rallied &gt;7%. Never chase running stocks; wait for the next setup.
+                  </span>
                 </div>
 
                 {/* 5. Skip */}
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-300/80 dark:border-slate-700 shadow-2xs flex flex-col sm:flex-row sm:items-start gap-3">
-                  <div className="shrink-0 sm:w-36">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] font-black uppercase tracking-wider bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700 shadow-2xs">
-                      <span className="w-2 h-2 rounded-full bg-slate-500" />
-                      Skip
+                <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 shrink-0">
+                      ● Skip
                     </span>
-                    <div className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400 mt-1">
-                      Age: 6+ days | Stagnant &lt; 2%
-                    </div>
+                    <span className="font-bold text-slate-900 dark:text-white">Avoid entering.</span>
                   </div>
-                  <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed min-w-0">
-                    <strong className="text-slate-900 dark:text-white block mb-0.5">
-                      Skip entering. Do not lock capital in stalled stocks.
-                    </strong>
-                    The stock has been open for 6 or more trading sessions without meaningful upward movement, or is hovering close to its stop-loss line. Rather than risking your money on a stagnant stock, skip it and focus on high-conviction fresh breakouts.
-                  </div>
+                  <span className="text-slate-600 dark:text-slate-300">
+                    Setup stalled or near stop-loss. Don&#39;t lock capital in sluggish trades.
+                  </span>
                 </div>
               </div>
             </div>

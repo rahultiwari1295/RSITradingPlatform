@@ -133,7 +133,7 @@ async function startServer() {
       });
 
       if (!response.ok) {
-        throw new Error(`Wix terminalData (${requestedVersion}) API server returned status: ${response.status}`);
+        throw new Error(`Wix terminalData API server returned status: ${response.status}`);
       }
 
       const rawData = await response.json();
