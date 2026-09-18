@@ -6,6 +6,7 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import { getMessaging, type Messaging } from "firebase-admin/messaging";
 import { marketStream } from "./server/marketSocket";
 import { sheetsSyncEngine } from "./server/sheetsSync";
+import { feedsEngine } from "./server/feedsEngine";
 
 // Lazy initialization helper for Firebase Admin SDK
 let firebaseAdminApp: App | null = null;
@@ -255,6 +256,105 @@ async function startServer() {
         success: false,
         error: error.message || "Failed to reach the AngelOne custom Wix upcomingStock API endpoint"
       });
+    }
+  });
+
+  // Feeds: Sector & Industry Analysis endpoint (Cached & anti-blocked)
+  app.get("/api/feeds/sectors", async (req, res) => {
+    try {
+      const timeframe = (req.query.timeframe as "day" | "week") || "day";
+      const clientDeviceId = (req.headers["x-device-id"] as string) || (req.query.deviceId as string);
+      const clientCookie = req.headers["cookie"] as string;
+      const symbolsQuery = req.query.symbols as string;
+      const activeSymbols = symbolsQuery ? symbolsQuery.split(",").map(s => s.trim()) : [];
+
+      const result = await feedsEngine.getSectorAnalysis({
+        timeframe,
+        clientDeviceId,
+        clientCookie,
+        activeSymbols
+      });
+
+      return res.json({
+        success: true,
+        ...result,
+        generatedAt: new Date().toISOString()
+      });
+    } catch (err: any) {
+      console.error("Feeds Sectors Endpoint Error:", err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // Feeds: Market Insights & News endpoint (Cached & anti-blocked)
+  app.get("/api/feeds/insights", async (req, res) => {
+    try {
+      const rangeType = (req.query.rangeType as "last-week" | "today" | "month") || "last-week";
+      const clientDeviceId = (req.headers["x-device-id"] as string) || (req.query.deviceId as string);
+      const clientCookie = req.headers["cookie"] as string;
+      const symbolsQuery = req.query.symbols as string;
+      const activeSymbols = symbolsQuery ? symbolsQuery.split(",").map(s => s.trim()) : [];
+
+      const result = await feedsEngine.getMarketInsights({
+        rangeType,
+        clientDeviceId,
+        clientCookie,
+        activeSymbols
+      });
+
+      return res.json({
+        success: true,
+        ...result,
+        generatedAt: new Date().toISOString()
+      });
+    } catch (err: any) {
+      console.error("Feeds Insights Endpoint Error:", err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // Feeds: Comprehensive combined feed endpoint
+  app.get("/api/feeds/overview", async (req, res) => {
+    try {
+      const timeframe = (req.query.timeframe as "day" | "week") || "day";
+      const clientDeviceId = (req.headers["x-device-id"] as string) || (req.query.deviceId as string);
+      const clientCookie = req.headers["cookie"] as string;
+      const symbolsQuery = req.query.symbols as string;
+      const activeSymbols = symbolsQuery ? symbolsQuery.split(",").map(s => s.trim()) : [];
+
+      const [sectorsResult, insightsResult] = await Promise.all([
+        feedsEngine.getSectorAnalysis({ timeframe, clientDeviceId, clientCookie, activeSymbols }),
+        feedsEngine.getMarketInsights({ rangeType: "last-week", clientDeviceId, clientCookie, activeSymbols })
+      ]);
+
+      const sortedSectors = [...sectorsResult.sectors].sort((a, b) => {
+        const valA = timeframe === "week" ? a.weekChangeP : a.dayChangeP;
+        const valB = timeframe === "week" ? b.weekChangeP : b.dayChangeP;
+        return valB - valA;
+      });
+
+      const totalAdvances = sortedSectors.reduce((sum, s) => sum + s.advances, 0);
+      const totalDeclines = sortedSectors.reduce((sum, s) => sum + s.declines, 0);
+      const topSector = sortedSectors[0]?.name || "PSU Banks";
+
+      return res.json({
+        success: true,
+        timeframe,
+        sectors: sortedSectors,
+        insights: insightsResult.insights,
+        generatedAt: new Date().toISOString(),
+        marketSummary: {
+          overallSentiment: totalAdvances >= totalDeclines ? "BULLISH" : "CAUTION",
+          topSector,
+          advances: totalAdvances,
+          declines: totalDeclines,
+          ratio: `${totalAdvances} : ${totalDeclines}`
+        },
+        cached: sectorsResult.cached && insightsResult.cached
+      });
+    } catch (err: any) {
+      console.error("Feeds Overview Endpoint Error:", err);
+      return res.status(500).json({ success: false, error: err.message });
     }
   });
 

@@ -299,3 +299,67 @@ export interface TerminalDataResponse {
   error?: string;
 }
 
+export interface SectorStockSnapshot {
+  symbol: string;
+  name: string;
+  changeP: number;
+  ltp: number;
+}
+
+export interface SectorAnalysisItem {
+  id: string;
+  name: string;
+  category: "sector" | "industry";
+  dayChangeP: number;
+  weekChangeP: number;
+  monthChangeP?: number;
+  yearChangeP?: number;
+  marketCapCr?: number;
+  advances: number;
+  declines: number;
+  unchanged?: number;
+  totalStocks: number;
+  pe?: number;
+  pb?: number;
+  trend: "BULLISH" | "VERY_BULLISH" | "NEUTRAL" | "BEARISH" | "BREAKOUT";
+  topGainers: SectorStockSnapshot[];
+  topDraggers: SectorStockSnapshot[];
+  sparkline?: number[];
+  activeSignalsCount?: number;
+  activeSignals?: string[];
+}
+
+export interface MarketInsightItem {
+  id: string;
+  headline: string;
+  summary: string;
+  symbol: string;
+  companyName: string;
+  category: "ORDER_WIN" | "EARNINGS" | "BLOCK_DEAL" | "REGULATORY" | "UPGRADE" | "EXPANSION" | "GENERAL";
+  sentiment: "BULLISH" | "VERY_BULLISH" | "NEUTRAL" | "CAUTION";
+  timeAgo: string;
+  timestamp: string;
+  impactScore: number; // 1 to 100
+  priceImpactEst?: string;
+  source: string;
+  url?: string;
+  tags?: string[];
+  isMatchingActiveSignal?: boolean;
+}
+
+export interface FeedsDataResponse {
+  success: boolean;
+  timeframe: "day" | "week";
+  sectors: SectorAnalysisItem[];
+  insights: MarketInsightItem[];
+  generatedAt: string;
+  marketSummary?: {
+    overallSentiment: "BULLISH" | "NEUTRAL" | "CAUTION";
+    topSector: string;
+    advances: number;
+    declines: number;
+    ratio: string;
+  };
+  cached: boolean;
+}
+

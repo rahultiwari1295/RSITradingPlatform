@@ -20,6 +20,7 @@ import {
 } from "../types";
 
 import InstitutionalHeader from "../components/institutional/InstitutionalHeader";
+import InstitutionalDock, { DockTabId } from "../components/institutional/InstitutionalDock";
 import EquityGrowthChart from "../components/institutional/EquityGrowthChart";
 import StrategyAttributionMatrix from "../components/institutional/StrategyAttributionMatrix";
 import ClosedTradesLedger from "../components/institutional/ClosedTradesLedger";
@@ -28,6 +29,7 @@ import PortfolioView from "./PortfolioView";
 import OverviewSystemGuide from "../components/institutional/OverviewSystemGuide";
 import StockDetailPage from "../components/institutional/StockDetailPage";
 import BottomSheet, { BottomSheetItem } from "../components/BottomSheet";
+import FeedsView from "./FeedsView";
 
 interface InstitutionalViewProps {
   inTradeTrades: InTradeTrade[];
@@ -49,7 +51,7 @@ interface InstitutionalViewProps {
   onOpenAuthModal?: (mode: "signin" | "signup") => void;
 }
 
-type TabKey = "overview" | "active" | "history" | "portfolio";
+type TabKey = DockTabId;
 
 export default function InstitutionalView({
   inTradeTrades = [],
@@ -69,7 +71,10 @@ export default function InstitutionalView({
   user,
   onOpenAuthModal,
 }: InstitutionalViewProps) {
-  const [activeTab, setActiveTab] = useState<TabKey>("active");
+  const [activeTab, setActiveTab] = useState<TabKey>("market");
+  const [signalsMode, setSignalsMode] = useState<"active" | "closed">("active");
+  const [marketSubTab, setMarketSubTab] = useState<"news" | "sectors">("news");
+  const [marketCounts, setMarketCounts] = useState<{ news: number; sectors: number }>({ news: 10, sectors: 12 });
   const [overviewSubTab, setOverviewSubTab] = useState<"guide" | "live">("guide");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSheetItem, setSelectedSheetItem] = useState<BottomSheetItem | null>(null);
@@ -185,6 +190,15 @@ export default function InstitutionalView({
     });
   }, [closedTrades]);
 
+  // Filter closedTrades based on search query
+  const filteredClosed = useMemo(() => {
+    if (!searchQuery) return sanitizedClosed;
+    const q = searchQuery.toLowerCase();
+    return sanitizedClosed.filter(
+      (t) => t.symbol.toLowerCase().includes(q) || (t.strategyName && t.strategyName.toLowerCase().includes(q))
+    );
+  }, [sanitizedClosed, searchQuery]);
+
   const nClosed = sanitizedClosed.length;
   const closedWins = useMemo(() => sanitizedClosed.filter((t) => t.returnPct >= 0), [sanitizedClosed]);
   const closedLosses = useMemo(() => sanitizedClosed.filter((t) => t.returnPct < 0), [sanitizedClosed]);
@@ -209,7 +223,7 @@ export default function InstitutionalView({
   if (selectedStockDetail) {
     const isBought = portfolio.some((p) => p.symbol === selectedStockDetail.item.symbol);
     return (
-      <div className="space-y-4 pb-8 animate-fade-in">
+      <div className="space-y-4 pb-28 sm:pb-32 animate-fade-in">
         <StockDetailPage
           item={selectedStockDetail.item}
           sourceListTitle={selectedStockDetail.sourceTitle}
@@ -254,12 +268,25 @@ export default function InstitutionalView({
           }
           isBought={isBought}
         />
+
+        {/* Floating Bottom Dock */}
+        <InstitutionalDock
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            setSelectedStockDetail(null);
+            setActiveTab(tab);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          activeSignalsCount={inTradeTrades.length}
+          closedTradesCount={sanitizedClosed.length}
+          portfolioCount={portfolio.length}
+        />
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 pb-8 animate-fade-in">
+    <div className="space-y-4 pb-28 sm:pb-32 animate-fade-in">
       {/* 1. Precision Metal Header with Active/Closed/Log/Overview Switch & 6 KPIs */}
       <InstitutionalHeader
         activeCount={inTradeTrades.length}
@@ -277,6 +304,12 @@ export default function InstitutionalView({
         portfolioCount={portfolio.length}
         activeTab={activeTab}
         onTabChange={(tab) => setActiveTab(tab as TabKey)}
+        signalsMode={signalsMode}
+        onSignalsModeChange={setSignalsMode}
+        marketSubTab={marketSubTab}
+        onMarketSubTabChange={setMarketSubTab}
+        newsCount={marketCounts.news}
+        sectorsCount={marketCounts.sectors}
         lastSyncedAt={lastSyncedAt}
         engineVersion={engineVersion}
         searchQuery={searchQuery}
@@ -289,29 +322,38 @@ export default function InstitutionalView({
       {activeTab === "overview" && (
         <div className="space-y-5 animate-fade-in-up">
           {/* Overview Sub-Navigation Pills */}
-          <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/[0.06] backdrop-blur-xl w-fit">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/[0.06] backdrop-blur-xl w-fit">
+              <button
+                onClick={() => setOverviewSubTab("guide")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  overviewSubTab === "guide"
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <span>📖 System Guide &amp; How It Works</span>
+              </button>
+              <button
+                onClick={() => setOverviewSubTab("live")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  overviewSubTab === "live"
+                    ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <span>📊 Live Analytics &amp; Active Runners</span>
+                <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black font-mono bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  {inTradeTrades.length}
+                </span>
+              </button>
+            </div>
+
             <button
-              onClick={() => setOverviewSubTab("guide")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                overviewSubTab === "guide"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-              }`}
+              onClick={() => setActiveTab("market")}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 border border-indigo-200/80 dark:border-indigo-800/60 transition-all cursor-pointer"
             >
-              <span>📖 System Guide &amp; How It Works</span>
-            </button>
-            <button
-              onClick={() => setOverviewSubTab("live")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                overviewSubTab === "live"
-                  ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-              }`}
-            >
-              <span>📊 Live Analytics &amp; Active Runners</span>
-              <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black font-mono bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                {inTradeTrades.length}
-              </span>
+              <span>← Return to Terminal</span>
             </button>
           </div>
 
@@ -375,7 +417,10 @@ export default function InstitutionalView({
                     </div>
                   </div>
                   <button
-                    onClick={() => setActiveTab("active")}
+                    onClick={() => {
+                      setActiveTab("signals");
+                      setSignalsMode("active");
+                    }}
                     className="text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <span>View All Positions</span>
@@ -459,53 +504,67 @@ export default function InstitutionalView({
         </div>
       )}
 
-      {/* ─── TAB 2: ACTIVE POSITIONS (100% IN-TRADE WITH EXIT ENGINE) ─── */}
-      {activeTab === "active" && (
-        <div className="animate-fade-in-up">
-          <ActivePositionsBook
-            inTradeTrades={filteredInTrade}
-            portfolio={portfolio}
-            onOpenChart={onOpenChart}
-            onOpenSellModal={onOpenSellModal}
-            onOpenBuyModal={onOpenBuyModal}
-            onSelectStock={(item, allItems, idx) =>
-              openStockDetailPage(
-                item,
-                `Active Strategy Positions (${filteredInTrade.length} Stocks)`,
-                allItems,
-                idx
-              )
-            }
-          />
-        </div>
+      {/* ─── TAB 1: MARKET (NEWS & SECTOR ROTATION) ─── */}
+      {activeTab === "market" && (
+        <FeedsView
+          inTradeTrades={inTradeTrades}
+          onOpenChart={onOpenChart}
+          onOpenBuyModal={onOpenBuyModal}
+          marketSubTab={marketSubTab}
+          onCountsUpdate={(news, sectors) => setMarketCounts({ news, sectors })}
+          onNavigateToActive={() => {
+            setActiveTab("signals");
+            setSignalsMode("active");
+          }}
+        />
       )}
 
-      {/* ─── TAB 3: CLOSED HISTORY (COMPLETED TRADES & AUDITED TRACK RECORD) ─── */}
-      {activeTab === "history" && (
-        <div className="space-y-6 animate-fade-in-up">
-          <ClosedTradesLedger
-            closedTrades={closedTrades}
-            onOpenChart={onOpenChart}
-            onSelectStock={(item, allItems, idx) =>
-              openStockDetailPage(
-                item,
-                `Closed Trades (${closedTrades.length} Stocks)`,
-                allItems,
-                idx
-              )
-            }
-          />
-          {(closedTrades.length > 0 || completedHistory.length > 0) && (
-            <EquityGrowthChart
-              closedTrades={closedTrades}
-              completedHistory={completedHistory}
+      {/* ─── TAB 2: SIGNALS (ACTIVE STRATEGY POSITIONS OR CLOSED AUDITED LEDGER) ─── */}
+      {activeTab === "signals" && (
+        <div className="animate-fade-in-up space-y-6">
+          {signalsMode === "active" ? (
+            <ActivePositionsBook
+              inTradeTrades={filteredInTrade}
+              portfolio={portfolio}
+              onOpenChart={onOpenChart}
+              onOpenSellModal={onOpenSellModal}
+              onOpenBuyModal={onOpenBuyModal}
+              onSelectStock={(item, allItems, idx) =>
+                openStockDetailPage(
+                  item,
+                  `Active Strategy Positions (${filteredInTrade.length} Stocks)`,
+                  allItems,
+                  idx
+                )
+              }
             />
+          ) : (
+            <div className="space-y-6">
+              <ClosedTradesLedger
+                closedTrades={filteredClosed}
+                onOpenChart={onOpenChart}
+                onSelectStock={(item, allItems, idx) =>
+                  openStockDetailPage(
+                    item,
+                    `Closed Trades (${filteredClosed.length} Stocks)`,
+                    allItems,
+                    idx
+                  )
+                }
+              />
+              {(sanitizedClosed.length > 0 || completedHistory.length > 0) && (
+                <EquityGrowthChart
+                  closedTrades={sanitizedClosed}
+                  completedHistory={completedHistory}
+                />
+              )}
+            </div>
           )}
         </div>
       )}
 
-      {/* ─── TAB 4: MY PORTFOLIO (USER'S PERSONAL TRADES & P&L) ─── */}
-      {activeTab === "portfolio" && (
+      {/* ─── TAB 3: PAPER DESK (USER'S PERSONAL TRADES & SIMULATED P&L) ─── */}
+      {activeTab === "paper" && (
         <div className="animate-fade-in-up">
           {!user ? (
             <div className="rounded-2xl p-8 text-center bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/[0.06] backdrop-blur-xl max-w-lg mx-auto space-y-4 my-6 shadow-xs">
@@ -581,6 +640,18 @@ export default function InstitutionalView({
           if (userPos) onOpenSellModal(userPos);
         } : undefined}
         isBought={!!portfolio.some((p) => p.symbol === selectedSheetItem?.symbol)}
+      />
+
+      {/* Floating Bottom Navigation Dock */}
+      <InstitutionalDock
+        activeTab={activeTab}
+        onTabChange={(tab) => {
+          setActiveTab(tab);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+        activeSignalsCount={inTradeTrades.length}
+        closedTradesCount={sanitizedClosed.length}
+        portfolioCount={portfolio.length}
       />
     </div>
   );

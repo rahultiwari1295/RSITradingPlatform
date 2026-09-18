@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Clock, Cpu, Search, CheckCircle2, XCircle, BookOpen } from "lucide-react";
+import { Clock, Cpu, Search, CheckCircle2, XCircle, BookOpen, Newspaper, Layers } from "lucide-react";
 
 interface InstitutionalHeaderProps {
   // Active metrics
@@ -24,6 +24,12 @@ interface InstitutionalHeaderProps {
   // Tab & search controls
   activeTab?: string;
   onTabChange?: (tab: string) => void;
+  signalsMode?: "active" | "closed";
+  onSignalsModeChange?: (mode: "active" | "closed") => void;
+  marketSubTab?: "news" | "sectors";
+  onMarketSubTabChange?: (subTab: "news" | "sectors") => void;
+  newsCount?: number;
+  sectorsCount?: number;
   searchQuery: string;
   onSearchChange: (q: string) => void;
   lastSyncedAt?: string | null;
@@ -44,13 +50,19 @@ export default function InstitutionalHeader({
   closedWinCount = 0,
   closedLossCount = 0,
   portfolioCount = 0,
-  activeTab = "active",
+  activeTab = "market",
   onTabChange,
+  signalsMode = "active",
+  onSignalsModeChange,
+  marketSubTab = "news",
+  onMarketSubTabChange,
+  newsCount,
+  sectorsCount,
   searchQuery,
   onSearchChange,
   engineVersion = "v2",
 }: InstitutionalHeaderProps) {
-  const isClosedMode = activeTab === "history";
+  const isClosedMode = signalsMode === "closed";
 
   const [istTime, setIstTime] = useState<string>("");
   const [marketPhase, setMarketPhase] = useState<{ label: string; color: string }>({
@@ -96,7 +108,7 @@ export default function InstitutionalHeader({
     return () => clearInterval(interval);
   }, []);
 
-  // Selected values based on mode
+  // Selected values based on signals mode
   const currentCount = isClosedMode ? closedCount : activeCount;
   const currentWinRate = isClosedMode ? closedWinRate : activeWinRate;
   const currentPF = isClosedMode ? closedProfitFactor : activeProfitFactor;
@@ -104,7 +116,7 @@ export default function InstitutionalHeader({
   const currentWins = isClosedMode ? closedWinCount : activeWinCount;
   const currentLosses = isClosedMode ? closedLossCount : activeLossCount;
 
-  // 6 Main KPI Cards — strict clean layout with NO secondary subtitles
+  // 6 Main KPI Cards — strict clean layout with pure values
   const kpis = [
     {
       label: isClosedMode ? "CLOSED" : "ACTIVE",
@@ -140,46 +152,12 @@ export default function InstitutionalHeader({
     },
   ];
 
-  // Primary unified navigation tabs: Active, Closed, Paper Trade (portfolio) with dedicated light accent styling
-  const navTabs = [
-    {
-      id: "active",
-      label: "Active",
-      count: activeCount,
-      dotColor: "bg-emerald-500",
-      activeStyles: "bg-emerald-600 text-white border-emerald-700 shadow-sm shadow-emerald-500/25 ring-2 ring-emerald-500/30 dark:bg-emerald-500 dark:text-slate-950 dark:border-emerald-400",
-      inactiveStyles: "bg-emerald-50/80 hover:bg-emerald-100 text-emerald-900 border-emerald-200/90 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-800/50",
-      activeCountStyles: "bg-white/25 text-white dark:bg-black/20 dark:text-slate-950",
-      inactiveCountStyles: "bg-emerald-100/90 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300",
-    },
-    {
-      id: "history",
-      label: "Closed",
-      count: closedCount,
-      dotColor: "bg-amber-500",
-      activeStyles: "bg-amber-500 text-white border-amber-600 shadow-sm shadow-amber-500/25 ring-2 ring-amber-500/30 dark:bg-amber-400 dark:text-slate-950 dark:border-amber-300",
-      inactiveStyles: "bg-amber-50/80 hover:bg-amber-100 text-amber-900 border-amber-200/90 dark:bg-amber-950/40 dark:hover:bg-amber-950/70 dark:text-amber-300 dark:border-amber-800/50",
-      activeCountStyles: "bg-white/25 text-white dark:bg-black/20 dark:text-slate-950",
-      inactiveCountStyles: "bg-amber-100/90 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300",
-    },
-    {
-      id: "portfolio",
-      label: "Paper Trade",
-      count: portfolioCount,
-      dotColor: "bg-indigo-500",
-      activeStyles: "bg-indigo-600 text-white border-indigo-700 shadow-sm shadow-indigo-500/25 ring-2 ring-indigo-500/30 dark:bg-indigo-500 dark:text-white dark:border-indigo-400",
-      inactiveStyles: "bg-indigo-50/80 hover:bg-indigo-100 text-indigo-900 border-indigo-200/90 dark:bg-indigo-950/40 dark:hover:bg-indigo-950/70 dark:text-indigo-300 dark:border-indigo-800/50",
-      activeCountStyles: "bg-white/25 text-white dark:bg-white/20 dark:text-white",
-      inactiveCountStyles: "bg-indigo-100/90 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300",
-    },
-  ];
-
   return (
     <div className="animate-fade-in-up">
       {/* Precision Metal Header Container */}
       <div className="relative overflow-hidden rounded-2xl p-3 sm:p-4 transition-all duration-200 bg-gradient-to-b from-white via-[#f7f8fa] to-[#eaedf3] border border-[#cbd3df] shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_4px_16px_-2px_rgba(15,23,42,0.08)] dark:bg-gradient-to-br dark:from-slate-900 dark:via-[#0D1017] dark:to-slate-950 dark:border-white/[0.06] dark:shadow-[0_4px_24px_-4px_rgba(0,0,0,0.3)] text-slate-900 dark:text-white">
         {/* Top Control Bar: Left: Closed/Live Status & Time | Right: How to Use */}
-        <div className="flex items-center justify-between gap-2.5 pb-2.5 border-b border-slate-200/70 dark:border-white/[0.06]">
+        <div className={`flex items-center justify-between gap-2.5 ${(activeTab === "signals" || activeTab === "market") ? "pb-2.5 border-b border-slate-200/70 dark:border-white/[0.06]" : ""}`}>
           {/* Left: Status Badges (Closed / Time / V2) */}
           <div className="flex items-center gap-2 shrink-0">
             {/* Live/Closed Indicator */}
@@ -219,84 +197,143 @@ export default function InstitutionalHeader({
           </div>
         </div>
 
-        {/* Row 2: Unified Segmented Switch (ACTIVE / CLOSED / PAPER TRADE) with premium light colors */}
-        <div className="flex items-center gap-2 pt-2.5 overflow-x-auto no-scrollbar">
-          {navTabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => onTabChange?.(tab.id)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap border ${
-                  isActive ? tab.activeStyles : tab.inactiveStyles
-                }`}
-              >
-                <span className={`w-2 h-2 rounded-full ${isActive ? (tab.id === 'history' ? 'bg-white' : tab.dotColor) : tab.dotColor}`} />
-                <span>{tab.label}</span>
-                {tab.count !== null && tab.count !== undefined && (
-                  <span className={`px-1.5 py-0.5 rounded-md font-mono text-[10.5px] font-bold ${
-                    isActive ? tab.activeCountStyles : tab.inactiveCountStyles
-                  }`}>
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        {/* ─── WHEN MARKET DESK IS ACTIVE: Show NEWS vs SECTOR ROTATION segmented switch ─── */}
+        {activeTab === "market" && (
+          <div className="flex items-center gap-2 pt-2.5">
+            <button
+              type="button"
+              onClick={() => onMarketSubTabChange?.("news")}
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border ${
+                marketSubTab === "news"
+                  ? "bg-purple-600 text-white border-purple-700 shadow-sm shadow-purple-500/25 ring-2 ring-purple-500/30 dark:bg-purple-500 dark:text-white dark:border-purple-400"
+                  : "bg-purple-50/80 hover:bg-purple-100 text-purple-900 border-purple-200/90 dark:bg-purple-950/40 dark:hover:bg-purple-950/70 dark:text-purple-300 dark:border-purple-800/50"
+              }`}
+            >
+              <Newspaper className="w-3.5 h-3.5" />
+              <span>NEWS</span>
+              {typeof newsCount === "number" && (
+                <span className={`px-1.5 py-0.5 rounded-md font-mono text-[10.5px] font-bold ${
+                  marketSubTab === "news" ? "bg-white/25 text-white dark:bg-black/20 dark:text-white" : "bg-purple-100/90 text-purple-800 dark:bg-purple-900/60 dark:text-purple-300"
+                }`}>
+                  {newsCount}
+                </span>
+              )}
+            </button>
 
-        {/* Middle: Clean Search Bar (Only shown on Active, Closed, Paper Trade pages) */}
-        {activeTab !== "overview" && (
-          <div className="relative w-full my-2.5">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-400 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search symbol or strategy..."
-              className="w-full pl-9 pr-8 py-1.5 rounded-xl bg-white/90 dark:bg-white/[0.06] hover:bg-white dark:hover:bg-white/[0.1] focus:bg-white text-xs text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-300/90 dark:border-white/[0.08] focus:border-cyan-500 dark:focus:border-cyan-400 outline-none transition-all shadow-2xs"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => onSearchChange("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs font-bold cursor-pointer"
-              >
-                ✕
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => onMarketSubTabChange?.("sectors")}
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border ${
+                marketSubTab === "sectors"
+                  ? "bg-cyan-600 text-white border-cyan-700 shadow-sm shadow-cyan-500/25 ring-2 ring-cyan-500/30 dark:bg-cyan-500 dark:text-slate-950 dark:border-cyan-400"
+                  : "bg-cyan-50/80 hover:bg-cyan-100 text-cyan-900 border-cyan-200/90 dark:bg-cyan-950/40 dark:hover:bg-cyan-950/70 dark:text-cyan-300 dark:border-cyan-800/50"
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>SECTOR ROTATION</span>
+              {typeof sectorsCount === "number" && (
+                <span className={`px-1.5 py-0.5 rounded-md font-mono text-[10.5px] font-bold ${
+                  marketSubTab === "sectors" ? "bg-white/25 text-white dark:bg-black/20 dark:text-slate-950" : "bg-cyan-100/90 text-cyan-800 dark:bg-cyan-900/60 dark:text-cyan-300"
+                }`}>
+                  {sectorsCount}
+                </span>
+              )}
+            </button>
           </div>
         )}
 
-        {/* Bottom: 6-Metric High-Precision Metallic Ribbon (Pure Value, No Sub-Labels) - Only on active/closed/paper trade */}
-        {activeTab !== "overview" && (
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2 pt-2 border-t border-slate-300/70 dark:border-white/[0.06]">
-            {kpis.map((kpi) => {
-              const Icon = kpi.icon;
-              return (
-                <div
-                  key={kpi.label}
-                  className="flex flex-col justify-between p-2 sm:p-2.5 rounded-xl bg-white/85 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.05] shadow-[0_1px_2px_rgba(0,0,0,0.03),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-none hover:border-slate-300 dark:hover:border-white/[0.1] transition-all"
-                >
-                  <div className="flex items-center justify-between gap-1 mb-1">
-                    <span className="text-[9.5px] sm:text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 truncate">
-                      {kpi.label}
-                    </span>
-                    {Icon && <Icon className={`w-3 h-3 ${kpi.color} opacity-80 shrink-0`} />}
-                  </div>
+        {/* ─── WHEN SIGNALS DESK IS ACTIVE: Show Sub-Toggle, Search & 6-Metric Ribbon ─── */}
+        {activeTab === "signals" && (
+          <>
+            {/* Segmented Switch: Active Positions vs Closed Ledger */}
+            <div className="flex items-center gap-2 pt-2.5">
+              <button
+                type="button"
+                onClick={() => onSignalsModeChange?.("active")}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border ${
+                  signalsMode === "active"
+                    ? "bg-emerald-600 text-white border-emerald-700 shadow-sm shadow-emerald-500/25 ring-2 ring-emerald-500/30 dark:bg-emerald-500 dark:text-slate-950 dark:border-emerald-400"
+                    : "bg-emerald-50/80 hover:bg-emerald-100 text-emerald-900 border-emerald-200/90 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-800/50"
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${signalsMode === "active" ? "bg-white animate-pulse" : "bg-emerald-500"}`} />
+                <span>Active Signals</span>
+                <span className={`px-1.5 py-0.5 rounded-md font-mono text-[10.5px] font-bold ${
+                  signalsMode === "active" ? "bg-white/25 text-white dark:bg-black/20 dark:text-slate-950" : "bg-emerald-100/90 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300"
+                }`}>
+                  {activeCount}
+                </span>
+              </button>
 
-                  <div className="mt-0.5">
-                    <span className={`text-base sm:text-xl font-black font-mono tabular tracking-tight leading-none ${kpi.color}`}>
-                      {kpi.value}
-                    </span>
+              <button
+                type="button"
+                onClick={() => onSignalsModeChange?.("closed")}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border ${
+                  signalsMode === "closed"
+                    ? "bg-amber-500 text-white border-amber-600 shadow-sm shadow-amber-500/25 ring-2 ring-amber-500/30 dark:bg-amber-400 dark:text-slate-950 dark:border-amber-300"
+                    : "bg-amber-50/80 hover:bg-amber-100 text-amber-900 border-amber-200/90 dark:bg-amber-950/40 dark:hover:bg-amber-950/70 dark:text-amber-300 dark:border-amber-800/50"
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${signalsMode === "closed" ? "bg-white" : "bg-amber-500"}`} />
+                <span>Closed Ledger</span>
+                <span className={`px-1.5 py-0.5 rounded-md font-mono text-[10.5px] font-bold ${
+                  signalsMode === "closed" ? "bg-white/25 text-white dark:bg-black/20 dark:text-slate-950" : "bg-amber-100/90 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300"
+                }`}>
+                  {closedCount}
+                </span>
+              </button>
+            </div>
+
+            {/* Clean Search Bar */}
+            <div className="relative w-full my-2.5">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder={`Search ${signalsMode === "active" ? "active positions" : "closed trades"} by symbol or strategy...`}
+                className="w-full pl-9 pr-8 py-1.5 rounded-xl bg-white/90 dark:bg-white/[0.06] hover:bg-white dark:hover:bg-white/[0.1] focus:bg-white text-xs text-slate-900 dark:text-white placeholder:text-slate-400 border border-slate-300/90 dark:border-white/[0.08] focus:border-cyan-500 dark:focus:border-cyan-400 outline-none transition-all shadow-2xs"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => onSearchChange("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs font-bold cursor-pointer"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Bottom: 6-Metric High-Precision Metallic Ribbon */}
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2 pt-2 border-t border-slate-300/70 dark:border-white/[0.06]">
+              {kpis.map((kpi) => {
+                const Icon = kpi.icon;
+                return (
+                  <div
+                    key={kpi.label}
+                    className="flex flex-col justify-between p-2 sm:p-2.5 rounded-xl bg-white/85 dark:bg-white/[0.03] border border-slate-200/90 dark:border-white/[0.05] shadow-[0_1px_2px_rgba(0,0,0,0.03),inset_0_1px_0_rgba(255,255,255,0.9)] dark:shadow-none hover:border-slate-300 dark:hover:border-white/[0.1] transition-all"
+                  >
+                    <div className="flex items-center justify-between gap-1 mb-1">
+                      <span className="text-[9.5px] sm:text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400 truncate">
+                        {kpi.label}
+                      </span>
+                      {Icon && <Icon className={`w-3 h-3 ${kpi.color} opacity-80 shrink-0`} />}
+                    </div>
+
+                    <div className="mt-0.5">
+                      <span className={`text-base sm:text-xl font-black font-mono tabular tracking-tight leading-none ${kpi.color}`}>
+                        {kpi.value}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>
   );
 }
+
