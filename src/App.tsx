@@ -29,6 +29,7 @@ import SellModal from "./components/Modals/SellModal";
 import AddPositionModal from "./components/Modals/AddPositionModal";
 import ChartModal from "./components/Modals/ChartModal";
 import AuthModal from "./components/Modals/AuthModal";
+import V3View from "./components/v3/V3View";
 
 import { useAuth } from "./contexts/AuthContext";
 import { db } from "./lib/firebase";
@@ -64,6 +65,16 @@ export default function App() {
     } else {
       showToast("Failed to enable push notifications (check browser permissions).");
     }
+  };
+
+  // Engine mode: v2 (ML) or v3 (Chart/Fibonacci)
+  const [engineMode, setEngineMode] = useState<"v2" | "v3">(() => {
+    return (localStorage.getItem("engineMode") as "v2" | "v3") ?? "v2";
+  });
+
+  const handleEngineSwitch = (mode: "v2" | "v3") => {
+    setEngineMode(mode);
+    localStorage.setItem("engineMode", mode);
   };
 
   // Theme support (Dark / Light mode)
@@ -452,16 +463,36 @@ export default function App() {
       {/* Compact Global Header */}
       <header className="bg-white/80 dark:bg-[#12141E]/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-white/[0.06] px-3 sm:px-6 py-2 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
-          {/* Logo */}
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center font-black text-[11px] shadow-sm">
-              QS
+          {/* Logo + Engine Toggle */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center font-black text-[11px] shadow-sm">
+                QS
+              </div>
+              <div>
+                <span className="font-bold text-[14px] tracking-tight block leading-tight">QuantSync</span>
+                <span className="text-[10px] text-slate-400 font-medium hidden sm:block">
+                  Trading Terminal {lastSyncedAt ? `· ${lastSyncedAt}` : ""}
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="font-bold text-[14px] tracking-tight block leading-tight">QuantSync</span>
-              <span className="text-[10px] text-slate-400 font-medium hidden sm:block">
-                Trading Terminal {lastSyncedAt ? `· ${lastSyncedAt}` : ""}
-              </span>
+
+            {/* Engine Toggle — iPhone-style pill */}
+            <div className="v3-engine-toggle">
+              <button
+                onClick={() => handleEngineSwitch("v2")}
+                className={`v3-engine-toggle-btn v2 ${engineMode === "v2" ? "active" : ""}`}
+                title="V2 ML Engine"
+              >
+                V2 <span className="opacity-60 font-normal">[ML]</span>
+              </button>
+              <button
+                onClick={() => handleEngineSwitch("v3")}
+                className={`v3-engine-toggle-btn v3 ${engineMode === "v3" ? "active" : ""}`}
+                title="V3 Chart/Fibonacci Engine"
+              >
+                V3 <span className="opacity-60 font-normal">[Chart]</span>
+              </button>
             </div>
           </div>
 
@@ -515,33 +546,43 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Content — Classic Terminal */}
+      {/* Main Content */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-8">
-        <InstitutionalView
-          engineVersion={engineVersion}
-          toBuySignals={toBuySignals}
-          inTradeTrades={signals}
-          closedTrades={closedTrades}
-          strategies={strategies}
-          portfolio={portfolio}
-          completedHistory={completedHistory}
-          kpis={kpis}
-          totalSummary={totalSummary}
-          onOpenChart={handleOpenChart}
-          onOpenBuyModal={(sym, price, strat) => {
-            if (!user) {
-              handleOpenAuth("signup", "Sign up or log in to buy positions and log trades to your portfolio.");
-              return;
-            }
-            setBuyModalData({ symbol: sym, price, strategyName: strat });
-          }}
-          onOpenSellModal={(trade) => setSellModalTrade(trade)}
-          onDeleteCompletedTrade={handleDeleteCompletedTrade}
-          lastSyncedAt={lastSyncedAt}
-          isSyncing={isSyncing}
-          user={user}
-          onOpenAuthModal={(mode) => handleOpenAuth(mode)}
-        />
+        {engineMode === "v3" ? (
+          /* ── V3 PREMIUM VIEW ── */
+          <V3View
+            onOpenChart={handleOpenChart}
+            isSyncing={isSyncing}
+            onRequestSync={fetchLiveTerminalData}
+          />
+        ) : (
+          /* ── V2 ML ENGINE VIEW ── */
+          <InstitutionalView
+            engineVersion={engineVersion}
+            toBuySignals={toBuySignals}
+            inTradeTrades={signals}
+            closedTrades={closedTrades}
+            strategies={strategies}
+            portfolio={portfolio}
+            completedHistory={completedHistory}
+            kpis={kpis}
+            totalSummary={totalSummary}
+            onOpenChart={handleOpenChart}
+            onOpenBuyModal={(sym, price, strat) => {
+              if (!user) {
+                handleOpenAuth("signup", "Sign up or log in to buy positions and log trades to your portfolio.");
+                return;
+              }
+              setBuyModalData({ symbol: sym, price, strategyName: strat });
+            }}
+            onOpenSellModal={(trade) => setSellModalTrade(trade)}
+            onDeleteCompletedTrade={handleDeleteCompletedTrade}
+            lastSyncedAt={lastSyncedAt}
+            isSyncing={isSyncing}
+            user={user}
+            onOpenAuthModal={(mode) => handleOpenAuth(mode)}
+          />
+        )}
       </main>
 
       {/* Interactive Modals */}
