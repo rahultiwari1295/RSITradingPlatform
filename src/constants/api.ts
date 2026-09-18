@@ -25,8 +25,10 @@ export const API_ENDPOINTS = {
   directIntelNews: (limit = 50, stock?: string) => `${VPS_BASE_URL}/api/intel/news?limit=${limit}${stock ? `&stock=${encodeURIComponent(stock)}` : ""}`,
   directIntelStats: () => `${VPS_BASE_URL}/api/intel/stats`,
 
-  // Wix Terminal Data
+  // QuantSync Production Trading Engine Terminal Data (Direct & Proxied)
   terminalData: (version: "v2" | "v3" = "v2") => `/api/terminal-data?version=${version}`,
-  directTerminalDataV3: "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalDataV3",
-  directTerminalDataV2: "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData",
+  directTerminalDataV3: `${VPS_BASE_URL}/api/terminalDataV3`,
+  directTerminalDataV2: `${VPS_BASE_URL}/api/terminalData`,
+  upcomingStocks: "/api/upcoming-stocks",
+  directUpcomingStocks: `${VPS_BASE_URL}/api/upcoming-stocks`,
 };

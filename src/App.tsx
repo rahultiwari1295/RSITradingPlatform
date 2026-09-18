@@ -177,7 +177,7 @@ export default function App() {
     let result: any = null;
 
     try {
-      // Primary: Server proxy that backtracks Wix signals to Google Sheets LTP data
+      // Primary: Server proxy that pulls live signals from VPS
       const proxyRes = await fetch(`/api/terminal-data?version=v2`);
       if (proxyRes.ok) {
         result = await proxyRes.json();
@@ -185,9 +185,9 @@ export default function App() {
         throw new Error("Server proxy returned non-200");
       }
     } catch (e) {
-      // Direct Wix API call fallback
+      // Direct VPS API call fallback (with Wix backup)
       try {
-        const directUrl = "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData";
+        const directUrl = "https://quantsync-api.duckdns.org:8000/api/terminalData";
         const directRes = await fetch(directUrl, {
           headers: { Accept: "application/json" }
         });
@@ -195,7 +195,15 @@ export default function App() {
           result = await directRes.json();
         }
       } catch (directErr) {
-        console.warn(`Direct Wix sync failed:`, directErr);
+        console.warn(`Direct VPS sync failed, trying Wix fallback:`, directErr);
+        try {
+          const wixRes = await fetch("https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData", {
+            headers: { Accept: "application/json" }
+          });
+          if (wixRes.ok) result = await wixRes.json();
+        } catch (wixErr) {
+          console.warn(`Direct Wix fallback failed:`, wixErr);
+        }
       }
     }
 

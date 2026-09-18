@@ -133,19 +133,31 @@ async function startServer() {
   // Express API Proxy — strictly fetching from raw Wix Studio endpoint
   app.get("/api/terminal-data", async (req, res) => {
     try {
+      const vpsEndpoint = "https://quantsync-api.duckdns.org:8000/api/terminalData";
       const wixEndpoint = "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData";
 
-      const response = await fetch(wixEndpoint, {
+      let response = await fetch(vpsEndpoint, {
         method: "GET",
         headers: {
           "Accept": "application/json",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          "User-Agent": "Mozilla/5.0 (QuantSync-Local-Proxy)"
         },
-        signal: AbortSignal.timeout(8000) // 8 second timeout limit
-      });
+        signal: AbortSignal.timeout(6000)
+      }).catch(() => null);
+
+      if (!response || !response.ok) {
+        response = await fetch(wixEndpoint, {
+          method: "GET",
+          headers: {
+            "Accept": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          },
+          signal: AbortSignal.timeout(8000)
+        });
+      }
 
       if (!response.ok) {
-        throw new Error(`Wix terminalData API server returned status: ${response.status}`);
+        throw new Error(`Terminal data API server returned status: ${response.status}`);
       }
 
       const rawData = await response.json();
@@ -239,33 +251,51 @@ async function startServer() {
   // Proxy route for upcoming/bounce setup stock API
   app.get("/api/upcoming-stocks", async (req, res) => {
     try {
-      const response = await fetch("https://rahultiwari1295.wixstudio.com/angelportfolio/_functions/upcomingStock", {
+      const vpsEndpoint = "https://quantsync-api.duckdns.org:8000/api/upcoming-stocks";
+      const wixEndpoint = "https://rahultiwari1295.wixstudio.com/angelportfolio/_functions/upcomingStock";
+
+      let response = await fetch(vpsEndpoint, {
         method: "GET",
         headers: {
           "Accept": "application/json",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          "User-Agent": "Mozilla/5.0 (QuantSync-Local-Proxy)"
         },
-        signal: AbortSignal.timeout(8000)
+        signal: AbortSignal.timeout(6000)
+      }).catch(() => null);
+
+      if (!response || !response.ok) {
+        response = await fetch(wixEndpoint, {
+          method: "GET",
+          headers: {
+            "Accept": "application/json",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          },
+          signal: AbortSignal.timeout(6000)
+        }).catch(() => null);
+      }
+
+      if (response && response.ok) {
+        const rawData = await response.json();
+        if (rawData && Array.isArray(rawData.status)) {
+          return res.json({
+            success: true,
+            status: rawData.status,
+            source: rawData.source || "quantsync-vps-live"
+          });
+        }
+      }
+
+      return res.json({
+        success: true,
+        status: [],
+        source: "quantsync-vps-empty"
       });
-
-      if (!response.ok) {
-        throw new Error(`Wix upcomingStock API server returned status: ${response.status}`);
-      }
-
-      const rawData = await response.json();
-      if (rawData && Array.isArray(rawData.status)) {
-        return res.json({
-          success: true,
-          status: rawData.status
-        });
-      } else {
-        throw new Error("Wix upcomingStock API response succeeded but 'status' array is missing or malformed.");
-      }
     } catch (error: any) {
-      console.error("Wix upcomingStock Sync Failure:", error.message);
-      return res.status(502).json({
-        success: false,
-        error: error.message || "Failed to reach the AngelOne custom Wix upcomingStock API endpoint"
+      console.error("Upcoming stocks sync failure:", error.message);
+      return res.json({
+        success: true,
+        status: [],
+        error: error.message
       });
     }
   });
