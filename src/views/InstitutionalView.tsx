@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   LayoutDashboard,
   Briefcase,
@@ -75,6 +75,13 @@ export default function InstitutionalView({
   const [signalsMode, setSignalsMode] = useState<"active" | "closed">("active");
   const [marketSubTab, setMarketSubTab] = useState<"news" | "sectors">("news");
   const [marketCounts, setMarketCounts] = useState<{ news: number; sectors: number }>({ news: 10, sectors: 12 });
+
+  const handleMarketCountsUpdate = useCallback((news: number, sectors: number) => {
+    setMarketCounts((prev) => {
+      if (prev.news === news && prev.sectors === sectors) return prev;
+      return { news, sectors };
+    });
+  }, []);
   const [overviewSubTab, setOverviewSubTab] = useState<"guide" | "live">("guide");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSheetItem, setSelectedSheetItem] = useState<BottomSheetItem | null>(null);
@@ -511,7 +518,7 @@ export default function InstitutionalView({
           onOpenChart={onOpenChart}
           onOpenBuyModal={onOpenBuyModal}
           marketSubTab={marketSubTab}
-          onCountsUpdate={(news, sectors) => setMarketCounts({ news, sectors })}
+          onCountsUpdate={handleMarketCountsUpdate}
           onNavigateToActive={() => {
             setActiveTab("signals");
             setSignalsMode("active");

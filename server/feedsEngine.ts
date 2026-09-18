@@ -478,6 +478,14 @@ const BASE_MARKET_INSIGHTS: MarketInsightItem[] = [
 ];
 
 class FeedsEngine {
+  constructor() {
+    // Immediately pre-seed cache at server startup to ensure 0ms latency for mobile clients
+    const now = Date.now();
+    sectorsCacheDay = { data: this.generateSectorDataset("day"), timestamp: now };
+    sectorsCacheWeek = { data: this.generateSectorDataset("week"), timestamp: now };
+    insightsCache = { data: BASE_MARKET_INSIGHTS, timestamp: now };
+  }
+
   /**
    * Fetches or serves cached Sector Analysis (Day or Week change)
    * If Trendlyne upstream returns AWS WAF challenge or fails, serves the curated live dataset.
@@ -521,7 +529,7 @@ class FeedsEngine {
         const res = await fetch(url, {
           method: "GET",
           headers,
-          signal: AbortSignal.timeout(4000),
+          signal: AbortSignal.timeout(2000),
         });
 
         const contentType = res.headers.get("content-type") || "";
@@ -594,7 +602,7 @@ class FeedsEngine {
         const res = await fetch(url, {
           method: "GET",
           headers,
-          signal: AbortSignal.timeout(4000),
+          signal: AbortSignal.timeout(2000),
         });
 
         const text = await res.text();
