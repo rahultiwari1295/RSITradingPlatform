@@ -26,6 +26,8 @@ import ClosedTradesLedger from "../components/institutional/ClosedTradesLedger";
 import ActivePositionsBook from "../components/institutional/ActivePositionsBook";
 import PortfolioView from "./PortfolioView";
 import OverviewSystemGuide from "../components/institutional/OverviewSystemGuide";
+import StockDetailPage from "../components/institutional/StockDetailPage";
+import BottomSheet, { BottomSheetItem } from "../components/BottomSheet";
 
 interface InstitutionalViewProps {
   inTradeTrades: InTradeTrade[];
@@ -38,6 +40,7 @@ interface InstitutionalViewProps {
   onOpenChart: (symbol: string) => void;
   onOpenBuyModal?: (symbol: string, price: number, strategy?: string) => void;
   onOpenSellModal?: (trade: ManualPortfolioTrade) => void;
+  onDeleteCompletedTrade?: (tradeIdOrIndex: string | number) => void;
   lastSyncedAt?: string | null;
   isSyncing?: boolean;
   engineVersion?: string;
@@ -59,6 +62,7 @@ export default function InstitutionalView({
   onOpenChart,
   onOpenBuyModal,
   onOpenSellModal,
+  onDeleteCompletedTrade,
   lastSyncedAt,
   isSyncing = false,
   engineVersion = "v2",
@@ -68,6 +72,69 @@ export default function InstitutionalView({
   const [activeTab, setActiveTab] = useState<TabKey>("active");
   const [overviewSubTab, setOverviewSubTab] = useState<"guide" | "live">("guide");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedSheetItem, setSelectedSheetItem] = useState<BottomSheetItem | null>(null);
+  const [selectedStockDetail, setSelectedStockDetail] = useState<{
+    item: BottomSheetItem;
+    sourceTitle: string;
+    itemsList: BottomSheetItem[];
+    currentIndex: number;
+  } | null>(null);
+
+  const openStockDetailPage = (
+    item: BottomSheetItem,
+    sourceTitle: string,
+    itemsList: BottomSheetItem[],
+    currentIndex: number
+  ) => {
+    setSelectedStockDetail({
+      item,
+      sourceTitle,
+      itemsList,
+      currentIndex,
+    });
+    window.scrollTo({ top: 0, behavior: "instant" });
+  };
+
+  const formatPosToSheetItem = (pos: InTradeTrade): BottomSheetItem => {
+    const ep = Number(pos.entryPrice || 0);
+    const lp = Number(pos.currentPrice || ep);
+    const roi = Number(pos.currentROI ?? (ep > 0 ? ((lp - ep) / ep) * 100 : 0));
+    const calcDays = pos.entryDate
+      ? Math.max(1, Math.round((Date.now() - new Date(pos.entryDate).getTime()) / (1000 * 60 * 60 * 24)))
+      : 1;
+    const days = Number(pos.holdingDays || calcDays);
+
+    return {
+      ...pos,
+      symbol: pos.symbol,
+      strategyName: pos.strategyName || "INSTITUTIONAL POCKET PIVOT · SLEEVE 2",
+      entryDate: pos.entryDate,
+      entryPrice: ep,
+      currentPrice: lp,
+      currentROI: roi,
+      holdingDays: days,
+      sector: pos.sector,
+      compositeScore: pos.compositeScore,
+      technicalScore: pos.technicalScore,
+      riskScore: pos.riskScore,
+      mlProbability: pos.mlProbability,
+      stars: pos.stars,
+      action: pos.action || "HOLD",
+      actionLabel: pos.actionLabel || "IN POSITION",
+      actionColor: pos.actionColor || "blue",
+      slippageText: pos.slippageText,
+      footerLine: pos.footerLine,
+      footerTags: pos.footerTags,
+      stopLoss: pos.stopLoss ?? pos.stopPrice,
+      targetPrice: pos.targetPrice ?? pos.target1Price,
+      shares: pos.shares,
+      tradePlan: {
+        target1Price: pos.targetPrice ?? pos.target1Price,
+        stopPrice: pos.stopLoss ?? pos.stopPrice,
+        t1RiskReward: pos.t1RiskReward,
+      },
+    };
+  };
 
   // Filter inTradeTrades based on search query
   const filteredInTrade = useMemo(() => {
@@ -137,6 +204,59 @@ export default function InstitutionalView({
       .sort((a, b) => (b.currentROI || 0) - (a.currentROI || 0))
       .slice(0, 5);
   }, [inTradeTrades]);
+
+  // Dedicated Full New Page View for Stocks (eliminates all scroll issues in 263-stock ledger)
+  if (selectedStockDetail) {
+    const isBought = portfolio.some((p) => p.symbol === selectedStockDetail.item.symbol);
+    return (
+      <div className="space-y-4 pb-8 animate-fade-in">
+        <StockDetailPage
+          item={selectedStockDetail.item}
+          sourceListTitle={selectedStockDetail.sourceTitle}
+          onBack={() => {
+            setSelectedStockDetail(null);
+          }}
+          onPrev={
+            selectedStockDetail.currentIndex > 0
+              ? () => {
+                  const prevIdx = selectedStockDetail.currentIndex - 1;
+                  setSelectedStockDetail({
+                    ...selectedStockDetail,
+                    item: selectedStockDetail.itemsList[prevIdx],
+                    currentIndex: prevIdx,
+                  });
+                }
+              : undefined
+          }
+          onNext={
+            selectedStockDetail.currentIndex < selectedStockDetail.itemsList.length - 1
+              ? () => {
+                  const nextIdx = selectedStockDetail.currentIndex + 1;
+                  setSelectedStockDetail({
+                    ...selectedStockDetail,
+                    item: selectedStockDetail.itemsList[nextIdx],
+                    currentIndex: nextIdx,
+                  });
+                }
+              : undefined
+          }
+          currentIndex={selectedStockDetail.currentIndex}
+          totalCount={selectedStockDetail.itemsList.length}
+          onOpenChart={onOpenChart}
+          onOpenBuyModal={onOpenBuyModal}
+          onOpenSellModal={
+            onOpenSellModal
+              ? (item) => {
+                  const userPos = portfolio.find((p) => p.symbol === item.symbol);
+                  if (userPos) onOpenSellModal(userPos);
+                }
+              : undefined
+          }
+          isBought={isBought}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 pb-8 animate-fade-in">
@@ -265,7 +385,7 @@ export default function InstitutionalView({
 
                 {topRunners.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {topRunners.map((item) => {
+                    {topRunners.map((item, idx) => {
                       const sym = item.symbol;
                       const ep = Number(item.entryPrice || 0);
                       const lp = Number(item.currentPrice || ep);
@@ -276,11 +396,20 @@ export default function InstitutionalView({
                       return (
                         <div
                           key={sym}
-                          className="p-3 rounded-xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04] flex items-center justify-between"
+                          onClick={() =>
+                            openStockDetailPage(
+                              formatPosToSheetItem(item),
+                              "Top Active Runners",
+                              topRunners.map(formatPosToSheetItem),
+                              idx
+                            )
+                          }
+                          className="p-3 rounded-xl bg-slate-50/70 hover:bg-slate-100/80 dark:bg-white/[0.02] dark:hover:bg-white/[0.05] border border-slate-100 dark:border-white/[0.04] flex items-center justify-between transition-all cursor-pointer group hover:border-slate-300 dark:hover:border-white/10"
+                          title="Click to view institutional dossier"
                         >
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-xs text-slate-900 dark:text-white">{sym}</span>
+                              <span className="font-bold text-xs text-slate-900 dark:text-white group-hover:text-emerald-600 transition-colors">{sym}</span>
                               {roi >= 10 && (
                                 <span className="px-1.5 py-px rounded-md text-[8px] font-black uppercase bg-cyan-500/15 text-cyan-600 dark:text-cyan-400">
                                   RUNNER
@@ -302,7 +431,10 @@ export default function InstitutionalView({
                               </div>
                             </div>
                             <button
-                              onClick={() => onOpenChart(sym)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenChart(sym);
+                              }}
                               className="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.05] dark:hover:bg-white/[0.08] text-slate-600 dark:text-slate-300 transition-all cursor-pointer"
                               title="View Chart"
                             >
@@ -336,6 +468,14 @@ export default function InstitutionalView({
             onOpenChart={onOpenChart}
             onOpenSellModal={onOpenSellModal}
             onOpenBuyModal={onOpenBuyModal}
+            onSelectStock={(item, allItems, idx) =>
+              openStockDetailPage(
+                item,
+                `Active Strategy Positions (${filteredInTrade.length} Stocks)`,
+                allItems,
+                idx
+              )
+            }
           />
         </div>
       )}
@@ -346,6 +486,14 @@ export default function InstitutionalView({
           <ClosedTradesLedger
             closedTrades={closedTrades}
             onOpenChart={onOpenChart}
+            onSelectStock={(item, allItems, idx) =>
+              openStockDetailPage(
+                item,
+                `Closed Trades (${closedTrades.length} Stocks)`,
+                allItems,
+                idx
+              )
+            }
           />
           {(closedTrades.length > 0 || completedHistory.length > 0) && (
             <EquityGrowthChart
@@ -392,13 +540,48 @@ export default function InstitutionalView({
               portfolio={portfolio}
               completedHistory={completedHistory}
               closedTrades={closedTrades}
+              inTradeTrades={inTradeTrades}
               onOpenBuyModal={onOpenBuyModal}
               onOpenSellModal={(trade) => onOpenSellModal && onOpenSellModal(trade)}
               onOpenChart={onOpenChart}
+              onDeleteCompletedTrade={onDeleteCompletedTrade}
+              onSelectStock={(item) => {
+                const sym = (item.symbol || "").toUpperCase().trim();
+                const activeMatch = inTradeTrades.find(t => (t.symbol || "").toUpperCase().trim() === sym);
+                const ep = Number(item.buyPrice || item.entryPrice || activeMatch?.entryPrice || 0);
+                const lp = Number(item.currentPrice || activeMatch?.currentPrice || ep);
+                const roi = Number(item.currentROI ?? (ep > 0 ? ((lp - ep) / ep) * 100 : 0));
+                const sheetItem: BottomSheetItem = {
+                  ...activeMatch,
+                  ...item,
+                  symbol: sym,
+                  entryPrice: ep,
+                  currentPrice: lp,
+                  currentROI: roi,
+                  strategyName: activeMatch?.strategyName || item.strategyName || "Institutional Momentum",
+                  action: activeMatch ? "HOLD" : undefined,
+                  actionLabel: activeMatch ? "IN POSITION" : undefined
+                };
+                openStockDetailPage(sheetItem, "Paper Portfolio", [sheetItem], 0);
+              }}
             />
           )}
         </div>
       )}
+
+      {/* Institutional Stock Overview Dossier */}
+      <BottomSheet
+        isOpen={!!selectedSheetItem}
+        onClose={() => setSelectedSheetItem(null)}
+        item={selectedSheetItem}
+        onOpenChart={onOpenChart}
+        onOpenBuyModal={onOpenBuyModal}
+        onOpenSellModal={onOpenSellModal ? (item) => {
+          const userPos = portfolio.find((p) => p.symbol === item.symbol);
+          if (userPos) onOpenSellModal(userPos);
+        } : undefined}
+        isBought={!!portfolio.some((p) => p.symbol === selectedSheetItem?.symbol)}
+      />
     </div>
   );
 }

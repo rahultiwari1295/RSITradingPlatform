@@ -11,7 +11,7 @@ import {
   CheckCircle2,
   LogOut,
   Bell,
-  BellRing,
+  BellRing
 } from "lucide-react";
 import {
   InTradeTrade,
@@ -66,7 +66,7 @@ export default function App() {
     }
   };
 
-  // Theme support
+  // Theme support (Dark / Light mode)
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     return localStorage.getItem("theme") === "dark";
   });
@@ -200,9 +200,51 @@ export default function App() {
     }
 
     if (result && (result.success !== false)) {
+      const inTrades: InTradeTrade[] = Array.isArray(result.inTradeTrades) ? result.inTradeTrades : [];
       setToBuySignals(Array.isArray(result.toBuySignals) ? result.toBuySignals : []);
-      setSignals(Array.isArray(result.inTradeTrades) ? result.inTradeTrades : []);
+      setSignals(inTrades);
       setStrategies(Array.isArray(result.strategySummary) ? result.strategySummary : []);
+
+      // Synchronize LTP and active signal status into paper trade portfolio
+      if (inTrades.length > 0) {
+        setPortfolio(prev => {
+          if (!prev || prev.length === 0) return prev;
+          const activeMap = new Map<string, InTradeTrade>();
+          inTrades.forEach(t => {
+            if (t.symbol) activeMap.set(t.symbol.toUpperCase().trim(), t);
+          });
+          let changed = false;
+          const updated = prev.map(p => {
+            const sym = (p.symbol || "").toUpperCase().trim();
+            const match = activeMap.get(sym);
+            if (match) {
+              const newLtp = Number(match.currentPrice || match.entryPrice || p.currentPrice || p.buyPrice);
+              const newRoi = match.currentROI !== undefined
+                ? Number(match.currentROI)
+                : (p.buyPrice > 0 ? ((newLtp - p.buyPrice) / p.buyPrice) * 100 : 0);
+              if (p.currentPrice !== newLtp || p.isActiveInStrategy !== true || p.currentROI !== newRoi) {
+                changed = true;
+                return {
+                  ...p,
+                  currentPrice: newLtp,
+                  currentROI: newRoi,
+                  isActiveInStrategy: true
+                };
+              }
+            } else {
+              if (p.isActiveInStrategy !== false) {
+                changed = true;
+                return {
+                  ...p,
+                  isActiveInStrategy: false
+                };
+              }
+            }
+            return p;
+          });
+          return changed ? updated : prev;
+        });
+      }
       
       // Accurately sanitize closedTrades: compute return percentage from entry & exit price if 0
       const rawClosed = Array.isArray(result.closedTrades) ? result.closedTrades : [];
@@ -277,18 +319,23 @@ export default function App() {
 
   // Buy submission handler
   const handleBuySubmit = (data: { symbol: string; buyPrice: number; quantity: number; strategyName?: string }) => {
+    const symKey = (data.symbol || "").toUpperCase().trim();
+    const activeMatch = signals.find(s => (s.symbol || "").toUpperCase().trim() === symKey);
+    const ltp = activeMatch?.currentPrice ? Number(activeMatch.currentPrice) : data.buyPrice;
+    const isSignalActive = !!activeMatch;
+
     const newPosition: ManualPortfolioTrade = {
       tradeId: `port-${Date.now()}`,
       symbol: data.symbol,
       buyPrice: data.buyPrice,
       quantity: data.quantity,
       totalInvested: data.buyPrice * data.quantity,
-      strategyName: data.strategyName || "Breakout",
+      strategyName: data.strategyName || activeMatch?.strategyName || "Breakout",
       date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
       daysHeld: 1,
-      isActiveInStrategy: true,
-      currentPrice: data.buyPrice,
-      currentROI: 0
+      isActiveInStrategy: isSignalActive,
+      currentPrice: ltp,
+      currentROI: data.buyPrice > 0 ? ((ltp - data.buyPrice) / data.buyPrice) * 100 : 0
     };
 
     setPortfolio(prev => [newPosition, ...prev]);
@@ -412,11 +459,6 @@ export default function App() {
 
           {/* Action Controls */}
           <div className="flex items-center gap-1.5">
-            {/* V2 Engine Badge */}
-            <div className="flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wider bg-indigo-600 text-white shadow-xs mr-0.5">
-              V2
-            </div>
-
             {/* Push Notifications */}
             <button
               onClick={handleEnablePush}
@@ -465,7 +507,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Content — Institutional Terminal */}
+      {/* Main Content — Classic Terminal */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-8">
         <InstitutionalView
           engineVersion={engineVersion}
@@ -486,6 +528,7 @@ export default function App() {
             setBuyModalData({ symbol: sym, price, strategyName: strat });
           }}
           onOpenSellModal={(trade) => setSellModalTrade(trade)}
+          onDeleteCompletedTrade={handleDeleteCompletedTrade}
           lastSyncedAt={lastSyncedAt}
           isSyncing={isSyncing}
           user={user}

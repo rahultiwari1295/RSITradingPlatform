@@ -197,7 +197,7 @@ export default function InstitutionalHeader({
             {/* Engine Tag */}
             <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
               <Cpu className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
-              V2
+              Institutional
             </span>
           </div>
 

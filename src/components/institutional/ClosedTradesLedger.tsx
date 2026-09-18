@@ -2,18 +2,23 @@ import React, { useState, useMemo } from "react";
 import { History, LayoutGrid, Table } from "lucide-react";
 import { ClosedTrade } from "../../types";
 import QuantSyncAlertCard from "./QuantSyncAlertCard";
+import StockDetailPage from "./StockDetailPage";
+import { BottomSheetItem } from "../BottomSheet";
 
 interface ClosedTradesLedgerProps {
   closedTrades: ClosedTrade[];
   onOpenChart: (symbol: string) => void;
+  onSelectStock?: (item: BottomSheetItem, allItems: BottomSheetItem[], index: number) => void;
 }
 
 export default function ClosedTradesLedger({
   closedTrades = [],
   onOpenChart,
+  onSelectStock,
 }: ClosedTradesLedgerProps) {
   const [filter, setFilter] = useState<"ALL" | "WIN" | "LOSS">("ALL");
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  const [selectedSheetItem, setSelectedSheetItem] = useState<BottomSheetItem | null>(null);
 
   // Accurately compute return percentage and win/loss from entryPrice & exitPrice
   const sanitizedTrades = useMemo(() => {
@@ -54,6 +59,46 @@ export default function ClosedTradesLedger({
     });
   }, [sanitizedTrades, filter]);
 
+  const formatClosedTradeToSheetItem = (trade: any): BottomSheetItem => {
+    const ep = Number(trade.entryPrice || 0);
+    const xp = Number(trade.exitPrice || 0);
+    const ret = Number(trade.returnPct ?? 0);
+    const days = trade.holdingDays || trade.holdDays || 1;
+
+    return {
+      ...trade,
+      symbol: trade.symbol,
+      strategyName: trade.strategyName || "INSTITUTIONAL POCKET PIVOT · SLEEVE 2",
+      entryDate: trade.entryDate,
+      exitDate: trade.exitDate,
+      entryPrice: ep,
+      exitPrice: xp,
+      currentPrice: xp,
+      returnPct: ret,
+      currentROI: ret,
+      holdingDays: days,
+      exitReason: trade.exitReason,
+      pnlLabel: ret >= 0 ? "WIN" : "LOSS",
+      sector: trade.sector,
+      stopLoss: trade.stopLoss,
+      targetPrice: trade.targetPrice,
+      tradePlan: {
+        target1Price: trade.targetPrice,
+        stopPrice: trade.stopLoss,
+      },
+    };
+  };
+
+  const handleTradeSelect = (trade: any, index: number) => {
+    const item = formatClosedTradeToSheetItem(trade);
+    if (onSelectStock) {
+      const allItems = filteredTrades.map(formatClosedTradeToSheetItem);
+      onSelectStock(item, allItems, index);
+    } else {
+      setSelectedSheetItem(item);
+    }
+  };
+
   if (!closedTrades || closedTrades.length === 0) {
     return (
       <div className="rounded-2xl p-8 text-center bg-white/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/[0.06] animate-fade-in">
@@ -61,6 +106,31 @@ export default function ClosedTradesLedger({
         <p className="text-sm font-bold text-slate-600 dark:text-slate-300">No closed trades yet</p>
         <p className="text-xs text-slate-400 mt-0.5">Completed exits will appear here automatically.</p>
       </div>
+    );
+  }
+
+  // Standalone Full Page Stock Dossier View
+  if (selectedSheetItem) {
+    const currentIndex = filteredTrades.findIndex((t) => t.symbol === selectedSheetItem.symbol);
+    return (
+      <StockDetailPage
+        item={selectedSheetItem}
+        sourceListTitle={`Closed Trades (${sanitizedTrades.length} Stocks)`}
+        onBack={() => setSelectedSheetItem(null)}
+        onPrev={
+          currentIndex > 0
+            ? () => setSelectedSheetItem(formatClosedTradeToSheetItem(filteredTrades[currentIndex - 1]))
+            : undefined
+        }
+        onNext={
+          currentIndex >= 0 && currentIndex < filteredTrades.length - 1
+            ? () => setSelectedSheetItem(formatClosedTradeToSheetItem(filteredTrades[currentIndex + 1]))
+            : undefined
+        }
+        currentIndex={currentIndex >= 0 ? currentIndex : undefined}
+        totalCount={filteredTrades.length}
+        onOpenChart={onOpenChart}
+      />
     );
   }
 
@@ -161,6 +231,7 @@ export default function ClosedTradesLedger({
                 exitDate={trade.exitDate}
                 exitReason={trade.exitReason}
                 onOpenChart={onOpenChart}
+                onClick={() => handleTradeSelect(trade, idx)}
               />
             );
           })}
@@ -178,7 +249,7 @@ export default function ClosedTradesLedger({
                   <th className="py-3 px-3">Return</th>
                   <th className="py-3 px-3">Exit Reason</th>
                   <th className="py-3 px-3">Days</th>
-                  <th className="py-3 px-3 text-right">Chart</th>
+                  <th className="py-3 px-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-white/[0.04]">
@@ -193,7 +264,8 @@ export default function ClosedTradesLedger({
                     <tr
                       key={`${trade.symbol}-${idx}`}
                       className="hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition-colors group cursor-pointer"
-                      onClick={() => onOpenChart(trade.symbol)}
+                      onClick={() => handleTradeSelect(trade, idx)}
+                      title="Click to view institutional dossier"
                     >
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
@@ -232,15 +304,30 @@ export default function ClosedTradesLedger({
                         {days}d
                       </td>
                       <td className="py-3 px-3 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onOpenChart(trade.symbol);
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[10px] font-bold text-slate-900 dark:text-white transition-colors"
-                        >
-                          Chart
-                        </button>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTradeSelect(trade, idx);
+                            }}
+                            className="px-2 py-1 rounded-lg bg-violet-50 hover:bg-violet-100 dark:bg-violet-950/40 dark:hover:bg-violet-900/60 text-[10px] font-bold text-violet-700 dark:text-violet-300 border border-violet-500/20 transition-colors cursor-pointer"
+                            title="View Overview"
+                          >
+                            Details
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenChart(trade.symbol);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[10px] font-bold text-slate-900 dark:text-white transition-colors cursor-pointer"
+                            title="View Chart"
+                          >
+                            Chart
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -253,4 +340,3 @@ export default function ClosedTradesLedger({
     </div>
   );
 }
-

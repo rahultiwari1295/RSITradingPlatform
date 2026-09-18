@@ -3,6 +3,7 @@ import { Briefcase, LayoutGrid, Table } from "lucide-react";
 import { InTradeTrade, ManualPortfolioTrade } from "../../types";
 import QuantSyncAlertCard from "./QuantSyncAlertCard";
 import { getSignalStatus } from "../../lib/signalStatus";
+import BottomSheet, { BottomSheetItem } from "../BottomSheet";
 
 interface ActivePositionsBookProps {
   inTradeTrades: InTradeTrade[];
@@ -10,6 +11,7 @@ interface ActivePositionsBookProps {
   onOpenChart: (symbol: string) => void;
   onOpenSellModal?: (trade: ManualPortfolioTrade) => void;
   onOpenBuyModal?: (symbol: string, price: number, strategy?: string) => void;
+  onSelectStock?: (item: BottomSheetItem, allItems: BottomSheetItem[], index: number) => void;
 }
 
 export default function ActivePositionsBook({
@@ -18,15 +20,16 @@ export default function ActivePositionsBook({
   onOpenChart,
   onOpenSellModal,
   onOpenBuyModal,
+  onSelectStock,
 }: ActivePositionsBookProps) {
   // Default sort is "days" (latest entry date first)
   const [sortBy, setSortBy] = useState<"days" | "roi" | "symbol">("days");
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  const [selectedSheetItem, setSelectedSheetItem] = useState<BottomSheetItem | null>(null);
 
   const positions = useMemo(() => {
     return [...inTradeTrades].sort((a, b) => {
       if (sortBy === "days") {
-        // "means latest entry should show first .."
         const getTime = (t: InTradeTrade) => {
           if (t.entryDate) {
             const time = new Date(t.entryDate).getTime();
@@ -63,6 +66,58 @@ export default function ActivePositionsBook({
     return roi >= 0;
   }).length;
   const lossCount = positions.length - profitCount;
+
+  // Convert an InTradeTrade into a rich BottomSheetItem for institutional dossier inspection
+  const formatPosToSheetItem = (pos: InTradeTrade): BottomSheetItem => {
+    const ep = Number(pos.entryPrice || 0);
+    const lp = Number(pos.currentPrice || ep);
+    const roi = Number(pos.currentROI ?? (ep > 0 ? ((lp - ep) / ep) * 100 : 0));
+    const calcDays = pos.entryDate
+      ? Math.max(1, Math.round((Date.now() - new Date(pos.entryDate).getTime()) / (1000 * 60 * 60 * 24)))
+      : 1;
+    const days = Number(pos.holdingDays || calcDays);
+
+    return {
+      ...pos,
+      symbol: pos.symbol,
+      strategyName: pos.strategyName || "INSTITUTIONAL POCKET PIVOT · SLEEVE 2",
+      entryDate: pos.entryDate,
+      entryPrice: ep,
+      currentPrice: lp,
+      currentROI: roi,
+      holdingDays: days,
+      sector: pos.sector,
+      compositeScore: pos.compositeScore,
+      technicalScore: pos.technicalScore,
+      riskScore: pos.riskScore,
+      mlProbability: pos.mlProbability,
+      stars: pos.stars,
+      action: pos.action || "HOLD",
+      actionLabel: pos.actionLabel || "IN POSITION",
+      actionColor: pos.actionColor || "blue",
+      slippageText: pos.slippageText,
+      footerLine: pos.footerLine,
+      footerTags: pos.footerTags,
+      stopLoss: pos.stopLoss ?? pos.stopPrice,
+      targetPrice: pos.targetPrice ?? pos.target1Price,
+      shares: pos.shares,
+      tradePlan: {
+        target1Price: pos.targetPrice ?? pos.target1Price,
+        stopPrice: pos.stopLoss ?? pos.stopPrice,
+        t1RiskReward: pos.t1RiskReward,
+      },
+    };
+  };
+
+  const handleSelectPos = (pos: InTradeTrade, index: number) => {
+    const item = formatPosToSheetItem(pos);
+    if (onSelectStock) {
+      const allItems = positions.map(formatPosToSheetItem);
+      onSelectStock(item, allItems, index);
+    } else {
+      setSelectedSheetItem(item);
+    }
+  };
 
   if (positions.length === 0) {
     return (
@@ -145,7 +200,7 @@ export default function ActivePositionsBook({
       {/* Cards View (Super Reactive Grid) */}
       {viewMode === "cards" ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-3.5">
-          {positions.map((pos) => {
+          {positions.map((pos, idx) => {
             const ep = Number(pos.entryPrice || 0);
             const lp = Number(pos.currentPrice || ep);
             const roi = Number(pos.currentROI ?? (ep > 0 ? ((lp - ep) / ep) * 100 : 0));
@@ -170,6 +225,7 @@ export default function ActivePositionsBook({
                 onOpenSellModal={userPos && onOpenSellModal ? () => onOpenSellModal(userPos) : undefined}
                 onOpenBuyModal={onOpenBuyModal ? () => onOpenBuyModal(pos.symbol, lp, pos.strategyName) : undefined}
                 isBought={!!userPos}
+                onClick={() => handleSelectPos(pos, idx)}
               />
             );
           })}
@@ -209,7 +265,7 @@ export default function ActivePositionsBook({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-white/[0.04]">
-                {positions.map((pos) => {
+                {positions.map((pos, idx) => {
                   const ep = Number(pos.entryPrice || 0);
                   const lp = Number(pos.currentPrice || ep);
                   const roi = Number(pos.currentROI ?? (ep > 0 ? ((lp - ep) / ep) * 100 : 0));
@@ -223,7 +279,8 @@ export default function ActivePositionsBook({
                     <tr
                       key={pos.symbol}
                       className="hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition-colors group cursor-pointer"
-                      onClick={() => onOpenChart(pos.symbol)}
+                      onClick={() => handleSelectPos(pos, idx)}
+                      title="Click to view institutional dossier"
                     >
                       <td className="py-3 px-4">
                         <span className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-emerald-600 transition-colors">
@@ -261,15 +318,30 @@ export default function ActivePositionsBook({
                         {days}d
                       </td>
                       <td className="py-3 px-3 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onOpenChart(pos.symbol);
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[10px] font-bold text-slate-900 dark:text-white transition-colors"
-                        >
-                          Chart
-                        </button>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectPos(pos, idx);
+                            }}
+                            className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 transition-colors cursor-pointer"
+                            title="View Overview"
+                          >
+                            Details
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenChart(pos.symbol);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[10px] font-bold text-slate-900 dark:text-white transition-colors cursor-pointer"
+                            title="View Chart"
+                          >
+                            Chart
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -279,7 +351,36 @@ export default function ActivePositionsBook({
           </div>
         </div>
       )}
+
+      {/* Institutional Floating Stock Dossier Window */}
+      {(() => {
+        const currentIndex = selectedSheetItem
+          ? positions.findIndex((p) => p.symbol === selectedSheetItem.symbol)
+          : -1;
+        const handlePrev = currentIndex > 0
+          ? () => setSelectedSheetItem(formatPosToSheetItem(positions[currentIndex - 1]))
+          : undefined;
+        const handleNext = currentIndex >= 0 && currentIndex < positions.length - 1
+          ? () => setSelectedSheetItem(formatPosToSheetItem(positions[currentIndex + 1]))
+          : undefined;
+
+        return (
+          <BottomSheet
+            isOpen={!!selectedSheetItem}
+            onClose={() => setSelectedSheetItem(null)}
+            item={selectedSheetItem}
+            onOpenChart={onOpenChart}
+            onOpenBuyModal={onOpenBuyModal}
+            onOpenSellModal={onOpenSellModal ? (item) => {
+              const userPos = portfolio.find((p) => p.symbol === item.symbol);
+              if (userPos) onOpenSellModal(userPos);
+            } : undefined}
+            isBought={!!portfolio.some((p) => p.symbol === selectedSheetItem?.symbol)}
+            onPrev={handlePrev}
+            onNext={handleNext}
+          />
+        );
+      })()}
     </div>
   );
 }
-

@@ -17,6 +17,7 @@ export interface QuantSyncAlertCardProps {
   onOpenSellModal?: () => void;
   onOpenBuyModal?: () => void;
   isBought?: boolean;
+  onClick?: () => void;
 }
 
 export default function QuantSyncAlertCard({
@@ -34,6 +35,7 @@ export default function QuantSyncAlertCard({
   onOpenSellModal,
   onOpenBuyModal,
   isBought,
+  onClick,
 }: QuantSyncAlertCardProps) {
   const isWin = returnPct >= 0;
   const absReturn = Math.abs(returnPct);
@@ -73,10 +75,14 @@ export default function QuantSyncAlertCard({
 
   return (
     <div
-      className="card brushed-titanium-card group relative w-full rounded-[14px] overflow-hidden flex flex-col justify-between transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 select-none p-3 sm:p-3.5"
+      onClick={onClick}
+      className={`card brushed-titanium-card group relative w-full rounded-[14px] overflow-hidden flex flex-col justify-between transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 select-none p-3 sm:p-3.5 ${
+        onClick ? "cursor-pointer hover:border-slate-400/70 dark:hover:border-white/20 active:scale-[0.99]" : ""
+      }`}
       style={{
         fontFamily: "'Manrope', sans-serif",
       }}
+      title={onClick ? "Click to view institutional dossier" : undefined}
     >
       {/* 1. Row Top: Strategy Name on Left & Status Badge + Buy + Chart on Right */}
       <div className="row-top flex items-center justify-between gap-2 mb-1 sm:mb-1.5">
