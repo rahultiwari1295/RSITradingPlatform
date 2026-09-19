@@ -659,17 +659,24 @@ async function startServer() {
   app.get("/api/intel/pulse", (req, res) => {
     forwardToVps("/api/intel/pulse", req, res, {
       date: "Sep 19, 2026",
-      nifty_price: 26420,
-      nifty_chg_pct: 0.3,
-      sensex_price: 86750,
-      sensex_chg_pct: 0.41,
-      banknifty_price: 54800,
-      banknifty_chg_pct: 0.18,
-      advance_decline_adv: 1420,
-      advance_decline_dec: 880,
-      sentiment_label: "Mildly Bullish",
+      nifty_price: 23346.4,
+      nifty_chg_pct: 0.33,
+      sensex_price: 74294.96,
+      sensex_chg_pct: -0.03,
+      banknifty_price: 56358.7,
+      banknifty_chg_pct: 0.54,
+      advances_pct: 62.5,
+      declines_pct: 37.5,
+      sentiment: "Mildly Bullish",
+      sentiment_pill: "🟢 Mildly Bullish",
+      fii_net_cr: 1240,
+      dii_net_cr: 890,
     });
   });
+
+  app.get("/api/intel/sectors", (req, res) => forwardToVps("/api/intel/sectors", req, res));
+  app.get("/api/intel/news", (req, res) => forwardToVps("/api/intel/news", req, res));
+  app.get("/api/intel/news/sync", (req, res) => forwardToVps("/api/intel/news/sync", req, res));
 
   app.get("/api/intel/digest", (req, res) => {
     const engine = (req.query.engine as string) || "v2";

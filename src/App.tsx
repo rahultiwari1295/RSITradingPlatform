@@ -1045,6 +1045,8 @@ export default function App() {
   const [patterns, setPatterns] = useState<PatternSection[]>(DEMO_PATTERNS as any);
   const [breakouts, setBreakouts] = useState<BreakoutItem[]>(DEMO_BREAKOUTS as any);
   const [marketPulse, setMarketPulse] = useState<MarketPulseData | null>(null);
+  const [sectorsData, setSectorsData] = useState<Array<{ name: string; disp_value?: string; change_pct: number; color?: string }>>([]);
+  const [newsData, setNewsData] = useState<Array<any>>([]);
   const [dailyDigest, setDailyDigest] = useState<string>("");
   const [systemStatus, setSystemStatus] = useState<any>(null);
   const [systemConfig, setSystemConfig] = useState<any>(null);
@@ -1163,9 +1165,21 @@ export default function App() {
         if (res && res.breakouts) setBreakouts(res.breakouts);
       }).catch(() => {});
 
-      // 7. Market Pulse & Daily Digest
+      // 7. Market Pulse, Sectors, News & Daily Digest
       quantsyncApi.getMarketPulse().then(res => {
         if (res) setMarketPulse(res);
+      }).catch(() => {});
+
+      quantsyncApi.getSectors("day").then(res => {
+        if (res && res.sectors && res.sectors.length > 0) {
+          setSectorsData(res.sectors);
+        }
+      }).catch(() => {});
+
+      quantsyncApi.getNews(15).then(res => {
+        if (res && res.news && res.news.length > 0) {
+          setNewsData(res.news);
+        }
       }).catch(() => {});
 
       quantsyncApi.getDailyDigest(currentEngine).then(res => {
@@ -2074,55 +2088,101 @@ export default function App() {
 
           <div className="sec-head">
             <span className="micro">Sector Heatmap</span>
-            <span className="micro dim">Live</span>
+            <span className="micro dim">Live Angel Quotes</span>
           </div>
           <div className="heat">
-            <div className="hc" style={{ gridArea: "1/1/3/3", background: "linear-gradient(160deg, color-mix(in srgb,var(--profit) 34%,var(--s1)), color-mix(in srgb,var(--profit) 20%,var(--s1)))" }}>
-              <div className="n">IT</div><div className="p up">+1.2%</div>
-            </div>
-            <div className="hc" style={{ gridArea: "1/3/2/5", background: "linear-gradient(160deg, color-mix(in srgb,var(--loss) 26%,var(--s1)), color-mix(in srgb,var(--loss) 14%,var(--s1)))" }}>
-              <div className="n">Banks</div><div className="p down">−0.3%</div>
-            </div>
-            <div className="hc" style={{ gridArea: "2/3/3/4", background: "linear-gradient(160deg, color-mix(in srgb,var(--profit) 22%,var(--s1)), color-mix(in srgb,var(--profit) 12%,var(--s1)))" }}>
-              <div className="n">Pharma</div><div className="p up">+0.8%</div>
-            </div>
-            <div className="hc" style={{ gridArea: "2/4/3/5", background: "linear-gradient(160deg, color-mix(in srgb,var(--profit) 16%,var(--s1)), color-mix(in srgb,var(--profit) 8%,var(--s1)))" }}>
-              <div className="n">Auto</div><div className="p up">+0.5%</div>
-            </div>
-            <div className="hc" style={{ gridArea: "3/1/4/2", background: "linear-gradient(160deg, color-mix(in srgb,var(--loss) 32%,var(--s1)), color-mix(in srgb,var(--loss) 18%,var(--s1)))" }}>
-              <div className="n">Metal</div><div className="p down">−0.7%</div>
-            </div>
-            <div className="hc" style={{ gridArea: "3/2/4/3", background: "linear-gradient(160deg, color-mix(in srgb,var(--profit) 10%,var(--s1)), color-mix(in srgb,var(--profit) 5%,var(--s1)))" }}>
-              <div className="n">FMCG</div><div className="p up">+0.1%</div>
-            </div>
-            <div className="hc" style={{ gridArea: "3/3/4/5", background: "linear-gradient(160deg, color-mix(in srgb,var(--profit) 18%,var(--s1)), color-mix(in srgb,var(--profit) 10%,var(--s1)))" }}>
-              <div className="n">Energy</div><div className="p up">+0.6%</div>
-            </div>
+            {(() => {
+              const defaultSectors = [
+                { name: "IT", change_pct: 1.2, disp_value: "+1.2%" },
+                { name: "Banks", change_pct: -0.3, disp_value: "−0.3%" },
+                { name: "Pharma", change_pct: 0.8, disp_value: "+0.8%" },
+                { name: "Auto", change_pct: 0.5, disp_value: "+0.5%" },
+                { name: "Metal", change_pct: -0.7, disp_value: "−0.7%" },
+                { name: "FMCG", change_pct: 0.1, disp_value: "+0.1%" },
+                { name: "Energy", change_pct: 0.6, disp_value: "+0.6%" },
+              ];
+              const displayList = sectorsData.length >= 7 ? sectorsData.slice(0, 7) : defaultSectors;
+              const gridAreas = ["1/1/3/3", "1/3/2/5", "2/3/3/4", "2/4/3/5", "3/1/4/2", "3/2/4/3", "3/3/4/5"];
+
+              return displayList.map((sec, idx) => {
+                const isUp = (sec.change_pct || 0) >= 0;
+                const area = gridAreas[idx] || "auto";
+                const bg = isUp
+                  ? "linear-gradient(160deg, color-mix(in srgb,var(--profit) 32%,var(--s1)), color-mix(in srgb,var(--profit) 16%,var(--s1)))"
+                  : "linear-gradient(160deg, color-mix(in srgb,var(--loss) 30%,var(--s1)), color-mix(in srgb,var(--loss) 14%,var(--s1)))";
+                const disp = sec.disp_value || (isUp ? `+${sec.change_pct.toFixed(1)}%` : `${sec.change_pct.toFixed(1)}%`);
+
+                return (
+                  <div key={sec.name} className="hc" style={{ gridArea: area, background: bg }}>
+                    <div className="n">{sec.name}</div>
+                    <div className={`p ${isUp ? "up" : "down"}`}>{disp}</div>
+                  </div>
+                );
+              });
+            })()}
           </div>
 
-          <div className="sec-head"><span className="micro">News Feed</span></div>
+          <div className="sec-head">
+            <span className="micro">Financial News & Corporate Catalysts</span>
+            <span className="micro dim">ET · MC · Trendlyne</span>
+          </div>
           <div className="card" style={{ padding: "4px 16px" }}>
-            <div className="news held">
-              <div className="src">MC</div>
-              <div style={{ flex: 1 }}>
-                <div className="hl">IT sector rally continues as TCS guides strong outlook; Nifty IT index up 1.2%</div>
-                <div className="meta"><span>2h ago · Moneycontrol</span><span className="pill green" style={{ padding: "2px 7px", fontSize: 9 }}>🟢 Bullish</span></div>
-              </div>
-            </div>
-            <div className="news">
-              <div className="src">ET</div>
-              <div style={{ flex: 1 }}>
-                <div className="hl">RBI keeps repo rate unchanged at 6.25%; signals accommodative stance</div>
-                <div className="meta"><span>4h ago · Economic Times</span><span className="pill" style={{ padding: "2px 7px", fontSize: 9 }}>⚪ Neutral</span></div>
-              </div>
-            </div>
-            <div className="news">
-              <div className="src">LM</div>
-              <div style={{ flex: 1 }}>
-                <div className="hl">Metal stocks slip on weak global cues; Hindalco, Tata Steel among top losers</div>
-                <div className="meta"><span>5h ago · LiveMint</span><span className="pill red" style={{ padding: "2px 7px", fontSize: 9 }}>🔴 Bearish</span></div>
-              </div>
-            </div>
+            {(() => {
+              const defaultNews = [
+                {
+                  title: "IT sector rally continues as TCS guides strong outlook; Nifty IT index up 1.2%",
+                  source: "Moneycontrol",
+                  time_stamp: "2h ago",
+                  label: "Bullish",
+                },
+                {
+                  title: "RBI keeps repo rate unchanged at 6.25%; signals accommodative stance",
+                  source: "Economic Times",
+                  time_stamp: "4h ago",
+                  label: "Macro",
+                },
+                {
+                  title: "Metal stocks slip on weak global cues; Hindalco, Tata Steel among top losers",
+                  source: "LiveMint",
+                  time_stamp: "5h ago",
+                  label: "Bearish",
+                },
+              ];
+              const list = newsData.length > 0 ? newsData.slice(0, 7) : defaultNews;
+
+              return list.map((item, idx) => {
+                const title = item.title || item.notification || "";
+                const rawSource = item.source || "Trendlyne";
+                const src = rawSource.includes("Economic") ? "ET" : rawSource.includes("Money") ? "MC" : "TL";
+                const timeStr = item.published_at || item.time_stamp || item.fetched_at || "Recent";
+                const link = item.url || item.complete_url || item.screen_redirect_url || "";
+
+                const isBull = /surge|rally|gain|growth|order|secures|profit|high|up|nod|approv/i.test(title);
+                const isBear = /fall|drop|slip|loss|down|cut|weak|probe|penalty|crash/i.test(title);
+                const pillText = item.label || (isBull ? "🟢 Bullish" : isBear ? "🔴 Bearish" : "⚪ Market");
+                const pillClass = isBull ? "pill green" : isBear ? "pill red" : "pill";
+
+                return (
+                  <div
+                    key={item.id || item.guid || idx}
+                    className={`news ${idx === 0 ? "held" : ""}`}
+                    onClick={() => {
+                      if (link) window.open(link, "_blank", "noopener,noreferrer");
+                    }}
+                    style={{ cursor: link ? "pointer" : "default" }}
+                  >
+                    <div className="src">{src}</div>
+                    <div style={{ flex: 1 }}>
+                      <div className="hl">{title}</div>
+                      <div className="meta">
+                        <span>{timeStr} · {rawSource}</span>
+                        <span className={pillClass} style={{ padding: "2px 7px", fontSize: 9 }}>{pillText}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
           </div>
 
           <div className="sec-head"><span className="micro">AI Daily Digest</span></div>

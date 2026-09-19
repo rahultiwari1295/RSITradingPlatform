@@ -262,4 +262,14 @@ export const quantsyncApi = {
 
   getChartData: (symbol: string, limit: number = 250, engine: "v2" | "v3" = "v3") =>
     apiFetch<ChartData>(`/api/chart/${encodeURIComponent(symbol)}?limit=${limit}&engine=${engine}`),
+
+  getSectors: (period: string = "day") =>
+    apiFetch<{ count: number; sectors: Array<{ name: string; disp_value?: string; change_pct: number; color?: string; updated_at?: string }> }>(
+      `/api/intel/sectors?period=${period}`
+    ),
+
+  getNews: (limit: number = 20, stock?: string) =>
+    apiFetch<{ count: number; news: Array<any> }>(
+      `/api/intel/news?limit=${limit}${stock ? `&stock=${encodeURIComponent(stock)}` : ""}`
+    ),
 };
