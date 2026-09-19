@@ -1998,229 +1998,146 @@ export default function App() {
 
       {/* ============ SCREENS ============ */}
       <main className="screens" id="screens">
-        {/* ===== HOME SCREEN ===== */}
+        {/* ===== HOME SCREEN (FORMER INTEL WITH ENGINE CONTEXT STRIP) ===== */}
         <section className={`screen ${activeTab === "home" ? "active" : ""}`} id="screen-home">
-          {/* ENGINE CONTEXT STRIP */}
-              <div className="engine-context" id="engineContext">
-                <div className="ec-icon" id="ecIcon">
-                  {engine === "v2" ? "🤖" : "📐"}
-                </div>
-                <div className="ec-text">
-                  <div className="ec-title">
-                    <span id="ecTitle">{engine === "v2" ? "V2 · AI Trading" : "V3 · Chart Trading"}</span>
-                    <span className="ec-tag" id="ecTag">{engine === "v2" ? "FOR EVERYONE" : "FOR PROS"}</span>
-                  </div>
-                  <div className="ec-desc" id="ecDesc">
-                    {engine === "v2"
-                      ? "ML scans every stock · picks the top 3 most likely to rise"
-                      : "Auto-detects breakout patterns · enters the strongest chart setup"}
-                  </div>
-                </div>
-                <button
-                  className="ec-switch"
-                  id="ecSwitch"
-                  onClick={() => switchEngine(engine === "v2" ? "v3" : "v2")}
-                >
-                  {engine === "v2" ? "Try V3 →" : "Try V2 →"}
-                </button>
+          {/* ENGINE CONTEXT STRIP ON TOP */}
+          <div className="engine-context" id="engineContext">
+            <div className="ec-icon" id="ecIcon">
+              {engine === "v2" ? "🤖" : "📐"}
+            </div>
+            <div className="ec-text">
+              <div className="ec-title">
+                <span id="ecTitle">{engine === "v2" ? "V2 · AI Trading" : "V3 · Chart Trading"}</span>
+                <span className="ec-tag" id="ecTag">{engine === "v2" ? "FOR EVERYONE" : "FOR PROS"}</span>
               </div>
+              <div className="ec-desc" id="ecDesc">
+                {engine === "v2"
+                  ? "ML scans every stock · picks the top 3 most likely to rise"
+                  : "Auto-detects breakout patterns · enters the strongest chart setup"}
+              </div>
+            </div>
+            <button
+              className="ec-switch"
+              id="ecSwitch"
+              onClick={() => switchEngine(engine === "v2" ? "v3" : "v2")}
+            >
+              {engine === "v2" ? "Try V3 →" : "Try V2 →"}
+            </button>
+          </div>
 
-              {/* GUEST MODE PROMPT OR LOGGED-IN PAPER PERFORMANCE HERO CARD */}
-              {!user ? (
-                <div
-                  className="card"
-                  style={{
-                    padding: "18px 16px",
-                    marginBottom: 14,
-                    background: "var(--card)",
-                    border: "1px solid var(--line)",
-                    borderRadius: 16,
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                    <div
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 10,
-                        background: "rgba(99, 102, 241, 0.12)",
-                        color: "var(--accent)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 20,
-                        flexShrink: 0,
-                      }}
-                    >
-                      💼
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}>
-                        Paper Trade on Live Signals
-                      </div>
-                      <div style={{ fontSize: 11.5, color: "var(--ink2)", marginTop: 4, lineHeight: 1.5 }}>
-                        Please login or sign up to execute virtual paper trades on active signals and track your portfolio.
-                      </div>
-                      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                        <button
-                          className="btn primary"
-                          style={{ padding: "7px 16px", fontSize: 11.5, fontWeight: 700, borderRadius: 8 }}
-                          onClick={() => {
-                            setAuthMode("signin");
-                            setShowAuthModal(true);
-                          }}
-                        >
-                          Login
-                        </button>
-                        <button
-                          className="btn"
-                          style={{
-                            padding: "7px 16px",
-                            fontSize: 11.5,
-                            fontWeight: 700,
-                            borderRadius: 8,
-                            background: "var(--s2)",
-                            border: "1px solid var(--line)",
-                          }}
-                          onClick={() => {
-                            setAuthMode("signup");
-                            setShowAuthModal(true);
-                          }}
-                        >
-                          Sign Up
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+          <div className="card">
+            <div className="row between">
+              <div className="micro">Market Pulse</div>
+              <div className="micro dim">{marketPulse?.date || headerDateStr}</div>
+            </div>
+            <div className="idx-grid">
+              <div className="idx">
+                <div className="n">NIFTY 50</div>
+                <div className="v">{Math.round(marketPulse?.nifty_price || 26420).toLocaleString()}</div>
+                <div className={`c ${(marketPulse?.nifty_chg_pct || 0.3) >= 0 ? "up" : "down"}`}>
+                  {pct(marketPulse?.nifty_chg_pct || 0.3)}
                 </div>
-              ) : (
-                <div
-                  className="hero"
-                  style={{
-                    cursor: "pointer",
-                    marginBottom: 14,
-                    transition: "transform 0.15s ease, box-shadow 0.15s ease",
-                  }}
-                  onClick={() => setActiveTab("portfolio")}
-                  title="Click to view full Paper Trading Desk"
-                >
-                  <div className="row between" style={{ marginBottom: 12 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontSize: 13, fontWeight: 800 }}>
-                        👤 {user.displayName || user.email?.split("@")[0]}'s Paper Desk
-                      </span>
-                      <span className="pill green" style={{ fontSize: 9, padding: "2px 7px" }}>
-                        Synced
-                      </span>
-                    </div>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: "var(--accent)",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 3,
-                      }}
-                    >
-                      Open Desk →
-                    </span>
-                  </div>
-                  <div className="hero-grid">
-                    <div>
-                      <div className="micro">Paper Portfolio Value</div>
-                      <div className="val num" id="heroNav">{INR(paperStats.totalPortfolioValue)}</div>
-                      <div className="sub dim" style={{ fontSize: 9.5, marginTop: 4 }}>
-                        Invested: {INR(paperStats.totalInvested)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="micro">Unrealized P&amp;L</div>
-                      <div className={`val num ${paperStats.unrealizedPnl >= 0 ? "up" : "down"}`}>
-                        {paperStats.unrealizedPnl >= 0 ? "+" : "−"}{INR(Math.abs(paperStats.unrealizedPnl))}
-                      </div>
-                      <div className={`sub ${paperStats.unrealizedPnl >= 0 ? "up" : "down"}`}>
-                        {pct(paperStats.unrealizedPct)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="micro">Open Positions</div>
-                      <div className="val num" style={{ marginTop: 2 }}>{paperStats.count}</div>
-                      <div className="sub dim" style={{ fontSize: 9.5, marginTop: 4 }}>
-                        {paperStats.count > 0 ? "Tracking live" : "Virtual ₹5L"}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="hero-note" style={{ marginTop: 12 }}>
-                    <span className="hn-ico">💼</span>
-                    <span>Tap to view active holdings, performance history &amp; exit orders →</span>
-                  </div>
+              </div>
+              <div className="idx">
+                <div className="n">SENSEX</div>
+                <div className="v">{Math.round(marketPulse?.sensex_price || 86750).toLocaleString()}</div>
+                <div className={`c ${(marketPulse?.sensex_chg_pct || 0.41) >= 0 ? "up" : "down"}`}>
+                  {pct(marketPulse?.sensex_chg_pct || 0.41)}
                 </div>
-              )}
+              </div>
+              <div className="idx">
+                <div className="n">BANK NIFTY</div>
+                <div className="v">{Math.round(marketPulse?.banknifty_price || 54800).toLocaleString()}</div>
+                <div className={`c ${(marketPulse?.banknifty_chg_pct || 0.18) >= 0 ? "up" : "down"}`}>
+                  {pct(marketPulse?.banknifty_chg_pct || 0.18)}
+                </div>
+              </div>
+            </div>
+            <div className="divider" />
+            <div className="row between" style={{ fontSize: 11 }}>
+              <span className="mut">Sentiment</span>
+              <span className="pill green">{marketPulse?.sentiment_pill || "🟢 Mildly Bullish"}</span>
+            </div>
+            <div className="row between" style={{ fontSize: 11, marginTop: 10 }}>
+              <span className="mut">Breadth</span>
+              <span style={{ fontWeight: 600 }}>
+                {marketPulse?.advances_pct || 62}% advancing · {marketPulse?.declines_pct || 38}% declining
+              </span>
+            </div>
+            <div className="row between" style={{ fontSize: 11, marginTop: 10 }}>
+              <span className="mut">Flows</span>
+              <span className="num" style={{ fontSize: 11 }}>
+                FII <b className="up">+₹{marketPulse?.fii_net_cr || 1240} Cr</b> · DII <b className="up">+₹{marketPulse?.dii_net_cr || 890} Cr</b>
+              </span>
+            </div>
+          </div>
 
-              {/* TODAY'S ACTIVITY */}
-              <div className="sec-head">
-                <span className="micro">Today's Activity</span>
-                <span className="micro dim">{headerDateStr}</span>
-              </div>
-              <div className="feed" id="feed">
-                {feedItems.map((f, i) => (
-                  <div
-                    key={i}
-                    className={`fi ${f.kind}`}
-                    style={{ animation: `slideIn .35s cubic-bezier(.16,1,.3,1) ${i * 55}ms backwards` }}
-                    onClick={() => {
-                      if (f.trade_symbol) {
-                        const match = closedTrades.find((t: any) => t.sym === f.trade_symbol);
-                        if (match) openSheet("closed", match);
-                      }
-                    }}
-                  >
-                    <div className="tm">{f.time}</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="ti">{f.icon} {f.title}</div>
-                      <div className="ds" dangerouslySetInnerHTML={{ __html: f.desc }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
+          <div className="sec-head">
+            <span className="micro">Sector Heatmap</span>
+            <span className="micro dim">Live</span>
+          </div>
+          <div className="heat">
+            <div className="hc" style={{ gridArea: "1/1/3/3", background: "linear-gradient(160deg, color-mix(in srgb,var(--profit) 34%,var(--s1)), color-mix(in srgb,var(--profit) 20%,var(--s1)))" }}>
+              <div className="n">IT</div><div className="p up">+1.2%</div>
+            </div>
+            <div className="hc" style={{ gridArea: "1/3/2/5", background: "linear-gradient(160deg, color-mix(in srgb,var(--loss) 26%,var(--s1)), color-mix(in srgb,var(--loss) 14%,var(--s1)))" }}>
+              <div className="n">Banks</div><div className="p down">−0.3%</div>
+            </div>
+            <div className="hc" style={{ gridArea: "2/3/3/4", background: "linear-gradient(160deg, color-mix(in srgb,var(--profit) 22%,var(--s1)), color-mix(in srgb,var(--profit) 12%,var(--s1)))" }}>
+              <div className="n">Pharma</div><div className="p up">+0.8%</div>
+            </div>
+            <div className="hc" style={{ gridArea: "2/4/3/5", background: "linear-gradient(160deg, color-mix(in srgb,var(--profit) 16%,var(--s1)), color-mix(in srgb,var(--profit) 8%,var(--s1)))" }}>
+              <div className="n">Auto</div><div className="p up">+0.5%</div>
+            </div>
+            <div className="hc" style={{ gridArea: "3/1/4/2", background: "linear-gradient(160deg, color-mix(in srgb,var(--loss) 32%,var(--s1)), color-mix(in srgb,var(--loss) 18%,var(--s1)))" }}>
+              <div className="n">Metal</div><div className="p down">−0.7%</div>
+            </div>
+            <div className="hc" style={{ gridArea: "3/2/4/3", background: "linear-gradient(160deg, color-mix(in srgb,var(--profit) 10%,var(--s1)), color-mix(in srgb,var(--profit) 5%,var(--s1)))" }}>
+              <div className="n">FMCG</div><div className="p up">+0.1%</div>
+            </div>
+            <div className="hc" style={{ gridArea: "3/3/4/5", background: "linear-gradient(160deg, color-mix(in srgb,var(--profit) 18%,var(--s1)), color-mix(in srgb,var(--profit) 10%,var(--s1)))" }}>
+              <div className="n">Energy</div><div className="p up">+0.6%</div>
+            </div>
+          </div>
 
-              {/* ACTIVE POSITIONS CHIPS */}
-              <div className="sec-head">
-                <span className="micro">Active Positions</span>
-                <span
-                  className="micro"
-                  style={{ color: "var(--accent)", cursor: "pointer" }}
-                  onClick={() => setActiveTab("signals")}
-                >
-                  See All →
-                </span>
+          <div className="sec-head"><span className="micro">News Feed</span></div>
+          <div className="card" style={{ padding: "4px 16px" }}>
+            <div className="news held">
+              <div className="src">MC</div>
+              <div style={{ flex: 1 }}>
+                <div className="hl">IT sector rally continues as TCS guides strong outlook; Nifty IT index up 1.2%</div>
+                <div className="meta"><span>2h ago · Moneycontrol</span><span className="pill green" style={{ padding: "2px 7px", fontSize: 9 }}>🟢 Bullish</span></div>
               </div>
-              <div className="poschips" id="posChips">
-                {sortedActiveTrades.map((t: any, idx: number) => {
-                  const pPct = t.pnlPct ?? t.roiPct ?? t.chg ?? 0;
-                  return (
-                    <div
-                      key={idx}
-                      className={`poschip ${pPct > 0 ? "g" : pPct < 0 ? "r" : ""}`}
-                      onClick={() => openSheet(engine, t)}
-                    >
-                      <div className="s">{t.sym || t.symbol}</div>
-                      <div className={`p ${pPct > 0 ? "up" : pPct < 0 ? "down" : "mut"}`}>
-                        {pPct >= 0 ? "+" : ""}{pPct.toFixed(2)}%
-                      </div>
-                      <div className="d">Day {t.days ?? t.holdingDays ?? 1}</div>
-                    </div>
-                  );
-                })}
-                <div
-                  className="poschip"
-                  style={{ display: "grid", placeItems: "center", color: "var(--accent)", fontSize: 11, fontWeight: 700, width: 78 }}
-                  onClick={() => setActiveTab("signals")}
-                >
-                  See All →
-                </div>
+            </div>
+            <div className="news">
+              <div className="src">ET</div>
+              <div style={{ flex: 1 }}>
+                <div className="hl">RBI keeps repo rate unchanged at 6.25%; signals accommodative stance</div>
+                <div className="meta"><span>4h ago · Economic Times</span><span className="pill" style={{ padding: "2px 7px", fontSize: 9 }}>⚪ Neutral</span></div>
               </div>
+            </div>
+            <div className="news">
+              <div className="src">LM</div>
+              <div style={{ flex: 1 }}>
+                <div className="hl">Metal stocks slip on weak global cues; Hindalco, Tata Steel among top losers</div>
+                <div className="meta"><span>5h ago · LiveMint</span><span className="pill red" style={{ padding: "2px 7px", fontSize: 9 }}>🔴 Bearish</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="sec-head"><span className="micro">AI Daily Digest</span></div>
+          <div className="digest">
+            <div className="row gap8" style={{ marginBottom: 9 }}>
+              <span>🧠</span>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--accent)" }}>
+                Generated 15:45 IST
+              </span>
+            </div>
+            {dailyDigest || `Markets closed mildly bullish today with broad-based participation. Your portfolio benefited from target hits. The ${engine.toUpperCase()} engine identified new setups with strong technical and volume conviction.`}
+            <button className="btn" style={{ marginTop: 13 }} onClick={() => setActiveTab("signals")}>
+              Explore Signals →
+            </button>
+          </div>
         </section>
 
         {/* ===== SIGNALS SCREEN ===== */}
@@ -3166,120 +3083,7 @@ export default function App() {
           )}
         </section>
 
-        {/* ===== INTEL SCREEN ===== */}
-        <section className={`screen ${activeTab === "intel" ? "active" : ""}`} id="screen-intel">
-          <div className="card">
-            <div className="row between">
-              <div className="micro">Market Pulse</div>
-              <div className="micro dim">{marketPulse?.date || headerDateStr}</div>
-            </div>
-            <div className="idx-grid">
-              <div className="idx">
-                <div className="n">NIFTY 50</div>
-                <div className="v">{Math.round(marketPulse?.nifty_price || 26420).toLocaleString()}</div>
-                <div className={`c ${(marketPulse?.nifty_chg_pct || 0.3) >= 0 ? "up" : "down"}`}>
-                  {pct(marketPulse?.nifty_chg_pct || 0.3)}
-                </div>
-              </div>
-              <div className="idx">
-                <div className="n">SENSEX</div>
-                <div className="v">{Math.round(marketPulse?.sensex_price || 86750).toLocaleString()}</div>
-                <div className={`c ${(marketPulse?.sensex_chg_pct || 0.41) >= 0 ? "up" : "down"}`}>
-                  {pct(marketPulse?.sensex_chg_pct || 0.41)}
-                </div>
-              </div>
-              <div className="idx">
-                <div className="n">BANK NIFTY</div>
-                <div className="v">{Math.round(marketPulse?.banknifty_price || 54800).toLocaleString()}</div>
-                <div className={`c ${(marketPulse?.banknifty_chg_pct || 0.18) >= 0 ? "up" : "down"}`}>
-                  {pct(marketPulse?.banknifty_chg_pct || 0.18)}
-                </div>
-              </div>
-            </div>
-            <div className="divider" />
-            <div className="row between" style={{ fontSize: 11 }}>
-              <span className="mut">Sentiment</span>
-              <span className="pill green">{marketPulse?.sentiment_pill || "🟢 Mildly Bullish"}</span>
-            </div>
-            <div className="row between" style={{ fontSize: 11, marginTop: 10 }}>
-              <span className="mut">Breadth</span>
-              <span style={{ fontWeight: 600 }}>
-                {marketPulse?.advances_pct || 62}% advancing · {marketPulse?.declines_pct || 38}% declining
-              </span>
-            </div>
-            <div className="row between" style={{ fontSize: 11, marginTop: 10 }}>
-              <span className="mut">Flows</span>
-              <span className="num" style={{ fontSize: 11 }}>
-                FII <b className="up">+₹{marketPulse?.fii_net_cr || 1240} Cr</b> · DII <b className="up">+₹{marketPulse?.dii_net_cr || 890} Cr</b>
-              </span>
-            </div>
-          </div>
 
-          <div className="sec-head">
-            <span className="micro">Sector Heatmap</span>
-            <span className="micro dim">Live</span>
-          </div>
-          <div className="heat">
-            <div className="hc" style={{ gridArea: "1/1/3/3", background: "linear-gradient(160deg, color-mix(in srgb,var(--profit) 34%,var(--s1)), color-mix(in srgb,var(--profit) 20%,var(--s1)))" }}>
-              <div className="n">IT</div><div className="p up">+1.2%</div>
-            </div>
-            <div className="hc" style={{ gridArea: "1/3/2/5", background: "linear-gradient(160deg, color-mix(in srgb,var(--loss) 26%,var(--s1)), color-mix(in srgb,var(--loss) 14%,var(--s1)))" }}>
-              <div className="n">Banks</div><div className="p down">−0.3%</div>
-            </div>
-            <div className="hc" style={{ gridArea: "2/3/3/4", background: "linear-gradient(160deg, color-mix(in srgb,var(--profit) 22%,var(--s1)), color-mix(in srgb,var(--profit) 12%,var(--s1)))" }}>
-              <div className="n">Pharma</div><div className="p up">+0.8%</div>
-            </div>
-            <div className="hc" style={{ gridArea: "2/4/3/5", background: "linear-gradient(160deg, color-mix(in srgb,var(--profit) 16%,var(--s1)), color-mix(in srgb,var(--profit) 8%,var(--s1)))" }}>
-              <div className="n">Auto</div><div className="p up">+0.5%</div>
-            </div>
-            <div className="hc" style={{ gridArea: "3/1/4/2", background: "linear-gradient(160deg, color-mix(in srgb,var(--loss) 32%,var(--s1)), color-mix(in srgb,var(--loss) 18%,var(--s1)))" }}>
-              <div className="n">Metal</div><div className="p down">−0.7%</div>
-            </div>
-            <div className="hc" style={{ gridArea: "3/2/4/3", background: "linear-gradient(160deg, color-mix(in srgb,var(--profit) 10%,var(--s1)), color-mix(in srgb,var(--profit) 5%,var(--s1)))" }}>
-              <div className="n">FMCG</div><div className="p up">+0.1%</div>
-            </div>
-            <div className="hc" style={{ gridArea: "3/3/4/5", background: "linear-gradient(160deg, color-mix(in srgb,var(--profit) 18%,var(--s1)), color-mix(in srgb,var(--profit) 10%,var(--s1)))" }}>
-              <div className="n">Energy</div><div className="p up">+0.6%</div>
-            </div>
-          </div>
-
-          <div className="sec-head"><span className="micro">News Feed</span></div>
-          <div className="card" style={{ padding: "4px 16px" }}>
-            <div className="news held">
-              <div className="src">MC</div>
-              <div style={{ flex: 1 }}>
-                <div className="hl">IT sector rally continues as TCS guides strong outlook; Nifty IT index up 1.2%</div>
-                <div className="meta"><span>2h ago · Moneycontrol</span><span className="pill green" style={{ padding: "2px 7px", fontSize: 9 }}>🟢 Bullish</span></div>
-              </div>
-            </div>
-            <div className="news">
-              <div className="src">ET</div>
-              <div style={{ flex: 1 }}>
-                <div className="hl">RBI keeps repo rate unchanged at 6.25%; signals accommodative stance</div>
-                <div className="meta"><span>4h ago · Economic Times</span><span className="pill" style={{ padding: "2px 7px", fontSize: 9 }}>⚪ Neutral</span></div>
-              </div>
-            </div>
-            <div className="news">
-              <div className="src">LM</div>
-              <div style={{ flex: 1 }}>
-                <div className="hl">Metal stocks slip on weak global cues; Hindalco, Tata Steel among top losers</div>
-                <div className="meta"><span>5h ago · LiveMint</span><span className="pill red" style={{ padding: "2px 7px", fontSize: 9 }}>🔴 Bearish</span></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="sec-head"><span className="micro">AI Daily Digest</span></div>
-          <div className="digest">
-            <div className="row gap8" style={{ marginBottom: 9 }}>
-              <span>🧠</span>
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--accent)" }}>
-                Generated 15:45 IST
-              </span>
-            </div>
-            {dailyDigest || `Markets closed mildly bullish today with broad-based participation. Your portfolio benefited from target hits. The ${engine.toUpperCase()} engine identified new setups with strong technical and volume conviction.`}
-            <button className="btn" style={{ marginTop: 13 }}>Read Full Analysis →</button>
-          </div>
-        </section>
 
         {/* ===== MORE SCREEN ===== */}
         <section className={`screen ${activeTab === "more" ? "active" : ""}`} id="screen-more">
@@ -3408,14 +3212,6 @@ export default function App() {
               {portfolio.length}
             </span>
           )}
-        </button>
-        <button
-          className={`tab ${activeTab === "intel" ? "active" : ""}`}
-          onClick={() => setActiveTab("intel")}
-          data-tab="intel"
-        >
-          <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.2" /><path d="M7 9.5h6.5M7 13h10M7 16h6" /></svg>
-          Intel
         </button>
         <button
           className={`tab ${activeTab === "more" ? "active" : ""}`}
