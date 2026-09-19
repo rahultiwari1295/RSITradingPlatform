@@ -203,6 +203,53 @@ function getTerminalSparkPath(seed: number, n: number, trend: number, width: num
   return { d, pts: out };
 }
 
+function getMarketStatusInfo() {
+  const now = new Date();
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const istTime = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + istOffset);
+  const day = istTime.getDay(); // 0 = Sun, 6 = Sat
+  const hours = istTime.getHours();
+  const mins = istTime.getMinutes();
+  const timeInMins = hours * 60 + mins;
+
+  const isWeekend = day === 0 || day === 6;
+  const isMarketOpen = !isWeekend && (timeInMins >= (9 * 60 + 15) && timeInMins <= (15 * 60 + 30));
+
+  if (isMarketOpen) {
+    return {
+      statusText: "Markets live",
+      subText: "Closes 15:30 IST",
+      isOpen: true,
+      verified: "NSE Real-Time"
+    };
+  }
+
+  if (isWeekend) {
+    return {
+      statusText: "Markets closed",
+      subText: "Reopens Mon 09:15 IST",
+      isOpen: false,
+      verified: "NSE Verified"
+    };
+  }
+
+  if (timeInMins < (9 * 60 + 15)) {
+    return {
+      statusText: "Pre-market session",
+      subText: "Regular trading 09:15 IST",
+      isOpen: false,
+      verified: "NSE Verified"
+    };
+  }
+
+  return {
+    statusText: "Markets closed",
+    subText: "Reopens Tomorrow 09:15 IST",
+    isOpen: false,
+    verified: "NSE Verified"
+  };
+}
+
 const TERMINAL_INDICES = [
   { n: 'Nifty 50', v: 23346.40, p: 0.33, seed: 11, trend: 0.35 },
   { n: 'Sensex', v: 76890.10, p: 0.29, seed: 22, trend: 0.28 },
@@ -1170,6 +1217,19 @@ export default function App() {
   const [openTimelineDays, setOpenTimelineDays] = useState<Record<number, boolean>>({ 0: true });
   const [dayReports, setDayReports] = useState<Array<any>>([]);
   const [newsMovers, setNewsMovers] = useState<Array<any>>([]);
+  const [terminalIndices, setTerminalIndices] = useState(TERMINAL_INDICES);
+  const [terminalBriefs, setTerminalBriefs] = useState(TERMINAL_BRIEFS);
+  const [terminalSectors, setTerminalSectors] = useState(TERMINAL_SECTORS);
+  const [terminalMovers, setTerminalMovers] = useState(TERMINAL_MOVERS);
+  const [terminalNewsGroups, setTerminalNewsGroups] = useState(TERMINAL_NEWS_GROUPS);
+  const [terminalPulse, setTerminalPulse] = useState({
+    display_date: "Sunday · 20 September 2026",
+    sentiment_pill: "Bullish",
+    advances_pct: 61.3,
+    declines_pct: 38.7,
+    fii_net_cr: 1240,
+    dii_net_cr: 890,
+  });
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
   const [dailyDigest, setDailyDigest] = useState<string>("");
   const [systemStatus, setSystemStatus] = useState<any>(null);
@@ -1291,31 +1351,135 @@ export default function App() {
 
       // 7. Market Pulse, Sectors, News & Daily Digest
       quantsyncApi.getMarketPulse().then(res => {
-        if (res) setMarketPulse(res);
+        if (res) {
+          setMarketPulse(res);
+          const rawAny = res as any;
+          if (rawAny.indices && rawAny.indices.length > 0) {
+            setTerminalIndices(rawAny.indices);
+          }
+          if (rawAny.advances_pct != null) {
+            setTerminalPulse(prev => ({
+              ...prev,
+              display_date: rawAny.display_date || prev.display_date,
+              sentiment_pill: rawAny.sentiment_pill || prev.sentiment_pill,
+              advances_pct: rawAny.advances_pct,
+              declines_pct: rawAny.declines_pct,
+              fii_net_cr: rawAny.fii_net_cr ?? prev.fii_net_cr,
+              dii_net_cr: rawAny.dii_net_cr ?? prev.dii_net_cr,
+            }));
+          }
+        }
       }).catch(() => {});
 
       quantsyncApi.getSectors("day").then(res => {
         if (res && res.sectors && res.sectors.length > 0) {
           setSectorsData(res.sectors);
-        }
-      }).catch(() => {});
-
-      quantsyncApi.getNews(30).then(res => {
-        if (res && res.news && res.news.length > 0) {
-          setNewsData(res.news);
+          const mapped = res.sectors.map((s: any) => ({
+            n: s.n || s.name || "Sector",
+            p: typeof s.p === "number" ? s.p : (typeof s.change_pct === "number" ? s.change_pct : 0)
+          }));
+          setTerminalSectors(mapped);
         }
       }).catch(() => {});
 
       quantsyncApi.getDayReports(10).then(res => {
-        if (res && res.reports && res.reports.length > 0) {
-          setDayReports(res.reports);
+        if (res) {
+          if (res.reports && res.reports.length > 0) setDayReports(res.reports);
+          const rawAny = res as any;
+          if (rawAny.timeline_briefs && rawAny.timeline_briefs.length > 0) {
+            setTerminalBriefs(rawAny.timeline_briefs);
+          }
         }
       }).catch(() => {});
 
       quantsyncApi.getNewsMovers().then(res => {
         if (res && res.movers && res.movers.length > 0) {
           setNewsMovers(res.movers);
+          const mappedMovers = res.movers.map((m: any) => ({
+            sym: m.sym || m.symbol || "",
+            pct: typeof m.pct === "number" ? m.pct : (typeof m.change_pct === "number" ? m.change_pct : 0),
+            desc: m.desc || m.catalyst || "",
+            label: m.label || "Corporate Move"
+          }));
+          setTerminalMovers(mappedMovers);
         }
+      }).catch(() => {});
+
+      quantsyncApi.getNews(30).then(res => {
+        if (res) {
+          const rawItems = (res as any).disclosures || (res as any).news || [];
+          if (rawItems.length > 0) {
+            setNewsData(rawItems);
+            const groups: Array<{ day: string; items: any[] }> = [];
+            rawItems.forEach((n: any) => {
+              const dayStr = n.day || "Recent Filings";
+              let g = groups.find((x) => x.day === dayStr);
+              if (!g) {
+                g = { day: dayStr, items: [] };
+                groups.push(g);
+              }
+              g.items.push(n);
+            });
+            setTerminalNewsGroups(groups);
+          }
+        }
+      }).catch(() => {});
+
+      // Instant static snapshot fallback sync
+      fetch("/market_pulse.json").then(r => r.json()).then(p => {
+        if (p?.indices?.length) setTerminalIndices(p.indices);
+        if (p?.advances_pct != null) {
+          setTerminalPulse(prev => ({
+            ...prev,
+            display_date: p.display_date || prev.display_date,
+            sentiment_pill: p.sentiment_pill || prev.sentiment_pill,
+            advances_pct: p.advances_pct,
+            declines_pct: p.declines_pct,
+            fii_net_cr: p.fii_net_cr ?? prev.fii_net_cr,
+            dii_net_cr: p.dii_net_cr ?? prev.dii_net_cr,
+          }));
+        }
+      }).catch(() => {});
+
+      fetch("/sectors.json").then(r => r.json()).then(s => {
+        if (s?.sectors?.length) {
+          setTerminalSectors(s.sectors.map((sec: any) => ({
+            n: sec.n || sec.name,
+            p: sec.p ?? sec.change_pct ?? 0
+          })));
+        }
+      }).catch(() => {});
+
+      fetch("/movers.json").then(r => r.json()).then(m => {
+        if (m?.movers?.length) {
+          setTerminalMovers(m.movers.map((mov: any) => ({
+            sym: mov.sym || mov.symbol,
+            pct: mov.pct ?? mov.change_pct ?? 0,
+            desc: mov.desc || mov.catalyst || "",
+            label: mov.label || "Corporate Move"
+          })));
+        }
+      }).catch(() => {});
+
+      fetch("/disclosures.json").then(r => r.json()).then(d => {
+        if (d?.disclosures?.length) {
+          const groups: Array<{ day: string; items: any[] }> = [];
+          d.disclosures.forEach((n: any) => {
+            const dayStr = n.day || "Recent Filings";
+            let g = groups.find((x) => x.day === dayStr);
+            if (!g) {
+              g = { day: dayStr, items: [] };
+              groups.push(g);
+            }
+            g.items.push(n);
+          });
+          setTerminalNewsGroups(groups);
+        }
+      }).catch(() => {});
+
+      fetch("/day_reports.json").then(r => r.json()).then(d => {
+        if (d?.timeline_briefs?.length) setTerminalBriefs(d.timeline_briefs);
+        if (d?.reports?.length) setDayReports(d.reports);
       }).catch(() => {});
 
       quantsyncApi.getDailyDigest(currentEngine).then(res => {
@@ -2203,7 +2367,7 @@ export default function App() {
 
               {/* SNAPSHOT */}
               <div className="snapshot">
-                {TERMINAL_INDICES.map((idx) => {
+                {terminalIndices.map((idx) => {
                   const isUp = idx.p >= 0;
                   const arrow = isUp ? "▲" : "▼";
                   const { d } = getTerminalSparkPath(idx.seed, 28, idx.trend, 100, 18);
@@ -2246,18 +2410,23 @@ export default function App() {
               </div>
 
               {/* MARKET STATUS STRIP */}
-              <div className="market-status">
-                <span className="status-dot" />
-                <span className="ms-key">Markets closed</span>
-                <span className="ms-sep">·</span>
-                <span>Reopens Mon 09:15 IST</span>
-                <span className="ms-verified">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 6 9 17l-5-5" />
-                  </svg>
-                  NSE Verified
-                </span>
-              </div>
+              {(() => {
+                const statusInfo = getMarketStatusInfo();
+                return (
+                  <div className={`market-status ${statusInfo.isOpen ? "live-open" : ""}`}>
+                    <span className={`status-dot ${statusInfo.isOpen ? "live" : ""}`} />
+                    <span className="ms-key">{statusInfo.statusText}</span>
+                    <span className="ms-sep">·</span>
+                    <span>{statusInfo.subText}</span>
+                    <span className="ms-verified">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                      {statusInfo.verified}
+                    </span>
+                  </div>
+                );
+              })()}
             </section>
 
             {/* TABS */}
@@ -2300,10 +2469,10 @@ export default function App() {
             <section className={`panel ${terminalTab === "report" ? "active" : ""}`} id="report">
               <div className="sec-head">
                 <div className="h">The <span className="em">daily brief</span></div>
-                <div className="meta">{TERMINAL_BRIEFS.length} sessions</div>
+                <div className="meta">{terminalBriefs.length} sessions</div>
               </div>
               <div className="timeline" id="timeline">
-                {TERMINAL_BRIEFS.map((b, i) => {
+                {terminalBriefs.map((b, i) => {
                   const isToday = !!b.today;
                   const isOpen = !!openTimelineDays[i];
                   return (
@@ -2384,27 +2553,27 @@ export default function App() {
                 <div className="pulse">
                   <div className="pulse-head">
                     <div className="pulse-title">Market Pulse</div>
-                    <div className="sent-pill"><span className="pulse-dot" />Bullish</div>
+                    <div className="sent-pill"><span className="pulse-dot" />{terminalPulse.sentiment_pill}</div>
                   </div>
 
                   <div className="breadth-vis">
                     <div className="breadth-label-row">
-                      <span className="adv">Advancing 62.5%</span>
-                      <span className="dec">Declining 37.5%</span>
+                      <span className="adv">Advancing {terminalPulse.advances_pct}%</span>
+                      <span className="dec">Declining {terminalPulse.declines_pct}%</span>
                     </div>
                     <div className="breadth-bar">
-                      <i style={{ width: "62.5%" }} />
+                      <i style={{ width: `${terminalPulse.advances_pct}%` }} />
                     </div>
                   </div>
 
                   <div className="flow">
                     <div className="flow-item">
                       <div className="k">FII Net</div>
-                      <div className="v">+₹1,240 Cr</div>
+                      <div className="v">{terminalPulse.fii_net_cr >= 0 ? "+" : ""}₹{terminalPulse.fii_net_cr.toLocaleString()} Cr</div>
                     </div>
                     <div className="flow-item">
                       <div className="k">DII Net</div>
-                      <div className="v">+₹890 Cr</div>
+                      <div className="v">{terminalPulse.dii_net_cr >= 0 ? "+" : ""}₹{terminalPulse.dii_net_cr.toLocaleString()} Cr</div>
                     </div>
                   </div>
                 </div>
@@ -2412,7 +2581,7 @@ export default function App() {
 
               <div className="sec-head">
                 <div className="h">Sector <span className="em">heatmap</span></div>
-                <div className="meta">Live · 9 sectors</div>
+                <div className="meta">Live · {terminalSectors.length} sectors</div>
               </div>
               <div className="card heatmap">
                 <div className="heat-head">
@@ -2420,7 +2589,7 @@ export default function App() {
                   <div className="meta">NSE · Sectoral</div>
                 </div>
                 <div className="heat-grid" id="heatGrid">
-                  {TERMINAL_SECTORS.map((s) => {
+                  {terminalSectors.map((s) => {
                     const pos = s.p >= 0;
                     const intensity = Math.min(Math.abs(s.p) / 1.6, 1);
                     const baseColor = pos ? "var(--up)" : "var(--down)";
@@ -2450,7 +2619,7 @@ export default function App() {
                   <div className="h">⚡ The catalysts <small>· why each stock moved</small></div>
                 </div>
                 <div id="moversList">
-                  {TERMINAL_MOVERS.map((m) => {
+                  {terminalMovers.map((m) => {
                     const isUp = m.pct >= 0;
                     return (
                       <div key={m.sym} className="mover-row">
@@ -2474,10 +2643,10 @@ export default function App() {
             <section className={`panel ${terminalTab === "news" ? "active" : ""}`} id="news">
               <div className="sec-head">
                 <div className="h">Corporate <span className="em">disclosures</span></div>
-                <div className="meta">8 filings</div>
+                <div className="meta">{terminalNewsGroups.reduce((acc, g) => acc + g.items.length, 0)} filings</div>
               </div>
               <div id="newsList">
-                {TERMINAL_NEWS_GROUPS.map((g) => (
+                {terminalNewsGroups.map((g) => (
                   <div key={g.day} className="news-group">
                     <div className="news-group-label">
                       <span>{g.day}</span>
@@ -2502,7 +2671,15 @@ export default function App() {
                               </svg>
                               {n.time}
                             </span>
-                            <a className="news-link" href="#" onClick={(e) => e.preventDefault()}>
+                            <a
+                              className="news-link"
+                              href={(n as any).url || "#"}
+                              target={(n as any).url ? "_blank" : undefined}
+                              rel="noopener noreferrer"
+                              onClick={(e) => {
+                                if (!(n as any).url) e.preventDefault();
+                              }}
+                            >
                               View source
                               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M7 17 17 7M9 7h8v8" />

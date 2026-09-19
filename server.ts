@@ -656,26 +656,56 @@ async function startServer() {
     });
   });
 
-  app.get("/api/intel/pulse", (req, res) => {
-    forwardToVps("/api/intel/pulse", req, res, {
-      date: "Sep 19, 2026",
-      nifty_price: 23346.4,
-      nifty_chg_pct: 0.33,
-      sensex_price: 74294.96,
-      sensex_chg_pct: -0.03,
-      banknifty_price: 56358.7,
-      banknifty_chg_pct: 0.54,
-      advances_pct: 62.5,
-      declines_pct: 37.5,
-      sentiment: "Mildly Bullish",
-      sentiment_pill: "🟢 Mildly Bullish",
-      fii_net_cr: 1240,
-      dii_net_cr: 890,
+  app.get(["/api/intel/pulse", "/api/intel/market-pulse"], (req, res) => {
+    forwardToVps("/api/intel/pulse", req, res, () => {
+      const p = path.resolve(process.cwd(), "public/market_pulse.json");
+      if (fs.existsSync(p)) {
+        try {
+          return JSON.parse(fs.readFileSync(p, "utf-8"));
+        } catch {}
+      }
+      return {
+        date: "Sep 19, 2026",
+        nifty_price: 23346.4,
+        nifty_chg_pct: 0.33,
+        sensex_price: 74294.96,
+        sensex_chg_pct: -0.03,
+        banknifty_price: 56358.7,
+        banknifty_chg_pct: 0.54,
+        advances_pct: 62.5,
+        declines_pct: 37.5,
+        sentiment: "Mildly Bullish",
+        sentiment_pill: "🟢 Mildly Bullish",
+        fii_net_cr: 1240,
+        dii_net_cr: 890,
+      };
     });
   });
 
-  app.get("/api/intel/sectors", (req, res) => forwardToVps("/api/intel/sectors", req, res));
-  app.get("/api/intel/news", (req, res) => forwardToVps("/api/intel/news", req, res));
+  app.get("/api/intel/sectors", (req, res) => {
+    forwardToVps("/api/intel/sectors", req, res, () => {
+      const p = path.resolve(process.cwd(), "public/sectors.json");
+      if (fs.existsSync(p)) {
+        try {
+          return JSON.parse(fs.readFileSync(p, "utf-8"));
+        } catch {}
+      }
+      return { sectors: [] };
+    });
+  });
+
+  app.get("/api/intel/news", (req, res) => {
+    forwardToVps("/api/intel/news", req, res, () => {
+      const p = path.resolve(process.cwd(), "public/disclosures.json");
+      if (fs.existsSync(p)) {
+        try {
+          return JSON.parse(fs.readFileSync(p, "utf-8"));
+        } catch {}
+      }
+      return { disclosures: [] };
+    });
+  });
+
   app.get("/api/intel/news/sync", (req, res) => forwardToVps("/api/intel/news/sync", req, res));
   app.get("/api/intel/day-reports", (req, res) => {
     forwardToVps("/api/intel/day-reports", req, res, () => {

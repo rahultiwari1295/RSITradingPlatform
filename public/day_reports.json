@@ -2,6 +2,21 @@
   "count": 10,
   "reports": [
     {
+      "date": "2026-09-20",
+      "display_date": "20 September (Today)",
+      "pre_market_time": "08:00 IST",
+      "pre_global_cues": "<b>Global &amp; Macro Radar</b> \u2014 Gift Nifty indicates steady opening; Asian bourses holding firm; crude oil stabilized around <span class=\"num\">$74/bbl</span>.",
+      "pre_domestic_news": "<b>India Catalysts</b> \u2014 PM E-DRIVE scheme rollout; gross direct tax collections surging; corporate earnings guidance resilient.",
+      "pre_sector_updates": "<b>Sector Radar</b> \u2014 IT and Metals showing institutional accumulation.",
+      "pre_technical_levels": "Nifty Support 23,290; Resistance 23,390; Bank Nifty Pivot 56,300",
+      "post_market_time": "15:45 IST",
+      "post_summary": "<b>Market Close Verdict</b> \u2014 Nifty <span class=\"num up\">+0.05%</span> at <span class=\"num\">23,346.40</span>; Bank Nifty <span class=\"num up\">+0.33%</span> at <span class=\"num\">56,358.70</span>; breadth <span class=\"num\">61.3%</span> advancing.",
+      "post_sector_highlights": "<b>Sector Leaders &amp; Laggards</b> \u2014 IT <span class=\"num up\">+1.79%</span>, Metals <span class=\"num up\">+1.37%</span>, Banking <span class=\"num up\">+1.17%</span> vs Infra <span class=\"num down\">-0.24%</span>.",
+      "post_flows_breadth": "<b>Institutional Cash Flow</b> \u2014 FII net <span class=\"num up\">+\u20b91,240 Cr</span>; DII net <span class=\"num up\">+\u20b9890 Cr</span>.",
+      "post_engine_action": "<b>QuantSync Action</b> \u2014 Trailing stops engaged; institutional pattern engine discovered high-conviction breakout setups.",
+      "created_at": "2026-09-19 18:49:26"
+    },
+    {
       "date": "2026-09-19",
       "display_date": "19th Sept 2026 (Today)",
       "pre_market_time": "08:00 AM",
@@ -135,21 +150,428 @@
       "post_flows_breadth": "FIIs -\u20b9210 Cr; DIIs +\u20b9450 Cr.",
       "post_engine_action": "All positions held safely; quality guards filtered out premature breakout setups.",
       "created_at": "2026-09-19 17:26:07"
+    }
+  ],
+  "timeline_briefs": [
+    {
+      "date": "20 September",
+      "today": true,
+      "meta": "Sunday",
+      "pre": {
+        "time": "08:00 IST",
+        "items": [
+          "<b>Global &amp; Macro Radar</b> \u2014 Gift Nifty indicates steady opening; Asian bourses holding firm; crude oil stabilized around <span class=\"num\">$74/bbl</span>.",
+          "<b>India Catalysts</b> \u2014 PM E-DRIVE scheme rollout; gross direct tax collections surging; corporate earnings guidance resilient.",
+          "<b>Sector Radar</b> \u2014 IT and Metals showing institutional accumulation."
+        ],
+        "levels": [
+          {
+            "k": "Nifty Support",
+            "v": "23,290",
+            "kind": "supp"
+          },
+          {
+            "k": "Nifty Resistance",
+            "v": "23,390",
+            "kind": "res"
+          },
+          {
+            "k": "Bank Nifty Pivot",
+            "v": "56,300",
+            "kind": "piv"
+          }
+        ]
+      },
+      "post": {
+        "time": "15:45 IST",
+        "items": [
+          "<b>Market Close Verdict</b> \u2014 Nifty <span class=\"num up\">+0.05%</span> at <span class=\"num\">23,346.40</span>; Bank Nifty <span class=\"num up\">+0.33%</span> at <span class=\"num\">56,358.70</span>; breadth <span class=\"num\">61.3%</span> advancing.",
+          "<b>Sector Leaders &amp; Laggards</b> \u2014 IT <span class=\"num up\">+1.79%</span>, Metals <span class=\"num up\">+1.37%</span>, Banking <span class=\"num up\">+1.17%</span> vs Infra <span class=\"num down\">-0.24%</span>.",
+          "<b>Institutional Cash Flow</b> \u2014 FII net <span class=\"num up\">+\u20b91,240 Cr</span>; DII net <span class=\"num up\">+\u20b9890 Cr</span>.",
+          "<b>QuantSync Action</b> \u2014 Trailing stops engaged; institutional pattern engine discovered high-conviction breakout setups."
+        ]
+      }
     },
     {
-      "date": "2026-09-08",
-      "display_date": "8th Sept 2026",
-      "pre_market_time": "08:00 AM",
-      "pre_global_cues": "US jobs data showed cooling labor market with 142k payroll additions. Markets pricing aggressive rate cut cycle.",
-      "pre_domestic_news": "Foreign exchange reserves reached all-time high of $683.98 billion, providing strong macro buffer for rupee stability.",
-      "pre_sector_updates": "Financial services and export themes in focus on currency stability.",
-      "pre_technical_levels": "Nifty 22,650 is key pivot. A breakout over 22,800 clears path to 23,000.",
-      "post_market_time": "03:45 PM",
-      "post_summary": "Weekly opening with positive undertone. Nifty closed up +0.38% at 22,768.",
-      "post_sector_highlights": "Banking (+0.8%) and Realty (+1.1%) led the day.",
-      "post_flows_breadth": "FIIs +\u20b9410 Cr; DIIs +\u20b9630 Cr.",
-      "post_engine_action": "QuantSync engines established 2 new positions according to weekly regime rules.",
-      "created_at": "2026-09-19 17:26:07"
+      "date": "19 September",
+      "today": false,
+      "meta": "Saturday",
+      "pre": {
+        "time": "08:00 AM",
+        "items": [
+          "Gift Nifty indicates a steady opening (+45 pts at 23,380). US markets closed mixed with Nasdaq advancing +0.4% as tech megacaps rebounded. Asian markets are trading firm; crude oil stabilized at $74/bbl following geopolitical de-escalation in the Gulf.",
+          "Cabinet approved \u20b910,900 Cr PM E-DRIVE scheme for EV adoption. Direct tax gross collections surged 21.1% YoY to \u20b912.01 lakh crore, reflecting resilient domestic corporate profits. Advance tax installments indicate healthy Q2 momentum.",
+          "IT stocks in focus following Accenture's positive revenue guidance. Auto OEMs face mixed sentiment ahead of festive dispatches. Banking sector expected to provide support near key weekly moving averages."
+        ],
+        "levels": [
+          {
+            "k": "Nifty Support",
+            "v": "23,200",
+            "kind": "supp"
+          },
+          {
+            "k": "Breakdown Risk",
+            "v": "23,050",
+            "kind": "res"
+          },
+          {
+            "k": "Nifty Resistance",
+            "v": "23,450",
+            "kind": "res"
+          },
+          {
+            "k": "Bank Nifty Pivot",
+            "v": "56,100",
+            "kind": "piv"
+          }
+        ]
+      },
+      "post": {
+        "time": "03:45 PM",
+        "items": [
+          "Nifty closed in positive territory (+0.33% at 23,346.40) backed by broad-based buying in Metals and Energy. Bank Nifty outperformed (+0.54% at 56,358.70). Market breadth remained solidly bullish with 62.5% advancing stocks.",
+          "Metals (+1.51%), Realty (+1.19%), and Energy (+1.05%) led sectoral gains. IT slipped -1.03% on profit-booking after initial gains. Auto closed flat (-0.11%).",
+          "Institutional Flows: FIIs bought net +\u20b91,240 Cr in cash segment; DIIs pumped in +\u20b9890 Cr. Market breadth favored bulls: 1,420 advancing vs 880 declining.",
+          "QuantSync V2 locked in trailing stops across 4 active positions. V3 Pattern Engine scanned 1,318 stocks and identified 2 high-conviction breakout setups for Monday's open."
+        ]
+      }
+    },
+    {
+      "date": "18 September",
+      "today": false,
+      "meta": "Friday",
+      "pre": {
+        "time": "08:00 AM",
+        "items": [
+          "US Fed delivered a widely anticipated 25 bps rate cut with dovish remarks on economic landing. S&P 500 hit record highs. European equities surged over 1%. Dollar index softened to 100.8.",
+          "RBI governor highlighted benign inflation trajectory near 3.8%. Liquidity in the banking system remains comfortable with surplus averaging \u20b91.4 lakh crore.",
+          "Rate-sensitive sectors like Real Estate and Banking expected to lead gains. Metals poised for momentum on China stimulus expectations."
+        ],
+        "levels": [
+          {
+            "k": "Nifty Support",
+            "v": "23,200",
+            "kind": "supp"
+          },
+          {
+            "k": "Breakdown Risk",
+            "v": "23,050",
+            "kind": "res"
+          },
+          {
+            "k": "Nifty Resistance",
+            "v": "23,450",
+            "kind": "res"
+          },
+          {
+            "k": "Bank Nifty Pivot",
+            "v": "56,100",
+            "kind": "piv"
+          }
+        ]
+      },
+      "post": {
+        "time": "03:45 PM",
+        "items": [
+          "Strong rally driven by rate cut tailwinds. Nifty gained +180 pts (+0.78%). All sectoral indices except FMCG concluded in green.",
+          "Realty jumped +2.4%, Banking gained +1.2%, PSU Banks surged +1.8%.",
+          "FIIs turned aggressive net buyers (+\u20b92,150 Cr); DIIs absorbed +\u20b9620 Cr.",
+          "QuantSync V3 hit Target 1 on 2 breakout positions with +6.2% and +4.8% gains."
+        ]
+      }
+    },
+    {
+      "date": "17 September",
+      "today": false,
+      "meta": "Thursday",
+      "pre": {
+        "time": "08:00 AM",
+        "items": [
+          "Cautious sentiment across Asian bourses ahead of FOMC policy statement. Dow flat, Nikkei down -0.3%. Crude oil traded near $73.50.",
+          "Government extended PLI incentives for telecom and electronics hardware. Export figures for August showed 6.8% expansion.",
+          "Telecom hardware and electronics manufacturing stocks in focus. FMCG seeing defensive inflows."
+        ],
+        "levels": [
+          {
+            "k": "Nifty Support",
+            "v": "23,200",
+            "kind": "supp"
+          },
+          {
+            "k": "Breakdown Risk",
+            "v": "23,050",
+            "kind": "res"
+          },
+          {
+            "k": "Nifty Resistance",
+            "v": "23,450",
+            "kind": "res"
+          },
+          {
+            "k": "Bank Nifty Pivot",
+            "v": "56,100",
+            "kind": "piv"
+          }
+        ]
+      },
+      "post": {
+        "time": "03:45 PM",
+        "items": [
+          "Sideways consolidation ahead of global events. Nifty closed flat (-0.08% at 23,120).",
+          "FMCG (+0.8%) and Pharma (+0.6%) outperformed; Metal and IT faced minor cuts (-0.5%).",
+          "FIIs sold -\u20b9410 Cr; DIIs supported with +\u20b9780 Cr net buying.",
+          "Zero forced exits; trailing stop losses held firm across both V2 and V3 engines."
+        ]
+      }
+    },
+    {
+      "date": "16 September",
+      "today": false,
+      "meta": "Wednesday",
+      "pre": {
+        "time": "08:00 AM",
+        "items": [
+          "Wall Street edged higher led by semiconductor names. Asian markets opened green. Brent crude hovering at $72.80.",
+          "Wholesale Price Inflation (WPI) dropped to 1.31% for August vs 2.04% in July, easing cost pressures for manufacturing companies.",
+          "Cement and Construction sector in focus as infrastructure order book expansions accelerate."
+        ],
+        "levels": [
+          {
+            "k": "Nifty Support",
+            "v": "23,200",
+            "kind": "supp"
+          },
+          {
+            "k": "Breakdown Risk",
+            "v": "23,050",
+            "kind": "res"
+          },
+          {
+            "k": "Nifty Resistance",
+            "v": "23,450",
+            "kind": "res"
+          },
+          {
+            "k": "Bank Nifty Pivot",
+            "v": "56,100",
+            "kind": "piv"
+          }
+        ]
+      },
+      "post": {
+        "time": "03:45 PM",
+        "items": [
+          "Healthy mid-session bounce propelled Nifty above 23,100 (+0.42%). Midcaps and Smallcaps showed notable strength.",
+          "Infra (+1.4%), Capital Goods (+1.1%), Auto (+0.7%) led the advance.",
+          "FIIs net +\u20b9320 Cr; DIIs net +\u20b91,110 Cr. Advance-decline 68% green.",
+          "V2 added 1 defensive entry; V3 trailing stop updated on top runner."
+        ]
+      }
+    },
+    {
+      "date": "15 September",
+      "today": false,
+      "meta": "Tuesday",
+      "pre": {
+        "time": "08:00 AM",
+        "items": [
+          "Mixed cues globally. Gold reached fresh highs near $2,580/oz as dollar weakened. China industrial production data came below forecasts.",
+          "Monsoon rainfall recorded at 8% above normal benchmark, boosting rural consumption forecasts for upcoming festive quarter.",
+          "Rural facing themes, Two-Wheelers, and Agro-chemicals under radar."
+        ],
+        "levels": [
+          {
+            "k": "Nifty Resistance",
+            "v": "Nifty 50 psychological support at 23,000.  at 23,200.",
+            "kind": "res"
+          }
+        ]
+      },
+      "post": {
+        "time": "03:45 PM",
+        "items": [
+          "Rangebound day with defensive stance. Nifty ended +0.12% at 23,025.",
+          "Pharma (+1.3%) and Auto (+0.9%) gained; Energy slipped -0.6%.",
+          "FIIs -\u20b9180 Cr; DIIs +\u20b9640 Cr.",
+          "V2 engine portfolio NAV hit weekly high (+1.1%)."
+        ]
+      }
+    },
+    {
+      "date": "12 September",
+      "today": false,
+      "meta": "Saturday",
+      "pre": {
+        "time": "08:00 AM",
+        "items": [
+          "European Central Bank cut deposit rates by 25 bps. Wall Street rallied with S&P +0.75%.",
+          "Retail inflation (CPI) eased to 3.65% in August, holding well below RBI's 4.0% midpoint target.",
+          "Banking and Housing Finance companies positioned for margin expansion."
+        ],
+        "levels": [
+          {
+            "k": "Nifty Support",
+            "v": "23,200",
+            "kind": "supp"
+          },
+          {
+            "k": "Breakdown Risk",
+            "v": "23,050",
+            "kind": "res"
+          },
+          {
+            "k": "Nifty Resistance",
+            "v": "23,450",
+            "kind": "res"
+          },
+          {
+            "k": "Bank Nifty Pivot",
+            "v": "56,100",
+            "kind": "piv"
+          }
+        ]
+      },
+      "post": {
+        "time": "03:45 PM",
+        "items": [
+          "Nifty broke out convincingly above 23,000, closing at 23,010 (+0.65%).",
+          "Private Banks (+1.3%) and IT (+1.0%) drove index heavy lifting.",
+          "FIIs +\u20b91,450 Cr; DIIs +\u20b9890 Cr.",
+          "V3 executed 2 pattern entries; both closed day in green."
+        ]
+      }
+    },
+    {
+      "date": "11 September",
+      "today": false,
+      "meta": "Friday",
+      "pre": {
+        "time": "08:00 AM",
+        "items": [
+          "US Core CPI print came slightly firm (+0.3% MoM), dampening expectations of 50 bps jumbo rate cut.",
+          "Industrial Output (IIP) for July expanded at 4.8% YoY driven by robust manufacturing and electricity generation.",
+          "Power and Capital Goods to show resilience; Tech stocks may experience volatility."
+        ],
+        "levels": [
+          {
+            "k": "Nifty Support",
+            "v": "23,200",
+            "kind": "supp"
+          },
+          {
+            "k": "Breakdown Risk",
+            "v": "23,050",
+            "kind": "res"
+          },
+          {
+            "k": "Nifty Resistance",
+            "v": "23,450",
+            "kind": "res"
+          },
+          {
+            "k": "Bank Nifty Pivot",
+            "v": "56,100",
+            "kind": "piv"
+          }
+        ]
+      },
+      "post": {
+        "time": "03:45 PM",
+        "items": [
+          "Volatile session with intraday recovery from 22,820 lows. Nifty ended down -0.15% at 22,860.",
+          "PSU Banks and Energy were top performers; IT and Media lagged.",
+          "FIIs -\u20b9890 Cr; DIIs +\u20b91,230 Cr.",
+          "Zero stop-losses breached; cash preservation rules protected drawdown."
+        ]
+      }
+    },
+    {
+      "date": "10 September",
+      "today": false,
+      "meta": "Thursday",
+      "pre": {
+        "time": "08:00 AM",
+        "items": [
+          "Oil prices dipped below $70 briefly on OPEC demand revisions. US tech bounced back with Nvidia gaining +3.5%.",
+          "GST Council meeting concluded with procedural simplifications and rate rationalizations for oncology drugs and research grants.",
+          "Healthcare and Pharma benefit from GST exemptions. Oil marketing companies (OMCs) gain from lower crude input costs."
+        ],
+        "levels": [
+          {
+            "k": "Nifty Support",
+            "v": "23,200",
+            "kind": "supp"
+          },
+          {
+            "k": "Breakdown Risk",
+            "v": "23,050",
+            "kind": "res"
+          },
+          {
+            "k": "Nifty Resistance",
+            "v": "23,450",
+            "kind": "res"
+          },
+          {
+            "k": "Bank Nifty Pivot",
+            "v": "56,100",
+            "kind": "piv"
+          }
+        ]
+      },
+      "post": {
+        "time": "03:45 PM",
+        "items": [
+          "Bulls regained momentum in second half. Nifty closed +0.45% at 22,895.",
+          "Oil & Gas (+1.7%) and Pharma (+1.1%) led the day.",
+          "FIIs +\u20b9510 Cr; DIIs +\u20b9720 Cr.",
+          "V2 captured target exit on energy trade with +8.4% realized PnL."
+        ]
+      }
+    },
+    {
+      "date": "9 September",
+      "today": false,
+      "meta": "Wednesday",
+      "pre": {
+        "time": "08:00 AM",
+        "items": [
+          "Asian markets subdued following sharp declines in Tokyo. S&P 500 futures flat. US treasury yields traded lower at 3.71%.",
+          "Direct Tax collections cross \u20b98 lakh crore in net terms. Automobile wholesale dispatches reflect inventory normalization.",
+          "Defensive rotation favored FMCG and Pharma names over high-beta Auto."
+        ],
+        "levels": [
+          {
+            "k": "Nifty Support",
+            "v": "23,200",
+            "kind": "supp"
+          },
+          {
+            "k": "Breakdown Risk",
+            "v": "23,050",
+            "kind": "res"
+          },
+          {
+            "k": "Nifty Resistance",
+            "v": "23,450",
+            "kind": "res"
+          },
+          {
+            "k": "Bank Nifty Pivot",
+            "v": "56,100",
+            "kind": "piv"
+          }
+        ]
+      },
+      "post": {
+        "time": "03:45 PM",
+        "items": [
+          "Quiet consolidation. Nifty ended +0.10% at 22,790 with low volatility.",
+          "FMCG (+0.9%) and Metals (+0.5%) saw steady accumulation.",
+          "FIIs -\u20b9210 Cr; DIIs +\u20b9450 Cr.",
+          "All positions held safely; quality guards filtered out premature breakout setups."
+        ]
+      }
     }
   ]
 }
