@@ -191,7 +191,13 @@ async function apiDnaFetch<T>(path: string): Promise<T> {
 
   // Initial load
   useEffect(() => {
-    fetchStockDna("TATASTEEL");
+    let initialSymbol = "TATASTEEL";
+    if (typeof window !== "undefined") {
+      const p = new URLSearchParams(window.location.search);
+      const s = p.get("symbol");
+      if (s) initialSymbol = s.trim().toUpperCase();
+    }
+    fetchStockDna(initialSymbol);
   }, []);
 
   const fetchStockDna = async (symbol: string) => {
@@ -237,10 +243,11 @@ async function apiDnaFetch<T>(path: string): Promise<T> {
 
   const handleShare = () => {
     if (!report) return;
+    const shareUrl = `https://rsitradingplatform.vercel.app/?tab=dna&symbol=${report.symbol}`;
     const shareText = `🧬 QuantSync Stock DNA Report — ${report.symbol} (${report.company_name})
 Health Score: ${report.ui_report.dna_health_score}/100 · ${report.ui_report.dna_archetype}
 Trade Setup: ${report.ui_report.trade_execution_card.action} (Entry: ${report.ui_report.trade_execution_card.entry_zone} | Target: ₹${report.ui_report.trade_execution_card.target_1} | Stop: ₹${report.ui_report.trade_execution_card.stop_loss})
-Decoded by QuantSync Algorithmic Terminal: https://quantsync.in/dna/${report.symbol}`;
+Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
 
     if (navigator.clipboard) {
       navigator.clipboard.writeText(shareText).then(() => {
@@ -449,9 +456,11 @@ Decoded by QuantSync Algorithmic Terminal: https://quantsync.in/dna/${report.sym
                 <div className="dna-ticker-row">
                   <h2 className="dna-hero-ticker">{report.symbol}</h2>
                   <span className="dna-exchange-tag">NSE · Cash</span>
-                  <span className="dna-archetype-pill">{report.ui_report.dna_archetype}</span>
                 </div>
                 <div className="dna-company-title">{report.company_name}</div>
+                <div className="dna-archetype-row">
+                  <span className="dna-archetype-pill">{report.ui_report.dna_archetype}</span>
+                </div>
                 <div className="dna-price-row">
                   <span className="dna-current-price">₹{report.current_metrics.price.toLocaleString("en-IN")}</span>
                   <span className={`dna-metric-change ${report.current_metrics.dist_52w_pct >= -5 ? "up" : "neutral"}`}>
@@ -460,7 +469,7 @@ Decoded by QuantSync Algorithmic Terminal: https://quantsync.in/dna/${report.sym
                 </div>
               </div>
 
-              {/* Health Score Circular Meter */}
+              {/* Health Score Circular Meter pinned to right side on same line */}
               <div className="dna-health-meter">
                 <div 
                   className="dna-score-circle" 
@@ -681,7 +690,7 @@ Decoded by QuantSync Algorithmic Terminal: https://quantsync.in/dna/${report.sym
 
                 <a 
                   className="dna-whatsapp-btn"
-                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`🧬 QuantSync Stock DNA: ${report.symbol} (Score: ${report.ui_report.dna_health_score}/100) — ${report.ui_report.dna_archetype}. Full Report: https://quantsync.in/dna/${report.symbol}`)}`}
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`🧬 QuantSync Stock DNA: ${report.symbol} (Score: ${report.ui_report.dna_health_score}/100) — ${report.ui_report.dna_archetype}. Full Report: https://rsitradingplatform.vercel.app/?tab=dna&symbol=${report.symbol}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

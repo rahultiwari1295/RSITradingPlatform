@@ -1223,7 +1223,15 @@ export default function App() {
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     return (localStorage.getItem("theme") as "dark" | "light") || "dark";
   });
-  const [activeTab, setActiveTab] = useState<"home" | "signals" | "portfolio" | "dna" | "charts" | "intel" | "more">("home");
+  const [activeTab, setActiveTab] = useState<"home" | "signals" | "portfolio" | "dna" | "charts" | "intel" | "more">(() => {
+    if (typeof window !== "undefined") {
+      const p = new URLSearchParams(window.location.search).get("tab");
+      if (p && ["home", "signals", "portfolio", "dna", "charts", "intel", "more"].includes(p)) {
+        return p as any;
+      }
+    }
+    return "home";
+  });
   const [sigSub, setSigSub] = useState<"active" | "closed">("active");
   const [chartSub, setChartSub] = useState<"live" | "scanner" | "portal">("live");
   const [range, setRange] = useState<number>(90);
