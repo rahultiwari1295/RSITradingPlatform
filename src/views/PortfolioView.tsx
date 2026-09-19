@@ -328,6 +328,7 @@ export default function PortfolioView({
                 const roi = buy > 0 ? ((cur - buy) / buy) * 100 : 0;
                 const isUp = roi >= 0;
                 const stratName = activeMatch?.strategyName || holding.strategyName || "Institutional Momentum";
+                const holdingEngine = holding.engine || (activeMatch as any)?.engine || (stratName.toLowerCase().includes("pattern") || stratName.toLowerCase().includes("v3") ? "v3" : "v2");
 
                 return (
                   <div
@@ -336,7 +337,7 @@ export default function PortfolioView({
                     style={{ animationDelay: `${idx * 60}ms` }}
                     onClick={() => handleCardClick(holding)}
                   >
-                    {/* Top Row: Monogram, Symbol, Stars, QTY, Status Pill, ROI */}
+                    {/* Top Row: Monogram, Symbol, Stars, QTY, Engine, Status Pill, ROI */}
                     <div className="row between" style={{ alignItems: "flex-start" }}>
                       <div className="row gap12" style={{ alignItems: "flex-start" }}>
                         <div
@@ -359,6 +360,12 @@ export default function PortfolioView({
                             </span>
                             <span className="pill" style={{ fontSize: 9.5, padding: "2px 7px" }}>
                               {qty} QTY
+                            </span>
+                            <span
+                              className={`pill ${holdingEngine === "v2" ? "blue" : "purple"}`}
+                              style={{ fontSize: 9, padding: "2px 6.5px", fontWeight: 700 }}
+                            >
+                              {holdingEngine === "v2" ? "V2 PRO AI" : "V3 PATTERN AI"}
                             </span>
                             {isSignalActive ? (
                               <span className="pill green" style={{ fontSize: 9.5, padding: "2px 7px" }}>

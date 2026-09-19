@@ -128,6 +128,7 @@ export interface InTradeTrade {
   trailingStopDistance?: number;
   volumeVsAverage?: number;
   holdingDays?: number;
+  engine?: "v2" | "v3";
   [key: string]: any;
 }
 
@@ -161,6 +162,7 @@ export interface ClosedTrade {
   mlGrade?: string;
   pnlLabel: "WIN" | "LOSS" | string;
   alsoTriggeredBy?: string[];
+  engine?: "v2" | "v3";
   [key: string]: any;
 }
 
@@ -180,6 +182,7 @@ export interface ManualPortfolioTrade {
   isActiveInStrategy?: boolean;
   stopLoss?: number;
   targetPrice?: number;
+  engine?: "v2" | "v3";
   [key: string]: any;
 }
 

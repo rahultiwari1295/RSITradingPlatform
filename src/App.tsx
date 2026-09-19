@@ -257,44 +257,7 @@ const TERMINAL_INDICES = [
   { n: 'Bank Nifty', v: 56358.70, p: 0.33, seed: 33, trend: 0.33 }
 ];
 
-const TERMINAL_BRIEFS = [
-  {
-    date: '20 September',
-    today: true,
-    meta: 'Sunday',
-    pre: {
-      time: '08:00 IST',
-      items: [
-        `<b>Global &amp; Macro Radar</b> — Gift Nifty indicates steady opening; Asian bourses holding firm; crude oil stabilized around <span class="num">$74/bbl</span>.`,
-        `<b>India Catalysts</b> — PM E-DRIVE scheme rollout; gross direct tax collections surging; corporate earnings guidance resilient.`,
-        `<b>Sector Radar</b> — IT and Metals showing institutional accumulation.`
-      ],
-      levels: [
-        { k: 'Nifty Support', v: '23,290', kind: 'supp' },
-        { k: 'Nifty Resistance', v: '23,390', kind: 'res' },
-        { k: 'Bank Nifty Pivot', v: '56,300', kind: 'piv' }
-      ]
-    },
-    post: {
-      time: '15:45 IST',
-      items: [
-        `<b>Market Close Verdict</b> — Nifty <span class="num up">+0.05%</span> at <span class="num">23,346.40</span>; Bank Nifty <span class="num up">+0.33%</span> at <span class="num">56,358.70</span>; breadth <span class="num">61.3%</span> advancing.`,
-        `<b>Sector Leaders &amp; Laggards</b> — IT <span class="num up">+1.79%</span>, Metals <span class="num up">+1.37%</span>, Banking <span class="num up">+1.17%</span> vs Infra <span class="num down">-0.24%</span>.`,
-        `<b>Institutional Cash Flow</b> — FII net <span class="num up">+₹1,240 Cr</span>; DII net <span class="num up">+₹890 Cr</span>.`,
-        `<b>QuantSync Action</b> — Trailing stops engaged; institutional pattern engine discovered high-conviction breakout setups.`
-      ]
-    }
-  },
-  { date: '19 September', meta: 'Saturday', pre: { time: '08:00 AM', items: [`Gift Nifty steady opening (+45 pts at 23,380). US tech megacaps rebounded. Crude oil stabilized at $74/bbl.`] }, post: { time: '03:45 PM', items: [`Nifty closed +0.33% at 23,346.40 backed by Metals and Energy. Bank Nifty gained +0.54% at 56,358.70.`] } },
-  { date: '18 September', meta: 'Friday', pre: { time: '08:00 AM', items: [`US Fed delivered a widely anticipated 25 bps rate cut. S&P 500 hit record highs. European equities surged.`] }, post: { time: '03:45 PM', items: [`Strong rally on rate cut tailwinds. Nifty gained +180 pts (+0.78%). Realty and Banking led.`] } },
-  { date: '17 September', meta: 'Thursday', pre: { time: '08:00 AM', items: [`Cautious sentiment across Asian bourses ahead of FOMC policy statement. Crude oil near $73.50.`] }, post: { time: '03:45 PM', items: [`Sideways consolidation. Nifty closed flat (-0.08% at 23,120). Defensive FMCG and Pharma outperformed.`] } },
-  { date: '16 September', meta: 'Wednesday', pre: { time: '08:00 AM', items: [`Wall Street edged higher led by semiconductor names. Wholesale Price Inflation dropped to 1.31%.`] }, post: { time: '03:45 PM', items: [`Mid-session bounce propelled Nifty above 23,100 (+0.42%). Midcaps and Smallcaps showed notable strength.`] } },
-  { date: '15 September', meta: 'Tuesday', pre: { time: '08:00 AM', items: [`Mixed global cues. Gold touched fresh highs near $2,580/oz. Monsoon rainfall recorded at 8% above normal.`] }, post: { time: '03:45 PM', items: [`Rangebound day with defensive stance. Nifty ended +0.12% at 23,025. Pharma and Auto gained.`] } },
-  { date: '12 September', meta: 'Friday', pre: { time: '08:00 AM', items: [`European Central Bank cut deposit rates by 25 bps. Retail inflation eased to 3.65% in August.`] }, post: { time: '03:45 PM', items: [`Nifty broke out convincingly above 23,000, closing at 23,010 (+0.65%). Private Banks and IT drove gains.`] } },
-  { date: '11 September', meta: 'Thursday', pre: { time: '08:00 AM', items: [`US Core CPI print came slightly firm (+0.3% MoM). Industrial Output (IIP) expanded at 4.8% YoY.`] }, post: { time: '03:45 PM', items: [`Volatile session with intraday recovery from 22,820 lows. Nifty ended at 22,860. PSU Banks held firm.`] } },
-  { date: '10 September', meta: 'Wednesday', pre: { time: '08:00 AM', items: [`Oil prices dipped below $70 briefly. GST Council meeting concluded with rate rationalizations.`] }, post: { time: '03:45 PM', items: [`Bulls regained momentum in second half. Nifty closed +0.45% at 22,895 led by Oil & Gas and Pharma.`] } },
-  { date: '9 September', meta: 'Tuesday', pre: { time: '08:00 AM', items: [`Asian markets subdued. US treasury yields lower at 3.71%. Direct Tax collections cross ₹8 lakh crore.`] }, post: { time: '03:45 PM', items: [`Quiet consolidation. Nifty ended +0.10% at 22,790 with low volatility. FMCG saw steady accumulation.`] } }
-];
+const TERMINAL_BRIEFS: any[] = [];
 
 const TERMINAL_SECTORS = [
   { n: 'Banking', p: 1.17 },
@@ -311,36 +274,11 @@ const TERMINAL_SECTORS = [
   { n: 'Consumer Durables', p: 1.50 }
 ];
 
-const TERMINAL_MOVERS = [
-  { sym: 'TEGA', pct: 14.40, desc: 'Tega Industries soars 14.4% over the past week, outperforming the Nifty 500 index by 13.9% points.', label: 'Index Outperformer' },
-  { sym: 'VEEGALAND', pct: 10.00, desc: "Veegaland Developers' shares debut at ₹154, a 10% premium to issue price of ₹140.", label: 'IPO Listing' },
-  { sym: 'LLOYDSME', pct: 15.00, desc: "Forecaster estimates Lloyds Metals' Q2 revenue to soar 150% YoY, on a shift beyond mining into VAP.", label: 'Forecaster Estimates' },
-  { sym: 'STEAMHOUSE', pct: 16.70, desc: "Steamhouse India's shares debut at ₹94.5, a 16.7% premium to issue price of ₹81.", label: 'IPO Listing' },
-  { sym: 'YATHARTH', pct: 24.90, desc: 'Advent to invest ₹3,150 crore in Yatharth Hospital for a 24.9% stake via shares and warrants.', label: 'Investment' },
-  { sym: 'RENTOMOJO', pct: 19.40, desc: "Rentomojo's shares debut at ₹482.4, a 19.4% premium to issue price of ₹404.", label: 'IPO Listing' }
-];
+const TERMINAL_MOVERS: any[] = [];
 
-const TERMINAL_NEWS_RAW = [
-  { day: 'Today · 20 September', co: 'Tega Industries', sym: 'TEGA', tag: 'order', label: 'Index Outperformer', body: 'Tega Industries soars 14.4% over the past week, outperforming the Nifty 500 index by 13.9% points', time: '3:33 PM IST', src: 'TE', url: 'https://trendlyne.com/equity/743298/TEGA/tega-industries-ltd/' },
-  { day: 'Today · 20 September', co: 'Shree Renuka Sugars', sym: 'RENUKA', tag: 'order', label: 'Policy Tailwind', body: 'Shree Renuka Sugars rises as govt reportedly doubles bulk sugar stockholding limit to 30 days', time: '3:28 PM IST', src: 'RE', url: 'https://trendlyne.com/equity/1131/RENUKA/shree-renuka-sugars-ltd/' },
-  { day: 'Today · 20 September', co: 'KNR Constructions', sym: 'KNRCON', tag: 'order', label: 'Divestment', body: 'KNR Cons sells arm, KNR Guruvayur Infra, to Indus Infra Trust for Rs 486 cr for asset monetisation', time: '3:26 PM IST', src: 'KN', url: 'https://trendlyne.com/equity/752/KNRCON/knr-constructions-ltd/' },
-  { day: 'Today · 20 September', co: 'Nestle', sym: 'NESTLEIND', tag: 'order', label: 'Regulatory', body: 'FSSAI initiates legal action against Nestle for non-compliances involving infant nutrition products', time: '3:26 PM IST', src: 'NE', url: 'https://trendlyne.com/equity/1000/NESTLEIND/nestle-india-ltd/' },
-  { day: 'Today · 20 September', co: 'Borosil Renewables', sym: 'BORORENEW', tag: 'order', label: 'Expansion', body: 'Borosil Renewables enters the rooftop solar biz, expects Rs 100 crore in revenue in the first year', time: '3:04 PM IST', src: 'BO', url: 'https://trendlyne.com/equity/586/BORORENEW/borosil-renewables-ltd/' },
-  { day: 'Today · 20 September', co: 'Concord Biotech', sym: 'CONCORDBIO', tag: 'order', label: 'US FDA', body: "Concord Bio's formulations unit in Ahmedabad gets a Form 483 with one observation from the US FDA", time: '3:04 PM IST', src: 'CO', url: 'https://trendlyne.com/equity/2456789/CONCORDBIO/concord-biotech-ltd/' }
-];
+const TERMINAL_NEWS_RAW: any[] = [];
 
-const TERMINAL_NEWS_GROUPS = (() => {
-  const groups: Array<{ day: string; items: typeof TERMINAL_NEWS_RAW }> = [];
-  TERMINAL_NEWS_RAW.forEach((n) => {
-    let g = groups.find((x) => x.day === n.day);
-    if (!g) {
-      g = { day: n.day, items: [] };
-      groups.push(g);
-    }
-    g.items.push(n);
-  });
-  return groups;
-})();
+const TERMINAL_NEWS_GROUPS: Array<{ day: string; items: any[] }> = [];
 
 function stringSeed(str: string): number {
   let hash = 0;
@@ -389,7 +327,7 @@ function normalizeNewsItem(n: any) {
   const sym = n.sym || n.stock_code || n.NSEcode || n.symbol || "NSE";
   const co = n.co || n.stock_name || sym;
   const body = n.body || n.notification || n.title || "";
-  const time = n.time || n.time_stamp || n.timeStamp || "15:45 IST";
+  const time = n.time || n.time_stamp || n.timeStamp || "Market Hours";
   const label = n.label || "Corporate Move";
   const tag = n.tag || (label.toLowerCase().includes("order") || label.toLowerCase().includes("win") ? "order" :
               label.toLowerCase().includes("jv") || label.toLowerCase().includes("joint") ? "jv" :
@@ -400,10 +338,16 @@ function normalizeNewsItem(n: any) {
 
   let day = n.day;
   if (!day) {
-    if (time.includes("20 Sep")) day = "Today · 20 September";
-    else if (time.includes("19 Sep")) day = "19 September";
-    else if (time.includes("18 Sep")) day = "18 September";
-    else day = "Recent Filings";
+    if (n.date) {
+      day = n.date;
+    } else {
+      const dateMatch = time.match(/(\d{1,2}\s+[A-Za-z]+|\d{4}-\d{2}-\d{2})/);
+      if (dateMatch) {
+        day = dateMatch[0];
+      } else {
+        day = "Latest Updates";
+      }
+    }
   }
 
   return {
@@ -438,23 +382,17 @@ function parseReportsToBriefs(reports: any[]): any[] {
       });
     }
 
-    if (!levels.length) {
-      levels.push(
-        { k: "Nifty Support", v: "23,290", kind: "supp" },
-        { k: "Nifty Resistance", v: "23,390", kind: "res" },
-        { k: "Bank Nifty Pivot", v: "56,300", kind: "piv" }
-      );
-    }
-
-    let dayStr = r.display_date ? r.display_date.replace(" (Today)", "").trim() : (r.date || "20 September");
+    let dayStr = r.display_date ? r.display_date.replace(" (Today)", "").trim() : (r.date || "Market Session");
     let metaStr = "Session";
     try {
-      const dt = new Date(r.date);
-      if (!isNaN(dt.getTime())) {
-        const daysArr = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const monthsArr = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-        dayStr = `${dt.getDate()} ${monthsArr[dt.getMonth()]}`;
-        metaStr = daysArr[dt.getDay()];
+      if (r.date) {
+        const dt = new Date(r.date);
+        if (!isNaN(dt.getTime())) {
+          const daysArr = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+          const monthsArr = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+          dayStr = `${dt.getDate()} ${monthsArr[dt.getMonth()]}`;
+          metaStr = daysArr[dt.getDay()];
+        }
       }
     } catch {}
 
@@ -476,19 +414,14 @@ function parseReportsToBriefs(reports: any[]): any[] {
       pre: {
         time: r.pre_market_time || "08:00 IST",
         items: preItems.length ? preItems : [
-          "<b>Global &amp; Macro Radar</b> — Gift Nifty indicates steady opening; Asian bourses holding firm; crude oil stabilized around <span class=\"num\">$74/bbl</span>.",
-          "<b>India Catalysts</b> — PM E-DRIVE scheme rollout; gross direct tax collections surging; corporate earnings guidance resilient.",
-          "<b>Sector Radar</b> — IT and Metals showing institutional accumulation."
+          "<b>Pre-Market Radar</b> — Pre-market intelligence report pending dispatch at 08:00 AM IST."
         ],
-        levels
+        levels: levels.length ? levels : undefined
       },
       post: {
         time: r.post_market_time || "15:45 IST",
         items: postItems.length ? postItems : [
-          "<b>Market Close Verdict</b> — Nifty <span class=\"num up\">+0.05%</span> at <span class=\"num\">23,346.40</span>; Bank Nifty <span class=\"num up\">+0.33%</span> at <span class=\"num\">56,358.70</span>; breadth <span class=\"num\">61.3%</span> advancing.",
-          "<b>Sector Leaders &amp; Laggards</b> — IT <span class=\"num up\">+1.79%</span>, Metals <span class=\"num up\">+1.37%</span>, Banking <span class=\"num up\">+1.17%</span> vs Infra <span class=\"num down\">-0.24%</span>.",
-          "<b>Institutional Cash Flow</b> — FII net <span class=\"num up\">+₹1,240 Cr</span>; DII net <span class=\"num up\">+₹890 Cr</span>.",
-          "<b>QuantSync Action</b> — Trailing stops engaged; institutional pattern engine discovered high-conviction breakout setups."
+          "<b>Market Wrap</b> — Live session underway. Official post-market wrap dispatches at 15:45 IST."
         ]
       }
     };
@@ -1357,6 +1290,9 @@ export default function App() {
 
   // Live Data States
   const [terminalData, setTerminalData] = useState<TerminalSnapshot | null>(null);
+  const [terminalDataV2, setTerminalDataV2] = useState<TerminalSnapshot | null>(null);
+  const [terminalDataV3, setTerminalDataV3] = useState<TerminalSnapshot | null>(null);
+  const [showEngineExplainer, setShowEngineExplainer] = useState<boolean>(false);
   const [equityData, setEquityData] = useState<EquityCurveData | null>(INITIAL_EQUITY_DATA);
   const [feedItems, setFeedItems] = useState<ActivityFeedItem[]>(DEMO_FEED as any);
   const [scannerReport, setScannerReport] = useState<ScannerReport | null>(null);
@@ -1371,17 +1307,22 @@ export default function App() {
   const [dayReports, setDayReports] = useState<Array<any>>([]);
   const [newsMovers, setNewsMovers] = useState<Array<any>>([]);
   const [terminalIndices, setTerminalIndices] = useState(TERMINAL_INDICES);
-  const [terminalBriefs, setTerminalBriefs] = useState(TERMINAL_BRIEFS);
+  const [terminalBriefs, setTerminalBriefs] = useState<any[]>(TERMINAL_BRIEFS);
   const [terminalSectors, setTerminalSectors] = useState(TERMINAL_SECTORS);
-  const [terminalMovers, setTerminalMovers] = useState(TERMINAL_MOVERS);
-  const [terminalNewsGroups, setTerminalNewsGroups] = useState(TERMINAL_NEWS_GROUPS);
-  const [terminalPulse, setTerminalPulse] = useState({
-    display_date: "Sunday · 20 September 2026",
-    sentiment_pill: "Bullish",
-    advances_pct: 61.3,
-    declines_pct: 38.7,
-    fii_net_cr: 1240,
-    dii_net_cr: 890,
+  const [terminalMovers, setTerminalMovers] = useState<any[]>(TERMINAL_MOVERS);
+  const [terminalNewsGroups, setTerminalNewsGroups] = useState<Array<{ day: string; items: any[] }>>(TERMINAL_NEWS_GROUPS);
+  const [terminalPulse, setTerminalPulse] = useState(() => {
+    const nowD = new Date();
+    const daysArr = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const monthsArr = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return {
+      display_date: `${daysArr[nowD.getDay()]} · ${nowD.getDate()} ${monthsArr[nowD.getMonth()]} ${nowD.getFullYear()}`,
+      sentiment_pill: "Live Market",
+      advances_pct: 55,
+      declines_pct: 45,
+      fii_net_cr: 0,
+      dii_net_cr: 0,
+    };
   });
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
   const [dailyDigest, setDailyDigest] = useState<string>("");
@@ -1465,10 +1406,18 @@ export default function App() {
      ============================================================ */
   const fetchAllData = useCallback(async (currentEngine: "v2" | "v3") => {
     try {
-      // 1. Terminal master snapshot
-      const termRes = await quantsyncApi.getTerminalData(currentEngine).catch(() => null);
+      // 1. Terminal master snapshots (fetch both V2 & V3 concurrently for seamless cross-engine active tracking)
+      const otherEngine = currentEngine === "v2" ? "v3" : "v2";
+      const [termRes, otherRes] = await Promise.all([
+        quantsyncApi.getTerminalData(currentEngine).catch(() => null),
+        quantsyncApi.getTerminalData(otherEngine).catch(() => null),
+      ]);
+
       if (termRes) {
         setTerminalData(termRes);
+        if (currentEngine === "v2") setTerminalDataV2(termRes);
+        else setTerminalDataV3(termRes);
+
         const activeList = termRes.active || termRes.inTradeTrades || [];
         if (activeList.length > 0) {
           const sym = activeList[0].sym || activeList[0].symbol;
@@ -1477,6 +1426,10 @@ export default function App() {
             fetchChart(sym, currentEngine);
           }
         }
+      }
+      if (otherRes) {
+        if (otherEngine === "v2") setTerminalDataV2(otherRes);
+        else setTerminalDataV3(otherRes);
       }
 
       // 2. Equity Curve
@@ -1575,65 +1528,6 @@ export default function App() {
             setTerminalNewsGroups(groups);
           }
         }
-      }).catch(() => {});
-
-      // Instant static snapshot fallback sync
-      fetch("/market_pulse.json").then(r => r.json()).then(p => {
-        if (p?.indices?.length) setTerminalIndices(p.indices);
-        if (p?.advances_pct != null) {
-          setTerminalPulse(prev => ({
-            ...prev,
-            display_date: p.display_date || prev.display_date,
-            sentiment_pill: p.sentiment_pill || prev.sentiment_pill,
-            advances_pct: p.advances_pct,
-            declines_pct: p.declines_pct,
-            fii_net_cr: p.fii_net_cr ?? prev.fii_net_cr,
-            dii_net_cr: p.dii_net_cr ?? prev.dii_net_cr,
-          }));
-        }
-      }).catch(() => {});
-
-      fetch("/sectors.json").then(r => r.json()).then(s => {
-        if (s?.sectors?.length) {
-          setTerminalSectors(filterTo12CoreSectors(s.sectors));
-        }
-      }).catch(() => {});
-
-      fetch("/movers.json").then(r => r.json()).then(m => {
-        if (m?.movers?.length) {
-          setTerminalMovers(m.movers.map((mov: any) => ({
-            sym: mov.sym || mov.symbol,
-            pct: mov.pct ?? mov.change_pct ?? 0,
-            desc: mov.desc || mov.catalyst || "",
-            label: mov.label || "Corporate Move"
-          })));
-        }
-      }).catch(() => {});
-
-      fetch("/disclosures.json").then(r => r.json()).then(d => {
-        if (d?.disclosures?.length) {
-          const normalized = d.disclosures.map(normalizeNewsItem);
-          const groups: Array<{ day: string; items: any[] }> = [];
-          normalized.forEach((n: any) => {
-            const dayStr = n.day || "Recent Filings";
-            let g = groups.find((x) => x.day === dayStr);
-            if (!g) {
-              g = { day: dayStr, items: [] };
-              groups.push(g);
-            }
-            g.items.push(n);
-          });
-          setTerminalNewsGroups(groups);
-        }
-      }).catch(() => {});
-
-      fetch("/day_reports.json").then(r => r.json()).then(d => {
-        if (d?.timeline_briefs?.length) {
-          setTerminalBriefs(d.timeline_briefs);
-        } else if (d?.reports?.length) {
-          setTerminalBriefs(parseReportsToBriefs(d.reports));
-        }
-        if (d?.reports?.length) setDayReports(d.reports);
       }).catch(() => {});
 
       quantsyncApi.getDailyDigest(currentEngine).then(res => {
@@ -2037,6 +1931,42 @@ export default function App() {
     });
   }, [closedTrades]);
 
+  // Aggregated active trades across BOTH V2 and V3 for seamless cross-engine portfolio synchronization
+  const allInTradeTrades = useMemo(() => {
+    const list: any[] = [];
+    const seen = new Set<string>();
+
+    const getRaw = (data: TerminalSnapshot | null, eng: "v2" | "v3") => {
+      if (!data) return DEMO_DATA[eng].active || [];
+      if (data.active && data.active.length > 0) return data.active;
+      if (data.inTradeTrades && data.inTradeTrades.length > 0) return data.inTradeTrades;
+      return DEMO_DATA[eng].active || [];
+    };
+
+    const v2Raw = getRaw(terminalDataV2 || (engine === "v2" ? terminalData : null), "v2");
+    const v3Raw = getRaw(terminalDataV3 || (engine === "v3" ? terminalData : null), "v3");
+
+    v2Raw.forEach((t: any, idx: number) => {
+      const norm = normalizeActiveTrade(t, idx, "v2");
+      const sym = (norm.sym || norm.symbol || "").toUpperCase().trim();
+      if (sym && !seen.has(`${sym}_v2`)) {
+        seen.add(`${sym}_v2`);
+        list.push({ ...norm, engine: "v2" });
+      }
+    });
+
+    v3Raw.forEach((t: any, idx: number) => {
+      const norm = normalizeActiveTrade(t, idx, "v3");
+      const sym = (norm.sym || norm.symbol || "").toUpperCase().trim();
+      if (sym && !seen.has(`${sym}_v3`)) {
+        seen.add(`${sym}_v3`);
+        list.push({ ...norm, engine: "v3" });
+      }
+    });
+
+    return list;
+  }, [terminalDataV2, terminalDataV3, terminalData, engine]);
+
   // Dynamic header date (no hardcoded current date)
   const headerDateStr = useMemo(() => {
     if (terminalData?.asOfDate) return formatDisplayDate(terminalData.asOfDate);
@@ -2062,7 +1992,7 @@ export default function App() {
       totalInvested += invested;
 
       const sym = (pos.symbol || "").toUpperCase().trim();
-      const liveMatch = activeTrades.find((a: any) => (a.sym || a.symbol || "").toUpperCase().trim() === sym);
+      const liveMatch = allInTradeTrades.find((a: any) => (a.sym || a.symbol || "").toUpperCase().trim() === sym);
       const curP = liveMatch ? Number(liveMatch.now || liveMatch.currentPrice || liveMatch.price || buyP) : Number(pos.currentPrice || buyP);
       currentValue += curP * qty;
     });
@@ -2079,15 +2009,15 @@ export default function App() {
       totalPortfolioValue,
       count: portfolio.length,
     };
-  }, [portfolio, activeTrades]);
+  }, [portfolio, allInTradeTrades]);
 
-  // Synchronize live LTP and active status into portfolio
+  // Synchronize live LTP and active status into portfolio across both engines
   useEffect(() => {
-    if (activeTrades.length > 0 && portfolio.length > 0) {
+    if (allInTradeTrades.length > 0 && portfolio.length > 0) {
       setPortfolio((prev) => {
         if (!prev || prev.length === 0) return prev;
         const activeMap = new Map<string, any>();
-        activeTrades.forEach((t: any) => {
+        allInTradeTrades.forEach((t: any) => {
           const s = (t.sym || t.symbol || "").toUpperCase().trim();
           if (s) activeMap.set(s, t);
         });
@@ -2105,13 +2035,15 @@ export default function App() {
                 : p.buyPrice > 0
                 ? ((newLtp - p.buyPrice) / p.buyPrice) * 100
                 : 0;
-            if (p.currentPrice !== newLtp || p.isActiveInStrategy !== true || p.currentROI !== newRoi) {
+            const eng = match.engine || p.engine;
+            if (p.currentPrice !== newLtp || p.isActiveInStrategy !== true || p.currentROI !== newRoi || (eng && p.engine !== eng)) {
               changed = true;
               return {
                 ...p,
                 currentPrice: newLtp,
                 currentROI: newRoi,
-                isActiveInStrategy: true
+                isActiveInStrategy: true,
+                engine: eng || p.engine
               };
             }
           } else {
@@ -2128,12 +2060,12 @@ export default function App() {
         return changed ? updated : prev;
       });
     }
-  }, [activeTrades]);
+  }, [allInTradeTrades]);
 
   // Buy submission handler (Cloud synced via Firestore)
   const handleBuySubmit = (data: { symbol: string; buyPrice: number; quantity: number; strategyName?: string }) => {
     const symKey = (data.symbol || "").toUpperCase().trim();
-    const activeMatch = activeTrades.find((s: any) => (s.sym || s.symbol || "").toUpperCase().trim() === symKey);
+    const activeMatch = allInTradeTrades.find((s: any) => (s.sym || s.symbol || "").toUpperCase().trim() === symKey);
     const ltp = activeMatch?.now || activeMatch?.currentPrice ? Number(activeMatch.now || activeMatch.currentPrice) : data.buyPrice;
     const isSignalActive = !!activeMatch;
 
@@ -2143,7 +2075,8 @@ export default function App() {
       buyPrice: data.buyPrice,
       quantity: data.quantity,
       totalInvested: data.buyPrice * data.quantity,
-      strategyName: data.strategyName || activeMatch?.tag || activeMatch?.strategyName || "Breakout",
+      strategyName: data.strategyName || activeMatch?.strategyName || (engine === "v2" ? "V2 Pro AI" : "V3 Pattern AI"),
+      engine: (activeMatch?.engine || engine) as "v2" | "v3",
       date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
       daysHeld: 1,
       isActiveInStrategy: isSignalActive,
@@ -2432,67 +2365,13 @@ export default function App() {
               <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" />
             </svg>
           </button>
-
-          <div className="engine-toggle" id="engineToggle" data-sel={engine}>
-            <span className="engine-thumb" />
-            <button
-              className={`engine-btn ${engine === "v2" ? "is-active" : ""}`}
-              onClick={() => switchEngine("v2")}
-              data-engine-btn="v2"
-            >
-              <svg viewBox="0 0 16 16">
-                <circle cx="8" cy="8" r="2.1" />
-                <circle cx="3.2" cy="4" r="1.2" />
-                <circle cx="12.8" cy="4" r="1.2" />
-                <circle cx="3.2" cy="12" r="1.2" />
-                <circle cx="12.8" cy="12" r="1.2" />
-                <path d="M4.2 4.9 6.5 6.7M11.8 4.9 9.5 6.7M4.2 11.1 6.5 9.3M11.8 11.1 9.5 9.3" />
-              </svg>
-              V2 AI
-            </button>
-            <button
-              className={`engine-btn ${engine === "v3" ? "is-active" : ""}`}
-              onClick={() => switchEngine("v3")}
-              data-engine-btn="v3"
-            >
-              <svg viewBox="0 0 16 16">
-                <path d="M4 3.5v9M8 2.5v11M12 5v6" />
-              </svg>
-              V3 Chart
-            </button>
-          </div>
         </div>
       </header>
 
       {/* ============ SCREENS ============ */}
       <main className="screens" id="screens">
-        {/* ===== HOME SCREEN (FORMER INTEL WITH ENGINE CONTEXT STRIP) ===== */}
+        {/* ===== HOME SCREEN (LUXURY TERMINAL INTEL) ===== */}
         <section className={`screen ${activeTab === "home" ? "active" : ""}`} id="screen-home">
-          {/* ENGINE CONTEXT STRIP ON TOP */}
-          <div className="engine-context" id="engineContext">
-            <div className="ec-icon" id="ecIcon">
-              {engine === "v2" ? "🤖" : "📐"}
-            </div>
-            <div className="ec-text">
-              <div className="ec-title">
-                <span id="ecTitle">{engine === "v2" ? "V2 · AI Trading" : "V3 · Chart Trading"}</span>
-                <span className="ec-tag" id="ecTag">{engine === "v2" ? "FOR EVERYONE" : "FOR PROS"}</span>
-              </div>
-              <div className="ec-desc" id="ecDesc">
-                {engine === "v2"
-                  ? "ML scans every stock · picks the top 3 most likely to rise"
-                  : "Auto-detects breakout patterns · enters the strongest chart setup"}
-              </div>
-            </div>
-            <button
-              className="ec-switch"
-              id="ecSwitch"
-              onClick={() => switchEngine(engine === "v2" ? "v3" : "v2")}
-            >
-              {engine === "v2" ? "Try V3 →" : "Try V2 →"}
-            </button>
-          </div>
-
           {/* ============================================================
              LUXURY TERMINAL HOME VIEW
              ============================================================ */}
@@ -2869,6 +2748,61 @@ export default function App() {
 
         {/* ===== SIGNALS SCREEN ===== */}
         <section className={`screen ${activeTab === "signals" ? "active" : ""}`} id="screen-signals">
+          {/* Dedicated Engine Selector Card with 2-line descriptions & What is this modal */}
+          <div className="signals-engine-selector-card">
+            <div className="signals-engine-card-header">
+              <div className="signals-engine-title-group">
+                <span className="signals-engine-icon">⚡</span>
+                <div>
+                  <div className="signals-engine-title">AI Engine Model</div>
+                  <div className="signals-engine-subtitle">Select quantitative intelligence engine driving signals</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="signals-what-is-this-btn"
+                onClick={() => setShowEngineExplainer(true)}
+              >
+                <span>What is this?</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="signals-engine-toggle" data-sel={engine}>
+              <button
+                type="button"
+                className={`signals-engine-btn ${engine === "v2" ? "is-active" : ""}`}
+                onClick={() => switchEngine("v2")}
+              >
+                <div className="engine-btn-main">
+                  <span className="engine-dot" />
+                  <span className="engine-name">Pro Quantitative AI (V2)</span>
+                </div>
+                <div className="engine-btn-desc">
+                  Signals generated directly from multi-factor quantitative AI models (momentum, mean-reversion & institutional accumulation).
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className={`signals-engine-btn ${engine === "v3" ? "is-active" : ""}`}
+                onClick={() => switchEngine("v3")}
+              >
+                <div className="engine-btn-main">
+                  <span className="engine-dot" />
+                  <span className="engine-name">Pattern Confluence AI (V3)</span>
+                </div>
+                <div className="engine-btn-desc">
+                  Signals generated from visual multi-timeframe chart patterns (triangles, bases, breakouts) confirmed by AI execution filters.
+                </div>
+              </button>
+            </div>
+          </div>
+
           <div className="subtabs" id="sigTabs">
             <button
               className={`subtab ${sigSub === "active" ? "on" : ""}`}
@@ -3459,13 +3393,14 @@ export default function App() {
               portfolio={portfolio}
               completedHistory={completedHistory}
               closedTrades={closedTrades}
-              inTradeTrades={activeTrades.map((t: any) => ({
+              inTradeTrades={allInTradeTrades.map((t: any) => ({
                 symbol: t.sym || t.symbol,
+                engine: t.engine,
                 entryPrice: t.entry || t.entryPrice,
                 currentPrice: t.now || t.currentPrice || t.price || t.entry,
                 targetPrice: t.target || t.targetPrice,
                 stopLoss: t.stop || t.stopLoss,
-                strategyName: t.tag || t.strategyName,
+                strategyName: t.tag || t.strategyName || (t.engine === "v2" ? "V2 Pro AI" : "V3 Pattern AI"),
                 patternName: t.pattern || t.patternName,
                 currentROI: t.pnlPct ?? t.roiPct ?? t.chg ?? 0,
                 rMultiple: t.rMult || t.rMultiple,
@@ -4135,6 +4070,65 @@ export default function App() {
           onClose={() => setIsAddPositionOpen(false)}
           onSubmit={handleBuySubmit}
         />
+      )}
+
+      {/* Engine Comparison Explainer Modal */}
+      {showEngineExplainer && (
+        <div className="engine-modal-backdrop" onClick={() => setShowEngineExplainer(false)}>
+          <div className="engine-modal-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="engine-modal-header">
+              <div className="engine-modal-title">
+                <span>⚡</span> QuantSync AI Engine Architecture
+              </div>
+              <button
+                type="button"
+                className="engine-modal-close"
+                onClick={() => setShowEngineExplainer(false)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="engine-modal-body">
+              <div className="engine-modal-section v2-section">
+                <div className="engine-modal-badge v2-badge">PRO QUANTITATIVE AI · V2</div>
+                <h3>Multi-Factor Alpha Model</h3>
+                <p>
+                  V2 evaluates the entire NSE universe through quantitative multi-factor mathematics: institutional volume accumulation, dynamic RSI momentum slopes, volatility expansion (ATR), and statistical mean-reversion.
+                </p>
+                <div className="engine-feature-list">
+                  <div><span className="chk">✓</span> Pure institutional flow &amp; factor momentum scoring</div>
+                  <div><span className="chk">✓</span> Systematic ATR volatility-adjusted trailing stops</div>
+                  <div><span className="chk">✓</span> Ideal for high-momentum swings &amp; statistical factor capture</div>
+                </div>
+              </div>
+
+              <div className="engine-modal-divider" />
+
+              <div className="engine-modal-section v3-section">
+                <div className="engine-modal-badge v3-badge">PATTERN CONFLUENCE AI · V3</div>
+                <h3>Visual Chart Pattern + AI Execution Gate</h3>
+                <p>
+                  V3 first maps high-probability classical chart formations across multiple timeframes (Ascending Triangles, Flat Bases, High Tight Flags, and Cup &amp; Handles). It then executes a secondary AI confirmation filter to weed out false breakouts before triggering a trade.
+                </p>
+                <div className="engine-feature-list">
+                  <div><span className="chk">✓</span> Automated geometric multi-timeframe chart pattern discovery</div>
+                  <div><span className="chk">✓</span> Structural resistance &amp; breakout volume confirmation gates</div>
+                  <div><span className="chk">✓</span> Ideal for structural swing traders seeking clear visual patterns</div>
+                </div>
+              </div>
+            </div>
+            <div className="engine-modal-footer">
+              <button
+                type="button"
+                className="engine-modal-done-btn"
+                onClick={() => setShowEngineExplainer(false)}
+              >
+                Understood
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Global Toast */}
