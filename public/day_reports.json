@@ -7,14 +7,14 @@
       "pre_market_time": "08:00 IST",
       "pre_global_cues": "<b>Global &amp; Macro Radar</b> \u2014 Gift Nifty indicates steady opening; Asian bourses holding firm; crude oil stabilized around <span class=\"num\">$74/bbl</span>.",
       "pre_domestic_news": "<b>India Catalysts</b> \u2014 PM E-DRIVE scheme rollout; gross direct tax collections surging; corporate earnings guidance resilient.",
-      "pre_sector_updates": "<b>Sector Radar</b> \u2014 IT and Metals showing institutional accumulation.",
+      "pre_sector_updates": "<b>Sector Radar</b> \u2014 Banking and IT showing institutional accumulation.",
       "pre_technical_levels": "Nifty Support 23,290; Resistance 23,390; Bank Nifty Pivot 56,300",
       "post_market_time": "15:45 IST",
       "post_summary": "<b>Market Close Verdict</b> \u2014 Nifty <span class=\"num up\">+0.05%</span> at <span class=\"num\">23,346.40</span>; Bank Nifty <span class=\"num up\">+0.33%</span> at <span class=\"num\">56,358.70</span>; breadth <span class=\"num\">61.3%</span> advancing.",
-      "post_sector_highlights": "<b>Sector Leaders &amp; Laggards</b> \u2014 IT <span class=\"num up\">+1.79%</span>, Metals <span class=\"num up\">+1.37%</span>, Banking <span class=\"num up\">+1.17%</span> vs Infra <span class=\"num down\">-0.24%</span>.",
+      "post_sector_highlights": "<b>Sector Leaders &amp; Laggards</b> \u2014 Banking <span class=\"num up\">+1.17%</span>, IT <span class=\"num up\">+2.76%</span>, Auto <span class=\"num up\">+0.58%</span> vs IT <span class=\"num down\">\u22121.03%</span>.",
       "post_flows_breadth": "<b>Institutional Cash Flow</b> \u2014 FII net <span class=\"num up\">+\u20b91,240 Cr</span>; DII net <span class=\"num up\">+\u20b9890 Cr</span>.",
       "post_engine_action": "<b>QuantSync Action</b> \u2014 Trailing stops engaged; institutional pattern engine discovered high-conviction breakout setups.",
-      "created_at": "2026-09-19 18:49:26"
+      "created_at": "2026-09-19 19:03:34"
     },
     {
       "date": "2026-09-19",
@@ -162,7 +162,7 @@
         "items": [
           "<b>Global &amp; Macro Radar</b> \u2014 Gift Nifty indicates steady opening; Asian bourses holding firm; crude oil stabilized around <span class=\"num\">$74/bbl</span>.",
           "<b>India Catalysts</b> \u2014 PM E-DRIVE scheme rollout; gross direct tax collections surging; corporate earnings guidance resilient.",
-          "<b>Sector Radar</b> \u2014 IT and Metals showing institutional accumulation."
+          "<b>Sector Radar</b> \u2014 Banking and IT showing institutional accumulation."
         ],
         "levels": [
           {
@@ -186,7 +186,7 @@
         "time": "15:45 IST",
         "items": [
           "<b>Market Close Verdict</b> \u2014 Nifty <span class=\"num up\">+0.05%</span> at <span class=\"num\">23,346.40</span>; Bank Nifty <span class=\"num up\">+0.33%</span> at <span class=\"num\">56,358.70</span>; breadth <span class=\"num\">61.3%</span> advancing.",
-          "<b>Sector Leaders &amp; Laggards</b> \u2014 IT <span class=\"num up\">+1.79%</span>, Metals <span class=\"num up\">+1.37%</span>, Banking <span class=\"num up\">+1.17%</span> vs Infra <span class=\"num down\">-0.24%</span>.",
+          "<b>Sector Leaders &amp; Laggards</b> \u2014 Banking <span class=\"num up\">+1.17%</span>, IT <span class=\"num up\">+2.76%</span>, Auto <span class=\"num up\">+0.58%</span> vs IT <span class=\"num down\">\u22121.03%</span>.",
           "<b>Institutional Cash Flow</b> \u2014 FII net <span class=\"num up\">+\u20b91,240 Cr</span>; DII net <span class=\"num up\">+\u20b9890 Cr</span>.",
           "<b>QuantSync Action</b> \u2014 Trailing stops engaged; institutional pattern engine discovered high-conviction breakout setups."
         ]

@@ -251,81 +251,81 @@ function getMarketStatusInfo() {
 }
 
 const TERMINAL_INDICES = [
-  { n: 'Nifty 50', v: 23346.40, p: 0.33, seed: 11, trend: 0.35 },
-  { n: 'Sensex', v: 76890.10, p: 0.29, seed: 22, trend: 0.28 },
-  { n: 'Bank Nifty', v: 56358.70, p: 0.54, seed: 33, trend: 0.55 }
+  { n: 'Nifty 50', v: 23346.40, p: 0.05, seed: 11, trend: 0.05 },
+  { n: 'Sensex', v: 76879.70, p: 0.04, seed: 22, trend: 0.04 },
+  { n: 'Bank Nifty', v: 56358.70, p: 0.33, seed: 33, trend: 0.33 }
 ];
 
 const TERMINAL_BRIEFS = [
   {
-    date: '19 September',
+    date: '20 September',
     today: true,
-    meta: 'Saturday',
+    meta: 'Sunday',
     pre: {
       time: '08:00 IST',
       items: [
-        `<b>Global &amp; Macro Radar</b> — Gift Nifty <span class="num up">+45 pts</span> at <span class="num">23,380</span>; steady US close overnight; Fed rate signals in focus; crude at <span class="num">$74/bbl</span>.`,
-        `<b>India Catalysts</b> — PM E-DRIVE scheme rollout; gross direct tax collections up <span class="num up">21.1% YoY</span> to <span class="num">₹12.01L Cr</span>; advance tax trends positive.`,
-        `<b>Sector Radar</b> — IT guidance turns positive, Auto festive dispatches strong, Banking holding moving-average support.`
+        `<b>Global &amp; Macro Radar</b> — Gift Nifty indicates steady opening; Asian bourses holding firm; crude oil stabilized around <span class="num">$74/bbl</span>.`,
+        `<b>India Catalysts</b> — PM E-DRIVE scheme rollout; gross direct tax collections surging; corporate earnings guidance resilient.`,
+        `<b>Sector Radar</b> — IT and Metals showing institutional accumulation.`
       ],
       levels: [
-        { k: 'Nifty Support', v: '23,200', kind: 'supp' },
-        { k: 'Breakdown Risk', v: '23,050', kind: 'res' },
-        { k: 'Nifty Resistance', v: '23,450', kind: 'res' },
-        { k: 'Bank Nifty Pivot', v: '56,100', kind: 'piv' }
+        { k: 'Nifty Support', v: '23,290', kind: 'supp' },
+        { k: 'Nifty Resistance', v: '23,390', kind: 'res' },
+        { k: 'Bank Nifty Pivot', v: '56,300', kind: 'piv' }
       ]
     },
     post: {
       time: '15:45 IST',
       items: [
-        `<b>Market Close Verdict</b> — Nifty <span class="num up">+0.33%</span> at <span class="num">23,346.40</span>; Bank Nifty <span class="num up">+0.54%</span> at <span class="num">56,358.70</span>; breadth <span class="num">62.5%</span> advancing.`,
-        `<b>Sector Leaders &amp; Laggards</b> — Metals <span class="num up">+1.51%</span>, Realty <span class="num up">+1.19%</span>, Energy <span class="num up">+1.05%</span> vs IT <span class="num down">−1.03%</span>.`,
+        `<b>Market Close Verdict</b> — Nifty <span class="num up">+0.05%</span> at <span class="num">23,346.40</span>; Bank Nifty <span class="num up">+0.33%</span> at <span class="num">56,358.70</span>; breadth <span class="num">61.3%</span> advancing.`,
+        `<b>Sector Leaders &amp; Laggards</b> — IT <span class="num up">+1.79%</span>, Metals <span class="num up">+1.37%</span>, Banking <span class="num up">+1.17%</span> vs Infra <span class="num down">-0.24%</span>.`,
         `<b>Institutional Cash Flow</b> — FII net <span class="num up">+₹1,240 Cr</span>; DII net <span class="num up">+₹890 Cr</span>.`,
-        `<b>QuantSync Action</b> — 4 trailing stops engaged, 2 high-conviction V3 setups discovered.`
+        `<b>QuantSync Action</b> — Trailing stops engaged; institutional pattern engine discovered high-conviction breakout setups.`
       ]
     }
   },
-  { date: '18 September', meta: 'Friday', pre: { time: '08:00 IST', items: [`<b>Gift Nifty flat</b>, US markets mixed overnight, crude steady at <span class="num">$73.8/bbl</span>.`] }, post: { time: '15:45 IST', items: [`<b>Nifty closed</b> <span class="num down">−0.12%</span> at <span class="num">23,268.90</span>; IT led losses on weak US tech cues.`] } },
-  { date: '17 September', meta: 'Thursday', pre: { time: '08:00 IST', items: [`<b>Gift Nifty</b> <span class="num up">+20 pts</span>, Asian markets firm, RBI policy watch ahead.`] }, post: { time: '15:45 IST', items: [`<b>Nifty</b> <span class="num up">+0.48%</span> at <span class="num">23,300.10</span>; Banking outperformed on rate-cut hopes.`] } },
-  { date: '16 September', meta: 'Wednesday', pre: { time: '08:00 IST', items: [`<b>Gift Nifty</b> <span class="num down">−15 pts</span>, US CPI print awaited, crude ticks up to <span class="num">$74.5/bbl</span>.`] }, post: { time: '15:45 IST', items: [`<b>Nifty</b> <span class="num down">−0.21%</span> at <span class="num">23,190.40</span>; Metals dragged on China demand worries.`] } },
-  { date: '15 September', meta: 'Tuesday', pre: { time: '08:00 IST', items: [`<b>Gift Nifty</b> flat-to-positive, festive-season auto data due today.`] }, post: { time: '15:45 IST', items: [`<b>Nifty</b> <span class="num up">+0.61%</span> at <span class="num">23,240.80</span>; Auto rallied on strong dispatch numbers.`] } },
-  { date: '12 September', meta: 'Friday', pre: { time: '08:00 IST', items: [`<b>Gift Nifty</b> <span class="num up">+30 pts</span>, FII flows turn positive after 3 sessions of selling.`] }, post: { time: '15:45 IST', items: [`<b>Nifty</b> <span class="num up">+0.39%</span> at <span class="num">23,100.20</span>; broad-based buying across sectors.`] } },
-  { date: '11 September', meta: 'Thursday', pre: { time: '08:00 IST', items: [`<b>Gift Nifty</b> <span class="num down">−25 pts</span>, global risk-off tone, crude softens to <span class="num">$72.9/bbl</span>.`] }, post: { time: '15:45 IST', items: [`<b>Nifty</b> <span class="num down">−0.34%</span> at <span class="num">23,010.50</span>; Energy stocks under pressure.`] } },
-  { date: '10 September', meta: 'Wednesday', pre: { time: '08:00 IST', items: [`<b>Gift Nifty</b> flat, GST council meeting outcome awaited.`] }, post: { time: '15:45 IST', items: [`<b>Nifty</b> <span class="num up">+0.18%</span> at <span class="num">23,088.70</span>; Consumer stocks gained on GST optimism.`] } },
-  { date: '9 September', meta: 'Tuesday', pre: { time: '08:00 IST', items: [`<b>Gift Nifty</b> <span class="num up">+10 pts</span>, muted global cues ahead of Fed minutes.`] }, post: { time: '15:45 IST', items: [`<b>Nifty</b> <span class="num up">+0.05%</span> at <span class="num">23,047.30</span>; range-bound, low-volume session.`] } },
-  { date: '8 September', meta: 'Monday', pre: { time: '08:00 IST', items: [`<b>Gift Nifty</b> <span class="num down">−40 pts</span>, weak Asian markets, crude at <span class="num">$75.2/bbl</span>.`] }, post: { time: '15:45 IST', items: [`<b>Nifty</b> <span class="num down">−0.58%</span> at <span class="num">23,035.90</span>; IT and Metals led a broad market decline.`] } }
+  { date: '19 September', meta: 'Saturday', pre: { time: '08:00 AM', items: [`Gift Nifty steady opening (+45 pts at 23,380). US tech megacaps rebounded. Crude oil stabilized at $74/bbl.`] }, post: { time: '03:45 PM', items: [`Nifty closed +0.33% at 23,346.40 backed by Metals and Energy. Bank Nifty gained +0.54% at 56,358.70.`] } },
+  { date: '18 September', meta: 'Friday', pre: { time: '08:00 AM', items: [`US Fed delivered a widely anticipated 25 bps rate cut. S&P 500 hit record highs. European equities surged.`] }, post: { time: '03:45 PM', items: [`Strong rally on rate cut tailwinds. Nifty gained +180 pts (+0.78%). Realty and Banking led.`] } },
+  { date: '17 September', meta: 'Thursday', pre: { time: '08:00 AM', items: [`Cautious sentiment across Asian bourses ahead of FOMC policy statement. Crude oil near $73.50.`] }, post: { time: '03:45 PM', items: [`Sideways consolidation. Nifty closed flat (-0.08% at 23,120). Defensive FMCG and Pharma outperformed.`] } },
+  { date: '16 September', meta: 'Wednesday', pre: { time: '08:00 AM', items: [`Wall Street edged higher led by semiconductor names. Wholesale Price Inflation dropped to 1.31%.`] }, post: { time: '03:45 PM', items: [`Mid-session bounce propelled Nifty above 23,100 (+0.42%). Midcaps and Smallcaps showed notable strength.`] } },
+  { date: '15 September', meta: 'Tuesday', pre: { time: '08:00 AM', items: [`Mixed global cues. Gold touched fresh highs near $2,580/oz. Monsoon rainfall recorded at 8% above normal.`] }, post: { time: '03:45 PM', items: [`Rangebound day with defensive stance. Nifty ended +0.12% at 23,025. Pharma and Auto gained.`] } },
+  { date: '12 September', meta: 'Friday', pre: { time: '08:00 AM', items: [`European Central Bank cut deposit rates by 25 bps. Retail inflation eased to 3.65% in August.`] }, post: { time: '03:45 PM', items: [`Nifty broke out convincingly above 23,000, closing at 23,010 (+0.65%). Private Banks and IT drove gains.`] } },
+  { date: '11 September', meta: 'Thursday', pre: { time: '08:00 AM', items: [`US Core CPI print came slightly firm (+0.3% MoM). Industrial Output (IIP) expanded at 4.8% YoY.`] }, post: { time: '03:45 PM', items: [`Volatile session with intraday recovery from 22,820 lows. Nifty ended at 22,860. PSU Banks held firm.`] } },
+  { date: '10 September', meta: 'Wednesday', pre: { time: '08:00 AM', items: [`Oil prices dipped below $70 briefly. GST Council meeting concluded with rate rationalizations.`] }, post: { time: '03:45 PM', items: [`Bulls regained momentum in second half. Nifty closed +0.45% at 22,895 led by Oil & Gas and Pharma.`] } },
+  { date: '9 September', meta: 'Tuesday', pre: { time: '08:00 AM', items: [`Asian markets subdued. US treasury yields lower at 3.71%. Direct Tax collections cross ₹8 lakh crore.`] }, post: { time: '03:45 PM', items: [`Quiet consolidation. Nifty ended +0.10% at 22,790 with low volatility. FMCG saw steady accumulation.`] } }
 ];
 
 const TERMINAL_SECTORS = [
-  { n: 'Metals', p: 1.51 },
-  { n: 'Realty', p: 1.19 },
-  { n: 'Energy', p: 1.05 },
-  { n: 'Auto', p: 0.72 },
-  { n: 'Banking', p: 0.54 },
-  { n: 'Pharma', p: 0.31 },
-  { n: 'FMCG', p: 0.12 },
-  { n: 'Infra', p: -0.24 },
-  { n: 'IT', p: -1.03 }
+  { n: 'Banking', p: 1.17 },
+  { n: 'IT', p: 2.76 },
+  { n: 'Auto', p: 0.58 },
+  { n: 'Metals', p: 1.37 },
+  { n: 'Energy', p: 0.34 },
+  { n: 'Pharma', p: 1.51 },
+  { n: 'FMCG', p: 0.14 },
+  { n: 'Realty', p: 0.97 },
+  { n: 'Infra', p: 1.83 },
+  { n: 'Telecom', p: 2.20 },
+  { n: 'Chemicals', p: 1.40 },
+  { n: 'Consumer Durables', p: 1.50 }
 ];
 
 const TERMINAL_MOVERS = [
-  { sym: 'BEML', pct: 4.82, desc: 'Wins ₹5,400 Cr order from NHSRCL for high-speed rolling stock on the bullet-train corridor.' },
-  { sym: 'PREMIERENE', pct: 5.35, desc: 'Forms RCT India JV to build a 12 GWh battery storage facility.' },
-  { sym: 'IDEA', pct: 3.68, desc: 'Secures $3.5 bn in debt financing led by State Bank of India.' },
-  { sym: 'NEOGEN', pct: 3.20, desc: 'Approves ₹600 Cr QIP at a ₹2,189.70 floor price.' },
-  { sym: 'VEEGALAND', pct: 10.00, desc: 'Strong market debut at a 10% premium to issue price.' },
-  { sym: 'TATASTEEL', pct: -3.15, desc: 'EU scrap-metal tariffs and soft Chinese futures drag on global steel prices.' }
+  { sym: 'TEGA', pct: 14.40, desc: 'Tega Industries soars 14.4% over the past week, outperforming the Nifty 500 index by 13.9% points.', label: 'Index Outperformer' },
+  { sym: 'VEEGALAND', pct: 10.00, desc: "Veegaland Developers' shares debut at ₹154, a 10% premium to issue price of ₹140.", label: 'IPO Listing' },
+  { sym: 'LLOYDSME', pct: 15.00, desc: "Forecaster estimates Lloyds Metals' Q2 revenue to soar 150% YoY, on a shift beyond mining into VAP.", label: 'Forecaster Estimates' },
+  { sym: 'STEAMHOUSE', pct: 16.70, desc: "Steamhouse India's shares debut at ₹94.5, a 16.7% premium to issue price of ₹81.", label: 'IPO Listing' },
+  { sym: 'YATHARTH', pct: 24.90, desc: 'Advent to invest ₹3,150 crore in Yatharth Hospital for a 24.9% stake via shares and warrants.', label: 'Investment' },
+  { sym: 'RENTOMOJO', pct: 19.40, desc: "Rentomojo's shares debut at ₹482.4, a 19.4% premium to issue price of ₹404.", label: 'IPO Listing' }
 ];
 
 const TERMINAL_NEWS_RAW = [
-  { day: 'Today · 19 September', co: 'BEML Ltd', sym: 'BEML', tag: 'order', label: 'Order Win', body: 'Wins ₹5,400 Cr order from NHSRCL for high-speed rolling stock supply on the bullet-train corridor.', time: '14:32 IST', src: 'BE' },
-  { day: 'Today · 19 September', co: 'Premier Energies', sym: 'PREMIERENE', tag: 'jv', label: 'Forms JV', body: 'Forms RCT India joint venture to build a 12 GWh battery storage manufacturing facility.', time: '12:10 IST', src: 'PE' },
-  { day: 'Today · 19 September', co: 'Vodafone Idea', sym: 'IDEA', tag: 'order', label: 'Secures Loan', body: 'Secures $3.5 bn in debt financing led by State Bank of India.', time: '10:47 IST', src: 'VI' },
-  { day: '18 September', co: 'Neogen Chemicals', sym: 'NEOGEN', tag: 'fund', label: 'Fundraise', body: 'Board approves ₹600 Cr QIP at a floor price of ₹2,189.70 per share.', time: '16:05 IST', src: 'NC' },
-  { day: '18 September', co: 'Veegaland Engineering', sym: 'VEEGALAND', tag: 'ipo', label: 'IPO Debut', body: 'Lists at a 10% premium to its issue price on debut day.', time: '09:20 IST', src: 'VE' },
-  { day: '17 September', co: 'Tata Steel', sym: 'TATASTEEL', tag: 'order', label: 'Regulatory', body: 'EU proposes new scrap-metal export tariffs, adding pressure to global steel pricing.', time: '18:44 IST', src: 'TS' },
-  { day: '16 September', co: 'Indian Renewable Energy', sym: 'IREDA', tag: 'fund', label: 'Fundraise', body: 'Raises ₹2,150 Cr via green bonds to fund renewable energy lending.', time: '15:12 IST', src: 'IR' },
-  { day: '15 September', co: 'KEC International', sym: 'KEC', tag: 'order', label: 'Order Win', body: 'Bags new transmission & distribution orders worth ₹1,180 Cr.', time: '11:30 IST', src: 'KE' }
+  { day: 'Today · 20 September', co: 'Tega Industries', sym: 'TEGA', tag: 'order', label: 'Index Outperformer', body: 'Tega Industries soars 14.4% over the past week, outperforming the Nifty 500 index by 13.9% points', time: '3:33 PM IST', src: 'TE', url: 'https://trendlyne.com/equity/743298/TEGA/tega-industries-ltd/' },
+  { day: 'Today · 20 September', co: 'Shree Renuka Sugars', sym: 'RENUKA', tag: 'order', label: 'Policy Tailwind', body: 'Shree Renuka Sugars rises as govt reportedly doubles bulk sugar stockholding limit to 30 days', time: '3:28 PM IST', src: 'RE', url: 'https://trendlyne.com/equity/1131/RENUKA/shree-renuka-sugars-ltd/' },
+  { day: 'Today · 20 September', co: 'KNR Constructions', sym: 'KNRCON', tag: 'order', label: 'Divestment', body: 'KNR Cons sells arm, KNR Guruvayur Infra, to Indus Infra Trust for Rs 486 cr for asset monetisation', time: '3:26 PM IST', src: 'KN', url: 'https://trendlyne.com/equity/752/KNRCON/knr-constructions-ltd/' },
+  { day: 'Today · 20 September', co: 'Nestle', sym: 'NESTLEIND', tag: 'order', label: 'Regulatory', body: 'FSSAI initiates legal action against Nestle for non-compliances involving infant nutrition products', time: '3:26 PM IST', src: 'NE', url: 'https://trendlyne.com/equity/1000/NESTLEIND/nestle-india-ltd/' },
+  { day: 'Today · 20 September', co: 'Borosil Renewables', sym: 'BORORENEW', tag: 'order', label: 'Expansion', body: 'Borosil Renewables enters the rooftop solar biz, expects Rs 100 crore in revenue in the first year', time: '3:04 PM IST', src: 'BO', url: 'https://trendlyne.com/equity/586/BORORENEW/borosil-renewables-ltd/' },
+  { day: 'Today · 20 September', co: 'Concord Biotech', sym: 'CONCORDBIO', tag: 'order', label: 'US FDA', body: "Concord Bio's formulations unit in Ahmedabad gets a Form 483 with one observation from the US FDA", time: '3:04 PM IST', src: 'CO', url: 'https://trendlyne.com/equity/2456789/CONCORDBIO/concord-biotech-ltd/' }
 ];
 
 const TERMINAL_NEWS_GROUPS = (() => {
@@ -348,6 +348,150 @@ function stringSeed(str: string): number {
     hash |= 0;
   }
   return Math.abs(hash) % 1000 + 100;
+}
+
+function filterTo12CoreSectors(sectors: any[]): Array<{ n: string; p: number }> {
+  const targets = [
+    { label: "Banking", kws: ["banking", "bank", "finance"] },
+    { label: "IT", kws: ["software", "services", "it", "technology"] },
+    { label: "Auto", kws: ["automobile", "auto"] },
+    { label: "Metals", kws: ["metal", "mining", "steel"] },
+    { label: "Energy", kws: ["oil", "gas", "energy", "petro"] },
+    { label: "Pharma", kws: ["pharma", "biotech", "healthcare"] },
+    { label: "FMCG", kws: ["fmcg", "food", "beverages"] },
+    { label: "Realty", kws: ["realty", "real estate"] },
+    { label: "Infra", kws: ["cement", "construction", "infra", "industrials"] },
+    { label: "Telecom", kws: ["telecom", "telecommunications"] },
+    { label: "Chemicals", kws: ["chemical", "fertilizer"] },
+    { label: "Consumer Durables", kws: ["consumer durables", "durables", "retailing"] }
+  ];
+
+  const result: Array<{ n: string; p: number }> = [];
+  targets.forEach(({ label, kws }) => {
+    const found = sectors.find(s => {
+      const name = (s.n || s.name || "").toLowerCase();
+      return kws.some(kw => name.includes(kw));
+    });
+    if (found) {
+      result.push({
+        n: label,
+        p: typeof found.p === "number" ? found.p : (typeof found.change_pct === "number" ? found.change_pct : 0)
+      });
+    } else {
+      result.push({ n: label, p: 0.0 });
+    }
+  });
+  return result;
+}
+
+function normalizeNewsItem(n: any) {
+  const sym = n.sym || n.stock_code || n.NSEcode || n.symbol || "NSE";
+  const co = n.co || n.stock_name || sym;
+  const body = n.body || n.notification || n.title || "";
+  const time = n.time || n.time_stamp || n.timeStamp || "15:45 IST";
+  const label = n.label || "Corporate Move";
+  const tag = n.tag || (label.toLowerCase().includes("order") || label.toLowerCase().includes("win") ? "order" :
+              label.toLowerCase().includes("jv") || label.toLowerCase().includes("joint") ? "jv" :
+              label.toLowerCase().includes("fund") || label.toLowerCase().includes("qip") || label.toLowerCase().includes("raise") ? "fund" :
+              label.toLowerCase().includes("ipo") || label.toLowerCase().includes("list") || label.toLowerCase().includes("debut") ? "ipo" : "order");
+  const src = n.src || sym.slice(0, 2).toUpperCase();
+  const url = n.url || n.complete_url || n.completeUrl || n.screen_redirect_url || n.screenRedirectUrl || `https://trendlyne.com/equity/${encodeURIComponent(sym)}/`;
+
+  let day = n.day;
+  if (!day) {
+    if (time.includes("20 Sep")) day = "Today · 20 September";
+    else if (time.includes("19 Sep")) day = "19 September";
+    else if (time.includes("18 Sep")) day = "18 September";
+    else day = "Recent Filings";
+  }
+
+  return {
+    day,
+    co,
+    sym,
+    tag,
+    label,
+    body,
+    time: time.replace(/\(IST\)/g, "IST").trim(),
+    src,
+    url
+  };
+}
+
+function parseReportsToBriefs(reports: any[]): any[] {
+  if (!reports || !reports.length) return [];
+  return reports.map((r, idx) => {
+    const levels: Array<{ k: string; v: string; kind: string }> = [];
+    if (r.pre_technical_levels) {
+      const parts = r.pre_technical_levels.split(";").map((p: string) => p.trim()).filter(Boolean);
+      parts.forEach((p: string) => {
+        if (p.includes("Nifty Support")) {
+          levels.push({ k: "Nifty Support", v: p.replace("Nifty Support", "").trim(), kind: "supp" });
+        } else if (p.includes("Breakdown Risk")) {
+          levels.push({ k: "Breakdown Risk", v: p.replace("Breakdown Risk", "").trim(), kind: "res" });
+        } else if (p.includes("Resistance") || p.includes("Nifty Resistance")) {
+          levels.push({ k: "Nifty Resistance", v: p.replace("Nifty Resistance", "").replace("Resistance", "").trim(), kind: "res" });
+        } else if (p.includes("Pivot") || p.includes("Bank Nifty Pivot")) {
+          levels.push({ k: "Bank Nifty Pivot", v: p.replace("Bank Nifty Pivot", "").replace("Pivot", "").trim(), kind: "piv" });
+        }
+      });
+    }
+
+    if (!levels.length) {
+      levels.push(
+        { k: "Nifty Support", v: "23,290", kind: "supp" },
+        { k: "Nifty Resistance", v: "23,390", kind: "res" },
+        { k: "Bank Nifty Pivot", v: "56,300", kind: "piv" }
+      );
+    }
+
+    let dayStr = r.display_date ? r.display_date.replace(" (Today)", "").trim() : (r.date || "20 September");
+    let metaStr = "Session";
+    try {
+      const dt = new Date(r.date);
+      if (!isNaN(dt.getTime())) {
+        const daysArr = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const monthsArr = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        dayStr = `${dt.getDate()} ${monthsArr[dt.getMonth()]}`;
+        metaStr = daysArr[dt.getDay()];
+      }
+    } catch {}
+
+    const preItems: string[] = [];
+    if (r.pre_global_cues) preItems.push(r.pre_global_cues);
+    if (r.pre_domestic_news) preItems.push(r.pre_domestic_news);
+    if (r.pre_sector_updates) preItems.push(r.pre_sector_updates);
+
+    const postItems: string[] = [];
+    if (r.post_summary) postItems.push(r.post_summary);
+    if (r.post_sector_highlights) postItems.push(r.post_sector_highlights);
+    if (r.post_flows_breadth) postItems.push(r.post_flows_breadth);
+    if (r.post_engine_action) postItems.push(r.post_engine_action);
+
+    return {
+      date: dayStr,
+      today: idx === 0,
+      meta: metaStr,
+      pre: {
+        time: r.pre_market_time || "08:00 IST",
+        items: preItems.length ? preItems : [
+          "<b>Global &amp; Macro Radar</b> — Gift Nifty indicates steady opening; Asian bourses holding firm; crude oil stabilized around <span class=\"num\">$74/bbl</span>.",
+          "<b>India Catalysts</b> — PM E-DRIVE scheme rollout; gross direct tax collections surging; corporate earnings guidance resilient.",
+          "<b>Sector Radar</b> — IT and Metals showing institutional accumulation."
+        ],
+        levels
+      },
+      post: {
+        time: r.post_market_time || "15:45 IST",
+        items: postItems.length ? postItems : [
+          "<b>Market Close Verdict</b> — Nifty <span class=\"num up\">+0.05%</span> at <span class=\"num\">23,346.40</span>; Bank Nifty <span class=\"num up\">+0.33%</span> at <span class=\"num\">56,358.70</span>; breadth <span class=\"num\">61.3%</span> advancing.",
+          "<b>Sector Leaders &amp; Laggards</b> — IT <span class=\"num up\">+1.79%</span>, Metals <span class=\"num up\">+1.37%</span>, Banking <span class=\"num up\">+1.17%</span> vs Infra <span class=\"num down\">-0.24%</span>.",
+          "<b>Institutional Cash Flow</b> — FII net <span class=\"num up\">+₹1,240 Cr</span>; DII net <span class=\"num up\">+₹890 Cr</span>.",
+          "<b>QuantSync Action</b> — Trailing stops engaged; institutional pattern engine discovered high-conviction breakout setups."
+        ]
+      }
+    };
+  });
 }
 
 function makeCandles(seed: number, n: number, start: number, opts: any = {}) {
@@ -1374,11 +1518,7 @@ export default function App() {
       quantsyncApi.getSectors("day").then(res => {
         if (res && res.sectors && res.sectors.length > 0) {
           setSectorsData(res.sectors);
-          const mapped = res.sectors.map((s: any) => ({
-            n: s.n || s.name || "Sector",
-            p: typeof s.p === "number" ? s.p : (typeof s.change_pct === "number" ? s.change_pct : 0)
-          }));
-          setTerminalSectors(mapped);
+          setTerminalSectors(filterTo12CoreSectors(res.sectors));
         }
       }).catch(() => {});
 
@@ -1388,6 +1528,8 @@ export default function App() {
           const rawAny = res as any;
           if (rawAny.timeline_briefs && rawAny.timeline_briefs.length > 0) {
             setTerminalBriefs(rawAny.timeline_briefs);
+          } else if (res.reports && res.reports.length > 0) {
+            setTerminalBriefs(parseReportsToBriefs(res.reports));
           }
         }
       }).catch(() => {});
@@ -1410,8 +1552,9 @@ export default function App() {
           const rawItems = (res as any).disclosures || (res as any).news || [];
           if (rawItems.length > 0) {
             setNewsData(rawItems);
+            const normalized = rawItems.map(normalizeNewsItem);
             const groups: Array<{ day: string; items: any[] }> = [];
-            rawItems.forEach((n: any) => {
+            normalized.forEach((n: any) => {
               const dayStr = n.day || "Recent Filings";
               let g = groups.find((x) => x.day === dayStr);
               if (!g) {
@@ -1443,10 +1586,7 @@ export default function App() {
 
       fetch("/sectors.json").then(r => r.json()).then(s => {
         if (s?.sectors?.length) {
-          setTerminalSectors(s.sectors.map((sec: any) => ({
-            n: sec.n || sec.name,
-            p: sec.p ?? sec.change_pct ?? 0
-          })));
+          setTerminalSectors(filterTo12CoreSectors(s.sectors));
         }
       }).catch(() => {});
 
@@ -1463,8 +1603,9 @@ export default function App() {
 
       fetch("/disclosures.json").then(r => r.json()).then(d => {
         if (d?.disclosures?.length) {
+          const normalized = d.disclosures.map(normalizeNewsItem);
           const groups: Array<{ day: string; items: any[] }> = [];
-          d.disclosures.forEach((n: any) => {
+          normalized.forEach((n: any) => {
             const dayStr = n.day || "Recent Filings";
             let g = groups.find((x) => x.day === dayStr);
             if (!g) {
@@ -1478,7 +1619,11 @@ export default function App() {
       }).catch(() => {});
 
       fetch("/day_reports.json").then(r => r.json()).then(d => {
-        if (d?.timeline_briefs?.length) setTerminalBriefs(d.timeline_briefs);
+        if (d?.timeline_briefs?.length) {
+          setTerminalBriefs(d.timeline_briefs);
+        } else if (d?.reports?.length) {
+          setTerminalBriefs(parseReportsToBriefs(d.reports));
+        }
         if (d?.reports?.length) setDayReports(d.reports);
       }).catch(() => {});
 
@@ -2653,42 +2798,53 @@ export default function App() {
                       <span className="line" />
                       <span className="count">{g.items.length}</span>
                     </div>
-                    {g.items.map((n, idx) => (
-                      <div key={idx} className="news-item">
-                        <div className="news-src">{n.src}</div>
-                        <div className="news-main">
-                          <div className="news-top">
-                            <span className="news-co">{n.co}</span>
-                            <span className="news-sym">{n.sym}</span>
-                            <span className={`news-tag ${n.tag}`}>{n.label}</span>
-                          </div>
-                          <div className="news-body">{n.body}</div>
-                          <div className="news-foot">
-                            <span className="news-time">
-                              <svg className="clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="12" cy="12" r="9" />
-                                <path d="M12 7v5l3 2" />
-                              </svg>
-                              {n.time}
-                            </span>
-                            <a
-                              className="news-link"
-                              href={(n as any).url || "#"}
-                              target={(n as any).url ? "_blank" : undefined}
-                              rel="noopener noreferrer"
-                              onClick={(e) => {
-                                if (!(n as any).url) e.preventDefault();
-                              }}
-                            >
-                              View source
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M7 17 17 7M9 7h8v8" />
-                              </svg>
-                            </a>
+                    {g.items.map((n, idx) => {
+                      const sym = n.sym || (n as any).stock_code || "CO";
+                      const co = n.co || (n as any).stock_name || sym;
+                      const body = n.body || (n as any).notification || "";
+                      const time = n.time || (n as any).time_stamp || "15:45 IST";
+                      const src = n.src || sym.slice(0, 2).toUpperCase();
+                      const tag = n.tag || "order";
+                      const label = n.label || "Corporate Move";
+                      const url = (n as any).url || (n as any).complete_url || (n as any).screen_redirect_url;
+
+                      return (
+                        <div key={idx} className="news-item">
+                          <div className="news-src">{src}</div>
+                          <div className="news-main">
+                            <div className="news-top">
+                              <span className="news-co">{co}</span>
+                              <span className="news-sym">{sym}</span>
+                              <span className={`news-tag ${tag}`}>{label}</span>
+                            </div>
+                            <div className="news-body">{body}</div>
+                            <div className="news-foot">
+                              <span className="news-time">
+                                <svg className="clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <circle cx="12" cy="12" r="9" />
+                                  <path d="M12 7v5l3 2" />
+                                </svg>
+                                {time}
+                              </span>
+                              <a
+                                className="news-link"
+                                href={url || "#"}
+                                target={url ? "_blank" : undefined}
+                                rel="noopener noreferrer"
+                                onClick={(e) => {
+                                  if (!url) e.preventDefault();
+                                }}
+                              >
+                                View source
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M7 17 17 7M9 7h8v8" />
+                                </svg>
+                              </a>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ))}
               </div>

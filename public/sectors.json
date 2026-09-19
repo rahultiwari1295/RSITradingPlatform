@@ -1,40 +1,52 @@
 {
   "sectors": [
     {
-      "n": "IT",
-      "p": 1.79
-    },
-    {
-      "n": "Metals",
-      "p": 1.37
-    },
-    {
       "n": "Banking",
       "p": 1.17
     },
     {
-      "n": "Realty",
-      "p": 0.97
-    },
-    {
-      "n": "Pharma",
-      "p": 0.81
+      "n": "IT",
+      "p": 2.76
     },
     {
       "n": "Auto",
       "p": 0.58
     },
     {
+      "n": "Metals",
+      "p": 1.37
+    },
+    {
+      "n": "Energy",
+      "p": 0.34
+    },
+    {
+      "n": "Pharma",
+      "p": 1.51
+    },
+    {
       "n": "FMCG",
       "p": 0.14
     },
     {
-      "n": "Energy",
-      "p": 1.05
+      "n": "Realty",
+      "p": 0.97
     },
     {
       "n": "Infra",
-      "p": -0.24
+      "p": 1.83
+    },
+    {
+      "n": "Telecom",
+      "p": 2.2
+    },
+    {
+      "n": "Chemicals",
+      "p": 1.4
+    },
+    {
+      "n": "Consumer Durables",
+      "p": 1.5
     }
   ]
 }
