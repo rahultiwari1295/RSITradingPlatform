@@ -22,6 +22,7 @@ import { ManualPortfolioTrade, CompletedTrade } from "./types";
 import { getActionTagInfo } from "./lib/signalStatus";
 import InstitutionalPatternChart from "./components/charts/InstitutionalPatternChart";
 import TradingViewStockDetail from "./components/TradingViewStockDetail";
+import StockDNAScreen from "./components/StockDNAScreen";
 
 /* ============================================================
    FORMATTERS & HELPERS
@@ -1222,7 +1223,7 @@ export default function App() {
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     return (localStorage.getItem("theme") as "dark" | "light") || "dark";
   });
-  const [activeTab, setActiveTab] = useState<"home" | "signals" | "portfolio" | "charts" | "intel" | "more">("home");
+  const [activeTab, setActiveTab] = useState<"home" | "signals" | "portfolio" | "dna" | "charts" | "intel" | "more">("home");
   const [sigSub, setSigSub] = useState<"active" | "closed">("active");
   const [chartSub, setChartSub] = useState<"live" | "scanner" | "portal">("live");
   const [range, setRange] = useState<number>(90);
@@ -3479,6 +3480,11 @@ export default function App() {
             />
         </section>
 
+        {/* ===== DNA SCREEN ===== */}
+        <section className={`screen ${activeTab === "dna" ? "active" : ""}`} id="screen-dna">
+          <StockDNAScreen />
+        </section>
+
         {/* ===== CHARTS SCREEN ===== */}
         <section className={`screen ${activeTab === "charts" ? "active" : ""}`} id="screen-charts">
           {engine === "v2" ? (
@@ -3901,6 +3907,36 @@ export default function App() {
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.6" /><circle cx="12" cy="12" r="1" /></svg>
           Signals
           <span className="radar-ring" />
+        </button>
+        <button
+          className={`tab ${activeTab === "dna" ? "active" : ""}`}
+          onClick={() => setActiveTab("dna")}
+          data-tab="dna"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 15c6.667-6 13.333 0 20-6" />
+            <path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993" />
+            <path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993" />
+            <path d="m17 6-2.5-2.5" />
+            <path d="m14 8-1-1" />
+            <path d="m7 18 2.5 2.5" />
+            <path d="m3.5 14.5.5.5" />
+            <path d="m20 9 .5.5" />
+            <path d="m6.5 12.5 1 1" />
+            <path d="m16.5 10.5 1 1" />
+            <path d="m10 16 1.5 1.5" />
+          </svg>
+          DNA
+          <span style={{
+            position: "absolute",
+            top: 5,
+            right: "calc(50% - 15px)",
+            width: 5,
+            height: 5,
+            borderRadius: "50%",
+            background: "var(--accent, #D4AF37)",
+            boxShadow: "0 0 6px var(--accent, #D4AF37)"
+          }} />
         </button>
         <button
           className={`tab ${activeTab === "portfolio" ? "active" : ""}`}

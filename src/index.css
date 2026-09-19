@@ -3196,6 +3196,1030 @@ body::before{
   letter-spacing: .02em;
 }
 
+/* =========================================================
+   STOCK DNA SCREEN & RADAR SCANNING ENGINE
+   ========================================================= */
+.dna-container {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 16px 16px 120px;
+  animation: fadeIn 0.35s ease;
+}
+
+.dna-hero-header {
+  margin-bottom: 24px;
+}
+
+.dna-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: var(--card-bg, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dim, #8B8D98);
+  margin-bottom: 12px;
+}
+
+.dna-main-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--fg, #FFF);
+  margin: 0 0 6px;
+  line-height: 1.15;
+}
+
+.dna-main-title em {
+  font-style: italic;
+  font-family: 'Playfair Display', Georgia, serif;
+  color: var(--gold, #D4AF37);
+}
+
+.dna-subtitle {
+  font-size: 13.5px;
+  color: var(--dim, #8B8D98);
+  margin: 0 0 20px;
+  line-height: 1.45;
+  max-width: 640px;
+}
+
+/* Search Box & Popover */
+.dna-search-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.dna-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card-bg, rgba(20, 22, 30, 0.8));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.14));
+  border-radius: 14px;
+  padding: 6px 8px 6px 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dna-search-box:focus-within {
+  border-color: var(--accent, #D4AF37);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+}
+
+.dna-search-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--dim, #8B8D98);
+  flex-shrink: 0;
+}
+
+.dna-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: var(--fg, #FFF);
+  font-weight: 500;
+}
+
+.dna-search-input::placeholder {
+  color: var(--dim, #71717A);
+  font-size: 13.5px;
+}
+
+.dna-clear-btn {
+  background: transparent;
+  border: none;
+  color: var(--dim, #8B8D98);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 13px;
+  border-radius: 4px;
+}
+
+.dna-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #D4AF37 0%, #B89628 100%);
+  color: #000;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dna-submit-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+/* Dropdown */
+.dna-suggestions-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: var(--card-bg, #14161E);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  overflow: hidden;
+  max-height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dna-suggestions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.15);
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dim, #8B8D98);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dna-popover-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--accent, #D4AF37);
+}
+
+.dna-suggestions-list {
+  overflow-y: auto;
+  max-height: 270px;
+}
+
+.dna-suggestion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.15s ease;
+}
+
+.dna-suggestion-item:hover {
+  background: rgba(212, 175, 55, 0.08);
+}
+
+.dna-sug-left {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.dna-sug-symbol {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--fg, #FFF);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.dna-sug-name {
+  font-size: 12px;
+  color: var(--dim, #8B8D98);
+}
+
+.dna-sug-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dna-sug-candles {
+  font-size: 10.5px;
+  color: var(--dim, #71717A);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.dna-sug-nse {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--dim, #A1A1AA);
+}
+
+/* Quick Chips */
+.dna-quick-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.dna-chips-label {
+  font-size: 11.5px;
+  color: var(--dim, #8B8D98);
+  font-weight: 600;
+}
+
+.dna-chip-btn {
+  background: var(--card-bg, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dim, #D4D4D8);
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  transition: all 0.15s ease;
+}
+
+.dna-chip-btn:hover {
+  border-color: var(--accent, #D4AF37);
+  color: var(--fg, #FFF);
+  background: rgba(212, 175, 55, 0.08);
+}
+
+.dna-chip-btn.active {
+  background: var(--accent, #D4AF37);
+  color: #000;
+  border-color: var(--accent, #D4AF37);
+}
+
+/* Multi-Step Radar Scanning Console */
+.dna-loading-card {
+  background: var(--card-bg, rgba(20, 22, 30, 0.9));
+  border: 1px solid var(--border-color, rgba(212, 175, 55, 0.25));
+  border-radius: 18px;
+  padding: 28px;
+  margin-top: 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.dna-radar-sweep-container {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 2px dashed rgba(212, 175, 55, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dna-radar-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  animation: radarSpin 2.5s linear infinite;
+}
+
+.dna-radar-line {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 50%;
+  height: 50%;
+  transform-origin: bottom left;
+  background: linear-gradient(45deg, transparent 40%, rgba(212, 175, 55, 0.3) 100%);
+  border-top-right-radius: 100%;
+}
+
+@keyframes radarSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.dna-scan-content {
+  width: 100%;
+  max-width: 540px;
+}
+
+.dna-scan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.dna-scan-ticker {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--fg, #FFF);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.dna-scan-pct {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent, #D4AF37);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.dna-progress-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+.dna-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #D4AF37 0%, #10B981 100%);
+  border-radius: 999px;
+  transition: width 0.35s ease;
+}
+
+.dna-scan-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dna-scan-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.dna-scan-step-item.active {
+  background: rgba(212, 175, 55, 0.08);
+  border-color: rgba(212, 175, 55, 0.25);
+}
+
+.dna-scan-step-item.done {
+  opacity: 0.85;
+}
+
+.dna-scan-step-item.pending {
+  opacity: 0.35;
+}
+
+.dna-step-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--dim, #A1A1AA);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.dna-scan-step-item.active .dna-step-dot {
+  background: var(--accent, #D4AF37);
+  color: #000;
+}
+
+.dna-step-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg, #FFF);
+}
+
+.dna-step-desc {
+  font-size: 11.5px;
+  color: var(--dim, #8B8D98);
+}
+
+/* Error Card */
+.dna-error-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 14px;
+  margin-top: 20px;
+}
+
+.dna-error-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #EF4444;
+}
+
+.dna-error-desc {
+  font-size: 12px;
+  color: var(--dim, #A1A1AA);
+}
+
+/* ================= Report Layout ================= */
+.dna-report-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+  animation: fadeIn 0.4s ease;
+}
+
+.dna-card {
+  background: var(--card-bg, rgba(20, 22, 30, 0.8));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Hero Report Card */
+.dna-hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
+  padding-bottom: 18px;
+}
+
+.dna-ticker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dna-hero-ticker {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--fg, #FFF);
+  font-family: 'JetBrains Mono', monospace;
+  margin: 0;
+}
+
+.dna-exchange-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--dim, #A1A1AA);
+  text-transform: uppercase;
+}
+
+.dna-archetype-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  color: var(--accent, #D4AF37);
+}
+
+.dna-company-title {
+  font-size: 13.5px;
+  color: var(--dim, #A1A1AA);
+  margin-top: 3px;
+}
+
+.dna-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.dna-current-price {
+  font-size: 24px;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--fg, #FFF);
+}
+
+.dna-metric-change {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.dna-metric-change.up { color: #10B981; }
+.dna-metric-change.neutral { color: var(--dim, #A1A1AA); }
+
+/* Health Meter */
+.dna-health-meter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.dna-score-circle {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: 4px solid #10B981;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.3);
+}
+
+.dna-score-num {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--fg, #FFF);
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1;
+}
+
+.dna-score-max {
+  font-size: 9px;
+  color: var(--dim, #8B8D98);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.dna-score-label {
+  font-size: 11px;
+  color: var(--dim, #8B8D98);
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+.dna-score-badge {
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* Metric Boxes Grid */
+.dna-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.dna-metric-box {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dna-m-label {
+  font-size: 10.5px;
+  color: var(--dim, #8B8D98);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.dna-m-val {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--fg, #FFF);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.dna-m-val.up { color: #10B981; }
+.dna-m-val.down { color: #EF4444; }
+
+/* Grid Layers */
+.dna-grid-layers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .dna-grid-layers {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dna-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.dna-sec-title-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dna-sec-title-box h3 {
+  font-size: 15px;
+  font-weight: 800;
+  margin: 0;
+  color: var(--fg, #FFF);
+  letter-spacing: -0.01em;
+}
+
+.dna-layer-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10B981;
+  text-transform: uppercase;
+}
+
+.dna-layer-badge.pro {
+  background: rgba(99, 102, 241, 0.12);
+  color: #818CF8;
+}
+
+/* Narrative List */
+.dna-narrative-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dna-narrative-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.dna-narrative-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.dna-n-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--fg, #FFF);
+  margin-bottom: 3px;
+}
+
+.dna-n-text {
+  font-size: 12px;
+  color: var(--dim, #A1A1AA);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Pro Specs */
+.dna-pro-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.dna-pro-spec-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dna-spec-k {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--dim, #8B8D98);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.dna-spec-v {
+  font-size: 12.5px;
+  color: var(--fg, #E4E4E7);
+  line-height: 1.4;
+}
+
+/* Trade Blueprint */
+.dna-trade-blueprint {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.dna-trade-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.dna-action-pill {
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.dna-pill-bullish {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.dna-pill-accumulate {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3B82F6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.dna-pill-bearish {
+  background: rgba(239, 68, 68, 0.15);
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.dna-pill-neutral {
+  background: rgba(245, 158, 11, 0.15);
+  color: #F59E0B;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.dna-rr-tag {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent, #D4AF37);
+  background: rgba(212, 175, 55, 0.1);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.dna-trade-levels-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.dna-level-chip {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dna-lc-label {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--dim, #8B8D98);
+  text-transform: uppercase;
+}
+
+.dna-lc-val {
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--fg, #FFF);
+}
+
+.dna-level-chip.stop .dna-lc-val { color: #EF4444; }
+.dna-level-chip.target1 .dna-lc-val { color: #10B981; }
+.dna-level-chip.target2 .dna-lc-val { color: #3B82F6; }
+
+/* Interactive Chart Card */
+.dna-chart-card {
+  padding: 18px;
+}
+
+.dna-chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--dim, #A1A1AA);
+}
+
+.dna-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dna-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dna-dot.ema20 { background: #3B82F6; }
+.dna-dot.ema50 { background: #F59E0B; }
+.dna-dot.stop { background: #EF4444; }
+.dna-dot.target { background: #10B981; }
+
+.dna-chart-viewport {
+  position: relative;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 10px 0;
+  overflow: hidden;
+}
+
+.dna-svg-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.dna-chart-tooltip {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  background: rgba(20, 22, 30, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 6px 12px;
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--fg, #FFF);
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.dna-candle-group {
+  cursor: crosshair;
+  transition: opacity 0.1s ease;
+}
+
+.dna-candle-group:hover {
+  filter: brightness(1.3);
+}
+
+/* Share & Footer Section */
+.dna-share-card {
+  padding: 18px 22px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.05) 0%, rgba(20, 22, 30, 0.9) 100%);
+  border-color: rgba(212, 175, 55, 0.2);
+}
+
+.dna-share-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.dna-share-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dna-brand-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #D4AF37 0%, #B89628 100%);
+  color: #000;
+  font-weight: 900;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+}
+
+.dna-share-title {
+  font-size: 13.5px;
+  color: var(--fg, #FFF);
+}
+
+.dna-share-title strong {
+  color: var(--accent, #D4AF37);
+}
+
+.dna-share-desc {
+  font-size: 11.5px;
+  color: var(--dim, #8B8D98);
+}
+
+.dna-share-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dna-share-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: var(--accent, #D4AF37);
+  color: #000;
+  font-size: 12.5px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dna-share-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+.dna-whatsapp-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(37, 211, 102, 0.15);
+  border: 1px solid rgba(37, 211, 102, 0.3);
+  color: #25D366;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.dna-whatsapp-btn:hover {
+  background: rgba(37, 211, 102, 0.25);
+}
+
+.dna-external-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--dim, #D4D4D8);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.dna-external-btn:hover {
+  color: var(--fg, #FFF);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.dna-toast-banner {
+  margin-top: 14px;
+  padding: 9px 14px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 10px;
+  font-size: 12px;
+  color: #10B981;
+  font-weight: 600;
+  animation: fadeIn 0.25s ease;
+}
+
+
 
 
 

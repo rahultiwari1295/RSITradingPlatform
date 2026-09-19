@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import { execFile } from "child_process";
 import { createServer as createViteServer } from "vite";
 import { initializeApp, getApps, cert, type App } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
@@ -949,6 +950,70 @@ async function startServer() {
       dataSource: "quantsync_master.db",
       historySource: "stock_history.db",
       universeStocks: 1318,
+    });
+  });
+
+  // ================= Stock DNA Engine Endpoints =================
+  const dnaScriptPath = path.resolve(process.cwd(), "../vps_data_live/dna_engine.py");
+  let cachedDnaUniverse: Array<{ symbol: string; name: string; token: string; candleCount: number }> = [];
+
+  const loadDnaUniverse = () => {
+    if (fs.existsSync(dnaScriptPath)) {
+      execFile("python3", [dnaScriptPath, "search", "ALL"], { maxBuffer: 10 * 1024 * 1024 }, (err, stdout) => {
+        if (!err && stdout) {
+          try {
+            cachedDnaUniverse = JSON.parse(stdout);
+            console.log(`[DNA Engine] Loaded ${cachedDnaUniverse.length} universe stocks into in-memory search index`);
+          } catch (e: any) {
+            console.error("[DNA Engine] Universe parse error:", e.message);
+          }
+        }
+      });
+    }
+  };
+  loadDnaUniverse();
+
+  app.get("/api/dna/search", (req, res) => {
+    const q = ((req.query.q as string) || "").trim().toUpperCase();
+    if (!q) {
+      return res.json(cachedDnaUniverse.slice(0, 20));
+    }
+    if (cachedDnaUniverse.length > 0) {
+      const startsWith = cachedDnaUniverse.filter(s => s.symbol.startsWith(q));
+      const contains = cachedDnaUniverse.filter(s => !s.symbol.startsWith(q) && s.symbol.includes(q));
+      return res.json([...startsWith, ...contains].slice(0, 25));
+    }
+    // Fallback directly to python script
+    execFile("python3", [dnaScriptPath, "search", q], { maxBuffer: 5 * 1024 * 1024 }, (err, stdout) => {
+      if (err) return res.status(500).json({ error: "Failed to search stocks" });
+      try {
+        return res.json(JSON.parse(stdout));
+      } catch {
+        return res.json([]);
+      }
+    });
+  });
+
+  app.get("/api/dna/report/:symbol", (req, res) => {
+    const symbol = req.params.symbol.trim().toUpperCase();
+    const force = req.query.force === "true";
+    const args = [dnaScriptPath, "report", symbol];
+    if (force) args.push("--force");
+
+    execFile("python3", args, { maxBuffer: 15 * 1024 * 1024 }, (err, stdout, stderr) => {
+      if (err) {
+        console.error(`[DNA Engine] Error computing report for ${symbol}:`, stderr || err.message);
+        return res.status(500).json({ error: `DNA analysis failed: ${err.message}` });
+      }
+      try {
+        const data = JSON.parse(stdout);
+        if (data.error) {
+          return res.status(404).json(data);
+        }
+        return res.json(data);
+      } catch (e: any) {
+        return res.status(500).json({ error: "Invalid JSON from DNA engine" });
+      }
     });
   });
 
