@@ -34,6 +34,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('image') || subPath.startsWith('chart/')) {
+      const arrayBuffer = await response.arrayBuffer();
+      res.setHeader('Content-Type', contentType || 'image/png');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+      return res.send(Buffer.from(arrayBuffer));
+    }
+
     const data = await response.json();
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');

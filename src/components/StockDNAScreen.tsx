@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { 
   Search, Dna, Share2, TrendingUp, ShieldAlert, Sparkles, 
   ArrowUpRight, BarChart2, CheckCircle, Copy, AlertTriangle, 
-  RefreshCw, Layers, Compass, Crosshair, ChevronDown, ExternalLink
+  RefreshCw, Layers, Compass, Crosshair, ChevronDown, ExternalLink,
+  Maximize2, ZoomIn, ZoomOut, RotateCcw, Download, Image as ImageIcon, X
 } from "lucide-react";
 
 interface StockSuggestion {
@@ -16,6 +17,7 @@ interface StockDnaReport {
   symbol: string;
   company_name: string;
   report_date: string;
+  chart_image_url?: string;
   current_metrics: {
     price: number;
     ema20: number;
@@ -107,6 +109,9 @@ export default function StockDNAScreen() {
   const [copyToast, setCopyToast] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [hoveredCandle, setHoveredCandle] = useState<any | null>(null);
+  const [chartViewMode, setChartViewMode] = useState<"interactive" | "snapshot">("interactive");
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -126,6 +131,19 @@ export default function StockDNAScreen() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Close zoom modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsZoomOpen(false);
+      }
+    };
+    if (isZoomOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isZoomOpen]);
 
 const VPS_DEFAULT_BASE = "https://quantsync-api.duckdns.org:8000";
 
@@ -624,43 +642,243 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
             </div>
           </div>
 
-          {/* Interactive Lightweight Candlestick Chart */}
+          {/* Dual-Mode Chart Section (Interactive SVG + Analyst Snapshot Image) */}
           <div className="dna-card dna-chart-card">
             <div className="dna-section-header">
               <div className="dna-sec-title-box">
                 <BarChart2 className="w-4 h-4 text-accent" />
-                <h3>Algorithmic Price Geometry & Levels</h3>
+                <h3>Algorithmic Price Geometry & Trendlines</h3>
               </div>
-              <div className="dna-chart-legend">
-                <span className="dna-legend-item"><span className="dna-dot ema20" /> 20 EMA</span>
-                <span className="dna-legend-item"><span className="dna-dot ema50" /> 50 EMA</span>
-                <span className="dna-legend-item"><span className="dna-dot stop" /> Stop</span>
-                <span className="dna-legend-item"><span className="dna-dot target" /> Target</span>
+
+              {/* View Switcher Pill & Fullscreen Zoom Button */}
+              <div className="dna-chart-header-actions">
+                <div className="dna-chart-toggle-group">
+                  <button 
+                    type="button"
+                    className={`dna-chart-toggle-btn ${chartViewMode === "interactive" ? "active" : ""}`}
+                    onClick={() => setChartViewMode("interactive")}
+                  >
+                    <BarChart2 className="w-3.5 h-3.5 mr-1.5" />
+                    Live Interactive
+                  </button>
+                  <button 
+                    type="button"
+                    className={`dna-chart-toggle-btn ${chartViewMode === "snapshot" ? "active" : ""}`}
+                    onClick={() => setChartViewMode("snapshot")}
+                  >
+                    <ImageIcon className="w-3.5 h-3.5 mr-1.5" />
+                    Analyst Snapshot
+                  </button>
+                </div>
+
+                <button 
+                  type="button"
+                  className="dna-zoom-expand-btn"
+                  onClick={() => {
+                    setZoomScale(1);
+                    setIsZoomOpen(true);
+                  }}
+                  title="Click to Zoom Fullscreen"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 mr-1.5" />
+                  <span>Zoom</span>
+                </button>
               </div>
             </div>
 
-            {/* Interactive SVG Chart */}
-            <div className="dna-chart-viewport">
-              {hoveredCandle && (
-                <div className="dna-chart-tooltip">
-                  <span><strong>Date:</strong> {hoveredCandle.time}</span>
-                  <span><strong>O:</strong> ₹{hoveredCandle.open}</span>
-                  <span><strong>H:</strong> ₹{hoveredCandle.high}</span>
-                  <span><strong>L:</strong> ₹{hoveredCandle.low}</span>
-                  <span><strong>C:</strong> ₹{hoveredCandle.close}</span>
-                  <span><strong>Vol:</strong> {hoveredCandle.volume.toLocaleString("en-IN")}</span>
+            {/* Subheader Legend / Status */}
+            <div className="dna-chart-subbar">
+              {chartViewMode === "interactive" ? (
+                <div className="dna-chart-legend">
+                  <span className="dna-legend-item"><span className="dna-dot ema20" /> 20 EMA</span>
+                  <span className="dna-legend-item"><span className="dna-dot ema50" /> 50 EMA</span>
+                  <span className="dna-legend-item"><span className="dna-dot trendline" /> Valid Pivot Ray</span>
+                  <span className="dna-legend-item"><span className="dna-dot stop" /> Stop Loss</span>
+                  <span className="dna-legend-item"><span className="dna-dot target" /> Target</span>
+                </div>
+              ) : (
+                <div className="dna-snapshot-meta">
+                  <span>Institutional High-Res Render · 1–2 Mathematical Pivot Rays · Dark Mode</span>
                 </div>
               )}
-
-              <DnaCandleSvgChart 
-                candles={report.chart_candles}
-                stopLoss={report.ui_report.trade_execution_card.stop_loss}
-                targetPrice={report.ui_report.trade_execution_card.target_1}
-                currentPrice={report.current_metrics.price}
-                onHoverCandle={setHoveredCandle}
-              />
+              <div className="dna-chart-click-hint">
+                <span>💡 Click chart to zoom fullscreen</span>
+              </div>
             </div>
+
+            {/* View Body */}
+            {chartViewMode === "interactive" ? (
+              <div className="dna-chart-viewport" onClick={() => setIsZoomOpen(true)}>
+                {hoveredCandle && (
+                  <div className="dna-chart-tooltip">
+                    <span><strong>Date:</strong> {hoveredCandle.time}</span>
+                    <span><strong>O:</strong> ₹{hoveredCandle.open}</span>
+                    <span><strong>H:</strong> ₹{hoveredCandle.high}</span>
+                    <span><strong>L:</strong> ₹{hoveredCandle.low}</span>
+                    <span><strong>C:</strong> ₹{hoveredCandle.close}</span>
+                    <span><strong>Vol:</strong> {hoveredCandle.volume.toLocaleString("en-IN")}</span>
+                  </div>
+                )}
+
+                <DnaCandleSvgChart 
+                  candles={report.chart_candles}
+                  stopLoss={report.ui_report.trade_execution_card.stop_loss}
+                  targetPrice={report.ui_report.trade_execution_card.target_1}
+                  currentPrice={report.current_metrics.price}
+                  trendlines={report.chart_directives?.trendlines}
+                  onHoverCandle={setHoveredCandle}
+                />
+              </div>
+            ) : (
+              <div className="dna-analyst-image-container" onClick={() => setIsZoomOpen(true)}>
+                <img 
+                  src={report.chart_image_url?.startsWith("http") ? report.chart_image_url : `${getApiBaseUrl()}${report.chart_image_url || `/api/dna/chart/${report.symbol}`}`}
+                  alt={`${report.symbol} Analyst Snapshot Chart`}
+                  className="dna-analyst-img"
+                  loading="eager"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (!target.dataset.retried) {
+                      target.dataset.retried = "1";
+                      target.src = `/api/dna/chart/${report.symbol}`;
+                    }
+                  }}
+                />
+                <div className="dna-analyst-overlay">
+                  <div className="dna-analyst-badge">
+                    <Maximize2 className="w-4 h-4 mr-2 text-accent" />
+                    Click to Zoom Fullscreen
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Fullscreen Click-to-Zoom Lightbox Modal */}
+          {isZoomOpen && (
+            <div className="dna-lightbox-overlay" onClick={() => setIsZoomOpen(false)}>
+              <div className="dna-lightbox-content" onClick={(e) => e.stopPropagation()}>
+                {/* Lightbox Top Header */}
+                <div className="dna-lightbox-header">
+                  <div className="dna-lightbox-title">
+                    <span className="dna-lb-sym">{report.symbol}</span>
+                    <span className="dna-lb-name">{report.company_name}</span>
+                    <span className="dna-lb-pattern">{report.ui_report.pro_analysis.chart_pattern_detected}</span>
+                    <span className="dna-lb-score">Health {report.ui_report.dna_health_score}/100</span>
+                  </div>
+
+                  <div className="dna-lightbox-actions">
+                    {/* Zoom scale controls for Snapshot */}
+                    {chartViewMode === "snapshot" && (
+                      <div className="dna-zoom-controls">
+                        <button 
+                          type="button"
+                          className="dna-btn-icon" 
+                          onClick={() => setZoomScale(prev => Math.max(0.6, prev - 0.2))}
+                          title="Zoom Out"
+                        >
+                          <ZoomOut className="w-4 h-4" />
+                        </button>
+                        <span className="dna-zoom-val">{Math.round(zoomScale * 100)}%</span>
+                        <button 
+                          type="button"
+                          className="dna-btn-icon" 
+                          onClick={() => setZoomScale(prev => Math.min(2.5, prev + 0.2))}
+                          title="Zoom In"
+                        >
+                          <ZoomIn className="w-4 h-4" />
+                        </button>
+                        <button 
+                          type="button"
+                          className="dna-btn-icon" 
+                          onClick={() => setZoomScale(1)}
+                          title="Reset Zoom"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </button>
+                        <a 
+                          href={report.chart_image_url?.startsWith("http") ? report.chart_image_url : `${getApiBaseUrl()}${report.chart_image_url || `/api/dna/chart/${report.symbol}`}`}
+                          download={`${report.symbol}_QuantSync_DNA_Chart.png`}
+                          className="dna-btn-icon" 
+                          title="Download High-Res PNG"
+                          target="_blank" 
+                          rel="noreferrer"
+                        >
+                          <Download className="w-4 h-4" />
+                        </a>
+                      </div>
+                    )}
+
+                    {/* View mode toggle inside lightbox */}
+                    <div className="dna-chart-toggle-group mini">
+                      <button 
+                        type="button"
+                        className={`dna-chart-toggle-btn ${chartViewMode === "interactive" ? "active" : ""}`}
+                        onClick={() => setChartViewMode("interactive")}
+                      >
+                        Interactive
+                      </button>
+                      <button 
+                        type="button"
+                        className={`dna-chart-toggle-btn ${chartViewMode === "snapshot" ? "active" : ""}`}
+                        onClick={() => setChartViewMode("snapshot")}
+                      >
+                        Snapshot
+                      </button>
+                    </div>
+
+                    <button 
+                      type="button"
+                      className="dna-lightbox-close" 
+                      onClick={() => setIsZoomOpen(false)} 
+                      title="Close (Esc)"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Lightbox Display Body */}
+                <div className="dna-lightbox-body">
+                  {chartViewMode === "snapshot" ? (
+                    <div className="dna-lightbox-img-wrap">
+                      <img 
+                        src={report.chart_image_url?.startsWith("http") ? report.chart_image_url : `${getApiBaseUrl()}${report.chart_image_url || `/api/dna/chart/${report.symbol}`}`}
+                        alt={`${report.symbol} Fullscreen High-Res Chart`} 
+                        className="dna-lightbox-img"
+                        style={{ transform: `scale(${zoomScale})` }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="dna-lightbox-svg-wrap">
+                      <DnaCandleSvgChart 
+                        candles={report.chart_candles}
+                        stopLoss={report.ui_report.trade_execution_card.stop_loss}
+                        targetPrice={report.ui_report.trade_execution_card.target_1}
+                        currentPrice={report.current_metrics.price}
+                        trendlines={report.chart_directives?.trendlines}
+                        onHoverCandle={() => {}}
+                        height={550}
+                        width={1100}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Lightbox Footer */}
+                <div className="dna-lightbox-footer">
+                  <div className="dna-lb-footer-left">
+                    <span>Target 1: ₹{report.ui_report.trade_execution_card.target_1}</span>
+                    <span>Stop Loss: ₹{report.ui_report.trade_execution_card.stop_loss}</span>
+                    <span>Action: {report.ui_report.trade_execution_card.action}</span>
+                  </div>
+                  <div className="dna-lb-footer-right">
+                    <span>Press <strong>ESC</strong> or click outside to close</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Created by QuantSync Attribution & Share Engine */}
           <div className="dna-card dna-share-card">
@@ -721,28 +939,31 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
   );
 }
 
-// Lightweight Interactive SVG Candlestick Chart Component
+// Lightweight Interactive SVG Candlestick Chart Component with Valid Trendlines
 function DnaCandleSvgChart({ 
   candles, 
   stopLoss, 
   targetPrice, 
   currentPrice,
-  onHoverCandle 
+  trendlines,
+  onHoverCandle,
+  width = 800,
+  height = 300
 }: { 
   candles: any[]; 
   stopLoss: number; 
   targetPrice: number; 
   currentPrice: number;
+  trendlines?: any[];
   onHoverCandle: (c: any) => void;
+  width?: number;
+  height?: number;
 }) {
   if (!candles || candles.length === 0) {
     return <div className="p-4 text-center text-sm opacity-60">No candlestick data available.</div>;
   }
 
-  const width = 800;
-  const height = 300;
   const padding = { top: 20, right: 65, bottom: 30, left: 15 };
-
   const plotW = width - padding.left - padding.right;
   const plotH = height - padding.top - padding.bottom;
 
@@ -782,7 +1003,7 @@ function DnaCandleSvgChart({
       className="dna-svg-chart"
       onMouseLeave={() => onHoverCandle(null)}
     >
-      {/* Grid Lines */}
+      {/* Background horizontal grid lines & price ticks */}
       {[0.25, 0.5, 0.75].map((pct, i) => {
         const y = padding.top + plotH * pct;
         const p = maxP - pct * priceRange;
@@ -795,6 +1016,32 @@ function DnaCandleSvgChart({
           </g>
         );
       })}
+
+      {/* Shaded Target Profit Zone */}
+      {targetPrice > currentPrice && (
+        <rect
+          x={padding.left + plotW * 0.75}
+          y={getY(targetPrice)}
+          width={plotW * 0.25}
+          height={Math.max(2, getY(currentPrice) - getY(targetPrice))}
+          fill="#10B981"
+          fillOpacity="0.09"
+          rx="3"
+        />
+      )}
+
+      {/* Shaded Stop Loss Invalidation Zone */}
+      {stopLoss > 0 && stopLoss < currentPrice && (
+        <rect
+          x={padding.left + plotW * 0.75}
+          y={getY(currentPrice)}
+          width={plotW * 0.25}
+          height={Math.max(2, getY(stopLoss) - getY(currentPrice))}
+          fill="#EF4444"
+          fillOpacity="0.08"
+          rx="3"
+        />
+      )}
 
       {/* Target Price Horizontal Line */}
       {targetPrice > 0 && (
@@ -887,6 +1134,69 @@ function DnaCandleSvgChart({
           opacity="0.85" 
         />
       )}
+
+      {/* Strictly 1-2 Valid Diagonal Mathematical Trendlines */}
+      {trendlines && trendlines.slice(0, 2).map((tl: any, i: number) => {
+        if (!tl.p1 || !tl.p2 || !tl.p1.date || !tl.p2.date) return null;
+        const dt1 = new Date(tl.p1.date).getTime();
+        const dt2 = new Date(tl.p2.date).getTime();
+        const daysSpan = (dt2 - dt1) / 86400000;
+        if (!daysSpan || isNaN(daysSpan)) return null;
+        const pricePerDay = (tl.p2.price - tl.p1.price) / daysSpan;
+
+        const firstCandleTime = new Date(candles[0].time).getTime();
+        const startDt = Math.max(dt1, firstCandleTime);
+
+        let startIdx = 0;
+        for (let cIdx = 0; cIdx < candles.length; cIdx++) {
+          if (new Date(candles[cIdx].time).getTime() >= startDt) {
+            startIdx = cIdx;
+            break;
+          }
+        }
+        const endIdx = candles.length - 1;
+        if (endIdx <= startIdx) return null;
+
+        const startPrice = tl.p2.price + pricePerDay * ((new Date(candles[startIdx].time).getTime() - dt2) / 86400000);
+        const endPrice = tl.p2.price + pricePerDay * ((new Date(candles[endIdx].time).getTime() - dt2) / 86400000);
+
+        const x1 = padding.left + (startIdx + 0.5) * (plotW / candles.length);
+        const y1 = getY(startPrice);
+        const x2 = padding.left + (endIdx + 0.5) * (plotW / candles.length);
+        const y2 = getY(endPrice);
+
+        const strokeColor = tl.color || (tl.type === 'support' ? '#10B981' : '#EF4444');
+
+        return (
+          <g key={`tl-${i}`} className="dna-svg-trendline">
+            {/* Glow underlay */}
+            <line 
+              x1={x1} y1={y1} x2={x2} y2={y2} 
+              stroke={strokeColor} 
+              strokeWidth="4" 
+              strokeOpacity="0.2" 
+            />
+            {/* Crisp ray */}
+            <line 
+              x1={x1} y1={y1} x2={x2} y2={y2} 
+              stroke={strokeColor} 
+              strokeWidth="1.8" 
+              strokeDasharray={tl.type === 'resistance' ? '5 3' : 'none'}
+            />
+            <text 
+              x={x2 - 8} 
+              y={Math.max(padding.top + 10, Math.min(height - padding.bottom - 5, y2 - 6))} 
+              fill={strokeColor} 
+              fontSize="8" 
+              fontWeight="bold" 
+              textAnchor="end"
+              fontFamily="monospace"
+            >
+              {tl.label || (tl.type === 'support' ? 'Ascending Support' : 'Structural Resistance')}
+            </text>
+          </g>
+        );
+      })}
     </svg>
   );
 }

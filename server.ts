@@ -1019,6 +1019,36 @@ async function startServer() {
     });
   });
 
+  app.get("/api/dna/chart/:symbol", async (req, res) => {
+    const symbol = (req.params.symbol || "").trim().toUpperCase();
+    const localChartPath = path.resolve(process.cwd(), `../vps_data_live/Data/dna_charts/${symbol}.png`);
+    if (fs.existsSync(localChartPath)) {
+      res.setHeader("Content-Type", "image/png");
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      return res.sendFile(localChartPath);
+    }
+    // Forward to VPS backend
+    try {
+      const queryStr = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
+      const vpsUrl = `https://quantsync-api.duckdns.org:8000/api/dna/chart/${symbol}${queryStr}`;
+      const vpsRes = await fetch(vpsUrl, {
+        method: "GET",
+        headers: { "Accept": "image/png,image/*,*/*" },
+        signal: AbortSignal.timeout(15000),
+      });
+      if (vpsRes.ok) {
+        const arrayBuffer = await vpsRes.arrayBuffer();
+        res.setHeader("Content-Type", vpsRes.headers.get("content-type") || "image/png");
+        res.setHeader("Cache-Control", "public, max-age=3600");
+        return res.send(Buffer.from(arrayBuffer));
+      }
+      return res.status(vpsRes.status).json({ error: `VPS returned ${vpsRes.status}` });
+    } catch (err: any) {
+      console.error(`[DNA Chart Proxy] Error fetching chart for ${symbol}:`, err.message);
+      return res.status(502).json({ error: err.message || "Failed to fetch chart image" });
+    }
+  });
+
   app.get("/api/chart/:symbol", (req, res) => forwardToVps(`/api/chart/${req.params.symbol}`, req, res));
 
   // Trendlyne Market Intel proxy to VPS HTTPS API
