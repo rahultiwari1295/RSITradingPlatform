@@ -112,7 +112,105 @@ export default function StockDNAScreen() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [chartPerspective, setChartPerspective] = useState<"tactical" | "macro">("tactical");
   const [isZoomOpen, setIsZoomOpen] = useState(false);
-  const [zoomScale, setZoomScale] = useState(1);
+  const [photoScale, setPhotoScale] = useState(1);
+  const [photoTranslate, setPhotoTranslate] = useState({ x: 0, y: 0 });
+
+  const touchState = useRef({
+    initialDist: 0,
+    initialScale: 1,
+    startX: 0,
+    startY: 0,
+    initialTransX: 0,
+    initialTransY: 0,
+    lastTap: 0,
+    isPinching: false,
+    isDragging: false,
+  });
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      touchState.current.initialDist = dist;
+      touchState.current.initialScale = photoScale;
+      touchState.current.isPinching = true;
+      touchState.current.isDragging = false;
+    } else if (e.touches.length === 1) {
+      const now = Date.now();
+      if (now - touchState.current.lastTap < 300) {
+        if (photoScale > 1.2) {
+          setPhotoScale(1);
+          setPhotoTranslate({ x: 0, y: 0 });
+        } else {
+          setPhotoScale(2.5);
+        }
+        touchState.current.lastTap = 0;
+        return;
+      }
+      touchState.current.lastTap = now;
+      touchState.current.startX = e.touches[0].clientX;
+      touchState.current.startY = e.touches[0].clientY;
+      touchState.current.initialTransX = photoTranslate.x;
+      touchState.current.initialTransY = photoTranslate.y;
+      touchState.current.isDragging = photoScale > 1;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchState.current.isPinching && e.touches.length === 2) {
+      e.preventDefault();
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const ratio = dist / (touchState.current.initialDist || 1);
+      const nextScale = Math.min(5, Math.max(1, touchState.current.initialScale * ratio));
+      setPhotoScale(nextScale);
+      if (nextScale <= 1.05) {
+        setPhotoTranslate({ x: 0, y: 0 });
+      }
+    } else if (touchState.current.isDragging && e.touches.length === 1 && photoScale > 1) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - touchState.current.startX;
+      const dy = e.touches[0].clientY - touchState.current.startY;
+      setPhotoTranslate({
+        x: touchState.current.initialTransX + dx,
+        y: touchState.current.initialTransY + dy,
+      });
+    }
+  };
+
+  const handleTouchEnd = () => {
+    touchState.current.isPinching = false;
+    touchState.current.isDragging = false;
+    if (photoScale < 1.08) {
+      setPhotoScale(1);
+      setPhotoTranslate({ x: 0, y: 0 });
+    }
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.25 : -0.25;
+    setPhotoScale(prev => {
+      const next = Math.min(5, Math.max(1, Math.round((prev + delta) * 100) / 100));
+      if (next <= 1) {
+        setPhotoTranslate({ x: 0, y: 0 });
+      }
+      return next;
+    });
+  };
+
+  const handleDoubleClick = () => {
+    if (photoScale > 1.2) {
+      setPhotoScale(1);
+      setPhotoTranslate({ x: 0, y: 0 });
+    } else {
+      setPhotoScale(2.5);
+    }
+  };
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -676,7 +774,8 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                   type="button"
                   className="dna-zoom-expand-btn"
                   onClick={() => {
-                    setZoomScale(1);
+                    setPhotoScale(1);
+                    setPhotoTranslate({ x: 0, y: 0 });
                     setIsZoomOpen(true);
                   }}
                   title="Open Fullscreen Image"
@@ -701,10 +800,11 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
             <div 
               className="dna-analyst-image-container" 
               onClick={() => {
-                setZoomScale(1);
+                setPhotoScale(1);
+                setPhotoTranslate({ x: 0, y: 0 });
                 setIsZoomOpen(true);
               }}
-              title="Click to open image viewer"
+              title="Click to open photo"
             >
               <img 
                 key={`${report.symbol}-${chartPerspective}`}
@@ -723,148 +823,57 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
               <div className="dna-analyst-overlay">
                 <div className="dna-analyst-badge">
                   <Maximize2 className="w-4 h-4 mr-2 text-accent" />
-                  Click to View & Zoom
+                  Click to Open
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Fullscreen Click-to-Zoom Lightbox Modal (Clean Native Image Viewer) */}
+          {/* Pure Fullscreen Photo Viewer — ONLY the image and a fixed close button */}
           {isZoomOpen && (
             <div 
-              className="dna-lightbox-overlay" 
+              className="dna-photo-fullscreen-viewer"
               onClick={() => setIsZoomOpen(false)}
             >
+              {/* Single Fixed Close Button: Always in top-right corner, stays fixed even when zooming */}
+              <button 
+                type="button" 
+                className="dna-photo-fixed-close"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsZoomOpen(false);
+                }}
+                aria-label="Close Photo"
+                title="Close (Esc)"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              {/* Pure Photo Viewport: Supports 2-finger pinch zoom, dragging, double tap & wheel */}
               <div 
-                className="dna-lightbox-content" 
-                onClick={(e) => e.stopPropagation()}
-                onWheel={(e) => {
-                  e.preventDefault();
-                  const delta = e.deltaY < 0 ? 0.15 : -0.15;
-                  setZoomScale(prev => Math.min(3, Math.max(0.6, Math.round((prev + delta) * 100) / 100)));
+                className="dna-photo-container"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onWheel={handleWheel}
+                onDoubleClick={handleDoubleClick}
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) {
+                    setIsZoomOpen(false);
+                  }
                 }}
               >
-                {/* Lightbox Top Header */}
-                <div className="dna-lightbox-header">
-                  <div className="dna-lightbox-title">
-                    <span className="dna-lb-sym">{report.symbol}</span>
-                    <span className="dna-lb-name">{report.company_name}</span>
-                    <span className="dna-lb-pattern">{report.ui_report.pro_analysis.chart_pattern_detected}</span>
-                  </div>
-
-                  <div className="dna-lightbox-actions">
-                    {/* Perspective Switcher inside image viewer */}
-                    <div className="dna-chart-toggle-group mini perspective">
-                      <button 
-                        type="button"
-                        className={`dna-chart-toggle-btn ${chartPerspective === "tactical" ? "active" : ""}`}
-                        onClick={() => setChartPerspective("tactical")}
-                        title="4-Month Tactical Setup"
-                      >
-                        🎯 Tactical (4M)
-                      </button>
-                      <button 
-                        type="button"
-                        className={`dna-chart-toggle-btn ${chartPerspective === "macro" ? "active" : ""}`}
-                        onClick={() => setChartPerspective("macro")}
-                        title="1-Year Macro Origin View"
-                      >
-                        🌐 Macro (1Y)
-                      </button>
-                    </div>
-
-                    {/* Clean Zoom Controls */}
-                    <div className="dna-zoom-controls">
-                      <button 
-                        type="button"
-                        className="dna-btn-icon" 
-                        onClick={() => setZoomScale(prev => Math.max(0.6, Math.round((prev - 0.2) * 10) / 10))}
-                        title="Zoom Out (-)"
-                      >
-                        <ZoomOut className="w-4 h-4" />
-                      </button>
-                      <span className="dna-zoom-val">{Math.round(zoomScale * 100)}%</span>
-                      <button 
-                        type="button"
-                        className="dna-btn-icon" 
-                        onClick={() => setZoomScale(prev => Math.min(3.0, Math.round((prev + 0.2) * 10) / 10))}
-                        title="Zoom In (+)"
-                      >
-                        <ZoomIn className="w-4 h-4" />
-                      </button>
-                      <button 
-                        type="button"
-                        className="dna-btn-icon" 
-                        onClick={() => setZoomScale(1)}
-                        title="Reset Zoom (100%)"
-                      >
-                        <RotateCcw className="w-4 h-4" />
-                      </button>
-                      <a 
-                        href={`${getApiBaseUrl()}/api/dna/chart/${report.symbol}?view=${chartPerspective}`}
-                        download={`${report.symbol}_${chartPerspective}_QuantSync_Chart.png`}
-                        className="dna-btn-icon" 
-                        title="Download High-Res PNG"
-                        target="_blank" 
-                        rel="noreferrer"
-                      >
-                        <Download className="w-4 h-4" />
-                      </a>
-                    </div>
-
-                    {/* Prominent Easy Close Button */}
-                    <button 
-                      type="button"
-                      className="dna-lightbox-close" 
-                      onClick={() => setIsZoomOpen(false)} 
-                      title="Close (Esc)"
-                    >
-                      <X className="w-5 h-5 mr-1" />
-                      <span className="text-xs font-semibold">Close</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Lightbox Image Body */}
-                <div 
-                  className="dna-lightbox-body"
-                  onClick={() => setIsZoomOpen(false)}
-                >
-                  <div 
-                    className="dna-lightbox-img-wrap"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Click image to toggle zoom between 100% and 160%
-                      setZoomScale(prev => prev > 1.1 ? 1 : 1.6);
-                    }}
-                    style={{ cursor: zoomScale > 1.1 ? "zoom-out" : "zoom-in" }}
-                    title={zoomScale > 1.1 ? "Click to reset zoom (100%)" : "Click to zoom in (160%)"}
-                  >
-                    <img 
-                      key={`lb-${report.symbol}-${chartPerspective}`}
-                      src={`${getApiBaseUrl()}/api/dna/chart/${report.symbol}?view=${chartPerspective}`}
-                      alt={`${report.symbol} Fullscreen ${chartPerspective} Chart`} 
-                      className="dna-lightbox-img"
-                      style={{ 
-                        transform: `scale(${zoomScale})`,
-                        transition: "transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)"
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Lightbox Footer */}
-                <div className="dna-lightbox-footer">
-                  <div className="dna-lb-footer-left">
-                    <span>Perspective: <strong>{chartPerspective === "macro" ? "Macro (1-Year)" : "Tactical (4-Month)"}</strong></span>
-                    <span>Target 1: <strong>₹{report.ui_report.trade_execution_card.target_1}</strong></span>
-                    <span>Stop Loss: <strong>₹{report.ui_report.trade_execution_card.stop_loss}</strong></span>
-                    <span>Action: <strong>{report.ui_report.trade_execution_card.action}</strong></span>
-                  </div>
-                  <div className="dna-lb-footer-right">
-                    <span>💡 Click image or scroll to zoom · Click outside or press <strong>ESC</strong> to close</span>
-                  </div>
-                </div>
+                <img 
+                  key={`pv-${report.symbol}-${chartPerspective}`}
+                  src={`${getApiBaseUrl()}/api/dna/chart/${report.symbol}?view=${chartPerspective}`}
+                  alt={`${report.symbol} ${chartPerspective} Chart`} 
+                  className="dna-pure-photo"
+                  style={{
+                    transform: `translate3d(${photoTranslate.x}px, ${photoTranslate.y}px, 0) scale(${photoScale})`,
+                    transition: touchState.current.isPinching || touchState.current.isDragging ? "none" : "transform 0.18s ease-out"
+                  }}
+                  draggable={false}
+                />
               </div>
             </div>
           )}
