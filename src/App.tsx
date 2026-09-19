@@ -15,6 +15,10 @@ import AuthModal from "./components/Modals/AuthModal";
 import BuyModal from "./components/Modals/BuyModal";
 import SellModal from "./components/Modals/SellModal";
 import PortfolioView from "./views/PortfolioView";
+import AddPositionModal from "./components/Modals/AddPositionModal";
+import { db } from "./lib/firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { ManualPortfolioTrade, CompletedTrade } from "./types";
 import { getActionTagInfo } from "./lib/signalStatus";
 import InstitutionalPatternChart from "./components/charts/InstitutionalPatternChart";
 import TradingViewStockDetail from "./components/TradingViewStockDetail";
@@ -909,7 +913,7 @@ export default function App() {
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     return (localStorage.getItem("theme") as "dark" | "light") || "dark";
   });
-  const [activeTab, setActiveTab] = useState<"home" | "signals" | "charts" | "intel" | "more">("home");
+  const [activeTab, setActiveTab] = useState<"home" | "signals" | "portfolio" | "charts" | "intel" | "more">("home");
   const [sigSub, setSigSub] = useState<"active" | "closed">("active");
   const [chartSub, setChartSub] = useState<"live" | "scanner" | "portal">("live");
   const [range, setRange] = useState<number>(90);
@@ -920,8 +924,8 @@ export default function App() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionEngine, setTransitionEngine] = useState<"v2" | "v3">("v2");
 
-  // User Paper Trading Portfolio State
-  const [paperTrades, setPaperTrades] = useState<any[]>(() => {
+  // User Paper Trading Portfolio State & Cloud Sync
+  const [portfolio, setPortfolio] = useState<ManualPortfolioTrade[]>(() => {
     try {
       const saved = localStorage.getItem("qs_paper_portfolio");
       return saved ? JSON.parse(saved) : [];
@@ -929,8 +933,23 @@ export default function App() {
       return [];
     }
   });
-  const [showPaperPortfolioView, setShowPaperPortfolioView] = useState(false);
+  const [completedHistory, setCompletedHistory] = useState<CompletedTrade[]>(() => {
+    try {
+      const saved = localStorage.getItem("qs_completed_history");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isCloudLoaded, setIsCloudLoaded] = useState(false);
+  const [isAddPositionOpen, setIsAddPositionOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [closedTf, setClosedTf] = useState<"1M" | "3M" | "6M" | "ALL">("ALL");
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3200);
+  };
 
   // Modals
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -950,6 +969,69 @@ export default function App() {
     },
     [user]
   );
+
+  // Fetch per-user portfolio and history from Firestore when authenticated
+  useEffect(() => {
+    if (user) {
+      const loadUserData = async () => {
+        try {
+          const userDocRef = doc(db, "users", user.uid);
+          const docSnap = await getDoc(userDocRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.portfolio) setPortfolio(data.portfolio);
+            if (data.completedHistory) setCompletedHistory(data.completedHistory);
+          } else {
+            await setDoc(
+              userDocRef,
+              {
+                email: user.email,
+                createdAt: Date.now(),
+                portfolio: [],
+                completedHistory: []
+              },
+              { merge: true }
+            );
+          }
+          setIsCloudLoaded(true);
+        } catch (err: any) {
+          console.error("Error loading Firestore data:", err);
+          setIsCloudLoaded(true);
+        }
+      };
+      loadUserData();
+    } else {
+      setIsCloudLoaded(false);
+      try {
+        const saved = localStorage.getItem("qs_paper_portfolio");
+        setPortfolio(saved ? JSON.parse(saved) : []);
+        const savedHist = localStorage.getItem("qs_completed_history");
+        setCompletedHistory(savedHist ? JSON.parse(savedHist) : []);
+      } catch {
+        setPortfolio([]);
+        setCompletedHistory([]);
+      }
+    }
+  }, [user]);
+
+  // Persist portfolio & history to Firestore whenever they change
+  useEffect(() => {
+    if (user && isCloudLoaded) {
+      const userDocRef = doc(db, "users", user.uid);
+      setDoc(userDocRef, { portfolio, completedHistory }, { merge: true }).catch((err) => {
+        console.error("Failed to save to Firestore:", err);
+      });
+      try {
+        localStorage.setItem("qs_paper_portfolio", JSON.stringify(portfolio));
+        localStorage.setItem("qs_completed_history", JSON.stringify(completedHistory));
+      } catch {}
+    } else if (!user) {
+      try {
+        localStorage.setItem("qs_paper_portfolio", JSON.stringify(portfolio));
+        localStorage.setItem("qs_completed_history", JSON.stringify(completedHistory));
+      } catch {}
+    }
+  }, [portfolio, completedHistory, user, isCloudLoaded]);
 
   // Bottom Sheet state
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -1505,7 +1587,7 @@ export default function App() {
     let totalInvested = 0;
     let currentValue = 0;
 
-    paperTrades.forEach((pos: any) => {
+    portfolio.forEach((pos: any) => {
       const buyP = Number(pos.buyPrice || 0);
       const qty = Number(pos.quantity || 1);
       const invested = buyP * qty;
@@ -1527,9 +1609,147 @@ export default function App() {
       unrealizedPnl,
       unrealizedPct,
       totalPortfolioValue,
-      count: paperTrades.length,
+      count: portfolio.length,
     };
-  }, [paperTrades, activeTrades]);
+  }, [portfolio, activeTrades]);
+
+  // Synchronize live LTP and active status into portfolio
+  useEffect(() => {
+    if (activeTrades.length > 0 && portfolio.length > 0) {
+      setPortfolio((prev) => {
+        if (!prev || prev.length === 0) return prev;
+        const activeMap = new Map<string, any>();
+        activeTrades.forEach((t: any) => {
+          const s = (t.sym || t.symbol || "").toUpperCase().trim();
+          if (s) activeMap.set(s, t);
+        });
+        let changed = false;
+        const updated = prev.map((p: any) => {
+          const sym = (p.symbol || "").toUpperCase().trim();
+          const match = activeMap.get(sym);
+          if (match) {
+            const newLtp = Number(
+              match.now || match.currentPrice || match.price || match.entryPrice || p.currentPrice || p.buyPrice
+            );
+            const newRoi =
+              match.pnlPct !== undefined
+                ? Number(match.pnlPct)
+                : p.buyPrice > 0
+                ? ((newLtp - p.buyPrice) / p.buyPrice) * 100
+                : 0;
+            if (p.currentPrice !== newLtp || p.isActiveInStrategy !== true || p.currentROI !== newRoi) {
+              changed = true;
+              return {
+                ...p,
+                currentPrice: newLtp,
+                currentROI: newRoi,
+                isActiveInStrategy: true
+              };
+            }
+          } else {
+            if (p.isActiveInStrategy !== false) {
+              changed = true;
+              return {
+                ...p,
+                isActiveInStrategy: false
+              };
+            }
+          }
+          return p;
+        });
+        return changed ? updated : prev;
+      });
+    }
+  }, [activeTrades]);
+
+  // Buy submission handler (Cloud synced via Firestore)
+  const handleBuySubmit = (data: { symbol: string; buyPrice: number; quantity: number; strategyName?: string }) => {
+    const symKey = (data.symbol || "").toUpperCase().trim();
+    const activeMatch = activeTrades.find((s: any) => (s.sym || s.symbol || "").toUpperCase().trim() === symKey);
+    const ltp = activeMatch?.now || activeMatch?.currentPrice ? Number(activeMatch.now || activeMatch.currentPrice) : data.buyPrice;
+    const isSignalActive = !!activeMatch;
+
+    const newPosition: ManualPortfolioTrade = {
+      tradeId: `port-${Date.now()}`,
+      symbol: data.symbol.toUpperCase().trim(),
+      buyPrice: data.buyPrice,
+      quantity: data.quantity,
+      totalInvested: data.buyPrice * data.quantity,
+      strategyName: data.strategyName || activeMatch?.tag || activeMatch?.strategyName || "Breakout",
+      date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      daysHeld: 1,
+      isActiveInStrategy: isSignalActive,
+      currentPrice: ltp,
+      currentROI: data.buyPrice > 0 ? ((ltp - data.buyPrice) / data.buyPrice) * 100 : 0
+    };
+
+    setPortfolio((prev) => [newPosition, ...prev]);
+    showToast(`Added ${data.quantity} shares of ${data.symbol} to Portfolio`);
+    setBuyModalItem(null);
+  };
+
+  // Sell submission handler (Calculates realized metrics and saves to Firestore history)
+  const handleSellSubmit = (data: { tradeId?: string; symbol: string; sellPrice: number; sellQuantity: number }) => {
+    const target = portfolio.find((p) => p.tradeId === data.tradeId || p.symbol === data.symbol);
+    if (!target) return;
+
+    const buyPrice = target.buyPrice || data.sellPrice;
+    const qty = data.sellQuantity;
+    const invested = buyPrice * qty;
+    const received = data.sellPrice * qty;
+    const pnl = received - invested;
+    const pnlPct = invested > 0 ? (pnl / invested) * 100 : 0;
+
+    const completed: CompletedTrade = {
+      tradeId: target.tradeId || `hist-${Date.now()}`,
+      symbol: data.symbol,
+      buyPrice,
+      sellPrice: data.sellPrice,
+      quantity: qty,
+      totalInvested: invested,
+      totalReceived: received,
+      pnl,
+      pnlPct,
+      strategyName: target.strategyName,
+      buyDate: target.date || "Past",
+      sellDate: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      holdDays: target.daysHeld || 1
+    };
+
+    setCompletedHistory((prev) => [completed, ...prev]);
+
+    if ((target.quantity || 1) <= qty) {
+      setPortfolio((prev) => prev.filter((p) => p !== target));
+    } else {
+      setPortfolio((prev) =>
+        prev.map((p) => {
+          if (p === target) {
+            const remainingQty = (p.quantity || 1) - qty;
+            return {
+              ...p,
+              quantity: remainingQty,
+              totalInvested: p.buyPrice * remainingQty
+            };
+          }
+          return p;
+        })
+      );
+    }
+
+    showToast(`Exited ${data.symbol} for ${pnl >= 0 ? "+" : ""}${pnlPct.toFixed(1)}% return`);
+    setSellModalItem(null);
+  };
+
+  // Delete completed history trade handler
+  const handleDeleteCompletedTrade = (tradeIdOrIndex: string | number) => {
+    setCompletedHistory((prev) => {
+      if (typeof tradeIdOrIndex === "number") {
+        return prev.filter((_, idx) => idx !== tradeIdOrIndex);
+      }
+      return prev.filter((t) => (t.tradeId || t.symbol) !== tradeIdOrIndex);
+    });
+    showToast("Completed trade record deleted");
+  };
 
   // Closed Signals Stats (Win Rate, Profit Factor, Avg Return, Avg R, Wins/Losses)
   const closedStats = useMemo(() => {
@@ -1780,45 +2000,7 @@ export default function App() {
       <main className="screens" id="screens">
         {/* ===== HOME SCREEN ===== */}
         <section className={`screen ${activeTab === "home" ? "active" : ""}`} id="screen-home">
-          {showPaperPortfolioView ? (
-            <PortfolioView
-              portfolio={paperTrades}
-              inTradeTrades={activeTrades.map((t: any) => ({
-                symbol: t.sym || t.symbol,
-                entryPrice: t.entry || t.entryPrice,
-                currentPrice: t.now || t.currentPrice || t.price || t.entry,
-                targetPrice: t.target || t.targetPrice,
-                stopLoss: t.stop || t.stopLoss,
-                strategyName: t.tag || t.strategyName,
-                patternName: t.pattern || t.patternName,
-                currentROI: t.pnlPct ?? t.roiPct ?? t.chg ?? 0,
-                rMultiple: t.rMult || t.rMultiple,
-                timeInTrade: t.time || t.timeInTrade || t.date,
-              }))}
-              closedTrades={closedTrades}
-              onBack={() => setShowPaperPortfolioView(false)}
-              onOpenSellModal={(trade) => setSellModalItem(trade)}
-              onOpenBuyModal={handleOpenBuyModal}
-              onOpenAddModal={() => {
-                setActiveTab("signals");
-                setSigSub("active");
-                setShowPaperPortfolioView(false);
-              }}
-              onOpenChart={(sym) => {
-                setActiveTab("charts");
-                setChartSymbol(sym);
-                fetchChart(sym, engine);
-                setShowPaperPortfolioView(false);
-              }}
-              onDeleteTrade={(tradeId) => {
-                const updated = paperTrades.filter((t: any) => t.tradeId !== tradeId && t.symbol !== tradeId);
-                setPaperTrades(updated);
-                localStorage.setItem("qs_paper_portfolio", JSON.stringify(updated));
-              }}
-            />
-          ) : (
-            <>
-              {/* ENGINE CONTEXT STRIP */}
+          {/* ENGINE CONTEXT STRIP */}
               <div className="engine-context" id="engineContext">
                 <div className="ec-icon" id="ecIcon">
                   {engine === "v2" ? "🤖" : "📐"}
@@ -1919,7 +2101,7 @@ export default function App() {
                     marginBottom: 14,
                     transition: "transform 0.15s ease, box-shadow 0.15s ease",
                   }}
-                  onClick={() => setShowPaperPortfolioView(true)}
+                  onClick={() => setActiveTab("portfolio")}
                   title="Click to view full Paper Trading Desk"
                 >
                   <div className="row between" style={{ marginBottom: 12 }}>
@@ -2039,8 +2221,6 @@ export default function App() {
                   See All →
                 </div>
               </div>
-            </>
-          )}
         </section>
 
         {/* ===== SIGNALS SCREEN ===== */}
@@ -2579,6 +2759,89 @@ export default function App() {
           )}
         </section>
 
+        {/* ===== PORTFOLIO SCREEN ===== */}
+        <section className={`screen ${activeTab === "portfolio" ? "active" : ""}`} id="screen-portfolio">
+          {!user ? (
+            <div className="card" style={{ padding: "32px 20px", textAlign: "center", maxWidth: 460, margin: "24px auto" }}>
+              <div style={{
+                width: 52,
+                height: 52,
+                borderRadius: 16,
+                background: "rgba(99, 102, 241, 0.12)",
+                color: "var(--accent)",
+                display: "grid",
+                placeItems: "center",
+                margin: "0 auto 16px"
+              }}>
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                </svg>
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "var(--ink)", letterSpacing: "-.02em" }}>
+                Personal Portfolio & Trade Ledger
+              </div>
+              <div style={{ fontSize: 12.5, color: "var(--ink3)", margin: "10px 0 22px", lineHeight: 1.6 }}>
+                Create a free account or sign in to save your personal Paper Trade ledger to the cloud, track live trailing stops, and preserve your performance history across devices.
+              </div>
+              <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+                <button
+                  className="btn primary"
+                  style={{ padding: "9px 20px", fontSize: 12.5, fontWeight: 700 }}
+                  onClick={() => {
+                    setAuthMode("signup");
+                    setShowAuthModal(true);
+                  }}
+                >
+                  Create Free Account
+                </button>
+                <button
+                  className="btn"
+                  style={{ padding: "9px 20px", fontSize: 12.5, fontWeight: 700 }}
+                  onClick={() => {
+                    setAuthMode("signin");
+                    setShowAuthModal(true);
+                  }}
+                >
+                  Sign In
+                </button>
+              </div>
+            </div>
+          ) : (
+            <PortfolioView
+              portfolio={portfolio}
+              completedHistory={completedHistory}
+              closedTrades={closedTrades}
+              inTradeTrades={activeTrades.map((t: any) => ({
+                symbol: t.sym || t.symbol,
+                entryPrice: t.entry || t.entryPrice,
+                currentPrice: t.now || t.currentPrice || t.price || t.entry,
+                targetPrice: t.target || t.targetPrice,
+                stopLoss: t.stop || t.stopLoss,
+                strategyName: t.tag || t.strategyName,
+                patternName: t.pattern || t.patternName,
+                currentROI: t.pnlPct ?? t.roiPct ?? t.chg ?? 0,
+                rMultiple: t.rMult || t.rMultiple,
+                timeInTrade: t.time || t.timeInTrade || t.date,
+              }))}
+              onOpenAddModal={() => setIsAddPositionOpen(true)}
+              onOpenBuyModal={handleOpenBuyModal}
+              onOpenSellModal={(trade) => setSellModalItem(trade)}
+              onOpenChart={(sym) => {
+                const cleanSym = String(sym).replace(/^(BSE:|NSE:)/i, "").trim().toUpperCase();
+                window.open(`https://www.tradingview.com/chart/qvyqZrhQ/?symbol=BSE:${cleanSym}`, "_blank");
+              }}
+              onDeleteCompletedTrade={handleDeleteCompletedTrade}
+              onDeleteTrade={(tradeId) => {
+                setPortfolio(prev => prev.filter(p => p.tradeId !== tradeId && p.symbol !== tradeId));
+              }}
+              onSelectStock={(stock) => {
+                openSheet(engine, stock);
+              }}
+            />
+          )}
+        </section>
+
         {/* ===== CHARTS SCREEN ===== */}
         <section className={`screen ${activeTab === "charts" ? "active" : ""}`} id="screen-charts">
           {engine === "v2" ? (
@@ -3100,10 +3363,7 @@ export default function App() {
       <nav className="tabbar" id="tabbar">
         <button
           className={`tab ${activeTab === "home" ? "active" : ""}`}
-          onClick={() => {
-            setActiveTab("home");
-            setShowPaperPortfolioView(false);
-          }}
+          onClick={() => setActiveTab("home")}
           data-tab="home"
         >
           <svg viewBox="0 0 24 24"><path d="M3 10.6 12 3.2l9 7.4V20a1 1 0 0 1-1 1h-5.2v-6.4H9.2V21H4a1 1 0 0 1-1-1z" /></svg>
@@ -3117,6 +3377,35 @@ export default function App() {
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.6" /><circle cx="12" cy="12" r="1" /></svg>
           Signals
           <span className="radar-ring" />
+        </button>
+        <button
+          className={`tab ${activeTab === "portfolio" ? "active" : ""}`}
+          onClick={() => setActiveTab("portfolio")}
+          data-tab="portfolio"
+        >
+          <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>
+          Portfolio
+          {portfolio.length > 0 && (
+            <span style={{
+              position: "absolute",
+              top: 5,
+              right: "calc(50% - 17px)",
+              background: "var(--accent)",
+              color: "#fff",
+              fontSize: 8.5,
+              fontWeight: 800,
+              padding: "0 3.5px",
+              borderRadius: 6,
+              minWidth: 12,
+              height: 12,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              lineHeight: 1
+            }}>
+              {portfolio.length}
+            </span>
+          )}
         </button>
         <button
           className={`tab ${activeTab === "intel" ? "active" : ""}`}
@@ -3270,36 +3559,47 @@ export default function App() {
         initialPrice={buyModalItem?.initialPrice || 0}
         strategyName={buyModalItem?.strategyName}
         onClose={() => setBuyModalItem(null)}
-        onSubmit={(data) => {
-          const newTrade = {
-            tradeId: "paper-" + Date.now(),
-            symbol: data.symbol,
-            buyPrice: data.buyPrice,
-            quantity: data.quantity,
-            totalInvested: data.buyPrice * data.quantity,
-            date: formatDisplayDate(new Date()),
-            strategyName: data.strategyName,
-            currentPrice: data.buyPrice,
-            currentROI: 0,
-          };
-          const updated = [newTrade, ...paperTrades];
-          setPaperTrades(updated);
-          localStorage.setItem("qs_paper_portfolio", JSON.stringify(updated));
-          setBuyModalItem(null);
-        }}
+        onSubmit={handleBuySubmit}
       />
 
       <SellModal
         isOpen={!!sellModalItem}
         trade={sellModalItem}
         onClose={() => setSellModalItem(null)}
-        onSubmit={(data) => {
-          const updated = paperTrades.filter((t: any) => t.tradeId !== data.tradeId && t.symbol !== data.symbol);
-          setPaperTrades(updated);
-          localStorage.setItem("qs_paper_portfolio", JSON.stringify(updated));
-          setSellModalItem(null);
-        }}
+        onSubmit={handleSellSubmit}
       />
+
+      {isAddPositionOpen && (
+        <AddPositionModal
+          isOpen={isAddPositionOpen}
+          onClose={() => setIsAddPositionOpen(false)}
+          onSubmit={handleBuySubmit}
+        />
+      )}
+
+      {/* Global Toast */}
+      {toastMessage && (
+        <div style={{
+          position: "fixed",
+          bottom: 80,
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 9999,
+          background: "var(--ink)",
+          color: "var(--bg)",
+          padding: "8px 18px",
+          borderRadius: 20,
+          fontSize: 12,
+          fontWeight: 700,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          pointerEvents: "none"
+        }}>
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 }
