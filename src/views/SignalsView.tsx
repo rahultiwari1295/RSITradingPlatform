@@ -279,16 +279,6 @@ export default function SignalsView({
                       <span className="text-[#F59E0B] text-xs font-bold tracking-tighter">
                         ★★★★★
                       </span>
-                      <span
-                        style={{
-                          background: tagBg,
-                          color: tagColor,
-                          border: `1px solid ${tagBorder}`,
-                        }}
-                        className="text-[9.5px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider"
-                      >
-                        {tagLabel}
-                      </span>
                       {isBought && (
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#ECFDF3] text-[#16A34A] border border-[#86EFAC]/40 font-mono">
                           HELD
@@ -317,13 +307,25 @@ export default function SignalsView({
                 </div>
               </div>
 
-              {/* Clean Signal Date line */}
-              <div className="text-[11px] text-[#8B8D98] mb-3">
-                <span>Signal Date : </span>
-                <span className="font-semibold text-[#14151A] dark:text-white font-mono">
-                  {t.entryDate || "2026-09-18"}
+              {/* Clean Signal Date line with Status Tag */}
+              <div className="text-[11px] text-[#8B8D98] mb-3 flex items-center gap-2 flex-wrap">
+                <div>
+                  <span>Signal Date : </span>
+                  <span className="font-semibold text-[#14151A] dark:text-white font-mono">
+                    {t.entryDate || "2026-09-18"}
+                  </span>
+                  <span> ( {daysHeld} {daysHeld === 1 ? "Day" : "Days"} )</span>
+                </div>
+                <span
+                  style={{
+                    background: tagBg,
+                    color: tagColor,
+                    border: `1px solid ${tagBorder}`,
+                  }}
+                  className="text-[9.5px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                >
+                  {tagLabel}
                 </span>
-                <span> ( {daysHeld} {daysHeld === 1 ? "Day" : "Days"} )</span>
               </div>
 
               {/* Institutional Breakout Pattern Chart */}

@@ -2158,25 +2158,6 @@ export default function App() {
                                   ★★★★★
                                   <i style={{ width: `${Math.min(100, Math.max(0, ((t.stars || 4.5) / 5) * 100))}%` }}>★★★★★</i>
                                 </span>
-                                <span
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    padding: "1.5px 6.5px",
-                                    borderRadius: 5,
-                                    fontSize: 9.5,
-                                    fontWeight: 800,
-                                    letterSpacing: "0.04em",
-                                    textTransform: "uppercase",
-                                    background: tagInfo.bg,
-                                    color: tagInfo.color,
-                                    border: `1px solid ${tagInfo.border}`,
-                                    lineHeight: 1.3,
-                                  }}
-                                  title={tagInfo.tooltip}
-                                >
-                                  {tagInfo.label}
-                                </span>
                               </div>
                               <div style={{ fontSize: 10.5, color: "var(--ink3)", marginTop: 2 }}>
                                 {t.tag || t.strategyName || "Diversified · Breakout"}
@@ -2205,14 +2186,35 @@ export default function App() {
                             </div>
                           </div>
 
-                          {/* Clean Signal Date line */}
-                          <div style={{ fontSize: 10.5, color: "var(--ink2)", marginTop: 7 }}>
-                            <span style={{ color: "var(--ink3)" }}>Signal Date : </span>
-                            <span className="num" style={{ fontWeight: 600, color: "var(--ink1)" }}>
-                              {formatSignalDate(t.entryDate || t.date)}
+                          {/* Clean Signal Date line with Status Tag */}
+                          <div style={{ fontSize: 10.5, color: "var(--ink2)", marginTop: 7, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <span>
+                              <span style={{ color: "var(--ink3)" }}>Signal Date : </span>
+                              <span className="num" style={{ fontWeight: 600, color: "var(--ink1)" }}>
+                                {formatSignalDate(t.entryDate || t.date)}
+                              </span>
+                              <span style={{ color: "var(--ink3)" }}>
+                                {" "}( {daysHeld} {Number(daysHeld) === 1 ? "Day" : "Days"} )
+                              </span>
                             </span>
-                            <span style={{ color: "var(--ink3)" }}>
-                              {" "}( {daysHeld} {Number(daysHeld) === 1 ? "Day" : "Days"} )
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                padding: "1.5px 6.5px",
+                                borderRadius: 5,
+                                fontSize: 9.5,
+                                fontWeight: 800,
+                                letterSpacing: "0.04em",
+                                textTransform: "uppercase",
+                                background: tagInfo.bg,
+                                color: tagInfo.color,
+                                border: `1px solid ${tagInfo.border}`,
+                                lineHeight: 1.3,
+                              }}
+                              title={tagInfo.tooltip}
+                            >
+                              {tagInfo.label}
                             </span>
                           </div>
                         </div>
@@ -2275,25 +2277,6 @@ export default function App() {
                                   ★★★★★
                                   <i style={{ width: `${Math.min(100, Math.max(0, ((t.stars || 4.5) / 5) * 100))}%` }}>★★★★★</i>
                                 </span>
-                                <span
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    padding: "1.5px 6.5px",
-                                    borderRadius: 5,
-                                    fontSize: 9.5,
-                                    fontWeight: 800,
-                                    letterSpacing: "0.04em",
-                                    textTransform: "uppercase",
-                                    background: tagInfo.bg,
-                                    color: tagInfo.color,
-                                    border: `1px solid ${tagInfo.border}`,
-                                    lineHeight: 1.3,
-                                  }}
-                                  title={tagInfo.tooltip}
-                                >
-                                  {tagInfo.label}
-                                </span>
                               </div>
                               <div style={{ fontSize: 10, color: "var(--accent)", marginTop: 2, fontWeight: 600 }}>
                                 {t.stage || t.strategyName || "Stage 2 Base 📐"}
@@ -2322,14 +2305,35 @@ export default function App() {
                             </div>
                           </div>
 
-                          {/* Clean Signal Date line */}
-                          <div style={{ fontSize: 10.5, color: "var(--ink2)", marginTop: 7 }}>
-                            <span style={{ color: "var(--ink3)" }}>Signal Date : </span>
-                            <span className="num" style={{ fontWeight: 600, color: "var(--ink1)" }}>
-                              {formatSignalDate(t.entryDate || t.date)}
+                          {/* Clean Signal Date line with Status Tag */}
+                          <div style={{ fontSize: 10.5, color: "var(--ink2)", marginTop: 7, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <span>
+                              <span style={{ color: "var(--ink3)" }}>Signal Date : </span>
+                              <span className="num" style={{ fontWeight: 600, color: "var(--ink1)" }}>
+                                {formatSignalDate(t.entryDate || t.date)}
+                              </span>
+                              <span style={{ color: "var(--ink3)" }}>
+                                {" "}( {daysHeld} {Number(daysHeld) === 1 ? "Day" : "Days"} )
+                              </span>
                             </span>
-                            <span style={{ color: "var(--ink3)" }}>
-                              {" "}( {daysHeld} {Number(daysHeld) === 1 ? "Day" : "Days"} )
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                padding: "1.5px 6.5px",
+                                borderRadius: 5,
+                                fontSize: 9.5,
+                                fontWeight: 800,
+                                letterSpacing: "0.04em",
+                                textTransform: "uppercase",
+                                background: tagInfo.bg,
+                                color: tagInfo.color,
+                                border: `1px solid ${tagInfo.border}`,
+                                lineHeight: 1.3,
+                              }}
+                              title={tagInfo.tooltip}
+                            >
+                              {tagInfo.label}
                             </span>
                           </div>
                         </div>

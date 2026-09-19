@@ -343,7 +343,7 @@ body::before{
    ============================================================ */
 .tabbar{
   flex:0 0 auto;
-  display:grid;grid-template-columns:repeat(5,1fr);
+  display:grid;grid-template-columns:repeat(4,1fr);
   background:color-mix(in srgb, var(--s0) 82%, transparent);
   backdrop-filter:blur(24px) saturate(160%);
   -webkit-backdrop-filter:blur(24px) saturate(160%);
