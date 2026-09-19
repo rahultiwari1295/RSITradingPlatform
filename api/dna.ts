@@ -12,7 +12,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const symbol = req.query.symbol as string;
 
   let targetUrl = '';
-  if (action === 'report' || symbol) {
+  if (action === 'chart') {
+    targetUrl = `${VPS_HOST}/api/dna/chart/${encodeURIComponent(symbol || '')}`;
+  } else if (action === 'report' || symbol) {
     targetUrl = `${VPS_HOST}/api/dna/report/${encodeURIComponent(symbol || '')}`;
   } else {
     targetUrl = `${VPS_HOST}/api/dna/search?q=${encodeURIComponent(q || '')}`;
@@ -22,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const response = await fetch(targetUrl, {
       method: 'GET',
       headers: {
-        'Accept': 'application/json',
+        'Accept': action === 'chart' ? 'image/png,image/*,*/*' : 'application/json',
         'User-Agent': 'QuantSync-Vercel-DNAClient/1.0',
       },
       signal: AbortSignal.timeout(15000),
@@ -33,6 +35,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         error: `VPS DNA API returned ${response.status}`,
         targetUrl,
       });
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('image') || action === 'chart') {
+      const arrayBuffer = await response.arrayBuffer();
+      res.setHeader('Content-Type', contentType || 'image/png');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+      return res.send(Buffer.from(arrayBuffer));
     }
 
     const data = await response.json();
