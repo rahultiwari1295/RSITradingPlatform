@@ -1021,11 +1021,18 @@ async function startServer() {
 
   app.get("/api/dna/chart/:symbol", async (req, res) => {
     const symbol = (req.params.symbol || "").trim().toUpperCase();
-    const localChartPath = path.resolve(process.cwd(), `../vps_data_live/Data/dna_charts/${symbol}.png`);
+    const view = ((req.query.view as string) || "tactical").toLowerCase();
+    const filename = view === "macro" ? `${symbol}_macro.png` : `${symbol}_tactical.png`;
+    const localChartPath = path.resolve(process.cwd(), `../vps_data_live/Data/dna_charts/${filename}`);
+    const fallbackPath = path.resolve(process.cwd(), `../vps_data_live/Data/dna_charts/${symbol}.png`);
     if (fs.existsSync(localChartPath)) {
       res.setHeader("Content-Type", "image/png");
       res.setHeader("Cache-Control", "public, max-age=3600");
       return res.sendFile(localChartPath);
+    } else if (fs.existsSync(fallbackPath) && view !== "macro") {
+      res.setHeader("Content-Type", "image/png");
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      return res.sendFile(fallbackPath);
     }
     // Forward to VPS backend
     try {

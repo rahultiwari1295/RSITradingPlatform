@@ -18,6 +18,7 @@ interface StockDnaReport {
   company_name: string;
   report_date: string;
   chart_image_url?: string;
+  chart_image_macro_url?: string;
   current_metrics: {
     price: number;
     ema20: number;
@@ -81,6 +82,7 @@ interface StockDnaReport {
     volume: number;
     ema20?: number;
     ema50?: number;
+    ema200?: number;
   }>;
 }
 
@@ -110,6 +112,7 @@ export default function StockDNAScreen() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [hoveredCandle, setHoveredCandle] = useState<any | null>(null);
   const [chartViewMode, setChartViewMode] = useState<"interactive" | "snapshot">("interactive");
+  const [chartPerspective, setChartPerspective] = useState<"tactical" | "macro">("tactical");
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
 
@@ -650,8 +653,29 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                 <h3>Algorithmic Price Geometry & Trendlines</h3>
               </div>
 
-              {/* View Switcher Pill & Fullscreen Zoom Button */}
+              {/* Perspective (Tactical vs Macro) + View Mode + Fullscreen Zoom */}
               <div className="dna-chart-header-actions">
+                {/* Perspective Pill */}
+                <div className="dna-chart-toggle-group perspective">
+                  <button 
+                    type="button"
+                    className={`dna-chart-toggle-btn ${chartPerspective === "tactical" ? "active" : ""}`}
+                    onClick={() => setChartPerspective("tactical")}
+                    title="4-Month Precision Setup"
+                  >
+                    🎯 Tactical (4M)
+                  </button>
+                  <button 
+                    type="button"
+                    className={`dna-chart-toggle-btn ${chartPerspective === "macro" ? "active" : ""}`}
+                    onClick={() => setChartPerspective("macro")}
+                    title="1-Year Full Structural View"
+                  >
+                    🌐 Macro (1Y)
+                  </button>
+                </div>
+
+                {/* View Mode Pill */}
                 <div className="dna-chart-toggle-group">
                   <button 
                     type="button"
@@ -659,7 +683,7 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                     onClick={() => setChartViewMode("interactive")}
                   >
                     <BarChart2 className="w-3.5 h-3.5 mr-1.5" />
-                    Live Interactive
+                    Interactive
                   </button>
                   <button 
                     type="button"
@@ -667,7 +691,7 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                     onClick={() => setChartViewMode("snapshot")}
                   >
                     <ImageIcon className="w-3.5 h-3.5 mr-1.5" />
-                    Analyst Snapshot
+                    Snapshot
                   </button>
                 </div>
 
@@ -692,13 +716,14 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                 <div className="dna-chart-legend">
                   <span className="dna-legend-item"><span className="dna-dot ema20" /> 20 EMA</span>
                   <span className="dna-legend-item"><span className="dna-dot ema50" /> 50 EMA</span>
+                  {chartPerspective === "macro" && <span className="dna-legend-item"><span className="dna-dot ema200" /> 200 EMA</span>}
                   <span className="dna-legend-item"><span className="dna-dot trendline" /> Valid Pivot Ray</span>
                   <span className="dna-legend-item"><span className="dna-dot stop" /> Stop Loss</span>
                   <span className="dna-legend-item"><span className="dna-dot target" /> Target</span>
                 </div>
               ) : (
                 <div className="dna-snapshot-meta">
-                  <span>Institutional High-Res Render · 1–2 Mathematical Pivot Rays · Dark Mode</span>
+                  <span>{chartPerspective === "macro" ? "🌐 1-Year Structural History · Origin Swing Pivots · 200 EMA" : "🎯 4-Month Precision Setup · Active Candlesticks · Base Levels"}</span>
                 </div>
               )}
               <div className="dna-chart-click-hint">
@@ -721,26 +746,28 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                 )}
 
                 <DnaCandleSvgChart 
-                  candles={report.chart_candles}
+                  candles={chartPerspective === "macro" ? report.chart_candles : report.chart_candles.slice(-85)}
                   stopLoss={report.ui_report.trade_execution_card.stop_loss}
                   targetPrice={report.ui_report.trade_execution_card.target_1}
                   currentPrice={report.current_metrics.price}
                   trendlines={report.chart_directives?.trendlines}
                   onHoverCandle={setHoveredCandle}
+                  isMacro={chartPerspective === "macro"}
                 />
               </div>
             ) : (
               <div className="dna-analyst-image-container" onClick={() => setIsZoomOpen(true)}>
                 <img 
-                  src={report.chart_image_url?.startsWith("http") ? report.chart_image_url : `${getApiBaseUrl()}${report.chart_image_url || `/api/dna/chart/${report.symbol}`}`}
-                  alt={`${report.symbol} Analyst Snapshot Chart`}
+                  key={`${report.symbol}-${chartPerspective}`}
+                  src={`${getApiBaseUrl()}/api/dna/chart/${report.symbol}?view=${chartPerspective}`}
+                  alt={`${report.symbol} ${chartPerspective} Analyst Snapshot Chart`}
                   className="dna-analyst-img"
                   loading="eager"
                   onError={(e) => {
                     const target = e.currentTarget;
                     if (!target.dataset.retried) {
                       target.dataset.retried = "1";
-                      target.src = `/api/dna/chart/${report.symbol}`;
+                      target.src = `/api/dna/chart/${report.symbol}?view=${chartPerspective}`;
                     }
                   }}
                 />
@@ -768,6 +795,24 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                   </div>
 
                   <div className="dna-lightbox-actions">
+                    {/* Perspective Pill inside modal */}
+                    <div className="dna-chart-toggle-group mini perspective">
+                      <button 
+                        type="button"
+                        className={`dna-chart-toggle-btn ${chartPerspective === "tactical" ? "active" : ""}`}
+                        onClick={() => setChartPerspective("tactical")}
+                      >
+                        Tactical (4M)
+                      </button>
+                      <button 
+                        type="button"
+                        className={`dna-chart-toggle-btn ${chartPerspective === "macro" ? "active" : ""}`}
+                        onClick={() => setChartPerspective("macro")}
+                      >
+                        Macro (1Y)
+                      </button>
+                    </div>
+
                     {/* Zoom scale controls for Snapshot */}
                     {chartViewMode === "snapshot" && (
                       <div className="dna-zoom-controls">
@@ -797,8 +842,8 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                           <RotateCcw className="w-4 h-4" />
                         </button>
                         <a 
-                          href={report.chart_image_url?.startsWith("http") ? report.chart_image_url : `${getApiBaseUrl()}${report.chart_image_url || `/api/dna/chart/${report.symbol}`}`}
-                          download={`${report.symbol}_QuantSync_DNA_Chart.png`}
+                          href={`${getApiBaseUrl()}/api/dna/chart/${report.symbol}?view=${chartPerspective}`}
+                          download={`${report.symbol}_${chartPerspective}_QuantSync_Chart.png`}
                           className="dna-btn-icon" 
                           title="Download High-Res PNG"
                           target="_blank" 
@@ -843,8 +888,9 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                   {chartViewMode === "snapshot" ? (
                     <div className="dna-lightbox-img-wrap">
                       <img 
-                        src={report.chart_image_url?.startsWith("http") ? report.chart_image_url : `${getApiBaseUrl()}${report.chart_image_url || `/api/dna/chart/${report.symbol}`}`}
-                        alt={`${report.symbol} Fullscreen High-Res Chart`} 
+                        key={`lb-${report.symbol}-${chartPerspective}`}
+                        src={`${getApiBaseUrl()}/api/dna/chart/${report.symbol}?view=${chartPerspective}`}
+                        alt={`${report.symbol} Fullscreen ${chartPerspective} Chart`} 
                         className="dna-lightbox-img"
                         style={{ transform: `scale(${zoomScale})` }}
                       />
@@ -852,7 +898,7 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                   ) : (
                     <div className="dna-lightbox-svg-wrap">
                       <DnaCandleSvgChart 
-                        candles={report.chart_candles}
+                        candles={chartPerspective === "macro" ? report.chart_candles : report.chart_candles.slice(-85)}
                         stopLoss={report.ui_report.trade_execution_card.stop_loss}
                         targetPrice={report.ui_report.trade_execution_card.target_1}
                         currentPrice={report.current_metrics.price}
@@ -860,6 +906,7 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                         onHoverCandle={() => {}}
                         height={550}
                         width={1100}
+                        isMacro={chartPerspective === "macro"}
                       />
                     </div>
                   )}
@@ -868,6 +915,7 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                 {/* Lightbox Footer */}
                 <div className="dna-lightbox-footer">
                   <div className="dna-lb-footer-left">
+                    <span>Perspective: <strong>{chartPerspective === "macro" ? "Macro (1-Year)" : "Tactical (4-Month)"}</strong></span>
                     <span>Target 1: ₹{report.ui_report.trade_execution_card.target_1}</span>
                     <span>Stop Loss: ₹{report.ui_report.trade_execution_card.stop_loss}</span>
                     <span>Action: {report.ui_report.trade_execution_card.action}</span>
@@ -948,7 +996,8 @@ function DnaCandleSvgChart({
   trendlines,
   onHoverCandle,
   width = 800,
-  height = 300
+  height = 300,
+  isMacro = false
 }: { 
   candles: any[]; 
   stopLoss: number; 
@@ -958,12 +1007,13 @@ function DnaCandleSvgChart({
   onHoverCandle: (c: any) => void;
   width?: number;
   height?: number;
+  isMacro?: boolean;
 }) {
   if (!candles || candles.length === 0) {
     return <div className="p-4 text-center text-sm opacity-60">No candlestick data available.</div>;
   }
 
-  const padding = { top: 20, right: 65, bottom: 30, left: 15 };
+  const padding = { top: 22, right: 82, bottom: 28, left: 18 };
   const plotW = width - padding.left - padding.right;
   const plotH = height - padding.top - padding.bottom;
 
@@ -974,7 +1024,7 @@ function DnaCandleSvgChart({
   const priceRange = maxP - minP || 1;
 
   const getY = (price: number) => padding.top + plotH - ((price - minP) / priceRange) * plotH;
-  const candleW = Math.max(3, Math.min(10, (plotW / candles.length) * 0.7));
+  const candleW = Math.max(1.8, Math.min(10, (plotW / candles.length) * 0.7));
 
   // Generate SVG path for EMA 20 and EMA 50
   const ema20Points = candles
@@ -997,6 +1047,50 @@ function DnaCandleSvgChart({
     .filter(Boolean)
     .join(" ");
 
+  const ema200Points = isMacro
+    ? candles
+        .map((c, i) => {
+          if (!c.ema200) return null;
+          const x = padding.left + (i + 0.5) * (plotW / candles.length);
+          const y = getY(c.ema200);
+          return `${x},${y}`;
+        })
+        .filter(Boolean)
+        .join(" ")
+    : null;
+
+  // Vertical relaxation collision resolver for right-side price badges
+  const priceBadges: Array<{ id: string; label: string; origY: number; y: number; color: string; bg: string }> = [];
+  if (targetPrice > 0) {
+    const y = getY(targetPrice);
+    priceBadges.push({ id: "target", label: `T1 ₹${Math.round(targetPrice)}`, origY: y, y, color: "#10B981", bg: "rgba(16, 185, 129, 0.18)" });
+  }
+  if (currentPrice > 0) {
+    const y = getY(currentPrice);
+    priceBadges.push({ id: "cmp", label: `CMP ₹${Math.round(currentPrice)}`, origY: y, y, color: "#38BDF8", bg: "rgba(56, 189, 248, 0.18)" });
+  }
+  if (stopLoss > 0) {
+    const y = getY(stopLoss);
+    priceBadges.push({ id: "sl", label: `SL ₹${Math.round(stopLoss)}`, origY: y, y, color: "#EF4444", bg: "rgba(239, 68, 68, 0.18)" });
+  }
+
+  // Sort top-to-bottom by y coordinate
+  priceBadges.sort((a, b) => a.y - b.y);
+  const minGap = 16;
+  for (let i = 1; i < priceBadges.length; i++) {
+    if (priceBadges[i].y - priceBadges[i - 1].y < minGap) {
+      priceBadges[i].y = priceBadges[i - 1].y + minGap;
+    }
+  }
+  for (let i = priceBadges.length - 1; i >= 0; i--) {
+    if (priceBadges[i].y > height - padding.bottom - 2) {
+      priceBadges[i].y = height - padding.bottom - 2;
+      if (i > 0 && priceBadges[i].y - priceBadges[i - 1].y < minGap) {
+        priceBadges[i - 1].y = priceBadges[i].y - minGap;
+      }
+    }
+  }
+
   return (
     <svg 
       viewBox={`0 0 ${width} ${height}`} 
@@ -1004,13 +1098,13 @@ function DnaCandleSvgChart({
       onMouseLeave={() => onHoverCandle(null)}
     >
       {/* Background horizontal grid lines & price ticks */}
-      {[0.25, 0.5, 0.75].map((pct, i) => {
+      {[0.2, 0.4, 0.6, 0.8].map((pct, i) => {
         const y = padding.top + plotH * pct;
         const p = maxP - pct * priceRange;
         return (
           <g key={i}>
-            <line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke="var(--line-2)" strokeDasharray="3 3" />
-            <text x={width - padding.right + 5} y={y + 3.5} fill="var(--ink3)" fontSize="9" fontFamily="monospace">
+            <line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
+            <text x={width - padding.right + 6} y={y + 3.5} fill="var(--ink3)" fontSize="8.5" fontFamily="monospace">
               ₹{Math.round(p)}
             </text>
           </g>
@@ -1025,7 +1119,7 @@ function DnaCandleSvgChart({
           width={plotW * 0.25}
           height={Math.max(2, getY(currentPrice) - getY(targetPrice))}
           fill="#10B981"
-          fillOpacity="0.09"
+          fillOpacity="0.08"
           rx="3"
         />
       )}
@@ -1038,45 +1132,49 @@ function DnaCandleSvgChart({
           width={plotW * 0.25}
           height={Math.max(2, getY(stopLoss) - getY(currentPrice))}
           fill="#EF4444"
-          fillOpacity="0.08"
+          fillOpacity="0.07"
           rx="3"
         />
       )}
 
       {/* Target Price Horizontal Line */}
       {targetPrice > 0 && (
-        <g>
-          <line 
-            x1={padding.left} 
-            y1={getY(targetPrice)} 
-            x2={width - padding.right} 
-            y2={getY(targetPrice)} 
-            stroke="#10B981" 
-            strokeDasharray="4 4" 
-            strokeWidth="1.2" 
-          />
-          <text x={width - padding.right + 5} y={getY(targetPrice) + 3.5} fill="#10B981" fontSize="9" fontWeight="bold" fontFamily="monospace">
-            T1 ₹{Math.round(targetPrice)}
-          </text>
-        </g>
+        <line 
+          x1={padding.left} 
+          y1={getY(targetPrice)} 
+          x2={width - padding.right} 
+          y2={getY(targetPrice)} 
+          stroke="#10B981" 
+          strokeDasharray="4 4" 
+          strokeWidth="1.2" 
+        />
+      )}
+
+      {/* Current Price Line */}
+      {currentPrice > 0 && (
+        <line 
+          x1={padding.left} 
+          y1={getY(currentPrice)} 
+          x2={width - padding.right} 
+          y2={getY(currentPrice)} 
+          stroke="#38BDF8" 
+          strokeDasharray="2 3" 
+          strokeWidth="1" 
+          strokeOpacity="0.8"
+        />
       )}
 
       {/* Stop Loss Horizontal Line */}
       {stopLoss > 0 && (
-        <g>
-          <line 
-            x1={padding.left} 
-            y1={getY(stopLoss)} 
-            x2={width - padding.right} 
-            y2={getY(stopLoss)} 
-            stroke="#EF4444" 
-            strokeDasharray="4 4" 
-            strokeWidth="1.2" 
-          />
-          <text x={width - padding.right + 5} y={getY(stopLoss) + 3.5} fill="#EF4444" fontSize="9" fontWeight="bold" fontFamily="monospace">
-            SL ₹{Math.round(stopLoss)}
-          </text>
-        </g>
+        <line 
+          x1={padding.left} 
+          y1={getY(stopLoss)} 
+          x2={width - padding.right} 
+          y2={getY(stopLoss)} 
+          stroke="#EF4444" 
+          strokeDasharray="4 4" 
+          strokeWidth="1.2" 
+        />
       )}
 
       {/* Candlesticks */}
@@ -1107,7 +1205,7 @@ function DnaCandleSvgChart({
               width={candleW} 
               height={bodyH} 
               fill={color} 
-              rx="0.8"
+              rx="0.6"
             />
           </g>
         );
@@ -1135,7 +1233,18 @@ function DnaCandleSvgChart({
         />
       )}
 
-      {/* Strictly 1-2 Valid Diagonal Mathematical Trendlines */}
+      {/* EMA 200 line (Macro View) */}
+      {ema200Points && (
+        <polyline 
+          points={ema200Points} 
+          fill="none" 
+          stroke="#8B5CF6" 
+          strokeWidth="1.6" 
+          opacity="0.9" 
+        />
+      )}
+
+      {/* Strictly 1-2 Valid Diagonal Mathematical Trendlines with Midpoint Anti-Collision Badges */}
       {trendlines && trendlines.slice(0, 2).map((tl: any, i: number) => {
         if (!tl.p1 || !tl.p2 || !tl.p1.date || !tl.p2.date) return null;
         const dt1 = new Date(tl.p1.date).getTime();
@@ -1166,6 +1275,10 @@ function DnaCandleSvgChart({
         const y2 = getY(endPrice);
 
         const strokeColor = tl.color || (tl.type === 'support' ? '#10B981' : '#EF4444');
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+        const labelText = tl.label || (tl.type === 'support' ? 'Ascending Support' : 'Structural Resistance');
+        const pillW = Math.min(140, labelText.length * 5.8 + 14);
 
         return (
           <g key={`tl-${i}`} className="dna-svg-trendline">
@@ -1183,16 +1296,70 @@ function DnaCandleSvgChart({
               strokeWidth="1.8" 
               strokeDasharray={tl.type === 'resistance' ? '5 3' : 'none'}
             />
+            {/* Midpoint Pill Box — Completely avoids colliding with right price margin */}
+            <rect 
+              x={midX - pillW / 2}
+              y={midY - 8}
+              width={pillW}
+              height={15}
+              rx="4"
+              fill="#0B0E14"
+              stroke={strokeColor}
+              strokeWidth="1.1"
+              opacity="0.95"
+            />
             <text 
-              x={x2 - 8} 
-              y={Math.max(padding.top + 10, Math.min(height - padding.bottom - 5, y2 - 6))} 
+              x={midX} 
+              y={midY + 3} 
               fill={strokeColor} 
-              fontSize="8" 
+              fontSize="7.8" 
               fontWeight="bold" 
-              textAnchor="end"
+              textAnchor="middle"
               fontFamily="monospace"
             >
-              {tl.label || (tl.type === 'support' ? 'Ascending Support' : 'Structural Resistance')}
+              {labelText}
+            </text>
+          </g>
+        );
+      })}
+
+      {/* Collision-Free Right-Side Price Badges */}
+      {priceBadges.map((badge) => {
+        const isDisplaced = Math.abs(badge.y - badge.origY) > 2;
+        const badgeW = padding.right - 8;
+        return (
+          <g key={`badge-${badge.id}`} className="dna-price-badge">
+            {isDisplaced && (
+              <line 
+                x1={width - padding.right} 
+                y1={badge.origY} 
+                x2={width - padding.right + 4} 
+                y2={badge.y} 
+                stroke={badge.color} 
+                strokeWidth="1" 
+                strokeDasharray="2 2" 
+                opacity="0.6" 
+              />
+            )}
+            <rect 
+              x={width - padding.right + 4} 
+              y={badge.y - 7} 
+              width={badgeW} 
+              height={14} 
+              rx="3" 
+              fill="#0B0E14" 
+              stroke={badge.color} 
+              strokeWidth="1" 
+            />
+            <text 
+              x={width - padding.right + 8} 
+              y={badge.y + 3.5} 
+              fill={badge.color} 
+              fontSize="8.5" 
+              fontWeight="bold" 
+              fontFamily="monospace"
+            >
+              {badge.label}
             </text>
           </g>
         );

@@ -4215,9 +4215,20 @@ body::before{
 
 .dna-dot.ema20 { background: #3B82F6; }
 .dna-dot.ema50 { background: var(--gold); }
-.dna-dot.trendline { background: #8B5CF6; }
+.dna-dot.ema200 { background: #8B5CF6; }
+.dna-dot.trendline { background: #A78BFA; }
 .dna-dot.stop { background: var(--loss); }
 .dna-dot.target { background: var(--profit); }
+
+.dna-chart-toggle-group.perspective {
+  border-color: rgba(99, 102, 241, 0.25);
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.dna-chart-toggle-group.perspective .dna-chart-toggle-btn.active {
+  background: linear-gradient(135deg, #4F46E5, #6366F1);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+}
 
 .dna-chart-viewport {
   position: relative;

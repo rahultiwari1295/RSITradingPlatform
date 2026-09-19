@@ -14,7 +14,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing symbol parameter' });
   }
 
-  const targetUrl = `${VPS_HOST}/api/dna/chart/${encodeURIComponent(symbol)}`;
+  const view = ((req.query.view as string) || 'tactical').toLowerCase();
+  const targetUrl = `${VPS_HOST}/api/dna/chart/${encodeURIComponent(symbol)}?view=${encodeURIComponent(view)}`;
 
   try {
     const response = await fetch(targetUrl, {
