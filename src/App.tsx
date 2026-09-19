@@ -176,7 +176,7 @@ function mulberry32(a: number) {
   };
 }
 
-function sparkPath(seed: number, n: number, trend: number, width: number, height: number) {
+function getTerminalSparkPath(seed: number, n: number, trend: number, width: number, height: number) {
   const rnd = mulberry32(seed);
   let v = height / 2;
   const pts: number[] = [];
@@ -2063,12 +2063,12 @@ export default function App() {
     : (terminalData?.sparkline && terminalData.sparkline.length > 1)
       ? terminalData.sparkline
       : NAV_SERIES.slice(-40);
-  let sparkPath = "";
+  let heroNavSparkPath = "";
   if (spark.length > 1) {
     const mn = Math.min(...spark), mx = Math.max(...spark);
     const span = mx - mn || 1;
     const pts = spark.map((v, i) => `${(i / (spark.length - 1) * 110).toFixed(1)},${(20 - ((v - mn) / span) * 18).toFixed(1)}`);
-    sparkPath = `M${pts.join(" L")} L110 22 L0 22 Z`;
+    heroNavSparkPath = `M${pts.join(" L")} L110 22 L0 22 Z`;
   }
 
   const streakDays = terminalData?.streak?.current || 7;
@@ -2206,7 +2206,7 @@ export default function App() {
                 {TERMINAL_INDICES.map((idx) => {
                   const isUp = idx.p >= 0;
                   const arrow = isUp ? "▲" : "▼";
-                  const { d } = sparkPath(idx.seed, 28, idx.trend, 100, 18);
+                  const { d } = getTerminalSparkPath(idx.seed, 28, idx.trend, 100, 18);
                   const fillId = `spark-fill-${idx.seed}`;
                   const colorVar = isUp ? "var(--up)" : "var(--down)";
 
