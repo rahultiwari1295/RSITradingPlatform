@@ -3900,15 +3900,6 @@ export default function App() {
           Home
         </button>
         <button
-          className={`tab ${activeTab === "signals" ? "active" : ""}`}
-          onClick={() => setActiveTab("signals")}
-          data-tab="signals"
-        >
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.6" /><circle cx="12" cy="12" r="1" /></svg>
-          Signals
-          <span className="radar-ring" />
-        </button>
-        <button
           className={`tab ${activeTab === "dna" ? "active" : ""}`}
           onClick={() => setActiveTab("dna")}
           data-tab="dna"
@@ -3937,6 +3928,15 @@ export default function App() {
             background: "var(--accent, #D4AF37)",
             boxShadow: "0 0 6px var(--accent, #D4AF37)"
           }} />
+        </button>
+        <button
+          className={`tab ${activeTab === "signals" ? "active" : ""}`}
+          onClick={() => setActiveTab("signals")}
+          data-tab="signals"
+        >
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.6" /><circle cx="12" cy="12" r="1" /></svg>
+          Signals
+          <span className="radar-ring" />
         </button>
         <button
           className={`tab ${activeTab === "portfolio" ? "active" : ""}`}

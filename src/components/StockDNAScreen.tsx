@@ -127,6 +127,48 @@ export default function StockDNAScreen() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+const VPS_DEFAULT_BASE = "https://quantsync-api.duckdns.org:8000";
+
+function getApiBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    const envUrl = (import.meta as any).env?.VITE_VPS_API_URL;
+    if (envUrl) return envUrl;
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      return "";
+    }
+  }
+  return VPS_DEFAULT_BASE;
+}
+
+async function apiDnaFetch<T>(path: string): Promise<T> {
+  const base = getApiBaseUrl();
+  const url = `${base}${path}`;
+  try {
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (res.ok) {
+      return await res.json();
+    }
+    // Fallback: If primary failed, try alternative host
+    if (base) {
+      const fallbackRes = await fetch(path, { headers: { Accept: "application/json" } });
+      if (fallbackRes.ok) return await fallbackRes.json();
+    } else {
+      const vpsRes = await fetch(`${VPS_DEFAULT_BASE}${path}`, { headers: { Accept: "application/json" } });
+      if (vpsRes.ok) return await vpsRes.json();
+    }
+    throw new Error(`API returned HTTP ${res.status}`);
+  } catch (err: any) {
+    const altUrl = base ? path : `${VPS_DEFAULT_BASE}${path}`;
+    try {
+      const altRes = await fetch(altUrl, { headers: { Accept: "application/json" } });
+      if (altRes.ok) return await altRes.json();
+    } catch {
+      // Fallback network error
+    }
+    throw err;
+  }
+}
+
   // Debounced search
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -136,12 +178,9 @@ export default function StockDNAScreen() {
 
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/dna/search?q=${encodeURIComponent(searchQuery)}`);
-        if (res.ok) {
-          const data = await res.json();
-          setSuggestions(Array.isArray(data) ? data : []);
-          setIsDropdownOpen(true);
-        }
+        const data = await apiDnaFetch<any[]>(`/api/dna/search?q=${encodeURIComponent(searchQuery)}`);
+        setSuggestions(Array.isArray(data) ? data : []);
+        setIsDropdownOpen(true);
       } catch (err) {
         console.error("Search fetch error:", err);
       }
@@ -177,11 +216,7 @@ export default function StockDNAScreen() {
     }, 380);
 
     try {
-      const res = await fetch(`/api/dna/report/${encodeURIComponent(sym)}`);
-      if (!res.ok) {
-        throw new Error(`Failed to load DNA for ${sym} (HTTP ${res.status})`);
-      }
-      const data: StockDnaReport = await res.json();
+      const data: StockDnaReport = await apiDnaFetch<StockDnaReport>(`/api/dna/report/${encodeURIComponent(sym)}`);
       
       // Allow user to see the scanning steps complete smoothly
       setTimeout(() => {
@@ -253,7 +288,7 @@ Decoded by QuantSync Algorithmic Terminal: https://quantsync.in/dna/${report.sym
               ref={searchInputRef}
               type="text"
               className="dna-search-input"
-              placeholder="Search by ticker or name (e.g. TATA, RELIANCE, HDFC)..."
+              placeholder="Search stock (e.g. TATA)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => {
@@ -269,6 +304,7 @@ Decoded by QuantSync Algorithmic Terminal: https://quantsync.in/dna/${report.sym
               <button 
                 className="dna-clear-btn" 
                 onClick={() => { setSearchQuery(""); setSuggestions([]); }}
+                aria-label="Clear search"
               >
                 ✕
               </button>
@@ -279,8 +315,9 @@ Decoded by QuantSync Algorithmic Terminal: https://quantsync.in/dna/${report.sym
                 if (searchQuery.trim()) fetchStockDna(searchQuery);
               }}
             >
-              <Dna className="w-4 h-4 mr-1.5" />
-              Show DNA
+              <Dna className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
+              <span className="dna-btn-text">Show DNA</span>
+              <span className="dna-btn-text-mobile">DNA</span>
             </button>
           </div>
 
@@ -742,8 +779,8 @@ function DnaCandleSvgChart({
         const p = maxP - pct * priceRange;
         return (
           <g key={i}>
-            <line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
-            <text x={width - padding.right + 5} y={y + 3.5} fill="rgba(255,255,255,0.4)" fontSize="9" fontFamily="monospace">
+            <line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke="var(--line-2)" strokeDasharray="3 3" />
+            <text x={width - padding.right + 5} y={y + 3.5} fill="var(--ink3)" fontSize="9" fontFamily="monospace">
               ₹{Math.round(p)}
             </text>
           </g>

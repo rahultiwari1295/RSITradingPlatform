@@ -358,6 +358,7 @@ async function startServer() {
       }
       if (fallbackData !== undefined) {
         let data = typeof fallbackData === "function" ? fallbackData(req) : fallbackData;
+        if (data instanceof Promise) data = await data;
         if (transform) data = transform(data);
         return res.json(data);
       }
@@ -366,6 +367,7 @@ async function startServer() {
       console.error(`VPS forwarding error for ${reqPath}:`, err.message);
       if (fallbackData !== undefined) {
         let data = typeof fallbackData === "function" ? fallbackData(req) : fallbackData;
+        if (data instanceof Promise) data = await data;
         if (transform) data = transform(data);
         return res.json(data);
       }
