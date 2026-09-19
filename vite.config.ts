@@ -12,5 +12,12 @@ export default defineConfig({
   },
   server: {
     hmr: process.env.DISABLE_HMR !== 'true',
+    proxy: {
+      '/api': {
+        target: process.env.VITE_VPS_API_URL || 'https://quantsync-api.duckdns.org:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 });

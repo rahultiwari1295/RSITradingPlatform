@@ -769,7 +769,7 @@ class FeedsEngine {
         totalStocks: 18,
         pe: 24.5,
         pb: 3.2,
-        trend: changeP >= 2.0 ? "VERY_BULLISH" : changeP > 0 ? "BULLISH" : changeP <= -2.0 ? "VERY_BEARISH" : "BEARISH",
+        trend: changeP >= 2.0 ? "VERY_BULLISH" : changeP > 0 ? "BULLISH" : changeP <= -2.0 ? "BEARISH" : "NEUTRAL",
         topGainers: [],
         topDraggers: [],
         sparkline: [changeP * 0.3, changeP * 0.6, changeP * 0.8, changeP],
@@ -788,7 +788,7 @@ class FeedsEngine {
       let sentiment: MarketInsightItem["sentiment"] = "BULLISH";
 
       if (lbl.includes("ORDER")) cat = "ORDER_WIN";
-      else if (lbl.includes("FUNDRAISE") || lbl.includes("QIP")) cat = "FUNDRAISE";
+      else if (lbl.includes("FUNDRAISE") || lbl.includes("QIP")) cat = "GENERAL";
       else if (lbl.includes("EXPANSION") || lbl.includes("JV")) cat = "EXPANSION";
       else if (lbl.includes("BUY")) cat = "UPGRADE";
       else if (lbl.includes("DIVEST") || lbl.includes("DROP") || lbl.includes("DOWN")) sentiment = "CAUTION";

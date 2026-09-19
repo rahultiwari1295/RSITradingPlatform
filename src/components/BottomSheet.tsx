@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { formatINR } from "../lib/utils";
 import TrendlyneWidgets from "./TrendlyneWidgets";
+import TradingViewStockDetail from "./TradingViewStockDetail";
 
 export interface BottomSheetItem {
   symbol: string;
@@ -86,7 +87,7 @@ interface BottomSheetProps {
   onNext?: () => void;
 }
 
-type TabType = "quant" | "trendlyne";
+type TabType = "tradingview" | "quant" | "trendlyne";
 
 export default function BottomSheet({
   isOpen,
@@ -100,7 +101,7 @@ export default function BottomSheet({
   onNext
 }: BottomSheetProps) {
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>("quant");
+  const [activeTab, setActiveTab] = useState<TabType>("tradingview");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const leftPanelRef = useRef<HTMLDivElement>(null);
 
@@ -661,6 +662,19 @@ export default function BottomSheet({
               <div className="flex items-center gap-1 p-0.5 rounded-xl bg-slate-100 dark:bg-white/[0.05] border border-slate-200/60 dark:border-white/[0.04]">
                 <button
                   type="button"
+                  onClick={() => setActiveTab("tradingview")}
+                  className={`flex items-center gap-1.5 py-1.5 px-3.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "tradingview"
+                      ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-extrabold"
+                      : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white"
+                  }`}
+                >
+                  <LineChart className="w-3.5 h-3.5 text-blue-500" />
+                  <span>TradingView AI</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setActiveTab("quant")}
                   className={`flex items-center gap-1.5 py-1.5 px-3.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     activeTab === "quant"
@@ -688,12 +702,35 @@ export default function BottomSheet({
 
               {/* Sub-label indicator */}
               <span className="text-[11px] font-mono text-slate-400 font-semibold hidden sm:inline">
-                {activeTab === "quant" ? "Algorithmic Risk/Reward & Models" : "Financial, Technical & SWOT Intelligence"}
+                {activeTab === "tradingview"
+                  ? "TradingView TA, Profile & Fundamentals"
+                  : activeTab === "quant"
+                  ? "Algorithmic Risk/Reward & Models"
+                  : "Financial, Technical & SWOT Intelligence"}
               </span>
             </div>
 
             {/* Right Panel Tab Contents */}
             <div className="flex-1 lg:overflow-y-auto relative min-h-0">
+              {/* TAB 0: TRADINGVIEW INTELLIGENCE */}
+              {activeTab === "tradingview" && (
+                <div className="p-4 sm:p-5 space-y-4 animate-fade-in">
+                  <TradingViewStockDetail
+                    trade={{
+                      sym: item.symbol,
+                      entry: entryPrice,
+                      now: currentPrice,
+                      target: targetPrice,
+                      stop: stopLoss,
+                      stars: stars,
+                      tag: item.strategyName || item.sector || "Institutional Setup",
+                      status: item.action || "IN TRADE",
+                    }}
+                    theme={document.documentElement.classList.contains("dark") ? "dark" : "light"}
+                    onOpenChart={onOpenChart}
+                  />
+                </div>
+              )}
               
               {/* TAB 1: QUANT FACTOR MATRIX */}
               {activeTab === "quant" && (

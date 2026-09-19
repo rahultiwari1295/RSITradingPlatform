@@ -28,6 +28,7 @@ interface PortfolioViewProps {
   onDeleteCompletedTrade?: (tradeIdOrIndex: string | number) => void;
   onDeleteTrade?: (tradeId: string) => void;
   onSelectStock?: (stock: any) => void;
+  onBack?: () => void;
 }
 
 const avatarGradients = [
@@ -51,7 +52,8 @@ export default function PortfolioView({
   onOpenChart,
   onDeleteCompletedTrade,
   onDeleteTrade,
-  onSelectStock
+  onSelectStock,
+  onBack,
 }: PortfolioViewProps) {
   const [activeTab, setActiveTab] = useState<"active" | "history">("active");
   const [selectedSheetItem, setSelectedSheetItem] = useState<BottomSheetItem | null>(null);
@@ -108,7 +110,33 @@ export default function PortfolioView({
   };
 
   return (
-    <div className="space-y-5 animate-in fade-in duration-300">
+    <div className="space-y-4 animate-in fade-in duration-300">
+      {/* Back Button */}
+      {onBack && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <button
+            onClick={onBack}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              background: "var(--s2)",
+              border: "1px solid var(--line)",
+              color: "var(--accent)",
+              padding: "6px 14px",
+              borderRadius: 10,
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            ← Back to Home
+          </button>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ink2)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+            Paper Portfolio Desk
+          </span>
+        </div>
+      )}
       
       {/* 1. Hero Card */}
       <HeroCard

@@ -138,6 +138,56 @@ export function getSignalStatus(
   };
 }
 
+export interface ActionTagInfo {
+  label: "BUY" | "MISSED" | "SKIPPED" | "LATE";
+  bg: string;
+  color: string;
+  border: string;
+  tooltip: string;
+}
+
+export function getActionTagInfo(
+  mode: "active" | "closed",
+  holdingDays: number = 1,
+  returnPct: number = 0
+): ActionTagInfo {
+  const status = getSignalStatus(mode, holdingDays, returnPct);
+  if (status.key === "missed") {
+    return {
+      label: "MISSED",
+      bg: "rgba(168, 85, 247, 0.12)",
+      color: "#A855F7",
+      border: "rgba(168, 85, 247, 0.35)",
+      tooltip: "Price surged past optimal buy range (+7%+). Missed entry.",
+    };
+  }
+  if (status.key === "skip") {
+    return {
+      label: "SKIPPED",
+      bg: "rgba(148, 163, 184, 0.14)",
+      color: "#94A3B8",
+      border: "rgba(148, 163, 184, 0.35)",
+      tooltip: "Signal stagnant (6+ days) or testing stop loss. Skipped.",
+    };
+  }
+  if (status.key === "late_buy") {
+    return {
+      label: "LATE",
+      bg: "rgba(245, 158, 11, 0.12)",
+      color: "#F59E0B",
+      border: "rgba(245, 158, 11, 0.35)",
+      tooltip: "Elevated risk of pullback (4+ days or +5% to +7%). Late entry.",
+    };
+  }
+  return {
+    label: "BUY",
+    bg: "rgba(16, 185, 129, 0.12)",
+    color: "#10B981",
+    border: "rgba(16, 185, 129, 0.35)",
+    tooltip: "Active institutional breakout within ideal entry territory.",
+  };
+}
+
 export const SIGNAL_STATUS_DECISION_TABLE = [
   {
     status: "BEST",

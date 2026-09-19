@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import HeroCard from "../components/HeroCard";
 import BottomSheet, { BottomSheetItem } from "../components/BottomSheet";
+import InstitutionalPatternChart from "../components/charts/InstitutionalPatternChart";
 import { InTradeTrade } from "../types";
 import { formatINR } from "../lib/utils";
 
@@ -236,6 +237,26 @@ export default function SignalsView({
           const isUp = t.roi >= 0;
           const isBought = portfolioSymbols.includes(t.symbol);
           const gradClass = avatarGradients[idx % avatarGradients.length];
+          const daysHeld = t.days || 1;
+          const currentPrice = Number(t.currentPrice || t.entryPrice || 100);
+          const entryPrice = Number(t.entryPrice || currentPrice);
+          const stopPrice = Number(t.stopLoss || t.stop || entryPrice * 0.92);
+          const targetPrice = Number(t.targetPrice || t.target || entryPrice * 1.15);
+          const pivotPrice = Number(t.pivot || entryPrice * 0.98);
+          const baseFloor = Number(t.baseFloor || stopPrice * 0.94);
+
+          // Status tag
+          let tagLabel = "BUY", tagBg = "rgba(16, 185, 129, 0.12)", tagColor = "#10B981", tagBorder = "rgba(16, 185, 129, 0.35)";
+          if (t.roi >= 7.0) {
+            tagLabel = "MISSED"; tagBg = "rgba(168, 85, 247, 0.12)"; tagColor = "#A855F7"; tagBorder = "rgba(168, 85, 247, 0.35)";
+          } else if ((daysHeld >= 6 && t.roi < 2.0) || t.roi <= -3.5) {
+            tagLabel = "SKIPPED"; tagBg = "rgba(148, 163, 184, 0.14)"; tagColor = "#94A3B8"; tagBorder = "rgba(148, 163, 184, 0.35)";
+          } else if ((daysHeld >= 4 && t.roi >= 3.0) || t.roi >= 5.0) {
+            tagLabel = "LATE"; tagBg = "rgba(245, 158, 11, 0.12)"; tagColor = "#F59E0B"; tagBorder = "rgba(245, 158, 11, 0.35)";
+          }
+
+          const patternName = t.strategyName || t.patternName || "Stage 2 Base 📐";
+          const cleanPattern = patternName.replace(/📐|🚀|📦/g, "").trim();
 
           return (
             <div
@@ -244,57 +265,109 @@ export default function SignalsView({
               className="rounded-[20px] p-4 bg-white dark:bg-[#14161E] border border-[#ECEEF2] dark:border-white/[0.08] qs-card-shadow qs-card-hover transition-all cursor-pointer"
             >
               {/* Header row */}
-              <div className="flex items-center justify-between gap-3 mb-2.5">
-                <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="flex items-start gap-3 min-w-0">
                   <div className={`w-10 h-10 rounded-[12px] bg-gradient-to-br ${gradClass} text-white flex items-center justify-center font-bold text-[13px] shadow-xs shrink-0 font-mono`}>
                     {t.symbol?.slice(0, 2) || "ST"}
                   </div>
 
                   <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-[15.5px] text-[#14151A] dark:text-white tracking-tight truncate">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-extrabold text-[15px] text-[#14151A] dark:text-white tracking-tight">
                         {t.symbol}
                       </span>
+                      <span className="text-[#F59E0B] text-xs font-bold tracking-tighter">
+                        ★★★★★
+                      </span>
+                      <span
+                        style={{
+                          background: tagBg,
+                          color: tagColor,
+                          border: `1px solid ${tagBorder}`,
+                        }}
+                        className="text-[9.5px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                      >
+                        {tagLabel}
+                      </span>
                       {isBought && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-[#ECFDF3] text-[#16A34A] border border-[#86EFAC]/40 font-mono">
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#ECFDF3] text-[#16A34A] border border-[#86EFAC]/40 font-mono">
                           HELD
                         </span>
                       )}
                     </div>
-                    <div className="text-[12px] text-[#56586A] dark:text-[#8B8D98] font-medium truncate mt-0.5">
-                      {t.strategyName || "Breakout"} · Entered {t.entryDate || "Active"}
+                    <div className="text-[10.5px] text-indigo-600 dark:text-indigo-400 font-semibold truncate mt-0.5">
+                      {patternName}
                     </div>
                   </div>
                 </div>
 
-                <div className="text-right shrink-0">
-                  <div className="text-[15px] font-extrabold text-[#14151A] dark:text-white font-mono tabular">
-                    {formatINR(t.currentPrice || t.entryPrice || 0)}
-                  </div>
-                  <div className={`text-[12px] font-bold font-mono tabular ${isUp ? "text-[#16A34A] dark:text-emerald-400" : "text-[#F04438] dark:text-rose-400"}`}>
+                <div className="flex items-center gap-2.5 shrink-0">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenBuyModal(t.symbol, currentPrice, patternName);
+                    }}
+                    className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#F1F2F5] dark:bg-white/[0.08] text-[#6366F1] dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 transition-colors"
+                  >
+                    + ADD
+                  </button>
+                  <div className={`text-[14px] font-extrabold font-mono tabular ${isUp ? "text-[#16A34A] dark:text-emerald-400" : "text-[#F04438] dark:text-rose-400"}`}>
                     {isUp ? "+" : ""}{t.roi.toFixed(2)}%
                   </div>
                 </div>
               </div>
 
-              {/* Trajectory Growth Bar */}
-              <div className="bg-[#F1F2F5] dark:bg-white/[0.04] rounded-[12px] p-2.5 mb-2.5">
-                <div className="flex justify-between items-center text-[10.5px] font-semibold text-[#8B8D98] font-mono mb-1">
-                  <span>ENTRY {formatINR(t.entryPrice || 0)}</span>
-                  <span>{t.days}d in trade</span>
-                  <span className={isUp ? "text-[#16A34A] font-bold" : "text-[#F04438] font-bold"}>
-                    {isUp ? "TARGET RUN" : "IN DRAWDOWN"}
-                  </span>
+              {/* Clean Signal Date line */}
+              <div className="text-[11px] text-[#8B8D98] mb-3">
+                <span>Signal Date : </span>
+                <span className="font-semibold text-[#14151A] dark:text-white font-mono">
+                  {t.entryDate || "2026-09-18"}
+                </span>
+                <span> ( {daysHeld} {daysHeld === 1 ? "Day" : "Days"} )</span>
+              </div>
+
+              {/* Institutional Breakout Pattern Chart */}
+              <div className="mb-3">
+                <InstitutionalPatternChart
+                  symbol={t.symbol}
+                  name={t.name}
+                  sector={t.sector || "Diversified"}
+                  stage={patternName}
+                  patternName={cleanPattern}
+                  breakoutDate={t.entryDate || "2026-09-18"}
+                  pivotPrice={pivotPrice}
+                  entryPrice={entryPrice}
+                  stopPrice={stopPrice}
+                  targetPrice={targetPrice}
+                  currentPrice={currentPrice}
+                  baseFloor={baseFloor}
+                  baseLengthStr={t.baseWeeks || "98.4 wks"}
+                  handleLengthStr={patternName.includes("Base") || patternName.includes("Cup") ? "54.4 wks" : undefined}
+                  breakoutVolumeMultiplier={Number(t.breakoutVol || 4.85)}
+                  closeInRange={0.82}
+                  rsRating={Number(t.rsRating || t.compositeScore || 91)}
+                  seed={t.seed || (idx * 37 + 101)}
+                  showOverviewGrid={true}
+                />
+              </div>
+
+              {/* 4 Small Boxes in sequence: Stop | Entry | Current | Target */}
+              <div className="grid grid-cols-4 gap-2 mb-3">
+                <div className="bg-[#F8F9FB] dark:bg-white/[0.03] rounded-xl p-2 text-center border border-[#ECEEF2] dark:border-white/[0.05]">
+                  <div className="text-[10px] uppercase font-bold text-[#8B8D98]">Stop</div>
+                  <div className="text-xs font-bold text-rose-500 font-mono mt-0.5">{formatINR(stopPrice)}</div>
                 </div>
-                <div className="h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      isUp ? "bg-[#16A34A]" : "bg-[#F04438]"
-                    }`}
-                    style={{
-                      width: `${Math.min(100, Math.max(12, 50 + t.roi * 2.5))}%`
-                    }}
-                  />
+                <div className="bg-[#F8F9FB] dark:bg-white/[0.03] rounded-xl p-2 text-center border border-[#ECEEF2] dark:border-white/[0.05]">
+                  <div className="text-[10px] uppercase font-bold text-[#8B8D98]">Entry</div>
+                  <div className="text-xs font-bold text-[#14151A] dark:text-white font-mono mt-0.5">{formatINR(entryPrice)}</div>
+                </div>
+                <div className="bg-[#F8F9FB] dark:bg-white/[0.03] rounded-xl p-2 text-center border border-[#ECEEF2] dark:border-white/[0.05]">
+                  <div className="text-[10px] uppercase font-bold text-[#8B8D98]">Current</div>
+                  <div className="text-xs font-bold text-[#6366F1] font-mono mt-0.5">{formatINR(currentPrice)}</div>
+                </div>
+                <div className="bg-[#F8F9FB] dark:bg-white/[0.03] rounded-xl p-2 text-center border border-[#ECEEF2] dark:border-white/[0.05]">
+                  <div className="text-[10px] uppercase font-bold text-[#8B8D98]">Target</div>
+                  <div className="text-xs font-bold text-emerald-500 font-mono mt-0.5">{formatINR(targetPrice)}</div>
                 </div>
               </div>
 
