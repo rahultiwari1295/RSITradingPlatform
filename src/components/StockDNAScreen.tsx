@@ -110,8 +110,6 @@ export default function StockDNAScreen() {
   const [scanProgress, setScanProgress] = useState(0);
   const [copyToast, setCopyToast] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [hoveredCandle, setHoveredCandle] = useState<any | null>(null);
-  const [chartViewMode, setChartViewMode] = useState<"interactive" | "snapshot">("interactive");
   const [chartPerspective, setChartPerspective] = useState<"tactical" | "macro">("tactical");
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
@@ -645,17 +643,16 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
             </div>
           </div>
 
-          {/* Dual-Mode Chart Section (Interactive SVG + Analyst Snapshot Image) */}
+          {/* Institutional Technical Snapshot Chart (Tactical 4M vs Macro 1Y) */}
           <div className="dna-card dna-chart-card">
             <div className="dna-section-header">
               <div className="dna-sec-title-box">
-                <BarChart2 className="w-4 h-4 text-accent" />
-                <h3>Algorithmic Price Geometry & Trendlines</h3>
+                <ImageIcon className="w-4 h-4 text-accent" />
+                <h3>Institutional Technical Chart</h3>
               </div>
 
-              {/* Perspective (Tactical vs Macro) + View Mode + Fullscreen Zoom */}
+              {/* Perspective (Tactical vs Macro) + Open Fullscreen Image */}
               <div className="dna-chart-header-actions">
-                {/* Perspective Pill */}
                 <div className="dna-chart-toggle-group perspective">
                   <button 
                     type="button"
@@ -675,26 +672,6 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                   </button>
                 </div>
 
-                {/* View Mode Pill */}
-                <div className="dna-chart-toggle-group">
-                  <button 
-                    type="button"
-                    className={`dna-chart-toggle-btn ${chartViewMode === "interactive" ? "active" : ""}`}
-                    onClick={() => setChartViewMode("interactive")}
-                  >
-                    <BarChart2 className="w-3.5 h-3.5 mr-1.5" />
-                    Interactive
-                  </button>
-                  <button 
-                    type="button"
-                    className={`dna-chart-toggle-btn ${chartViewMode === "snapshot" ? "active" : ""}`}
-                    onClick={() => setChartViewMode("snapshot")}
-                  >
-                    <ImageIcon className="w-3.5 h-3.5 mr-1.5" />
-                    Snapshot
-                  </button>
-                </div>
-
                 <button 
                   type="button"
                   className="dna-zoom-expand-btn"
@@ -702,226 +679,190 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                     setZoomScale(1);
                     setIsZoomOpen(true);
                   }}
-                  title="Click to Zoom Fullscreen"
+                  title="Open Fullscreen Image"
                 >
                   <Maximize2 className="w-3.5 h-3.5 mr-1.5" />
-                  <span>Zoom</span>
+                  <span>Open Image</span>
                 </button>
               </div>
             </div>
 
-            {/* Subheader Legend / Status */}
+            {/* Subheader Status */}
             <div className="dna-chart-subbar">
-              {chartViewMode === "interactive" ? (
-                <div className="dna-chart-legend">
-                  <span className="dna-legend-item"><span className="dna-dot ema20" /> 20 EMA</span>
-                  <span className="dna-legend-item"><span className="dna-dot ema50" /> 50 EMA</span>
-                  {chartPerspective === "macro" && <span className="dna-legend-item"><span className="dna-dot ema200" /> 200 EMA</span>}
-                  <span className="dna-legend-item"><span className="dna-dot trendline" /> Valid Pivot Ray</span>
-                  <span className="dna-legend-item"><span className="dna-dot stop" /> Stop Loss</span>
-                  <span className="dna-legend-item"><span className="dna-dot target" /> Target</span>
-                </div>
-              ) : (
-                <div className="dna-snapshot-meta">
-                  <span>{chartPerspective === "macro" ? "🌐 1-Year Structural History · Origin Swing Pivots · 200 EMA" : "🎯 4-Month Precision Setup · Active Candlesticks · Base Levels"}</span>
-                </div>
-              )}
+              <div className="dna-snapshot-meta">
+                <span>{chartPerspective === "macro" ? "🌐 1-Year Structural History · Origin Swing Pivots · 200 EMA" : "🎯 4-Month Precision Setup · Active Candlesticks · Base Levels"}</span>
+              </div>
               <div className="dna-chart-click-hint">
-                <span>💡 Click chart to zoom fullscreen</span>
+                <span>💡 Click image to open fullscreen & zoom</span>
               </div>
             </div>
 
-            {/* View Body */}
-            {chartViewMode === "interactive" ? (
-              <div className="dna-chart-viewport" onClick={() => setIsZoomOpen(true)}>
-                {hoveredCandle && (
-                  <div className="dna-chart-tooltip">
-                    <span><strong>Date:</strong> {hoveredCandle.time}</span>
-                    <span><strong>O:</strong> ₹{hoveredCandle.open}</span>
-                    <span><strong>H:</strong> ₹{hoveredCandle.high}</span>
-                    <span><strong>L:</strong> ₹{hoveredCandle.low}</span>
-                    <span><strong>C:</strong> ₹{hoveredCandle.close}</span>
-                    <span><strong>Vol:</strong> {hoveredCandle.volume.toLocaleString("en-IN")}</span>
-                  </div>
-                )}
-
-                <DnaCandleSvgChart 
-                  candles={chartPerspective === "macro" ? report.chart_candles : report.chart_candles.slice(-85)}
-                  stopLoss={report.ui_report.trade_execution_card.stop_loss}
-                  targetPrice={report.ui_report.trade_execution_card.target_1}
-                  currentPrice={report.current_metrics.price}
-                  trendlines={report.chart_directives?.trendlines}
-                  onHoverCandle={setHoveredCandle}
-                  isMacro={chartPerspective === "macro"}
-                />
-              </div>
-            ) : (
-              <div className="dna-analyst-image-container" onClick={() => setIsZoomOpen(true)}>
-                <img 
-                  key={`${report.symbol}-${chartPerspective}`}
-                  src={`${getApiBaseUrl()}/api/dna/chart/${report.symbol}?view=${chartPerspective}`}
-                  alt={`${report.symbol} ${chartPerspective} Analyst Snapshot Chart`}
-                  className="dna-analyst-img"
-                  loading="eager"
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    if (!target.dataset.retried) {
-                      target.dataset.retried = "1";
-                      target.src = `/api/dna/chart/${report.symbol}?view=${chartPerspective}`;
-                    }
-                  }}
-                />
-                <div className="dna-analyst-overlay">
-                  <div className="dna-analyst-badge">
-                    <Maximize2 className="w-4 h-4 mr-2 text-accent" />
-                    Click to Zoom Fullscreen
-                  </div>
+            {/* Snapshot Image Display */}
+            <div 
+              className="dna-analyst-image-container" 
+              onClick={() => {
+                setZoomScale(1);
+                setIsZoomOpen(true);
+              }}
+              title="Click to open image viewer"
+            >
+              <img 
+                key={`${report.symbol}-${chartPerspective}`}
+                src={`${getApiBaseUrl()}/api/dna/chart/${report.symbol}?view=${chartPerspective}`}
+                alt={`${report.symbol} ${chartPerspective} Analyst Snapshot Chart`}
+                className="dna-analyst-img"
+                loading="eager"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (!target.dataset.retried) {
+                    target.dataset.retried = "1";
+                    target.src = `/api/dna/chart/${report.symbol}?view=${chartPerspective}`;
+                  }
+                }}
+              />
+              <div className="dna-analyst-overlay">
+                <div className="dna-analyst-badge">
+                  <Maximize2 className="w-4 h-4 mr-2 text-accent" />
+                  Click to View & Zoom
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Fullscreen Click-to-Zoom Lightbox Modal */}
+          {/* Fullscreen Click-to-Zoom Lightbox Modal (Clean Native Image Viewer) */}
           {isZoomOpen && (
-            <div className="dna-lightbox-overlay" onClick={() => setIsZoomOpen(false)}>
-              <div className="dna-lightbox-content" onClick={(e) => e.stopPropagation()}>
+            <div 
+              className="dna-lightbox-overlay" 
+              onClick={() => setIsZoomOpen(false)}
+            >
+              <div 
+                className="dna-lightbox-content" 
+                onClick={(e) => e.stopPropagation()}
+                onWheel={(e) => {
+                  e.preventDefault();
+                  const delta = e.deltaY < 0 ? 0.15 : -0.15;
+                  setZoomScale(prev => Math.min(3, Math.max(0.6, Math.round((prev + delta) * 100) / 100)));
+                }}
+              >
                 {/* Lightbox Top Header */}
                 <div className="dna-lightbox-header">
                   <div className="dna-lightbox-title">
                     <span className="dna-lb-sym">{report.symbol}</span>
                     <span className="dna-lb-name">{report.company_name}</span>
                     <span className="dna-lb-pattern">{report.ui_report.pro_analysis.chart_pattern_detected}</span>
-                    <span className="dna-lb-score">Health {report.ui_report.dna_health_score}/100</span>
                   </div>
 
                   <div className="dna-lightbox-actions">
-                    {/* Perspective Pill inside modal */}
+                    {/* Perspective Switcher inside image viewer */}
                     <div className="dna-chart-toggle-group mini perspective">
                       <button 
                         type="button"
                         className={`dna-chart-toggle-btn ${chartPerspective === "tactical" ? "active" : ""}`}
                         onClick={() => setChartPerspective("tactical")}
+                        title="4-Month Tactical Setup"
                       >
-                        Tactical (4M)
+                        🎯 Tactical (4M)
                       </button>
                       <button 
                         type="button"
                         className={`dna-chart-toggle-btn ${chartPerspective === "macro" ? "active" : ""}`}
                         onClick={() => setChartPerspective("macro")}
+                        title="1-Year Macro Origin View"
                       >
-                        Macro (1Y)
+                        🌐 Macro (1Y)
                       </button>
                     </div>
 
-                    {/* Zoom scale controls for Snapshot */}
-                    {chartViewMode === "snapshot" && (
-                      <div className="dna-zoom-controls">
-                        <button 
-                          type="button"
-                          className="dna-btn-icon" 
-                          onClick={() => setZoomScale(prev => Math.max(0.6, prev - 0.2))}
-                          title="Zoom Out"
-                        >
-                          <ZoomOut className="w-4 h-4" />
-                        </button>
-                        <span className="dna-zoom-val">{Math.round(zoomScale * 100)}%</span>
-                        <button 
-                          type="button"
-                          className="dna-btn-icon" 
-                          onClick={() => setZoomScale(prev => Math.min(2.5, prev + 0.2))}
-                          title="Zoom In"
-                        >
-                          <ZoomIn className="w-4 h-4" />
-                        </button>
-                        <button 
-                          type="button"
-                          className="dna-btn-icon" 
-                          onClick={() => setZoomScale(1)}
-                          title="Reset Zoom"
-                        >
-                          <RotateCcw className="w-4 h-4" />
-                        </button>
-                        <a 
-                          href={`${getApiBaseUrl()}/api/dna/chart/${report.symbol}?view=${chartPerspective}`}
-                          download={`${report.symbol}_${chartPerspective}_QuantSync_Chart.png`}
-                          className="dna-btn-icon" 
-                          title="Download High-Res PNG"
-                          target="_blank" 
-                          rel="noreferrer"
-                        >
-                          <Download className="w-4 h-4" />
-                        </a>
-                      </div>
-                    )}
-
-                    {/* View mode toggle inside lightbox */}
-                    <div className="dna-chart-toggle-group mini">
+                    {/* Clean Zoom Controls */}
+                    <div className="dna-zoom-controls">
                       <button 
                         type="button"
-                        className={`dna-chart-toggle-btn ${chartViewMode === "interactive" ? "active" : ""}`}
-                        onClick={() => setChartViewMode("interactive")}
+                        className="dna-btn-icon" 
+                        onClick={() => setZoomScale(prev => Math.max(0.6, Math.round((prev - 0.2) * 10) / 10))}
+                        title="Zoom Out (-)"
                       >
-                        Interactive
+                        <ZoomOut className="w-4 h-4" />
+                      </button>
+                      <span className="dna-zoom-val">{Math.round(zoomScale * 100)}%</span>
+                      <button 
+                        type="button"
+                        className="dna-btn-icon" 
+                        onClick={() => setZoomScale(prev => Math.min(3.0, Math.round((prev + 0.2) * 10) / 10))}
+                        title="Zoom In (+)"
+                      >
+                        <ZoomIn className="w-4 h-4" />
                       </button>
                       <button 
                         type="button"
-                        className={`dna-chart-toggle-btn ${chartViewMode === "snapshot" ? "active" : ""}`}
-                        onClick={() => setChartViewMode("snapshot")}
+                        className="dna-btn-icon" 
+                        onClick={() => setZoomScale(1)}
+                        title="Reset Zoom (100%)"
                       >
-                        Snapshot
+                        <RotateCcw className="w-4 h-4" />
                       </button>
+                      <a 
+                        href={`${getApiBaseUrl()}/api/dna/chart/${report.symbol}?view=${chartPerspective}`}
+                        download={`${report.symbol}_${chartPerspective}_QuantSync_Chart.png`}
+                        className="dna-btn-icon" 
+                        title="Download High-Res PNG"
+                        target="_blank" 
+                        rel="noreferrer"
+                      >
+                        <Download className="w-4 h-4" />
+                      </a>
                     </div>
 
+                    {/* Prominent Easy Close Button */}
                     <button 
                       type="button"
                       className="dna-lightbox-close" 
                       onClick={() => setIsZoomOpen(false)} 
                       title="Close (Esc)"
                     >
-                      <X className="w-5 h-5" />
+                      <X className="w-5 h-5 mr-1" />
+                      <span className="text-xs font-semibold">Close</span>
                     </button>
                   </div>
                 </div>
 
-                {/* Lightbox Display Body */}
-                <div className="dna-lightbox-body">
-                  {chartViewMode === "snapshot" ? (
-                    <div className="dna-lightbox-img-wrap">
-                      <img 
-                        key={`lb-${report.symbol}-${chartPerspective}`}
-                        src={`${getApiBaseUrl()}/api/dna/chart/${report.symbol}?view=${chartPerspective}`}
-                        alt={`${report.symbol} Fullscreen ${chartPerspective} Chart`} 
-                        className="dna-lightbox-img"
-                        style={{ transform: `scale(${zoomScale})` }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="dna-lightbox-svg-wrap">
-                      <DnaCandleSvgChart 
-                        candles={chartPerspective === "macro" ? report.chart_candles : report.chart_candles.slice(-85)}
-                        stopLoss={report.ui_report.trade_execution_card.stop_loss}
-                        targetPrice={report.ui_report.trade_execution_card.target_1}
-                        currentPrice={report.current_metrics.price}
-                        trendlines={report.chart_directives?.trendlines}
-                        onHoverCandle={() => {}}
-                        height={550}
-                        width={1100}
-                        isMacro={chartPerspective === "macro"}
-                      />
-                    </div>
-                  )}
+                {/* Lightbox Image Body */}
+                <div 
+                  className="dna-lightbox-body"
+                  onClick={() => setIsZoomOpen(false)}
+                >
+                  <div 
+                    className="dna-lightbox-img-wrap"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Click image to toggle zoom between 100% and 160%
+                      setZoomScale(prev => prev > 1.1 ? 1 : 1.6);
+                    }}
+                    style={{ cursor: zoomScale > 1.1 ? "zoom-out" : "zoom-in" }}
+                    title={zoomScale > 1.1 ? "Click to reset zoom (100%)" : "Click to zoom in (160%)"}
+                  >
+                    <img 
+                      key={`lb-${report.symbol}-${chartPerspective}`}
+                      src={`${getApiBaseUrl()}/api/dna/chart/${report.symbol}?view=${chartPerspective}`}
+                      alt={`${report.symbol} Fullscreen ${chartPerspective} Chart`} 
+                      className="dna-lightbox-img"
+                      style={{ 
+                        transform: `scale(${zoomScale})`,
+                        transition: "transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)"
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {/* Lightbox Footer */}
                 <div className="dna-lightbox-footer">
                   <div className="dna-lb-footer-left">
                     <span>Perspective: <strong>{chartPerspective === "macro" ? "Macro (1-Year)" : "Tactical (4-Month)"}</strong></span>
-                    <span>Target 1: ₹{report.ui_report.trade_execution_card.target_1}</span>
-                    <span>Stop Loss: ₹{report.ui_report.trade_execution_card.stop_loss}</span>
-                    <span>Action: {report.ui_report.trade_execution_card.action}</span>
+                    <span>Target 1: <strong>₹{report.ui_report.trade_execution_card.target_1}</strong></span>
+                    <span>Stop Loss: <strong>₹{report.ui_report.trade_execution_card.stop_loss}</strong></span>
+                    <span>Action: <strong>{report.ui_report.trade_execution_card.action}</strong></span>
                   </div>
                   <div className="dna-lb-footer-right">
-                    <span>Press <strong>ESC</strong> or click outside to close</span>
+                    <span>💡 Click image or scroll to zoom · Click outside or press <strong>ESC</strong> to close</span>
                   </div>
                 </div>
               </div>
@@ -987,383 +928,3 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
   );
 }
 
-// Lightweight Interactive SVG Candlestick Chart Component with Valid Trendlines
-function DnaCandleSvgChart({ 
-  candles, 
-  stopLoss, 
-  targetPrice, 
-  currentPrice,
-  trendlines,
-  onHoverCandle,
-  width = 800,
-  height = 300,
-  isMacro = false
-}: { 
-  candles: any[]; 
-  stopLoss: number; 
-  targetPrice: number; 
-  currentPrice: number;
-  trendlines?: any[];
-  onHoverCandle: (c: any) => void;
-  width?: number;
-  height?: number;
-  isMacro?: boolean;
-}) {
-  if (!candles || candles.length === 0) {
-    return <div className="p-4 text-center text-sm opacity-60">No candlestick data available.</div>;
-  }
-
-  const padding = { top: 22, right: 82, bottom: 28, left: 18 };
-  const plotW = width - padding.left - padding.right;
-  const plotH = height - padding.top - padding.bottom;
-
-  // Find min and max price across candles and key levels
-  const allPrices = candles.flatMap(c => [c.high, c.low]).concat([stopLoss, targetPrice, currentPrice].filter(p => p > 0));
-  const minP = Math.min(...allPrices) * 0.985;
-  const maxP = Math.max(...allPrices) * 1.015;
-  const priceRange = maxP - minP || 1;
-
-  const getY = (price: number) => padding.top + plotH - ((price - minP) / priceRange) * plotH;
-  const candleW = Math.max(1.8, Math.min(10, (plotW / candles.length) * 0.7));
-
-  // Generate SVG path for EMA 20 and EMA 50
-  const ema20Points = candles
-    .map((c, i) => {
-      if (!c.ema20) return null;
-      const x = padding.left + (i + 0.5) * (plotW / candles.length);
-      const y = getY(c.ema20);
-      return `${x},${y}`;
-    })
-    .filter(Boolean)
-    .join(" ");
-
-  const ema50Points = candles
-    .map((c, i) => {
-      if (!c.ema50) return null;
-      const x = padding.left + (i + 0.5) * (plotW / candles.length);
-      const y = getY(c.ema50);
-      return `${x},${y}`;
-    })
-    .filter(Boolean)
-    .join(" ");
-
-  const ema200Points = isMacro
-    ? candles
-        .map((c, i) => {
-          if (!c.ema200) return null;
-          const x = padding.left + (i + 0.5) * (plotW / candles.length);
-          const y = getY(c.ema200);
-          return `${x},${y}`;
-        })
-        .filter(Boolean)
-        .join(" ")
-    : null;
-
-  // Vertical relaxation collision resolver for right-side price badges
-  const priceBadges: Array<{ id: string; label: string; origY: number; y: number; color: string; bg: string }> = [];
-  if (targetPrice > 0) {
-    const y = getY(targetPrice);
-    priceBadges.push({ id: "target", label: `T1 ₹${Math.round(targetPrice)}`, origY: y, y, color: "#10B981", bg: "rgba(16, 185, 129, 0.18)" });
-  }
-  if (currentPrice > 0) {
-    const y = getY(currentPrice);
-    priceBadges.push({ id: "cmp", label: `CMP ₹${Math.round(currentPrice)}`, origY: y, y, color: "#38BDF8", bg: "rgba(56, 189, 248, 0.18)" });
-  }
-  if (stopLoss > 0) {
-    const y = getY(stopLoss);
-    priceBadges.push({ id: "sl", label: `SL ₹${Math.round(stopLoss)}`, origY: y, y, color: "#EF4444", bg: "rgba(239, 68, 68, 0.18)" });
-  }
-
-  // Sort top-to-bottom by y coordinate
-  priceBadges.sort((a, b) => a.y - b.y);
-  const minGap = 16;
-  for (let i = 1; i < priceBadges.length; i++) {
-    if (priceBadges[i].y - priceBadges[i - 1].y < minGap) {
-      priceBadges[i].y = priceBadges[i - 1].y + minGap;
-    }
-  }
-  for (let i = priceBadges.length - 1; i >= 0; i--) {
-    if (priceBadges[i].y > height - padding.bottom - 2) {
-      priceBadges[i].y = height - padding.bottom - 2;
-      if (i > 0 && priceBadges[i].y - priceBadges[i - 1].y < minGap) {
-        priceBadges[i - 1].y = priceBadges[i].y - minGap;
-      }
-    }
-  }
-
-  return (
-    <svg 
-      viewBox={`0 0 ${width} ${height}`} 
-      className="dna-svg-chart"
-      onMouseLeave={() => onHoverCandle(null)}
-    >
-      {/* Background horizontal grid lines & price ticks */}
-      {[0.2, 0.4, 0.6, 0.8].map((pct, i) => {
-        const y = padding.top + plotH * pct;
-        const p = maxP - pct * priceRange;
-        return (
-          <g key={i}>
-            <line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
-            <text x={width - padding.right + 6} y={y + 3.5} fill="var(--ink3)" fontSize="8.5" fontFamily="monospace">
-              ₹{Math.round(p)}
-            </text>
-          </g>
-        );
-      })}
-
-      {/* Shaded Target Profit Zone */}
-      {targetPrice > currentPrice && (
-        <rect
-          x={padding.left + plotW * 0.75}
-          y={getY(targetPrice)}
-          width={plotW * 0.25}
-          height={Math.max(2, getY(currentPrice) - getY(targetPrice))}
-          fill="#10B981"
-          fillOpacity="0.08"
-          rx="3"
-        />
-      )}
-
-      {/* Shaded Stop Loss Invalidation Zone */}
-      {stopLoss > 0 && stopLoss < currentPrice && (
-        <rect
-          x={padding.left + plotW * 0.75}
-          y={getY(currentPrice)}
-          width={plotW * 0.25}
-          height={Math.max(2, getY(stopLoss) - getY(currentPrice))}
-          fill="#EF4444"
-          fillOpacity="0.07"
-          rx="3"
-        />
-      )}
-
-      {/* Target Price Horizontal Line */}
-      {targetPrice > 0 && (
-        <line 
-          x1={padding.left} 
-          y1={getY(targetPrice)} 
-          x2={width - padding.right} 
-          y2={getY(targetPrice)} 
-          stroke="#10B981" 
-          strokeDasharray="4 4" 
-          strokeWidth="1.2" 
-        />
-      )}
-
-      {/* Current Price Line */}
-      {currentPrice > 0 && (
-        <line 
-          x1={padding.left} 
-          y1={getY(currentPrice)} 
-          x2={width - padding.right} 
-          y2={getY(currentPrice)} 
-          stroke="#38BDF8" 
-          strokeDasharray="2 3" 
-          strokeWidth="1" 
-          strokeOpacity="0.8"
-        />
-      )}
-
-      {/* Stop Loss Horizontal Line */}
-      {stopLoss > 0 && (
-        <line 
-          x1={padding.left} 
-          y1={getY(stopLoss)} 
-          x2={width - padding.right} 
-          y2={getY(stopLoss)} 
-          stroke="#EF4444" 
-          strokeDasharray="4 4" 
-          strokeWidth="1.2" 
-        />
-      )}
-
-      {/* Candlesticks */}
-      {candles.map((c, i) => {
-        const x = padding.left + i * (plotW / candles.length) + (plotW / candles.length - candleW) / 2;
-        const xMid = x + candleW / 2;
-        const isBull = c.close >= c.open;
-        const yOpen = getY(c.open);
-        const yClose = getY(c.close);
-        const yHigh = getY(c.high);
-        const yLow = getY(c.low);
-        const bodyTop = Math.min(yOpen, yClose);
-        const bodyH = Math.max(1.5, Math.abs(yOpen - yClose));
-        const color = isBull ? "#10B981" : "#EF4444";
-
-        return (
-          <g 
-            key={i} 
-            className="dna-candle-group"
-            onMouseEnter={() => onHoverCandle(c)}
-          >
-            {/* Wick */}
-            <line x1={xMid} y1={yHigh} x2={xMid} y2={yLow} stroke={color} strokeWidth="1" opacity="0.8" />
-            {/* Body */}
-            <rect 
-              x={x} 
-              y={bodyTop} 
-              width={candleW} 
-              height={bodyH} 
-              fill={color} 
-              rx="0.6"
-            />
-          </g>
-        );
-      })}
-
-      {/* EMA 20 line */}
-      {ema20Points && (
-        <polyline 
-          points={ema20Points} 
-          fill="none" 
-          stroke="#3B82F6" 
-          strokeWidth="1.5" 
-          opacity="0.85" 
-        />
-      )}
-
-      {/* EMA 50 line */}
-      {ema50Points && (
-        <polyline 
-          points={ema50Points} 
-          fill="none" 
-          stroke="#F59E0B" 
-          strokeWidth="1.5" 
-          opacity="0.85" 
-        />
-      )}
-
-      {/* EMA 200 line (Macro View) */}
-      {ema200Points && (
-        <polyline 
-          points={ema200Points} 
-          fill="none" 
-          stroke="#8B5CF6" 
-          strokeWidth="1.6" 
-          opacity="0.9" 
-        />
-      )}
-
-      {/* Strictly 1-2 Valid Diagonal Mathematical Trendlines with Midpoint Anti-Collision Badges */}
-      {trendlines && trendlines.slice(0, 2).map((tl: any, i: number) => {
-        if (!tl.p1 || !tl.p2 || !tl.p1.date || !tl.p2.date) return null;
-        const dt1 = new Date(tl.p1.date).getTime();
-        const dt2 = new Date(tl.p2.date).getTime();
-        const daysSpan = (dt2 - dt1) / 86400000;
-        if (!daysSpan || isNaN(daysSpan)) return null;
-        const pricePerDay = (tl.p2.price - tl.p1.price) / daysSpan;
-
-        const firstCandleTime = new Date(candles[0].time).getTime();
-        const startDt = Math.max(dt1, firstCandleTime);
-
-        let startIdx = 0;
-        for (let cIdx = 0; cIdx < candles.length; cIdx++) {
-          if (new Date(candles[cIdx].time).getTime() >= startDt) {
-            startIdx = cIdx;
-            break;
-          }
-        }
-        const endIdx = candles.length - 1;
-        if (endIdx <= startIdx) return null;
-
-        const startPrice = tl.p2.price + pricePerDay * ((new Date(candles[startIdx].time).getTime() - dt2) / 86400000);
-        const endPrice = tl.p2.price + pricePerDay * ((new Date(candles[endIdx].time).getTime() - dt2) / 86400000);
-
-        const x1 = padding.left + (startIdx + 0.5) * (plotW / candles.length);
-        const y1 = getY(startPrice);
-        const x2 = padding.left + (endIdx + 0.5) * (plotW / candles.length);
-        const y2 = getY(endPrice);
-
-        const strokeColor = tl.color || (tl.type === 'support' ? '#10B981' : '#EF4444');
-        const midX = (x1 + x2) / 2;
-        const midY = (y1 + y2) / 2;
-        const labelText = tl.label || (tl.type === 'support' ? 'Ascending Support' : 'Structural Resistance');
-        const pillW = Math.min(140, labelText.length * 5.8 + 14);
-
-        return (
-          <g key={`tl-${i}`} className="dna-svg-trendline">
-            {/* Glow underlay */}
-            <line 
-              x1={x1} y1={y1} x2={x2} y2={y2} 
-              stroke={strokeColor} 
-              strokeWidth="4" 
-              strokeOpacity="0.2" 
-            />
-            {/* Crisp ray */}
-            <line 
-              x1={x1} y1={y1} x2={x2} y2={y2} 
-              stroke={strokeColor} 
-              strokeWidth="1.8" 
-              strokeDasharray={tl.type === 'resistance' ? '5 3' : 'none'}
-            />
-            {/* Midpoint Pill Box — Completely avoids colliding with right price margin */}
-            <rect 
-              x={midX - pillW / 2}
-              y={midY - 8}
-              width={pillW}
-              height={15}
-              rx="4"
-              fill="#0B0E14"
-              stroke={strokeColor}
-              strokeWidth="1.1"
-              opacity="0.95"
-            />
-            <text 
-              x={midX} 
-              y={midY + 3} 
-              fill={strokeColor} 
-              fontSize="7.8" 
-              fontWeight="bold" 
-              textAnchor="middle"
-              fontFamily="monospace"
-            >
-              {labelText}
-            </text>
-          </g>
-        );
-      })}
-
-      {/* Collision-Free Right-Side Price Badges */}
-      {priceBadges.map((badge) => {
-        const isDisplaced = Math.abs(badge.y - badge.origY) > 2;
-        const badgeW = padding.right - 8;
-        return (
-          <g key={`badge-${badge.id}`} className="dna-price-badge">
-            {isDisplaced && (
-              <line 
-                x1={width - padding.right} 
-                y1={badge.origY} 
-                x2={width - padding.right + 4} 
-                y2={badge.y} 
-                stroke={badge.color} 
-                strokeWidth="1" 
-                strokeDasharray="2 2" 
-                opacity="0.6" 
-              />
-            )}
-            <rect 
-              x={width - padding.right + 4} 
-              y={badge.y - 7} 
-              width={badgeW} 
-              height={14} 
-              rx="3" 
-              fill="#0B0E14" 
-              stroke={badge.color} 
-              strokeWidth="1" 
-            />
-            <text 
-              x={width - padding.right + 8} 
-              y={badge.y + 3.5} 
-              fill={badge.color} 
-              fontSize="8.5" 
-              fontWeight="bold" 
-              fontFamily="monospace"
-            >
-              {badge.label}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}

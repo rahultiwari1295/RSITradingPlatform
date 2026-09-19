@@ -4462,10 +4462,10 @@ body::before{
 }
 
 .dna-lightbox-close {
-  background: var(--s2);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--line-2);
-  color: var(--ink2);
-  padding: 6px;
+  color: var(--ink1);
+  padding: 6px 12px;
   border-radius: 8px;
   cursor: pointer;
   display: flex;
@@ -4475,20 +4475,20 @@ body::before{
 }
 
 .dna-lightbox-close:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
   color: #EF4444;
 }
 
 .dna-lightbox-body {
   flex: 1;
-  background: #0B0E14;
+  background: #080B10;
   overflow: auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
-  min-height: 420px;
+  padding: 20px;
+  min-height: 440px;
 }
 
 .dna-lightbox-img-wrap {
@@ -4497,18 +4497,16 @@ body::before{
   justify-content: center;
   width: 100%;
   height: 100%;
+  user-select: none;
 }
 
 .dna-lightbox-img {
   max-width: 100%;
-  max-height: 72vh;
+  max-height: 74vh;
   object-fit: contain;
-  transition: transform 0.15s ease;
-}
-
-.dna-lightbox-svg-wrap {
-  width: 100%;
-  max-width: 1100px;
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dna-lightbox-footer {
