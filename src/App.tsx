@@ -176,6 +176,124 @@ function mulberry32(a: number) {
   };
 }
 
+function sparkPath(seed: number, n: number, trend: number, width: number, height: number) {
+  const rnd = mulberry32(seed);
+  let v = height / 2;
+  const pts: number[] = [];
+  for (let i = 0; i < n; i++) {
+    v += (rnd() - 0.5) * height * 0.35 + (trend || 0);
+    pts.push(v);
+  }
+  const mn = Math.min(...pts),
+    mx = Math.max(...pts);
+  const span = mx - mn || 1;
+  const out: [number, number][] = [];
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * width;
+    const y = height - ((pts[i] - mn) / span) * height * 0.85 - height * 0.075;
+    out.push([x, y]);
+  }
+  let d = `M ${out[0][0].toFixed(1)} ${out[0][1].toFixed(1)}`;
+  for (let i = 1; i < out.length; i++) {
+    const [x0, y0] = out[i - 1];
+    const [x1, y1] = out[i];
+    const cx = (x0 + x1) / 2;
+    d += ` Q ${cx.toFixed(1)} ${y0.toFixed(1)}, ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+  }
+  return { d, pts: out };
+}
+
+const TERMINAL_INDICES = [
+  { n: 'Nifty 50', v: 23346.40, p: 0.33, seed: 11, trend: 0.35 },
+  { n: 'Sensex', v: 76890.10, p: 0.29, seed: 22, trend: 0.28 },
+  { n: 'Bank Nifty', v: 56358.70, p: 0.54, seed: 33, trend: 0.55 }
+];
+
+const TERMINAL_BRIEFS = [
+  {
+    date: '19 September',
+    today: true,
+    meta: 'Saturday',
+    pre: {
+      time: '08:00 IST',
+      items: [
+        `<b>Global &amp; Macro Radar</b> — Gift Nifty <span class="num up">+45 pts</span> at <span class="num">23,380</span>; steady US close overnight; Fed rate signals in focus; crude at <span class="num">$74/bbl</span>.`,
+        `<b>India Catalysts</b> — PM E-DRIVE scheme rollout; gross direct tax collections up <span class="num up">21.1% YoY</span> to <span class="num">₹12.01L Cr</span>; advance tax trends positive.`,
+        `<b>Sector Radar</b> — IT guidance turns positive, Auto festive dispatches strong, Banking holding moving-average support.`
+      ],
+      levels: [
+        { k: 'Nifty Support', v: '23,200', kind: 'supp' },
+        { k: 'Breakdown Risk', v: '23,050', kind: 'res' },
+        { k: 'Nifty Resistance', v: '23,450', kind: 'res' },
+        { k: 'Bank Nifty Pivot', v: '56,100', kind: 'piv' }
+      ]
+    },
+    post: {
+      time: '15:45 IST',
+      items: [
+        `<b>Market Close Verdict</b> — Nifty <span class="num up">+0.33%</span> at <span class="num">23,346.40</span>; Bank Nifty <span class="num up">+0.54%</span> at <span class="num">56,358.70</span>; breadth <span class="num">62.5%</span> advancing.`,
+        `<b>Sector Leaders &amp; Laggards</b> — Metals <span class="num up">+1.51%</span>, Realty <span class="num up">+1.19%</span>, Energy <span class="num up">+1.05%</span> vs IT <span class="num down">−1.03%</span>.`,
+        `<b>Institutional Cash Flow</b> — FII net <span class="num up">+₹1,240 Cr</span>; DII net <span class="num up">+₹890 Cr</span>.`,
+        `<b>QuantSync Action</b> — 4 trailing stops engaged, 2 high-conviction V3 setups discovered.`
+      ]
+    }
+  },
+  { date: '18 September', meta: 'Friday', pre: { time: '08:00 IST', items: [`<b>Gift Nifty flat</b>, US markets mixed overnight, crude steady at <span class="num">$73.8/bbl</span>.`] }, post: { time: '15:45 IST', items: [`<b>Nifty closed</b> <span class="num down">−0.12%</span> at <span class="num">23,268.90</span>; IT led losses on weak US tech cues.`] } },
+  { date: '17 September', meta: 'Thursday', pre: { time: '08:00 IST', items: [`<b>Gift Nifty</b> <span class="num up">+20 pts</span>, Asian markets firm, RBI policy watch ahead.`] }, post: { time: '15:45 IST', items: [`<b>Nifty</b> <span class="num up">+0.48%</span> at <span class="num">23,300.10</span>; Banking outperformed on rate-cut hopes.`] } },
+  { date: '16 September', meta: 'Wednesday', pre: { time: '08:00 IST', items: [`<b>Gift Nifty</b> <span class="num down">−15 pts</span>, US CPI print awaited, crude ticks up to <span class="num">$74.5/bbl</span>.`] }, post: { time: '15:45 IST', items: [`<b>Nifty</b> <span class="num down">−0.21%</span> at <span class="num">23,190.40</span>; Metals dragged on China demand worries.`] } },
+  { date: '15 September', meta: 'Tuesday', pre: { time: '08:00 IST', items: [`<b>Gift Nifty</b> flat-to-positive, festive-season auto data due today.`] }, post: { time: '15:45 IST', items: [`<b>Nifty</b> <span class="num up">+0.61%</span> at <span class="num">23,240.80</span>; Auto rallied on strong dispatch numbers.`] } },
+  { date: '12 September', meta: 'Friday', pre: { time: '08:00 IST', items: [`<b>Gift Nifty</b> <span class="num up">+30 pts</span>, FII flows turn positive after 3 sessions of selling.`] }, post: { time: '15:45 IST', items: [`<b>Nifty</b> <span class="num up">+0.39%</span> at <span class="num">23,100.20</span>; broad-based buying across sectors.`] } },
+  { date: '11 September', meta: 'Thursday', pre: { time: '08:00 IST', items: [`<b>Gift Nifty</b> <span class="num down">−25 pts</span>, global risk-off tone, crude softens to <span class="num">$72.9/bbl</span>.`] }, post: { time: '15:45 IST', items: [`<b>Nifty</b> <span class="num down">−0.34%</span> at <span class="num">23,010.50</span>; Energy stocks under pressure.`] } },
+  { date: '10 September', meta: 'Wednesday', pre: { time: '08:00 IST', items: [`<b>Gift Nifty</b> flat, GST council meeting outcome awaited.`] }, post: { time: '15:45 IST', items: [`<b>Nifty</b> <span class="num up">+0.18%</span> at <span class="num">23,088.70</span>; Consumer stocks gained on GST optimism.`] } },
+  { date: '9 September', meta: 'Tuesday', pre: { time: '08:00 IST', items: [`<b>Gift Nifty</b> <span class="num up">+10 pts</span>, muted global cues ahead of Fed minutes.`] }, post: { time: '15:45 IST', items: [`<b>Nifty</b> <span class="num up">+0.05%</span> at <span class="num">23,047.30</span>; range-bound, low-volume session.`] } },
+  { date: '8 September', meta: 'Monday', pre: { time: '08:00 IST', items: [`<b>Gift Nifty</b> <span class="num down">−40 pts</span>, weak Asian markets, crude at <span class="num">$75.2/bbl</span>.`] }, post: { time: '15:45 IST', items: [`<b>Nifty</b> <span class="num down">−0.58%</span> at <span class="num">23,035.90</span>; IT and Metals led a broad market decline.`] } }
+];
+
+const TERMINAL_SECTORS = [
+  { n: 'Metals', p: 1.51 },
+  { n: 'Realty', p: 1.19 },
+  { n: 'Energy', p: 1.05 },
+  { n: 'Auto', p: 0.72 },
+  { n: 'Banking', p: 0.54 },
+  { n: 'Pharma', p: 0.31 },
+  { n: 'FMCG', p: 0.12 },
+  { n: 'Infra', p: -0.24 },
+  { n: 'IT', p: -1.03 }
+];
+
+const TERMINAL_MOVERS = [
+  { sym: 'BEML', pct: 4.82, desc: 'Wins ₹5,400 Cr order from NHSRCL for high-speed rolling stock on the bullet-train corridor.' },
+  { sym: 'PREMIERENE', pct: 5.35, desc: 'Forms RCT India JV to build a 12 GWh battery storage facility.' },
+  { sym: 'IDEA', pct: 3.68, desc: 'Secures $3.5 bn in debt financing led by State Bank of India.' },
+  { sym: 'NEOGEN', pct: 3.20, desc: 'Approves ₹600 Cr QIP at a ₹2,189.70 floor price.' },
+  { sym: 'VEEGALAND', pct: 10.00, desc: 'Strong market debut at a 10% premium to issue price.' },
+  { sym: 'TATASTEEL', pct: -3.15, desc: 'EU scrap-metal tariffs and soft Chinese futures drag on global steel prices.' }
+];
+
+const TERMINAL_NEWS_RAW = [
+  { day: 'Today · 19 September', co: 'BEML Ltd', sym: 'BEML', tag: 'order', label: 'Order Win', body: 'Wins ₹5,400 Cr order from NHSRCL for high-speed rolling stock supply on the bullet-train corridor.', time: '14:32 IST', src: 'BE' },
+  { day: 'Today · 19 September', co: 'Premier Energies', sym: 'PREMIERENE', tag: 'jv', label: 'Forms JV', body: 'Forms RCT India joint venture to build a 12 GWh battery storage manufacturing facility.', time: '12:10 IST', src: 'PE' },
+  { day: 'Today · 19 September', co: 'Vodafone Idea', sym: 'IDEA', tag: 'order', label: 'Secures Loan', body: 'Secures $3.5 bn in debt financing led by State Bank of India.', time: '10:47 IST', src: 'VI' },
+  { day: '18 September', co: 'Neogen Chemicals', sym: 'NEOGEN', tag: 'fund', label: 'Fundraise', body: 'Board approves ₹600 Cr QIP at a floor price of ₹2,189.70 per share.', time: '16:05 IST', src: 'NC' },
+  { day: '18 September', co: 'Veegaland Engineering', sym: 'VEEGALAND', tag: 'ipo', label: 'IPO Debut', body: 'Lists at a 10% premium to its issue price on debut day.', time: '09:20 IST', src: 'VE' },
+  { day: '17 September', co: 'Tata Steel', sym: 'TATASTEEL', tag: 'order', label: 'Regulatory', body: 'EU proposes new scrap-metal export tariffs, adding pressure to global steel pricing.', time: '18:44 IST', src: 'TS' },
+  { day: '16 September', co: 'Indian Renewable Energy', sym: 'IREDA', tag: 'fund', label: 'Fundraise', body: 'Raises ₹2,150 Cr via green bonds to fund renewable energy lending.', time: '15:12 IST', src: 'IR' },
+  { day: '15 September', co: 'KEC International', sym: 'KEC', tag: 'order', label: 'Order Win', body: 'Bags new transmission & distribution orders worth ₹1,180 Cr.', time: '11:30 IST', src: 'KE' }
+];
+
+const TERMINAL_NEWS_GROUPS = (() => {
+  const groups: Array<{ day: string; items: typeof TERMINAL_NEWS_RAW }> = [];
+  TERMINAL_NEWS_RAW.forEach((n) => {
+    let g = groups.find((x) => x.day === n.day);
+    if (!g) {
+      g = { day: n.day, items: [] };
+      groups.push(g);
+    }
+    g.items.push(n);
+  });
+  return groups;
+})();
+
 function stringSeed(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -1048,6 +1166,8 @@ export default function App() {
   const [sectorsData, setSectorsData] = useState<Array<{ name: string; disp_value?: string; change_pct: number; color?: string }>>([]);
   const [newsData, setNewsData] = useState<Array<any>>([]);
   const [homeTab, setHomeTab] = useState<"reports" | "movement" | "news">("reports");
+  const [terminalTab, setTerminalTab] = useState<"report" | "movement" | "news">("report");
+  const [openTimelineDays, setOpenTimelineDays] = useState<Record<number, boolean>>({ 0: true });
   const [dayReports, setDayReports] = useState<Array<any>>([]);
   const [newsMovers, setNewsMovers] = useState<Array<any>>([]);
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
@@ -2055,340 +2175,354 @@ export default function App() {
             </button>
           </div>
 
-          {/* SUB-TABS NAVIGATION: Day Report | Stock Movement | News */}
-          <div className="home-tabs-bar">
-            <button
-              className={`home-tab-btn ${homeTab === "reports" ? "active" : ""}`}
-              onClick={() => setHomeTab("reports")}
-            >
-              <span>📰</span> Day Report
-            </button>
-            <button
-              className={`home-tab-btn ${homeTab === "movement" ? "active" : ""}`}
-              onClick={() => setHomeTab("movement")}
-            >
-              <span>⚡</span> Stock Movement
-            </button>
-            <button
-              className={`home-tab-btn ${homeTab === "news" ? "active" : ""}`}
-              onClick={() => setHomeTab("news")}
-            >
-              <span>📡</span> News
-            </button>
-          </div>
-
-          {/* ================= TAB 1: DAY REPORT (MARKET JOURNAL) ================= */}
-          {homeTab === "reports" && (
-            <div>
-              <div className="sec-head" style={{ marginBottom: 12 }}>
-                <span className="micro">Daily Market Briefing</span>
-                <span className="micro dim">Pre & Post Market Radar</span>
-              </div>
-
-              {dayReports.map((rep, idx) => {
-                const isToday = idx === 0;
-                const isExpanded = isToday
-                  ? expandedDates[rep.date] !== false
-                  : !!expandedDates[rep.date];
-
-                return (
-                  <div
-                    key={rep.date}
-                    className={`day-report-date-card ${isToday ? "active-today" : ""}`}
-                  >
-                    <div
-                      className="day-report-header"
-                      onClick={() =>
-                        setExpandedDates((prev) => ({
-                          ...prev,
-                          [rep.date]: !isExpanded,
-                        }))
-                      }
-                    >
-                      <div className="row gap8">
-                        <span style={{ fontSize: 16 }}>📅</span>
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink1)" }}>
-                            {rep.display_date || rep.date}
-                          </div>
-                          {isToday ? (
-                            <div style={{ fontSize: 10, color: "var(--accent)", fontWeight: 600 }}>
-                              Active Trading Day · 2 Editions (Pre & Post Market)
-                            </div>
-                          ) : (
-                            <div style={{ fontSize: 10, color: "var(--ink3)" }}>
-                              Archived Briefing
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="row gap8">
-                        {isToday && <span className="pill green" style={{ fontSize: 9 }}>LATEST</span>}
-                        <span style={{ fontSize: 11, color: "var(--ink3)", fontWeight: 600 }}>
-                          {isExpanded ? "▲ Collapse" : "▼ Read Update"}
-                        </span>
-                      </div>
-                    </div>
-
-                    {isExpanded && (
-                      <div className="day-briefing-grid">
-                        {/* 🌅 PRE-MARKET UPDATE (8:00 AM) */}
-                        <div className="sticky-briefing pre-market">
-                          <div className="briefing-tag pre">
-                            <span>🌅</span> Pre-Market Battle Plan ({rep.pre_market_time || "08:00 AM"})
-                          </div>
-                          <div className="briefing-point">
-                            <div className="briefing-label">🌐 Global & Macro Radar</div>
-                            <div className="briefing-text">{rep.pre_global_cues}</div>
-                          </div>
-                          <div className="briefing-point">
-                            <div className="briefing-label">🇮🇳 India Catalysts & Policy</div>
-                            <div className="briefing-text">{rep.pre_domestic_news}</div>
-                          </div>
-                          <div className="briefing-point">
-                            <div className="briefing-label">📊 Sector Radar</div>
-                            <div className="briefing-text">{rep.pre_sector_updates}</div>
-                          </div>
-                          <div className="briefing-point">
-                            <div className="briefing-label">🎯 Key Levels (Nifty & Bank Nifty)</div>
-                            <div className="briefing-text" style={{ fontWeight: 600, color: "var(--accent)" }}>
-                              {rep.pre_technical_levels}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* 🌆 POST-MARKET UPDATE (3:45 PM) */}
-                        <div className="sticky-briefing post-market">
-                          <div className="briefing-tag post">
-                            <span>🌆</span> Post-Market Executive Wrap ({rep.post_market_time || "03:45 PM"})
-                          </div>
-                          <div className="briefing-point">
-                            <div className="briefing-label">🏁 Market Close Verdict</div>
-                            <div className="briefing-text">{rep.post_summary}</div>
-                          </div>
-                          <div className="briefing-point">
-                            <div className="briefing-label">🔥 Sector Leaders & Laggards</div>
-                            <div className="briefing-text">{rep.post_sector_highlights}</div>
-                          </div>
-                          <div className="briefing-point">
-                            <div className="briefing-label">💰 Institutional Flows & Breadth</div>
-                            <div className="briefing-text">{rep.post_flows_breadth}</div>
-                          </div>
-                          <div className="briefing-point">
-                            <div className="briefing-label">⚡ QuantSync Strategy & Action</div>
-                            <div className="briefing-text" style={{ color: "var(--profit)", fontWeight: 600 }}>
-                              {rep.post_engine_action}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-              <div className="sec-head" style={{ marginTop: 18 }}><span className="micro">AI Daily Digest</span></div>
-              <div className="digest">
-                <div className="row gap8" style={{ marginBottom: 9 }}>
-                  <span>🧠</span>
-                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--accent)" }}>
-                    Generated 15:45 IST
-                  </span>
-                </div>
-                {dailyDigest || `Markets closed mildly bullish today with broad-based participation. Your portfolio benefited from target hits. The ${engine.toUpperCase()} engine identified new setups with strong technical and volume conviction.`}
-                <button className="btn" style={{ marginTop: 13 }} onClick={() => setActiveTab("signals")}>
-                  Explore Signals →
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ================= TAB 2: STOCK MOVEMENT ================= */}
-          {homeTab === "movement" && (
-            <div>
-              {/* 1. Market Pulse */}
-              <div className="card">
-                <div className="row between">
-                  <div className="micro">Market Pulse</div>
-                  <div className="micro dim">{marketPulse?.date || headerDateStr}</div>
-                </div>
-                <div className="idx-grid">
-                  <div className="idx">
-                    <div className="n">NIFTY 50</div>
-                    <div className="v">{Math.round(marketPulse?.nifty_price || 26420).toLocaleString()}</div>
-                    <div className={`c ${(marketPulse?.nifty_chg_pct || 0.3) >= 0 ? "up" : "down"}`}>
-                      {pct(marketPulse?.nifty_chg_pct || 0.3)}
-                    </div>
-                  </div>
-                  <div className="idx">
-                    <div className="n">SENSEX</div>
-                    <div className="v">{Math.round(marketPulse?.sensex_price || 86750).toLocaleString()}</div>
-                    <div className={`c ${(marketPulse?.sensex_chg_pct || 0.41) >= 0 ? "up" : "down"}`}>
-                      {pct(marketPulse?.sensex_chg_pct || 0.41)}
-                    </div>
-                  </div>
-                  <div className="idx">
-                    <div className="n">BANK NIFTY</div>
-                    <div className="v">{Math.round(marketPulse?.banknifty_price || 54800).toLocaleString()}</div>
-                    <div className={`c ${(marketPulse?.banknifty_chg_pct || 0.18) >= 0 ? "up" : "down"}`}>
-                      {pct(marketPulse?.banknifty_chg_pct || 0.18)}
-                    </div>
-                  </div>
-                </div>
-                <div className="divider" />
-                <div className="row between" style={{ fontSize: 11 }}>
-                  <span className="mut">Sentiment</span>
-                  <span className="pill green">{marketPulse?.sentiment_pill || "🟢 Mildly Bullish"}</span>
-                </div>
-                <div className="row between" style={{ fontSize: 11, marginTop: 10 }}>
-                  <span className="mut">Breadth</span>
-                  <span style={{ fontWeight: 600 }}>
-                    {marketPulse?.advances_pct || 62}% advancing · {marketPulse?.declines_pct || 38}% declining
-                  </span>
-                </div>
-                <div className="row between" style={{ fontSize: 11, marginTop: 10 }}>
-                  <span className="mut">Flows</span>
-                  <span className="num" style={{ fontSize: 11 }}>
-                    FII <b className="up">+₹{marketPulse?.fii_net_cr || 1240} Cr</b> · DII <b className="up">+₹{marketPulse?.dii_net_cr || 890} Cr</b>
-                  </span>
-                </div>
-              </div>
-
-              {/* 2. Sector Heatmap */}
-              <div className="sec-head" style={{ marginTop: 18 }}>
-                <span className="micro">Sector Heatmap</span>
-                <span className="micro dim">Live Angel Quotes</span>
-              </div>
-              <div className="heat">
+          {/* ============================================================
+             LUXURY TERMINAL HOME VIEW
+             ============================================================ */}
+          <div className="shell">
+            {/* HERO */}
+            <section className="hero">
+              <div className="greet-label">
                 {(() => {
-                  const defaultSectors = [
-                    { name: "IT", change_pct: 1.2, disp_value: "+1.2%" },
-                    { name: "Banks", change_pct: -0.3, disp_value: "−0.3%" },
-                    { name: "Pharma", change_pct: 0.8, disp_value: "+0.8%" },
-                    { name: "Auto", change_pct: 0.5, disp_value: "+0.5%" },
-                    { name: "Metal", change_pct: -0.7, disp_value: "−0.7%" },
-                    { name: "FMCG", change_pct: 0.1, disp_value: "+0.1%" },
-                    { name: "Energy", change_pct: 0.6, disp_value: "+0.6%" },
-                  ];
-                  const displayList = sectorsData.length >= 7 ? sectorsData.slice(0, 7) : defaultSectors;
-                  const gridAreas = ["1/1/3/3", "1/3/2/5", "2/3/3/4", "2/4/3/5", "3/1/4/2", "3/2/4/3", "3/3/4/5"];
-
-                  return displayList.map((sec, idx) => {
-                    const isUp = (sec.change_pct || 0) >= 0;
-                    const area = gridAreas[idx] || "auto";
-                    const bg = isUp
-                      ? "linear-gradient(160deg, color-mix(in srgb,var(--profit) 32%,var(--s1)), color-mix(in srgb,var(--profit) 16%,var(--s1)))"
-                      : "linear-gradient(160deg, color-mix(in srgb,var(--loss) 30%,var(--s1)), color-mix(in srgb,var(--loss) 14%,var(--s1)))";
-                    const disp = sec.disp_value || (isUp ? `+${sec.change_pct.toFixed(1)}%` : `${sec.change_pct.toFixed(1)}%`);
-
-                    return (
-                      <div key={sec.name} className="hc" style={{ gridArea: area, background: bg }}>
-                        <div className="n">{sec.name}</div>
-                        <div className={`p ${isUp ? "up" : "down"}`}>{disp}</div>
-                      </div>
-                    );
-                  });
+                  const h = new Date().getHours();
+                  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
                 })()}
+                <span className="em">.</span>
+              </div>
+              <div className="greet-date">
+                <span>
+                  {(() => {
+                    const nowD = new Date();
+                    const daysArr = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                    const monthsArr = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                    return `${daysArr[nowD.getDay()]} · ${nowD.getDate()} ${monthsArr[nowD.getMonth()]} ${nowD.getFullYear()}`;
+                  })()}
+                </span>
+                <span className="dot" />
+                <span>Mumbai · IST</span>
               </div>
 
-              {/* 3. High-Impact News Movers (> +3% or < -3%) */}
-              <div className="sec-head" style={{ marginTop: 18 }}>
-                <span className="micro">⚡ High-Impact News Movers</span>
-                <span className="micro dim">&gt; ±3% Move with Catalysts</span>
-              </div>
-              <div className="movers-grid">
-                {newsMovers.map((m, idx) => {
-                  const isUp = (m.change_pct || 0) >= 0;
+              {/* SNAPSHOT */}
+              <div className="snapshot">
+                {TERMINAL_INDICES.map((idx) => {
+                  const isUp = idx.p >= 0;
+                  const arrow = isUp ? "▲" : "▼";
+                  const { d } = sparkPath(idx.seed, 28, idx.trend, 100, 18);
+                  const fillId = `spark-fill-${idx.seed}`;
+                  const colorVar = isUp ? "var(--up)" : "var(--down)";
+
                   return (
-                    <div
-                      key={m.symbol || idx}
-                      className="mover-card"
-                      onClick={() => m.url && window.open(m.url, "_blank", "noopener,noreferrer")}
-                    >
-                      <div className="mover-header">
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ink1)" }}>{m.symbol}</div>
-                          <div style={{ fontSize: 10, color: "var(--ink3)" }}>{m.name}</div>
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          <div style={{ fontSize: 12.5, fontWeight: 700, fontFamily: "'JetBrains Mono',monospace" }}>
-                            ₹{m.price?.toLocaleString()}
-                          </div>
-                          <span className={`pill ${isUp ? "green" : "red"}`} style={{ fontSize: 9.5, padding: "2px 6px" }}>
-                            {isUp ? `+${m.change_pct}%` : `${m.change_pct}%`}
-                          </span>
-                        </div>
+                    <div key={idx.n} className="idx-tile">
+                      <div className="idx-name">{idx.n}</div>
+                      <div className="idx-val num">
+                        {idx.v.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
-                      <div className="mover-catalyst">
-                        "{m.catalyst}"
+                      <div className={`idx-chg ${isUp ? "up" : "down"}`}>
+                        <span>{arrow}</span>
+                        <span>{isUp ? "+" : ""}{idx.p.toFixed(2)}%</span>
                       </div>
-                      <div className="row between" style={{ fontSize: 9.5, color: "var(--ink3)" }}>
-                        <span>{m.time_stamp}</span>
-                        <span>{m.source}</span>
+                      <div className="idx-spark">
+                        <svg viewBox="0 0 100 18" preserveAspectRatio="none">
+                          <defs>
+                            <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={colorVar} stopOpacity="0.28" />
+                              <stop offset="100%" stopColor={colorVar} stopOpacity="0" />
+                            </linearGradient>
+                          </defs>
+                          <path d={`${d} L100,18 L0,18 Z`} fill={`url(#${fillId})`} />
+                          <path
+                            d={d}
+                            fill="none"
+                            stroke={colorVar}
+                            strokeWidth="1.4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            style={{ filter: `drop-shadow(0 0 4px ${isUp ? "rgba(66,197,142,0.4)" : "rgba(234,108,110,0.4)"})` }}
+                          />
+                        </svg>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            </div>
-          )}
 
-          {/* ================= TAB 3: CURATED TRENDLYNE NEWS ================= */}
-          {homeTab === "news" && (
-            <div>
-              <div className="sec-head">
-                <span className="micro">Trendlyne Corporate Disclosures</span>
-                <span className="micro dim">Last 5 Days · Latest First</span>
+              {/* MARKET STATUS STRIP */}
+              <div className="market-status">
+                <span className="status-dot" />
+                <span className="ms-key">Markets closed</span>
+                <span className="ms-sep">·</span>
+                <span>Reopens Mon 09:15 IST</span>
+                <span className="ms-verified">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                  NSE Verified
+                </span>
               </div>
-              <div className="card" style={{ padding: "4px 16px" }}>
-                {newsData.length > 0 ? (
-                  newsData.slice(0, 25).map((item, idx) => {
-                    const title = item.notification || item.title || "";
-                    const stockName = item.stock_name || item.stock_code || "Market";
-                    const label = item.label || "Corporate Notice";
-                    const timeStr = item.time_stamp || item.published_at || "Recent";
-                    const link = item.complete_url || item.screen_redirect_url || item.url || "";
+            </section>
 
-                    const isBull = /surge|rally|gain|growth|order|secures|profit|high|up|nod|approv|debut/i.test(title + label);
-                    const isBear = /fall|drop|slip|loss|down|cut|weak|probe|penalty|crash/i.test(title + label);
-                    const pillClass = isBull ? "pill green" : isBear ? "pill red" : "pill";
+            {/* TABS */}
+            <nav className="tabs" id="tabs">
+              <button
+                className={terminalTab === "report" ? "active" : ""}
+                onClick={() => setTerminalTab("report")}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 3h9l3 3v15H6z" />
+                  <path d="M9 8h6M9 12h6M9 16h4" />
+                </svg>
+                <span className="lbl">Brief</span>
+                <span className="sub">today's read</span>
+              </button>
+              <button
+                className={terminalTab === "movement" ? "active" : ""}
+                onClick={() => setTerminalTab("movement")}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 17l5-6 4 3 5-8 4 4" />
+                </svg>
+                <span className="lbl">Movers</span>
+                <span className="sub">price + why</span>
+              </button>
+              <button
+                className={terminalTab === "news" ? "active" : ""}
+                onClick={() => setTerminalTab("news")}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 5h13a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4z" />
+                  <path d="M8 9h7M8 13h7M8 17h4" />
+                </svg>
+                <span className="lbl">News</span>
+                <span className="sub">disclosures</span>
+              </button>
+            </nav>
 
-                    return (
+            {/* TAB 1: MARKET BRIEF */}
+            <section className={`panel ${terminalTab === "report" ? "active" : ""}`} id="report">
+              <div className="sec-head">
+                <div className="h">The <span className="em">daily brief</span></div>
+                <div className="meta">{TERMINAL_BRIEFS.length} sessions</div>
+              </div>
+              <div className="timeline" id="timeline">
+                {TERMINAL_BRIEFS.map((b, i) => {
+                  const isToday = !!b.today;
+                  const isOpen = !!openTimelineDays[i];
+                  return (
+                    <div key={b.date + i} className={`day ${isToday ? "today" : ""} ${isOpen ? "open" : ""}`}>
                       <div
-                        key={item.id || item.guid || idx}
-                        className={`news ${idx === 0 ? "held" : ""}`}
-                        onClick={() => {
-                          if (link) window.open(link, "_blank", "noopener,noreferrer");
-                        }}
-                        style={{ cursor: link ? "pointer" : "default" }}
+                        className="day-head"
+                        onClick={() => setOpenTimelineDays((prev) => ({ ...prev, [i]: !prev[i] }))}
                       >
-                        <div className="src">TL</div>
-                        <div style={{ flex: 1 }}>
-                          <div className="row between" style={{ marginBottom: 4 }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ink1)" }}>
-                              {stockName} {item.stock_code ? `(${item.stock_code})` : ""}
-                            </span>
-                            <span className={pillClass} style={{ padding: "2px 7px", fontSize: 9 }}>
-                              {label}
-                            </span>
+                        <div className="day-date">{b.date}</div>
+                        {isToday && <span className="day-pill">Today</span>}
+                        <div className="day-meta">{b.meta}</div>
+                        <div className="day-chev">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M6 9l6 6 6-6" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="day-body">
+                        <div className="day-inner">
+                          {/* Pre-Market Segment */}
+                          <div className="segment">
+                            <div className="segment-head">
+                              <div className="icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M12 2v2M4.9 4.9l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M12 20v2" />
+                                  <circle cx="12" cy="12" r="3.5" />
+                                </svg>
+                              </div>
+                              <div className="t">Pre-Market Battle Plan</div>
+                              <div className="time">{b.pre.time}</div>
+                            </div>
+                            <ul className="segment-list">
+                              {b.pre.items.map((itemHtml, idx) => (
+                                <li key={idx} dangerouslySetInnerHTML={{ __html: itemHtml }} />
+                              ))}
+                            </ul>
+                            {b.pre.levels && (
+                              <div className="levels">
+                                {b.pre.levels.map((lvl, lIdx) => (
+                                  <div key={lIdx} className={`lvl ${lvl.kind}`}>
+                                    <div className="k">{lvl.k}</div>
+                                    <div className="v">{lvl.v}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                          <div className="hl">{title}</div>
-                          <div className="meta">
-                            <span>{timeStr}</span>
-                            <span>· Trendlyne / BSE</span>
+
+                          {/* Post-Market Segment */}
+                          <div className="segment">
+                            <div className="segment-head">
+                              <div className="icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M12 22v-3M6.5 15.5 4 18M17.5 15.5 20 18M3 12h2M19 12h2M6.5 8.5 4 6M17.5 8.5 20 6M12 2v2" />
+                                  <circle cx="12" cy="12" r="4" />
+                                </svg>
+                              </div>
+                              <div className="t">Post-Market Executive Wrap</div>
+                              <div className="time">{b.post.time}</div>
+                            </div>
+                            <ul className="segment-list">
+                              {b.post.items.map((itemHtml, idx) => (
+                                <li key={idx} dangerouslySetInnerHTML={{ __html: itemHtml }} />
+                              ))}
+                            </ul>
                           </div>
                         </div>
                       </div>
-                    );
-                  })
-                ) : (
-                  <div style={{ padding: 20, textAlign: "center", color: "var(--ink3)" }}>
-                    Loading corporate disclosures...
-                  </div>
-                )}
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          )}
+            </section>
+
+            {/* TAB 2: TOP MOVERS */}
+            <section className={`panel ${terminalTab === "movement" ? "active" : ""}`} id="movement">
+              <div className="card">
+                <div className="pulse">
+                  <div className="pulse-head">
+                    <div className="pulse-title">Market Pulse</div>
+                    <div className="sent-pill"><span className="pulse-dot" />Bullish</div>
+                  </div>
+
+                  <div className="breadth-vis">
+                    <div className="breadth-label-row">
+                      <span className="adv">Advancing 62.5%</span>
+                      <span className="dec">Declining 37.5%</span>
+                    </div>
+                    <div className="breadth-bar">
+                      <i style={{ width: "62.5%" }} />
+                    </div>
+                  </div>
+
+                  <div className="flow">
+                    <div className="flow-item">
+                      <div className="k">FII Net</div>
+                      <div className="v">+₹1,240 Cr</div>
+                    </div>
+                    <div className="flow-item">
+                      <div className="k">DII Net</div>
+                      <div className="v">+₹890 Cr</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="sec-head">
+                <div className="h">Sector <span className="em">heatmap</span></div>
+                <div className="meta">Live · 9 sectors</div>
+              </div>
+              <div className="card heatmap">
+                <div className="heat-head">
+                  <div className="h">Where money moved today</div>
+                  <div className="meta">NSE · Sectoral</div>
+                </div>
+                <div className="heat-grid" id="heatGrid">
+                  {TERMINAL_SECTORS.map((s) => {
+                    const pos = s.p >= 0;
+                    const intensity = Math.min(Math.abs(s.p) / 1.6, 1);
+                    const baseColor = pos ? "var(--up)" : "var(--down)";
+                    const mixPct = theme === "light" ? (4 + intensity * 13).toFixed(1) : (5 + intensity * 16).toFixed(1);
+                    const bg = `color-mix(in srgb, ${baseColor} ${mixPct}%, var(--panel-2))`;
+                    const barWidth = (28 + intensity * 70).toFixed(0);
+
+                    return (
+                      <div key={s.n} className={`heat-cell ${pos ? "up" : "down"}`} style={{ background: bg }}>
+                        <span className="n">{s.n}</span>
+                        <span className="p">{pos ? "+" : ""}{s.p.toFixed(2)}%</span>
+                        <div className="mini-bar">
+                          <i style={{ width: `${barWidth}%`, background: baseColor }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="sec-head">
+                <div className="h">Big <span className="em">movers</span></div>
+                <div className="meta">&gt;3% moves</div>
+              </div>
+              <div className="card movers">
+                <div className="movers-head">
+                  <div className="h">⚡ The catalysts <small>· why each stock moved</small></div>
+                </div>
+                <div id="moversList">
+                  {TERMINAL_MOVERS.map((m) => {
+                    const isUp = m.pct >= 0;
+                    return (
+                      <div key={m.sym} className="mover-row">
+                        <div className="mover-left">
+                          <div className="mover-top">
+                            <span className="mover-sym">{m.sym}</span>
+                            <span className={`mover-pct ${isUp ? "up" : "down"}`}>
+                              {isUp ? "+" : ""}{m.pct.toFixed(2)}%
+                            </span>
+                          </div>
+                          <div className="mover-desc">{m.desc}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+
+            {/* TAB 3: NEWS */}
+            <section className={`panel ${terminalTab === "news" ? "active" : ""}`} id="news">
+              <div className="sec-head">
+                <div className="h">Corporate <span className="em">disclosures</span></div>
+                <div className="meta">8 filings</div>
+              </div>
+              <div id="newsList">
+                {TERMINAL_NEWS_GROUPS.map((g) => (
+                  <div key={g.day} className="news-group">
+                    <div className="news-group-label">
+                      <span>{g.day}</span>
+                      <span className="line" />
+                      <span className="count">{g.items.length}</span>
+                    </div>
+                    {g.items.map((n, idx) => (
+                      <div key={idx} className="news-item">
+                        <div className="news-src">{n.src}</div>
+                        <div className="news-main">
+                          <div className="news-top">
+                            <span className="news-co">{n.co}</span>
+                            <span className="news-sym">{n.sym}</span>
+                            <span className={`news-tag ${n.tag}`}>{n.label}</span>
+                          </div>
+                          <div className="news-body">{n.body}</div>
+                          <div className="news-foot">
+                            <span className="news-time">
+                              <svg className="clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="9" />
+                                <path d="M12 7v5l3 2" />
+                              </svg>
+                              {n.time}
+                            </span>
+                            <a className="news-link" href="#" onClick={(e) => e.preventDefault()}>
+                              View source
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M7 17 17 7M9 7h8v8" />
+                              </svg>
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* FOOTER */}
+            <footer className="footer">
+              <div className="mark">Quant<span>Sync</span> · Terminal</div>
+              <div className="meta">Data sourced from NSE · BSE · 15:45 IST</div>
+            </footer>
+          </div>
         </section>
 
         {/* ===== SIGNALS SCREEN ===== */}
