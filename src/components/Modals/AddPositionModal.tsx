@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { X, Plus } from "lucide-react";
-import { formatINR } from "../../constants/theme";
+import { X, Plus, ShieldCheck } from "lucide-react";
+import { formatINR } from "../../lib/utils";
 
 interface AddPositionModalProps {
   isOpen: boolean;
@@ -22,7 +22,7 @@ export default function AddPositionModal({
   const [symbol, setSymbol] = useState("");
   const [buyPrice, setBuyPrice] = useState<number | "">("");
   const [quantity, setQuantity] = useState<number | "">(10);
-  const [strategyName, setStrategyName] = useState("Breakout");
+  const [strategyName, setStrategyName] = useState("Breakout Setup");
 
   if (!isOpen) return null;
 
@@ -31,15 +31,15 @@ export default function AddPositionModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!symbol || !buyPrice || !quantity) return;
-    
+
     onSubmit({
       symbol: symbol.toUpperCase().trim(),
       buyPrice: Number(buyPrice),
       quantity: Number(quantity),
       strategyName,
-      date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      date: new Date().toISOString().split("T")[0]
     });
-    
+
     setSymbol("");
     setBuyPrice("");
     setQuantity(10);
@@ -47,41 +47,135 @@ export default function AddPositionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[22px] border border-[#ECEEF2] dark:border-slate-800 shadow-2xl p-6 relative">
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        background: "rgba(0, 0, 0, 0.72)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 420,
+          background: "var(--s1)",
+          border: "1px solid var(--line-2)",
+          borderRadius: 22,
+          padding: "24px 22px",
+          position: "relative",
+          boxShadow: "0 24px 60px rgba(0,0,0,0.6), 0 0 40px var(--glow)",
+          color: "var(--ink1)"
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#F6F7F9] dark:bg-slate-800 flex items-center justify-center text-[#56586A] dark:text-slate-300 hover:bg-slate-200 transition-colors"
+          style={{
+            position: "absolute",
+            top: 16,
+            right: 16,
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            background: "var(--s2)",
+            border: "1px solid var(--line)",
+            color: "var(--ink2)",
+            cursor: "pointer",
+            display: "grid",
+            placeItems: "center"
+          }}
         >
-          <X className="w-4 h-4" />
+          <X style={{ width: 16, height: 16 }} />
         </button>
 
-        <h3 className="text-[18px] font-bold text-[#14151A] dark:text-slate-100 mb-1">
-          Add Portfolio Position
-        </h3>
-        <p className="text-[12px] text-[#8B8D98] font-semibold mb-4">
-          Manually track a stock position in your portfolio
-        </p>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 14,
+              background: "linear-gradient(135deg, var(--accent), var(--violet))",
+              color: "#fff",
+              display: "grid",
+              placeItems: "center",
+              fontSize: 20,
+              boxShadow: "0 4px 16px var(--glow)"
+            }}
+          >
+            💼
+          </div>
           <div>
-            <label className="block text-[10px] font-bold text-[#8B8D98] uppercase tracking-wider mb-1 font-mono">
-              Symbol (e.g. RELIANCE, TATASTEEL)
+            <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-.02em" }}>
+              Add Paper Position
+            </div>
+            <div style={{ fontSize: 11.5, color: "var(--ink3)", marginTop: 2 }}>
+              Manually track a stock position in your portfolio
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div>
+            <label
+              style={{
+                display: "block",
+                fontSize: 10,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                color: "var(--ink3)",
+                marginBottom: 6,
+                fontFamily: "'JetBrains Mono', monospace"
+              }}
+            >
+              Symbol (NSE / BSE)
             </label>
             <input
               type="text"
               value={symbol}
               onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-              placeholder="SYMBOL"
-              className="w-full bg-[#F6F7F9] dark:bg-slate-800 border border-[#ECEEF2] dark:border-slate-700 rounded-[12px] px-3.5 py-2.5 text-[14px] font-bold text-[#14151A] dark:text-slate-100 outline-hidden focus:border-[#14151A] font-mono uppercase"
+              placeholder="e.g. RELIANCE, TATASTEEL"
+              style={{
+                width: "100%",
+                background: "var(--s2)",
+                border: "1px solid var(--line)",
+                borderRadius: 12,
+                padding: "11px 14px",
+                fontSize: 14,
+                fontWeight: 800,
+                color: "var(--ink1)",
+                outline: "none",
+                fontFamily: "'JetBrains Mono', monospace",
+                textTransform: "uppercase"
+              }}
               required
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <div>
-              <label className="block text-[10px] font-bold text-[#8B8D98] uppercase tracking-wider mb-1 font-mono">
-                Buy Price
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  color: "var(--ink3)",
+                  marginBottom: 6,
+                  fontFamily: "'JetBrains Mono', monospace"
+                }}
+              >
+                Buy Price (₹)
               </label>
               <input
                 type="number"
@@ -89,12 +183,34 @@ export default function AddPositionModal({
                 value={buyPrice}
                 onChange={(e) => setBuyPrice(e.target.value === "" ? "" : Number(e.target.value))}
                 placeholder="0.00"
-                className="w-full bg-[#F6F7F9] dark:bg-slate-800 border border-[#ECEEF2] dark:border-slate-700 rounded-[12px] px-3.5 py-2.5 text-[14px] font-bold text-[#14151A] dark:text-slate-100 outline-hidden focus:border-[#14151A] font-mono"
+                style={{
+                  width: "100%",
+                  background: "var(--s2)",
+                  border: "1px solid var(--line)",
+                  borderRadius: 12,
+                  padding: "11px 14px",
+                  fontSize: 14,
+                  fontWeight: 800,
+                  color: "var(--ink1)",
+                  outline: "none",
+                  fontFamily: "'JetBrains Mono', monospace"
+                }}
                 required
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-[#8B8D98] uppercase tracking-wider mb-1 font-mono">
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  color: "var(--ink3)",
+                  marginBottom: 6,
+                  fontFamily: "'JetBrains Mono', monospace"
+                }}
+              >
                 Quantity
               </label>
               <input
@@ -103,53 +219,104 @@ export default function AddPositionModal({
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value === "" ? "" : Number(e.target.value))}
                 placeholder="10"
-                className="w-full bg-[#F6F7F9] dark:bg-slate-800 border border-[#ECEEF2] dark:border-slate-700 rounded-[12px] px-3.5 py-2.5 text-[14px] font-bold text-[#14151A] dark:text-slate-100 outline-hidden focus:border-[#14151A] font-mono"
+                style={{
+                  width: "100%",
+                  background: "var(--s2)",
+                  border: "1px solid var(--line)",
+                  borderRadius: 12,
+                  padding: "11px 14px",
+                  fontSize: 14,
+                  fontWeight: 800,
+                  color: "var(--ink1)",
+                  outline: "none",
+                  fontFamily: "'JetBrains Mono', monospace"
+                }}
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-[#8B8D98] uppercase tracking-wider mb-1 font-mono">
+            <label
+              style={{
+                display: "block",
+                fontSize: 10,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                color: "var(--ink3)",
+                marginBottom: 6,
+                fontFamily: "'JetBrains Mono', monospace"
+              }}
+            >
               Strategy Setup
             </label>
             <select
               value={strategyName}
               onChange={(e) => setStrategyName(e.target.value)}
-              className="w-full bg-[#F6F7F9] dark:bg-slate-800 border border-[#ECEEF2] dark:border-slate-700 rounded-[12px] px-3.5 py-2.5 text-[13px] font-bold text-[#14151A] dark:text-slate-100 outline-hidden focus:border-[#14151A]"
+              style={{
+                width: "100%",
+                background: "var(--s2)",
+                border: "1px solid var(--line)",
+                borderRadius: 12,
+                padding: "11px 14px",
+                fontSize: 13,
+                fontWeight: 700,
+                color: "var(--ink1)",
+                outline: "none",
+                cursor: "pointer"
+              }}
             >
-              <option value="Breakout">Breakout</option>
-              <option value="Decouple">Decouple</option>
-              <option value="Alpha">Alpha</option>
-              <option value="Snapback">Snapback</option>
+              <option value="Breakout Setup">Breakout Setup</option>
+              <option value="Wyckoff Spring">Wyckoff Spring</option>
+              <option value="Decouple Momentum">Decouple Momentum</option>
+              <option value="Alpha Momentum">Alpha Momentum</option>
               <option value="HyperSqueeze">HyperSqueeze</option>
-              <option value="Explosion">Explosion</option>
-              <option value="BearTrap">BearTrap</option>
-              <option value="DipBuyer">DipBuyer</option>
-              <option value="Discretionary">Discretionary</option>
+              <option value="Volume Explosion">Volume Explosion</option>
+              <option value="Discretionary Setup">Discretionary Setup</option>
             </select>
           </div>
 
-          <div className="bg-[#F1F2F5] dark:bg-slate-800 rounded-[12px] p-3 flex justify-between items-center">
-            <span className="text-[11px] font-bold text-[#56586A] dark:text-slate-300">Total Invested</span>
-            <span className="text-[14px] font-extrabold text-[#14151A] dark:text-slate-100 font-mono">
+          <div
+            style={{
+              background: "var(--s2)",
+              border: "1px solid var(--line)",
+              borderRadius: 12,
+              padding: "11px 14px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}
+          >
+            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ink3)" }}>Total Invested</span>
+            <span
+              style={{
+                fontSize: 15,
+                fontWeight: 800,
+                color: "var(--accent)",
+                fontFamily: "'JetBrains Mono', monospace"
+              }}
+            >
               {formatINR(total)}
             </span>
           </div>
 
-          <div className="flex gap-2.5 pt-1">
+          <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 rounded-[12px] bg-[#F6F7F9] dark:bg-slate-800 text-[#56586A] dark:text-slate-300 font-bold text-[13px] hover:bg-slate-200 transition-colors"
+              className="btn"
+              style={{ flex: 1, padding: "10px", fontSize: 12.5, fontWeight: 700 }}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 rounded-[12px] bg-[#14151A] dark:bg-slate-100 text-white dark:text-slate-900 font-bold text-[13px] hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5 shadow-md"
+              className="btn primary"
+              style={{ flex: 1, padding: "10px", fontSize: 12.5, fontWeight: 700 }}
             >
-              <Plus className="w-4 h-4" /> Add Trade
+              <Plus style={{ width: 14, height: 14 }} />
+              Add Position
             </button>
           </div>
         </form>

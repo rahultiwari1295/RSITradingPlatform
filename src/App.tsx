@@ -2761,43 +2761,36 @@ export default function App() {
 
         {/* ===== PORTFOLIO SCREEN ===== */}
         <section className={`screen ${activeTab === "portfolio" ? "active" : ""}`} id="screen-portfolio">
-          {!user ? (
-            <div className="card" style={{ padding: "32px 20px", textAlign: "center", maxWidth: 460, margin: "24px auto" }}>
-              <div style={{
-                width: 52,
-                height: 52,
-                borderRadius: 16,
-                background: "rgba(99, 102, 241, 0.12)",
-                color: "var(--accent)",
-                display: "grid",
-                placeItems: "center",
-                margin: "0 auto 16px"
-              }}>
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                </svg>
+          {!user && (
+            <div
+              className="card"
+              style={{
+                padding: "12px 16px",
+                marginBottom: 14,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                flexWrap: "wrap",
+                background: "linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05))",
+                borderColor: "rgba(99, 102, 241, 0.25)"
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 18 }}>☁️</span>
+                <div>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink1)" }}>
+                    Guest Paper Ledger (Saved to Browser)
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--ink3)" }}>
+                    Sign in to enable real-time Firebase cloud backup across all your devices.
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "var(--ink)", letterSpacing: "-.02em" }}>
-                Personal Portfolio & Trade Ledger
-              </div>
-              <div style={{ fontSize: 12.5, color: "var(--ink3)", margin: "10px 0 22px", lineHeight: 1.6 }}>
-                Create a free account or sign in to save your personal Paper Trade ledger to the cloud, track live trailing stops, and preserve your performance history across devices.
-              </div>
-              <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-                <button
-                  className="btn primary"
-                  style={{ padding: "9px 20px", fontSize: 12.5, fontWeight: 700 }}
-                  onClick={() => {
-                    setAuthMode("signup");
-                    setShowAuthModal(true);
-                  }}
-                >
-                  Create Free Account
-                </button>
+              <div style={{ display: "flex", gap: 8 }}>
                 <button
                   className="btn"
-                  style={{ padding: "9px 20px", fontSize: 12.5, fontWeight: 700 }}
+                  style={{ padding: "5px 12px", fontSize: 11, fontWeight: 700 }}
                   onClick={() => {
                     setAuthMode("signin");
                     setShowAuthModal(true);
@@ -2805,9 +2798,19 @@ export default function App() {
                 >
                   Sign In
                 </button>
+                <button
+                  className="btn primary"
+                  style={{ padding: "5px 12px", fontSize: 11, fontWeight: 700 }}
+                  onClick={() => {
+                    setAuthMode("signup");
+                    setShowAuthModal(true);
+                  }}
+                >
+                  Create Account
+                </button>
               </div>
             </div>
-          ) : (
+          )}
             <PortfolioView
               portfolio={portfolio}
               completedHistory={completedHistory}
@@ -2839,7 +2842,6 @@ export default function App() {
                 openSheet(engine, stock);
               }}
             />
-          )}
         </section>
 
         {/* ===== CHARTS SCREEN ===== */}
