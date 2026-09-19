@@ -1047,6 +1047,10 @@ export default function App() {
   const [marketPulse, setMarketPulse] = useState<MarketPulseData | null>(null);
   const [sectorsData, setSectorsData] = useState<Array<{ name: string; disp_value?: string; change_pct: number; color?: string }>>([]);
   const [newsData, setNewsData] = useState<Array<any>>([]);
+  const [homeTab, setHomeTab] = useState<"reports" | "movement" | "news">("reports");
+  const [dayReports, setDayReports] = useState<Array<any>>([]);
+  const [newsMovers, setNewsMovers] = useState<Array<any>>([]);
+  const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
   const [dailyDigest, setDailyDigest] = useState<string>("");
   const [systemStatus, setSystemStatus] = useState<any>(null);
   const [systemConfig, setSystemConfig] = useState<any>(null);
@@ -1176,9 +1180,21 @@ export default function App() {
         }
       }).catch(() => {});
 
-      quantsyncApi.getNews(15).then(res => {
+      quantsyncApi.getNews(30).then(res => {
         if (res && res.news && res.news.length > 0) {
           setNewsData(res.news);
+        }
+      }).catch(() => {});
+
+      quantsyncApi.getDayReports(10).then(res => {
+        if (res && res.reports && res.reports.length > 0) {
+          setDayReports(res.reports);
+        }
+      }).catch(() => {});
+
+      quantsyncApi.getNewsMovers().then(res => {
+        if (res && res.movers && res.movers.length > 0) {
+          setNewsMovers(res.movers);
         }
       }).catch(() => {});
 
@@ -2039,165 +2055,340 @@ export default function App() {
             </button>
           </div>
 
-          <div className="card">
-            <div className="row between">
-              <div className="micro">Market Pulse</div>
-              <div className="micro dim">{marketPulse?.date || headerDateStr}</div>
-            </div>
-            <div className="idx-grid">
-              <div className="idx">
-                <div className="n">NIFTY 50</div>
-                <div className="v">{Math.round(marketPulse?.nifty_price || 26420).toLocaleString()}</div>
-                <div className={`c ${(marketPulse?.nifty_chg_pct || 0.3) >= 0 ? "up" : "down"}`}>
-                  {pct(marketPulse?.nifty_chg_pct || 0.3)}
-                </div>
+          {/* SUB-TABS NAVIGATION: Day Report | Stock Movement | News */}
+          <div className="home-tabs-bar">
+            <button
+              className={`home-tab-btn ${homeTab === "reports" ? "active" : ""}`}
+              onClick={() => setHomeTab("reports")}
+            >
+              <span>📰</span> Day Report
+            </button>
+            <button
+              className={`home-tab-btn ${homeTab === "movement" ? "active" : ""}`}
+              onClick={() => setHomeTab("movement")}
+            >
+              <span>⚡</span> Stock Movement
+            </button>
+            <button
+              className={`home-tab-btn ${homeTab === "news" ? "active" : ""}`}
+              onClick={() => setHomeTab("news")}
+            >
+              <span>📡</span> News
+            </button>
+          </div>
+
+          {/* ================= TAB 1: DAY REPORT (MARKET JOURNAL) ================= */}
+          {homeTab === "reports" && (
+            <div>
+              <div className="sec-head" style={{ marginBottom: 12 }}>
+                <span className="micro">Daily Market Briefing</span>
+                <span className="micro dim">Pre & Post Market Radar</span>
               </div>
-              <div className="idx">
-                <div className="n">SENSEX</div>
-                <div className="v">{Math.round(marketPulse?.sensex_price || 86750).toLocaleString()}</div>
-                <div className={`c ${(marketPulse?.sensex_chg_pct || 0.41) >= 0 ? "up" : "down"}`}>
-                  {pct(marketPulse?.sensex_chg_pct || 0.41)}
-                </div>
-              </div>
-              <div className="idx">
-                <div className="n">BANK NIFTY</div>
-                <div className="v">{Math.round(marketPulse?.banknifty_price || 54800).toLocaleString()}</div>
-                <div className={`c ${(marketPulse?.banknifty_chg_pct || 0.18) >= 0 ? "up" : "down"}`}>
-                  {pct(marketPulse?.banknifty_chg_pct || 0.18)}
-                </div>
-              </div>
-            </div>
-            <div className="divider" />
-            <div className="row between" style={{ fontSize: 11 }}>
-              <span className="mut">Sentiment</span>
-              <span className="pill green">{marketPulse?.sentiment_pill || "🟢 Mildly Bullish"}</span>
-            </div>
-            <div className="row between" style={{ fontSize: 11, marginTop: 10 }}>
-              <span className="mut">Breadth</span>
-              <span style={{ fontWeight: 600 }}>
-                {marketPulse?.advances_pct || 62}% advancing · {marketPulse?.declines_pct || 38}% declining
-              </span>
-            </div>
-            <div className="row between" style={{ fontSize: 11, marginTop: 10 }}>
-              <span className="mut">Flows</span>
-              <span className="num" style={{ fontSize: 11 }}>
-                FII <b className="up">+₹{marketPulse?.fii_net_cr || 1240} Cr</b> · DII <b className="up">+₹{marketPulse?.dii_net_cr || 890} Cr</b>
-              </span>
-            </div>
-          </div>
 
-          <div className="sec-head">
-            <span className="micro">Sector Heatmap</span>
-            <span className="micro dim">Live Angel Quotes</span>
-          </div>
-          <div className="heat">
-            {(() => {
-              const defaultSectors = [
-                { name: "IT", change_pct: 1.2, disp_value: "+1.2%" },
-                { name: "Banks", change_pct: -0.3, disp_value: "−0.3%" },
-                { name: "Pharma", change_pct: 0.8, disp_value: "+0.8%" },
-                { name: "Auto", change_pct: 0.5, disp_value: "+0.5%" },
-                { name: "Metal", change_pct: -0.7, disp_value: "−0.7%" },
-                { name: "FMCG", change_pct: 0.1, disp_value: "+0.1%" },
-                { name: "Energy", change_pct: 0.6, disp_value: "+0.6%" },
-              ];
-              const displayList = sectorsData.length >= 7 ? sectorsData.slice(0, 7) : defaultSectors;
-              const gridAreas = ["1/1/3/3", "1/3/2/5", "2/3/3/4", "2/4/3/5", "3/1/4/2", "3/2/4/3", "3/3/4/5"];
-
-              return displayList.map((sec, idx) => {
-                const isUp = (sec.change_pct || 0) >= 0;
-                const area = gridAreas[idx] || "auto";
-                const bg = isUp
-                  ? "linear-gradient(160deg, color-mix(in srgb,var(--profit) 32%,var(--s1)), color-mix(in srgb,var(--profit) 16%,var(--s1)))"
-                  : "linear-gradient(160deg, color-mix(in srgb,var(--loss) 30%,var(--s1)), color-mix(in srgb,var(--loss) 14%,var(--s1)))";
-                const disp = sec.disp_value || (isUp ? `+${sec.change_pct.toFixed(1)}%` : `${sec.change_pct.toFixed(1)}%`);
-
-                return (
-                  <div key={sec.name} className="hc" style={{ gridArea: area, background: bg }}>
-                    <div className="n">{sec.name}</div>
-                    <div className={`p ${isUp ? "up" : "down"}`}>{disp}</div>
-                  </div>
-                );
-              });
-            })()}
-          </div>
-
-          <div className="sec-head">
-            <span className="micro">Financial News & Corporate Catalysts</span>
-            <span className="micro dim">ET · MC · Trendlyne</span>
-          </div>
-          <div className="card" style={{ padding: "4px 16px" }}>
-            {(() => {
-              const defaultNews = [
-                {
-                  title: "IT sector rally continues as TCS guides strong outlook; Nifty IT index up 1.2%",
-                  source: "Moneycontrol",
-                  time_stamp: "2h ago",
-                  label: "Bullish",
-                },
-                {
-                  title: "RBI keeps repo rate unchanged at 6.25%; signals accommodative stance",
-                  source: "Economic Times",
-                  time_stamp: "4h ago",
-                  label: "Macro",
-                },
-                {
-                  title: "Metal stocks slip on weak global cues; Hindalco, Tata Steel among top losers",
-                  source: "LiveMint",
-                  time_stamp: "5h ago",
-                  label: "Bearish",
-                },
-              ];
-              const list = newsData.length > 0 ? newsData.slice(0, 7) : defaultNews;
-
-              return list.map((item, idx) => {
-                const title = item.title || item.notification || "";
-                const rawSource = item.source || "Trendlyne";
-                const src = rawSource.includes("Economic") ? "ET" : rawSource.includes("Money") ? "MC" : "TL";
-                const timeStr = item.published_at || item.time_stamp || item.fetched_at || "Recent";
-                const link = item.url || item.complete_url || item.screen_redirect_url || "";
-
-                const isBull = /surge|rally|gain|growth|order|secures|profit|high|up|nod|approv/i.test(title);
-                const isBear = /fall|drop|slip|loss|down|cut|weak|probe|penalty|crash/i.test(title);
-                const pillText = item.label || (isBull ? "🟢 Bullish" : isBear ? "🔴 Bearish" : "⚪ Market");
-                const pillClass = isBull ? "pill green" : isBear ? "pill red" : "pill";
+              {dayReports.map((rep, idx) => {
+                const isToday = idx === 0;
+                const isExpanded = isToday
+                  ? expandedDates[rep.date] !== false
+                  : !!expandedDates[rep.date];
 
                 return (
                   <div
-                    key={item.id || item.guid || idx}
-                    className={`news ${idx === 0 ? "held" : ""}`}
-                    onClick={() => {
-                      if (link) window.open(link, "_blank", "noopener,noreferrer");
-                    }}
-                    style={{ cursor: link ? "pointer" : "default" }}
+                    key={rep.date}
+                    className={`day-report-date-card ${isToday ? "active-today" : ""}`}
                   >
-                    <div className="src">{src}</div>
-                    <div style={{ flex: 1 }}>
-                      <div className="hl">{title}</div>
-                      <div className="meta">
-                        <span>{timeStr} · {rawSource}</span>
-                        <span className={pillClass} style={{ padding: "2px 7px", fontSize: 9 }}>{pillText}</span>
+                    <div
+                      className="day-report-header"
+                      onClick={() =>
+                        setExpandedDates((prev) => ({
+                          ...prev,
+                          [rep.date]: !isExpanded,
+                        }))
+                      }
+                    >
+                      <div className="row gap8">
+                        <span style={{ fontSize: 16 }}>📅</span>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink1)" }}>
+                            {rep.display_date || rep.date}
+                          </div>
+                          {isToday ? (
+                            <div style={{ fontSize: 10, color: "var(--accent)", fontWeight: 600 }}>
+                              Active Trading Day · 2 Editions (Pre & Post Market)
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 10, color: "var(--ink3)" }}>
+                              Archived Briefing
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="row gap8">
+                        {isToday && <span className="pill green" style={{ fontSize: 9 }}>LATEST</span>}
+                        <span style={{ fontSize: 11, color: "var(--ink3)", fontWeight: 600 }}>
+                          {isExpanded ? "▲ Collapse" : "▼ Read Update"}
+                        </span>
                       </div>
                     </div>
+
+                    {isExpanded && (
+                      <div className="day-briefing-grid">
+                        {/* 🌅 PRE-MARKET UPDATE (8:00 AM) */}
+                        <div className="sticky-briefing pre-market">
+                          <div className="briefing-tag pre">
+                            <span>🌅</span> Pre-Market Battle Plan ({rep.pre_market_time || "08:00 AM"})
+                          </div>
+                          <div className="briefing-point">
+                            <div className="briefing-label">🌐 Global & Macro Radar</div>
+                            <div className="briefing-text">{rep.pre_global_cues}</div>
+                          </div>
+                          <div className="briefing-point">
+                            <div className="briefing-label">🇮🇳 India Catalysts & Policy</div>
+                            <div className="briefing-text">{rep.pre_domestic_news}</div>
+                          </div>
+                          <div className="briefing-point">
+                            <div className="briefing-label">📊 Sector Radar</div>
+                            <div className="briefing-text">{rep.pre_sector_updates}</div>
+                          </div>
+                          <div className="briefing-point">
+                            <div className="briefing-label">🎯 Key Levels (Nifty & Bank Nifty)</div>
+                            <div className="briefing-text" style={{ fontWeight: 600, color: "var(--accent)" }}>
+                              {rep.pre_technical_levels}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 🌆 POST-MARKET UPDATE (3:45 PM) */}
+                        <div className="sticky-briefing post-market">
+                          <div className="briefing-tag post">
+                            <span>🌆</span> Post-Market Executive Wrap ({rep.post_market_time || "03:45 PM"})
+                          </div>
+                          <div className="briefing-point">
+                            <div className="briefing-label">🏁 Market Close Verdict</div>
+                            <div className="briefing-text">{rep.post_summary}</div>
+                          </div>
+                          <div className="briefing-point">
+                            <div className="briefing-label">🔥 Sector Leaders & Laggards</div>
+                            <div className="briefing-text">{rep.post_sector_highlights}</div>
+                          </div>
+                          <div className="briefing-point">
+                            <div className="briefing-label">💰 Institutional Flows & Breadth</div>
+                            <div className="briefing-text">{rep.post_flows_breadth}</div>
+                          </div>
+                          <div className="briefing-point">
+                            <div className="briefing-label">⚡ QuantSync Strategy & Action</div>
+                            <div className="briefing-text" style={{ color: "var(--profit)", fontWeight: 600 }}>
+                              {rep.post_engine_action}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
-              });
-            })()}
-          </div>
+              })}
 
-          <div className="sec-head"><span className="micro">AI Daily Digest</span></div>
-          <div className="digest">
-            <div className="row gap8" style={{ marginBottom: 9 }}>
-              <span>🧠</span>
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--accent)" }}>
-                Generated 15:45 IST
-              </span>
+              <div className="sec-head" style={{ marginTop: 18 }}><span className="micro">AI Daily Digest</span></div>
+              <div className="digest">
+                <div className="row gap8" style={{ marginBottom: 9 }}>
+                  <span>🧠</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--accent)" }}>
+                    Generated 15:45 IST
+                  </span>
+                </div>
+                {dailyDigest || `Markets closed mildly bullish today with broad-based participation. Your portfolio benefited from target hits. The ${engine.toUpperCase()} engine identified new setups with strong technical and volume conviction.`}
+                <button className="btn" style={{ marginTop: 13 }} onClick={() => setActiveTab("signals")}>
+                  Explore Signals →
+                </button>
+              </div>
             </div>
-            {dailyDigest || `Markets closed mildly bullish today with broad-based participation. Your portfolio benefited from target hits. The ${engine.toUpperCase()} engine identified new setups with strong technical and volume conviction.`}
-            <button className="btn" style={{ marginTop: 13 }} onClick={() => setActiveTab("signals")}>
-              Explore Signals →
-            </button>
-          </div>
+          )}
+
+          {/* ================= TAB 2: STOCK MOVEMENT ================= */}
+          {homeTab === "movement" && (
+            <div>
+              {/* 1. Market Pulse */}
+              <div className="card">
+                <div className="row between">
+                  <div className="micro">Market Pulse</div>
+                  <div className="micro dim">{marketPulse?.date || headerDateStr}</div>
+                </div>
+                <div className="idx-grid">
+                  <div className="idx">
+                    <div className="n">NIFTY 50</div>
+                    <div className="v">{Math.round(marketPulse?.nifty_price || 26420).toLocaleString()}</div>
+                    <div className={`c ${(marketPulse?.nifty_chg_pct || 0.3) >= 0 ? "up" : "down"}`}>
+                      {pct(marketPulse?.nifty_chg_pct || 0.3)}
+                    </div>
+                  </div>
+                  <div className="idx">
+                    <div className="n">SENSEX</div>
+                    <div className="v">{Math.round(marketPulse?.sensex_price || 86750).toLocaleString()}</div>
+                    <div className={`c ${(marketPulse?.sensex_chg_pct || 0.41) >= 0 ? "up" : "down"}`}>
+                      {pct(marketPulse?.sensex_chg_pct || 0.41)}
+                    </div>
+                  </div>
+                  <div className="idx">
+                    <div className="n">BANK NIFTY</div>
+                    <div className="v">{Math.round(marketPulse?.banknifty_price || 54800).toLocaleString()}</div>
+                    <div className={`c ${(marketPulse?.banknifty_chg_pct || 0.18) >= 0 ? "up" : "down"}`}>
+                      {pct(marketPulse?.banknifty_chg_pct || 0.18)}
+                    </div>
+                  </div>
+                </div>
+                <div className="divider" />
+                <div className="row between" style={{ fontSize: 11 }}>
+                  <span className="mut">Sentiment</span>
+                  <span className="pill green">{marketPulse?.sentiment_pill || "🟢 Mildly Bullish"}</span>
+                </div>
+                <div className="row between" style={{ fontSize: 11, marginTop: 10 }}>
+                  <span className="mut">Breadth</span>
+                  <span style={{ fontWeight: 600 }}>
+                    {marketPulse?.advances_pct || 62}% advancing · {marketPulse?.declines_pct || 38}% declining
+                  </span>
+                </div>
+                <div className="row between" style={{ fontSize: 11, marginTop: 10 }}>
+                  <span className="mut">Flows</span>
+                  <span className="num" style={{ fontSize: 11 }}>
+                    FII <b className="up">+₹{marketPulse?.fii_net_cr || 1240} Cr</b> · DII <b className="up">+₹{marketPulse?.dii_net_cr || 890} Cr</b>
+                  </span>
+                </div>
+              </div>
+
+              {/* 2. Sector Heatmap */}
+              <div className="sec-head" style={{ marginTop: 18 }}>
+                <span className="micro">Sector Heatmap</span>
+                <span className="micro dim">Live Angel Quotes</span>
+              </div>
+              <div className="heat">
+                {(() => {
+                  const defaultSectors = [
+                    { name: "IT", change_pct: 1.2, disp_value: "+1.2%" },
+                    { name: "Banks", change_pct: -0.3, disp_value: "−0.3%" },
+                    { name: "Pharma", change_pct: 0.8, disp_value: "+0.8%" },
+                    { name: "Auto", change_pct: 0.5, disp_value: "+0.5%" },
+                    { name: "Metal", change_pct: -0.7, disp_value: "−0.7%" },
+                    { name: "FMCG", change_pct: 0.1, disp_value: "+0.1%" },
+                    { name: "Energy", change_pct: 0.6, disp_value: "+0.6%" },
+                  ];
+                  const displayList = sectorsData.length >= 7 ? sectorsData.slice(0, 7) : defaultSectors;
+                  const gridAreas = ["1/1/3/3", "1/3/2/5", "2/3/3/4", "2/4/3/5", "3/1/4/2", "3/2/4/3", "3/3/4/5"];
+
+                  return displayList.map((sec, idx) => {
+                    const isUp = (sec.change_pct || 0) >= 0;
+                    const area = gridAreas[idx] || "auto";
+                    const bg = isUp
+                      ? "linear-gradient(160deg, color-mix(in srgb,var(--profit) 32%,var(--s1)), color-mix(in srgb,var(--profit) 16%,var(--s1)))"
+                      : "linear-gradient(160deg, color-mix(in srgb,var(--loss) 30%,var(--s1)), color-mix(in srgb,var(--loss) 14%,var(--s1)))";
+                    const disp = sec.disp_value || (isUp ? `+${sec.change_pct.toFixed(1)}%` : `${sec.change_pct.toFixed(1)}%`);
+
+                    return (
+                      <div key={sec.name} className="hc" style={{ gridArea: area, background: bg }}>
+                        <div className="n">{sec.name}</div>
+                        <div className={`p ${isUp ? "up" : "down"}`}>{disp}</div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+
+              {/* 3. High-Impact News Movers (> +3% or < -3%) */}
+              <div className="sec-head" style={{ marginTop: 18 }}>
+                <span className="micro">⚡ High-Impact News Movers</span>
+                <span className="micro dim">&gt; ±3% Move with Catalysts</span>
+              </div>
+              <div className="movers-grid">
+                {newsMovers.map((m, idx) => {
+                  const isUp = (m.change_pct || 0) >= 0;
+                  return (
+                    <div
+                      key={m.symbol || idx}
+                      className="mover-card"
+                      onClick={() => m.url && window.open(m.url, "_blank", "noopener,noreferrer")}
+                    >
+                      <div className="mover-header">
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ink1)" }}>{m.symbol}</div>
+                          <div style={{ fontSize: 10, color: "var(--ink3)" }}>{m.name}</div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: 12.5, fontWeight: 700, fontFamily: "'JetBrains Mono',monospace" }}>
+                            ₹{m.price?.toLocaleString()}
+                          </div>
+                          <span className={`pill ${isUp ? "green" : "red"}`} style={{ fontSize: 9.5, padding: "2px 6px" }}>
+                            {isUp ? `+${m.change_pct}%` : `${m.change_pct}%`}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mover-catalyst">
+                        "{m.catalyst}"
+                      </div>
+                      <div className="row between" style={{ fontSize: 9.5, color: "var(--ink3)" }}>
+                        <span>{m.time_stamp}</span>
+                        <span>{m.source}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ================= TAB 3: CURATED TRENDLYNE NEWS ================= */}
+          {homeTab === "news" && (
+            <div>
+              <div className="sec-head">
+                <span className="micro">Trendlyne Corporate Disclosures</span>
+                <span className="micro dim">Last 5 Days · Latest First</span>
+              </div>
+              <div className="card" style={{ padding: "4px 16px" }}>
+                {newsData.length > 0 ? (
+                  newsData.slice(0, 25).map((item, idx) => {
+                    const title = item.notification || item.title || "";
+                    const stockName = item.stock_name || item.stock_code || "Market";
+                    const label = item.label || "Corporate Notice";
+                    const timeStr = item.time_stamp || item.published_at || "Recent";
+                    const link = item.complete_url || item.screen_redirect_url || item.url || "";
+
+                    const isBull = /surge|rally|gain|growth|order|secures|profit|high|up|nod|approv|debut/i.test(title + label);
+                    const isBear = /fall|drop|slip|loss|down|cut|weak|probe|penalty|crash/i.test(title + label);
+                    const pillClass = isBull ? "pill green" : isBear ? "pill red" : "pill";
+
+                    return (
+                      <div
+                        key={item.id || item.guid || idx}
+                        className={`news ${idx === 0 ? "held" : ""}`}
+                        onClick={() => {
+                          if (link) window.open(link, "_blank", "noopener,noreferrer");
+                        }}
+                        style={{ cursor: link ? "pointer" : "default" }}
+                      >
+                        <div className="src">TL</div>
+                        <div style={{ flex: 1 }}>
+                          <div className="row between" style={{ marginBottom: 4 }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ink1)" }}>
+                              {stockName} {item.stock_code ? `(${item.stock_code})` : ""}
+                            </span>
+                            <span className={pillClass} style={{ padding: "2px 7px", fontSize: 9 }}>
+                              {label}
+                            </span>
+                          </div>
+                          <div className="hl">{title}</div>
+                          <div className="meta">
+                            <span>{timeStr}</span>
+                            <span>· Trendlyne / BSE</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div style={{ padding: 20, textAlign: "center", color: "var(--ink3)" }}>
+                    Loading corporate disclosures...
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* ===== SIGNALS SCREEN ===== */}

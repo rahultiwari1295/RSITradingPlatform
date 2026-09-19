@@ -1681,4 +1681,195 @@ body::before{
   color: var(--loss);
 }
 
+/* Home Sub-Tabs Navigation */
+.home-tabs-bar {
+  display: flex;
+  gap: 8px;
+  background: var(--s2);
+  border: 1px solid var(--line);
+  padding: 4px;
+  border-radius: 14px;
+  margin-top: 14px;
+  margin-bottom: 16px;
+}
+
+.home-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink3);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.home-tab-btn:hover {
+  color: var(--ink1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.home-tab-btn.active {
+  background: var(--s1);
+  color: var(--ink1);
+  border-color: var(--line2);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Day Report Accordions & Sticky Cards */
+.day-report-date-card {
+  background: var(--s1);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.day-report-date-card.active-today {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  box-shadow: 0 8px 24px -6px var(--glow);
+}
+
+.day-report-header {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  background: linear-gradient(180deg, rgba(255,255,255,.03), transparent);
+  user-select: none;
+}
+
+.day-report-header:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.day-briefing-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 14px 16px 18px;
+  border-top: 1px solid var(--line);
+}
+
+@media (min-width: 768px) {
+  .day-briefing-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.sticky-briefing {
+  background: var(--s2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  position: relative;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.sticky-briefing.pre-market {
+  border-left: 4px solid #f59e0b;
+  background: linear-gradient(170deg, rgba(245, 158, 11, 0.06), transparent 45%), var(--s2);
+}
+
+.sticky-briefing.post-market {
+  border-left: 4px solid #10b981;
+  background: linear-gradient(170deg, rgba(16, 185, 129, 0.06), transparent 45%), var(--s2);
+}
+
+.briefing-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.briefing-tag.pre {
+  background: rgba(245, 158, 11, 0.16);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.briefing-tag.post {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.briefing-point {
+  margin-bottom: 11px;
+}
+
+.briefing-point:last-child {
+  margin-bottom: 0;
+}
+
+.briefing-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--ink2);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 3px;
+}
+
+.briefing-text {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--ink1);
+}
+
+/* News Movers Cards */
+.movers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.mover-card {
+  background: var(--s1);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mover-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--line2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.mover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.mover-catalyst {
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--ink1);
+  margin-bottom: 8px;
+}
+
+
 

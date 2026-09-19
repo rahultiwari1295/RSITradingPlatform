@@ -677,6 +677,29 @@ async function startServer() {
   app.get("/api/intel/sectors", (req, res) => forwardToVps("/api/intel/sectors", req, res));
   app.get("/api/intel/news", (req, res) => forwardToVps("/api/intel/news", req, res));
   app.get("/api/intel/news/sync", (req, res) => forwardToVps("/api/intel/news/sync", req, res));
+  app.get("/api/intel/day-reports", (req, res) => {
+    forwardToVps("/api/intel/day-reports", req, res, () => {
+      const p = path.resolve(process.cwd(), "public/day_reports.json");
+      if (fs.existsSync(p)) {
+        try {
+          return JSON.parse(fs.readFileSync(p, "utf-8"));
+        } catch {}
+      }
+      return { count: 0, reports: [] };
+    });
+  });
+
+  app.get("/api/intel/movers", (req, res) => {
+    forwardToVps("/api/intel/movers", req, res, () => {
+      const p = path.resolve(process.cwd(), "public/movers.json");
+      if (fs.existsSync(p)) {
+        try {
+          return JSON.parse(fs.readFileSync(p, "utf-8"));
+        } catch {}
+      }
+      return { count: 0, movers: [] };
+    });
+  });
 
   app.get("/api/intel/digest", (req, res) => {
     const engine = (req.query.engine as string) || "v2";

@@ -272,4 +272,14 @@ export const quantsyncApi = {
     apiFetch<{ count: number; news: Array<any> }>(
       `/api/intel/news?limit=${limit}${stock ? `&stock=${encodeURIComponent(stock)}` : ""}`
     ),
+
+  getDayReports: (limit: number = 10) =>
+    apiFetch<{ count: number; reports: Array<any> }>(
+      `/api/intel/day-reports?limit=${limit}`
+    ),
+
+  getNewsMovers: () =>
+    apiFetch<{ count: number; movers: Array<any> }>(
+      `/api/intel/movers`
+    ),
 };

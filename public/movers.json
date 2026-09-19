@@ -1,0 +1,71 @@
+{
+  "count": 6,
+  "movers": [
+    {
+      "symbol": "BEML",
+      "name": "BEML Limited",
+      "price": 3840.5,
+      "change_pct": 4.82,
+      "catalyst": "Wins \u20b95,400 Cr order from NHSRCL for high-speed rolling stock (bullet train corridor)",
+      "source": "Trendlyne / BSE",
+      "time_stamp": "18 Sep, 11:30 AM",
+      "impact": "BULLISH",
+      "url": "https://trendlyne.com/equity/182/BEML/beml-ltd/"
+    },
+    {
+      "symbol": "PREMIERENE",
+      "name": "Premier Energies",
+      "price": 1142.0,
+      "change_pct": 5.35,
+      "catalyst": "Forms RCT India JV to build 12 GWh battery storage facility in Telangana",
+      "source": "Trendlyne / BSE",
+      "time_stamp": "18 Sep, 10:11 AM",
+      "impact": "BULLISH",
+      "url": "https://trendlyne.com/equity/2571009/PREMIERENE/premier-energies-ltd/"
+    },
+    {
+      "symbol": "IDEA",
+      "name": "Vodafone Idea",
+      "price": 9.85,
+      "change_pct": 3.68,
+      "catalyst": "Secures $3.5 bn in debt financing from consortium led by State Bank of India",
+      "source": "Trendlyne / BSE",
+      "time_stamp": "18 Sep, 09:16 AM",
+      "impact": "BULLISH",
+      "url": "https://trendlyne.com/equity/589/IDEA/vodafone-idea-ltd/"
+    },
+    {
+      "symbol": "NEOGEN",
+      "name": "Neogen Chemicals",
+      "price": 2245.0,
+      "change_pct": 3.2,
+      "catalyst": "Board approves \u20b9600 Cr QIP of equity shares at floor price of \u20b92,189.70",
+      "source": "Trendlyne / BSE",
+      "time_stamp": "18 Sep, 09:55 AM",
+      "impact": "BULLISH",
+      "url": "https://trendlyne.com/equity/141845/NEOGEN/neogen-chemicals-ltd/"
+    },
+    {
+      "symbol": "VEEGALAND",
+      "name": "Veegaland Developers",
+      "price": 154.0,
+      "change_pct": 10.0,
+      "catalyst": "Debut at \u20b9154 on NSE, 10% premium to issue price of \u20b9140",
+      "source": "Trendlyne / NSE",
+      "time_stamp": "18 Sep, 11:52 AM",
+      "impact": "BULLISH",
+      "url": "https://trendlyne.com/"
+    },
+    {
+      "symbol": "TATASTEEL",
+      "name": "Tata Steel",
+      "price": 148.2,
+      "change_pct": -3.15,
+      "catalyst": "European union scrap metal tariffs and soft Chinese futures drag global steel prices",
+      "source": "Trendlyne / BSE",
+      "time_stamp": "18 Sep, 02:20 PM",
+      "impact": "BEARISH",
+      "url": "https://trendlyne.com/"
+    }
+  ]
+}
