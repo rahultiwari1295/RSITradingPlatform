@@ -1169,6 +1169,7 @@ export default function App() {
   const [chartSub, setChartSub] = useState<"live" | "scanner" | "portal">("live");
   const [range, setRange] = useState<number>(90);
   const [isScannerOpen, setIsScannerOpen] = useState(true);
+  const [isEngineInfoOpen, setIsEngineInfoOpen] = useState(false);
   const [v2ChartSel, setV2ChartSel] = useState<number>(0);
 
   // Transitional Animation State (Rocket hitting bulls eye)
@@ -2748,59 +2749,178 @@ export default function App() {
 
         {/* ===== SIGNALS SCREEN ===== */}
         <section className={`screen ${activeTab === "signals" ? "active" : ""}`} id="screen-signals">
-          {/* Dedicated Engine Selector Card with 2-line descriptions & What is this modal */}
-          <div className="signals-engine-selector-card">
-            <div className="signals-engine-card-header">
-              <div className="signals-engine-title-group">
-                <span className="signals-engine-icon">⚡</span>
-                <div>
-                  <div className="signals-engine-title">AI Engine Model</div>
-                  <div className="signals-engine-subtitle">Select quantitative intelligence engine driving signals</div>
-                </div>
-              </div>
+          {/* Collapsible iOS-Style Engine Bar (Default Collapsed) */}
+          <div className={`signals-engine-compact-card ${isEngineInfoOpen ? "is-open" : ""}`}>
+            <div className="signals-engine-compact-bar">
               <button
                 type="button"
-                className="signals-what-is-this-btn"
-                onClick={() => setShowEngineExplainer(true)}
+                className="signals-engine-info-toggle"
+                onClick={() => setIsEngineInfoOpen(prev => !prev)}
+                aria-expanded={isEngineInfoOpen}
               >
-                <span>What is this?</span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                <div className="signals-engine-info-badge">
+                  <span className="info-badge-icon">⚡</span>
+                  <span className="info-badge-text">Select AI Engine</span>
+                  <span className="info-badge-hint">· How it works</span>
+                </div>
+                <svg
+                  className={`signals-caret ${isEngineInfoOpen ? "open" : ""}`}
+                  width="13"
+                  height="13"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
+                  <path d="M4 6l4 4 4-4" />
                 </svg>
               </button>
+
+              {/* iOS-Style Segmented Toggle Pill */}
+              <div className="ios-segmented-control" data-sel={engine}>
+                <button
+                  type="button"
+                  className={`ios-segment-btn ${engine === "v2" ? "active" : ""}`}
+                  onClick={() => switchEngine("v2")}
+                >
+                  <span className="segment-dot v2" />
+                  <span>AI Pro</span>
+                </button>
+                <button
+                  type="button"
+                  className={`ios-segment-btn ${engine === "v3" ? "active" : ""}`}
+                  onClick={() => switchEngine("v3")}
+                >
+                  <span className="segment-dot v3" />
+                  <span>Chart + AI</span>
+                </button>
+              </div>
             </div>
 
-            <div className="signals-engine-toggle" data-sel={engine}>
-              <button
-                type="button"
-                className={`signals-engine-btn ${engine === "v2" ? "is-active" : ""}`}
-                onClick={() => switchEngine("v2")}
-              >
-                <div className="engine-btn-main">
-                  <span className="engine-dot" />
-                  <span className="engine-name">Pro Quantitative AI (V2)</span>
+            {/* Expandable Accordion Drawer with 5 Simple Steps */}
+            {isEngineInfoOpen && (
+              <div className="signals-engine-drawer">
+                <div className="engine-drawer-header">
+                  <div className={`engine-drawer-badge ${engine === "v2" ? "v2" : "v3"}`}>
+                    {engine === "v2" ? "AI PRO ENGINE" : "CHART + AI ENGINE"}
+                  </div>
+                  <div className="engine-drawer-summary">
+                    {engine === "v2"
+                      ? "In simple words: The AI scans 500+ stocks every day and picks the top 1 to 3 trades with the highest chance to win."
+                      : "In simple words: Finds famous breakout chart patterns, and the AI double-checks them so you don't get caught in fake traps."}
+                  </div>
                 </div>
-                <div className="engine-btn-desc">
-                  Signals generated directly from multi-factor quantitative AI models (momentum, mean-reversion & institutional accumulation).
-                </div>
-              </button>
 
-              <button
-                type="button"
-                className={`signals-engine-btn ${engine === "v3" ? "is-active" : ""}`}
-                onClick={() => switchEngine("v3")}
-              >
-                <div className="engine-btn-main">
-                  <span className="engine-dot" />
-                  <span className="engine-name">Pattern Confluence AI (V3)</span>
+                <div className="engine-flow-steps">
+                  {engine === "v2" ? (
+                    <>
+                      <div className="engine-flow-step">
+                        <div className="step-badge">1</div>
+                        <div className="step-content">
+                          <div className="step-title">Scans 500+ Stocks</div>
+                          <div className="step-desc">
+                            Every morning, our system scans all major Indian stocks to see where big institutions and funds are quietly buying.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="engine-flow-step">
+                        <div className="step-badge">2</div>
+                        <div className="step-content">
+                          <div className="step-title">Calculates Win Probability</div>
+                          <div className="step-desc">
+                            The AI calculates the mathematical chances of the stock going up vs falling down, rejecting risky trades.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="engine-flow-step">
+                        <div className="step-badge">3</div>
+                        <div className="step-content">
+                          <div className="step-title">Checks 5 Years of Past History</div>
+                          <div className="step-desc">
+                            The AI looks back at thousands of similar setups in past market history to decide the most realistic profit target.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="engine-flow-step">
+                        <div className="step-badge">4</div>
+                        <div className="step-content">
+                          <div className="step-title">Selects Only the Best 1–3 Trades</div>
+                          <div className="step-desc">
+                            Out of hundreds of stocks, only the top 1 to 3 setups with the highest conviction are given as Buy signals.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="engine-flow-step">
+                        <div className="step-badge">5</div>
+                        <div className="step-content">
+                          <div className="step-title">Tells You Exactly When to Exit</div>
+                          <div className="step-desc">
+                            You never have to guess when to sell. The AI tracks the stock live, moves your safety stop up to protect profits, and tells you when to book profit.
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="engine-flow-step">
+                        <div className="step-badge">1</div>
+                        <div className="step-content">
+                          <div className="step-title">Spots Famous Chart Shapes</div>
+                          <div className="step-desc">
+                            The system automatically draws and spots famous chart shapes like Triangles, Base Breakouts, and Cup &amp; Handles.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="engine-flow-step">
+                        <div className="step-badge">2</div>
+                        <div className="step-content">
+                          <div className="step-title">AI Filters Out Fake Breakouts</div>
+                          <div className="step-desc">
+                            Most chart breakouts are fake traps where normal traders lose money. Our AI checks real buying volume to filter out fake moves.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="engine-flow-step">
+                        <div className="step-badge">3</div>
+                        <div className="step-content">
+                          <div className="step-title">Sets Clear Target &amp; Safety Level</div>
+                          <div className="step-desc">
+                            Before you even enter, it gives you an exact Target price to take profit and a Stop Loss price to protect your capital.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="engine-flow-step">
+                        <div className="step-badge">4</div>
+                        <div className="step-content">
+                          <div className="step-title">Signals at the Perfect Entry Moment</div>
+                          <div className="step-desc">
+                            Alerts you the moment the stock breaks out cleanly, so you never buy too early or chase too late.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="engine-flow-step">
+                        <div className="step-badge">5</div>
+                        <div className="step-content">
+                          <div className="step-title">Automatically Locks In Your Profits</div>
+                          <div className="step-desc">
+                            As the stock climbs higher, the system moves your safety stop up behind the price so your profit stays protected until the target is hit.
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div className="engine-btn-desc">
-                  Signals generated from visual multi-timeframe chart patterns (triangles, bases, breakouts) confirmed by AI execution filters.
-                </div>
-              </button>
-            </div>
+              </div>
+            )}
           </div>
 
           <div className="subtabs" id="sigTabs">
