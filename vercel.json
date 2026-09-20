@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/dna/chart/:symbol",
-      "destination": "/api/dna?action=chart&symbol=:symbol"
+      "destination": "/api/dna-chart?symbol=:symbol"
     },
     {
       "source": "/api/dna/report/:symbol",

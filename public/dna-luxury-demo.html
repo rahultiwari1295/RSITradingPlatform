@@ -2313,8 +2313,9 @@
     }
 
     // Actual High-Resolution QuantSync Engine Generated Chart Path
-    const chartSrc = `/dna_charts/${sym}_${viewStr}_${themeStr}.png`;
-    const fallbackSrc = `/dna_charts/${sym}.png`;
+    const chartSrc = `/api/dna/chart/${sym}?view=${viewStr}&theme=${themeStr}`;
+    const fallbackSrc = `/dna_charts/${sym}_${viewStr}_${themeStr}.png`;
+    const defaultSrc = `/dna_charts/${sym}.png`;
     
     box.innerHTML = `
       <div style="position: relative; width: 100%;">
@@ -2323,7 +2324,7 @@
           class="real-chart-img" 
           src="${chartSrc}" 
           alt="${sym} ${viewStr.toUpperCase()} Real Institutional Technical Chart" 
-          onerror="this.onerror=null; this.src='${fallbackSrc}';" 
+          onerror="if (!this.dataset.fallback) { this.dataset.fallback='1'; this.src='${fallbackSrc}'; } else if (this.dataset.fallback === '1') { this.dataset.fallback='2'; this.src='${defaultSrc}'; }" 
         />
       </div>
     `;

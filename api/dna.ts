@@ -11,9 +11,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const q = req.query.q as string;
   const symbol = req.query.symbol as string;
 
+  const view = (req.query.view as string) || 'tactical';
+  const theme = (req.query.theme as string) || 'light';
+  const force = req.query.force ? `&force=true` : '';
+
   let targetUrl = '';
   if (action === 'chart') {
-    targetUrl = `${VPS_HOST}/api/dna/chart/${encodeURIComponent(symbol || '')}`;
+    targetUrl = `${VPS_HOST}/api/dna/chart/${encodeURIComponent(symbol || '')}?view=${encodeURIComponent(view)}&theme=${encodeURIComponent(theme)}${force}`;
   } else if (action === 'report' || symbol) {
     targetUrl = `${VPS_HOST}/api/dna/report/${encodeURIComponent(symbol || '')}`;
   } else {

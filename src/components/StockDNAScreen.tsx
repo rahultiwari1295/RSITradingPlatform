@@ -986,11 +986,16 @@ export default function StockDNAScreen() {
 
                 <div className="dna-real-chart-container" onClick={() => setIsZoomOpen(true)}>
                   <img 
+                    key={`chart_${report.symbol}_${chartPerspective}_${currentTheme}`}
                     src={chartSrc} 
                     alt={`${report.symbol} Institutional Chart`}
                     className="dna-real-chart-img"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = fallbackChartSrc;
+                      const target = e.currentTarget;
+                      if (!target.dataset.triedFallback) {
+                        target.dataset.triedFallback = "true";
+                        target.src = fallbackChartSrc;
+                      }
                     }}
                   />
                 </div>
@@ -1481,6 +1486,7 @@ export default function StockDNAScreen() {
           {isZoomOpen && (
             <div className="chart-fullscreen-modal active" onClick={() => setIsZoomOpen(false)}>
               <button 
+                type="button"
                 className="modal-close-btn" 
                 onClick={(e) => {
                   e.stopPropagation();
@@ -1491,15 +1497,20 @@ export default function StockDNAScreen() {
                 ✕
               </button>
               <img 
+                key={`modal_${report.symbol}_${chartPerspective}_${currentTheme}`}
                 src={chartSrc} 
                 className="modal-chart-img" 
                 onClick={(e) => e.stopPropagation()} 
                 alt="Full Resolution DNA Chart"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = fallbackChartSrc;
+                  const target = e.currentTarget;
+                  if (!target.dataset.triedFallback) {
+                    target.dataset.triedFallback = "true";
+                    target.src = fallbackChartSrc;
+                  }
                 }}
               />
-              <div style={{ marginTop: "14px", color: "rgba(255,255,255,0.75)", fontSize: "11.5px", fontFamily: "var(--dna-font-mono)", textAlign: "center" }}>
+              <div className="modal-caption-text">
                 ⚡ QuantSync DNA Engine · Actual Live Candlesticks & Technical Overlay Matrix
               </div>
             </div>
