@@ -55,9 +55,9 @@
 
 .dna-luxury-wrap {
   width: 100%;
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 8px 12px 110px 12px;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 0 90px 0;
   box-sizing: border-box;
   font-family: var(--dna-font-body);
   color: var(--dna-text-main);
@@ -1099,7 +1099,7 @@
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
-  max-width: 860px;
+  max-width: 430px;
   background: var(--dna-bg-glass);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -1110,6 +1110,12 @@
   z-index: 1000;
   padding-bottom: max(10px, env(safe-area-inset-bottom));
   box-sizing: border-box;
+}
+
+@media (max-width: 520px) {
+  .dna-bottom-bar {
+    max-width: 100%;
+  }
 }
 
 .dna-btn-share-report {
@@ -1196,9 +1202,13 @@
    ========================================================================== */
 
 @media (max-width: 640px) {
-  /* Outer layout */
+  /* Outer layout — matches Signal Page 16px .screen margin exactly */
+  .dna-luxury-wrap,
   .dna-container {
-    padding: 10px 10px 85px 10px;
+    padding: 0 0 85px 0;
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
   }
 
   /* Search & Autocomplete */
