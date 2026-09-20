@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>TradingView-Style DNA Speedometer & 3-Pillar Demo — QuantSync</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    :root, [data-theme="light"] {
+      --bg-body: #F1F4F8;
+      --bg-card: #FFFFFF;
+      --bg-card-subtle: #F8FAFC;
+      --border-main: rgba(15, 23, 42, 0.08);
+      --border-subtle: rgba(15, 23, 42, 0.04);
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --text-dim: #94A3B8;
+      --shadow-card: 0 4px 20px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+      
+      --c-strong-sell: #EF4444;
+      --c-sell: #F87171;
+      --c-neutral: #F59E0B;
+      --c-buy: #3B82F6;
+      --c-strong-buy: #10B981;
+      
+      --gauge-track: #E2E8F0;
+      --bar-bg: #E2E8F0;
+    }
+
+    [data-theme="dark"] {
+      --bg-body: #070A0F;
+      --bg-card: #0D121D;
+      --bg-card-subtle: #111726;
+      --border-main: rgba(255, 255, 255, 0.08);
+      --border-subtle: rgba(255, 255, 255, 0.04);
+      --text-main: #F8FAFC;
+      --text-muted: #94A3B8;
+      --text-dim: #64748B;
+      --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
+      
+      --c-strong-sell: #EF4444;
+      --c-sell: #F87171;
+      --c-neutral: #F59E0B;
+      --c-buy: #3B82F6;
+      --c-strong-buy: #10B981;
+      
+      --gauge-track: #1E293B;
+      --bar-bg: #1E293B;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-body);
+      color: var(--text-main);
+      padding: 24px 16px 80px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    .demo-container {
+      width: 100%;
+      max-width: 820px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Top Demo Header */
+    .demo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+    }
+    .demo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: var(--bg-card);
+      border: 1px solid var(--border-main);
+      padding: 5px 12px;
+      border-radius: 999px;
+      color: var(--c-buy);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .theme-toggle-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-main);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+
+    /* MAIN HERO CARD */
+    .hero-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-main);
+      border-radius: 20px;
+      padding: 22px 24px;
+      box-shadow: var(--shadow-card);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    @media (max-width: 640px) {
+      .hero-card {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        padding: 18px 16px;
+      }
+    }
+
+    /* Left Column: Asset Identity & Vertical Price Stack */
+    .col-asset {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .asset-top-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .asset-symbol {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(24px, 4vw, 30px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+      line-height: 1;
+    }
+
+    .exchange-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 6px;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      color: var(--text-dim);
+      letter-spacing: 0.03em;
+    }
+
+    .asset-meta {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      font-weight: 500;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Vertical Price Block */
+    .price-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .ltp-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(32px, 5.5vw, 40px);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1;
+      color: var(--text-main);
+    }
+
+    .diff-badge-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .diff-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      line-height: 1;
+      width: fit-content;
+    }
+
+    .diff-badge.bear {
+      background: rgba(239, 68, 68, 0.12);
+      color: var(--c-strong-sell);
+      border: 1px solid rgba(239, 68, 68, 0.22);
+    }
+
+    .diff-badge.bull {
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--c-strong-buy);
+      border: 1px solid rgba(16, 185, 129, 0.22);
+    }
+
+    .price-context-caption {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    /* 52W Range Bar in Left Column */
+    .range-bar-box {
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-width: 320px;
+    }
+    .range-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-dim);
+    }
+    .range-track {
+      height: 4px;
+      background: var(--gauge-track);
+      border-radius: 2px;
+      position: relative;
+      overflow: visible;
+    }
+    .range-thumb {
+      position: absolute;
+      top: -3px;
+      width: 10px;
+      height: 10px;
+      background: var(--c-buy);
+      border-radius: 50%;
+      border: 2px solid var(--bg-card);
+      box-shadow: 0 0 6px rgba(59, 130, 246, 0.5);
+      transform: translateX(-50%);
+      transition: left 0.4s ease;
+    }
+
+    /* Right Column: TradingView Speedometer & 3 Pillars */
+    .col-gauge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-main);
+      border-radius: 16px;
+      padding: 16px 18px 14px 18px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+      min-width: 0;
+      position: relative;
+    }
+
+    /* SPEEDOMETER SVG GAUGE */
+    .gauge-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 250px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .gauge-svg {
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+
+    /* Arc Track Segments */
+    .arc-zone {
+      fill: none;
+      stroke-width: 13;
+      stroke-linecap: round;
+      transition: opacity 0.3s ease;
+    }
+
+    /* Needle Pointer */
+    .gauge-needle {
+      transform-origin: 125px 125px;
+      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .needle-line {
+      stroke: var(--text-main);
+      stroke-width: 3.5;
+      stroke-linecap: round;
+    }
+
+    .needle-hub {
+      fill: var(--text-main);
+    }
+
+    .needle-hub-inner {
+      fill: var(--bg-card);
+    }
+
+    /* Zone Label Ticks */
+    .gauge-tick-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 8.5px;
+      font-weight: 700;
+      fill: var(--text-dim);
+      text-anchor: middle;
+      user-select: none;
+    }
+
+    /* Center Verdict & Score */
+    .verdict-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: -6px;
+      margin-bottom: 12px;
+      user-select: none;
+    }
+
+    .verdict-word {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: -0.01em;
+      text-transform: uppercase;
+      line-height: 1.1;
+      transition: color 0.3s ease;
+    }
+
+    .verdict-score-caption {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* 3 PARAMETER PILLARS BREAKDOWN */
+    .pillars-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 10px;
+    }
+
+    .pillar-row {
+      display: grid;
+      grid-template-columns: 82px 1fr 68px;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+    }
+
+    .pillar-name {
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .pillar-bar-track {
+      height: 6px;
+      background: var(--bar-bg);
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .pillar-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
+    }
+
+    .pillar-val-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 10.5px;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    /* Quick Preset Buttons & Controls */
+    .controls-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-main);
+      border-radius: 16px;
+      padding: 16px 20px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .controls-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .presets-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .preset-btn {
+      background: var(--bg-card-subtle);
+      border: 1px solid var(--border-main);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .preset-btn:hover, .preset-btn.active {
+      background: var(--c-buy);
+      border-color: var(--c-buy);
+      color: #FFFFFF;
+      transform: translateY(-1px);
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-top: 6px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .slider-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .score-slider {
+      flex: 1;
+      height: 6px;
+      accent-color: var(--c-buy);
+      cursor: pointer;
+    }
+
+    .score-slider-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--c-buy);
+      min-width: 32px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="demo-container">
+
+    <!-- Header Toolbar -->
+    <div class="demo-header">
+      <div class="demo-badge">
+        <span>⚡ QuantSync Terminal</span>
+        <span>·</span>
+        <span>TradingView Speedometer Prototype</span>
+      </div>
+
+      <button class="theme-toggle-btn" onclick="toggleTheme()">
+        <span id="theme-icon">🌙</span>
+        <span id="theme-text">Dark Mode</span>
+      </button>
+    </div>
+
+    <!-- MAIN HERO CARD: 2-COLUMN LAYOUT -->
+    <div class="hero-card">
+      
+      <!-- LEFT COLUMN: ASSET IDENTITY & VERTICAL PRICE STACK -->
+      <div class="col-asset">
+        <div class="asset-top-row">
+          <span class="asset-symbol" id="d-symbol">TATASTEEL</span>
+          <span class="exchange-tag">NSE: EQ</span>
+        </div>
+
+        <div class="asset-meta" id="d-meta">
+          Tata Steel Limited · Market Cap: ₹2,31,619 Cr
+        </div>
+
+        <!-- Vertical Price Stack (Price with comparison directly underneath) -->
+        <div class="price-stack">
+          <span class="ltp-value" id="d-price">₹186.02</span>
+          <div class="diff-badge-wrap">
+            <span class="diff-badge bear" id="d-diff">
+              <span>▼</span>
+              <span id="d-diff-text">-17.1% vs 52W High</span>
+            </span>
+            <span class="price-context-caption">Real-Time LTP</span>
+          </div>
+        </div>
+
+        <!-- 52-Week Range Bar -->
+        <div class="range-bar-box">
+          <div class="range-labels">
+            <span>52W L: <strong id="d-52l">₹114.25</strong></span>
+            <span>52W H: <strong id="d-52h">₹224.40</strong></span>
+          </div>
+          <div class="range-track">
+            <div class="range-thumb" id="d-range-thumb" style="left: 65%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: TRADINGVIEW SPEEDOMETER & 3 PILLARS -->
+      <div class="col-gauge">
+        
+        <div class="gauge-wrapper">
+          <!-- Semi-circular Speedometer SVG Gauge (180-deg sweep) -->
+          <svg class="gauge-svg" viewBox="0 0 250 145">
+            <!-- 5 Zone Arcs -->
+            <!-- Zone 1: Strong Sell (Red) 180° to 216° -->
+            <path class="arc-zone" d="M 25 125 A 100 100 0 0 1 44.1 66.2" stroke="var(--c-strong-sell)" />
+            <!-- Zone 2: Sell (Coral) 216° to 252° -->
+            <path class="arc-zone" d="M 44.1 66.2 A 100 100 0 0 1 94.1 29.8" stroke="var(--c-sell)" />
+            <!-- Zone 3: Neutral (Amber) 252° to 288° -->
+            <path class="arc-zone" d="M 94.1 29.8 A 100 100 0 0 1 155.9 29.8" stroke="var(--c-neutral)" />
+            <!-- Zone 4: Buy (Blue) 288° to 324° -->
+            <path class="arc-zone" d="M 155.9 29.8 A 100 100 0 0 1 205.9 66.2" stroke="var(--c-buy)" />
+            <!-- Zone 5: Strong Buy (Emerald) 324° to 360° -->
+            <path class="arc-zone" d="M 205.9 66.2 A 100 100 0 0 1 225 125" stroke="var(--c-strong-buy)" />
+
+            <!-- Zone Tick Labels (Around Arc) -->
+            <text x="14" y="140" class="gauge-tick-label">Strong sell</text>
+            <text x="50" y="44" class="gauge-tick-label">Sell</text>
+            <text x="125" y="14" class="gauge-tick-label">Neutral</text>
+            <text x="200" y="44" class="gauge-tick-label">Buy</text>
+            <text x="236" y="140" class="gauge-tick-label">Strong buy</text>
+
+            <!-- Needle Indicator -->
+            <g class="gauge-needle" id="gauge-needle" style="transform: rotate(0deg);">
+              <!-- Needle Pointer -->
+              <line x1="125" y1="125" x2="125" y2="42" class="needle-line" />
+              <!-- Center Hub -->
+              <circle cx="125" cy="125" r="8" class="needle-hub" />
+              <circle cx="125" cy="125" r="3.5" class="needle-hub-inner" />
+            </g>
+          </svg>
+        </div>
+
+        <!-- 1-Word Status & Numeric DNA Score -->
+        <div class="verdict-box">
+          <span class="verdict-word" id="v-word" style="color: var(--c-neutral);">NEUTRAL</span>
+          <span class="verdict-score-caption" id="v-caption">DNA Health Score: 50 / 100</span>
+        </div>
+
+        <!-- 3 Core Parameter Bars (Technical, Financials, Valuation) -->
+        <div class="pillars-container">
+          
+          <!-- Pillar 1: Technical -->
+          <div class="pillar-row">
+            <span class="pillar-name">🔬 Technical</span>
+            <div class="pillar-bar-track">
+              <div class="pillar-bar-fill" id="bar-tech" style="width: 48%; background: var(--c-neutral);"></div>
+            </div>
+            <span class="pillar-val-tag" id="tag-tech" style="color: var(--c-neutral);">48 (Hold)</span>
+          </div>
+
+          <!-- Pillar 2: Financials -->
+          <div class="pillar-row">
+            <span class="pillar-name">🏛️ Financial</span>
+            <div class="pillar-bar-track">
+              <div class="pillar-bar-fill" id="bar-fin" style="width: 74%; background: var(--c-buy);"></div>
+            </div>
+            <span class="pillar-val-tag" id="tag-fin" style="color: var(--c-buy);">74 (Good)</span>
+          </div>
+
+          <!-- Pillar 3: Valuation -->
+          <div class="pillar-row">
+            <span class="pillar-name">🎯 Valuation</span>
+            <div class="pillar-bar-track">
+              <div class="pillar-bar-fill" id="bar-val" style="width: 62%; background: var(--c-buy);"></div>
+            </div>
+            <span class="pillar-val-tag" id="tag-val" style="color: var(--c-buy);">62 (Fair)</span>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- INTERACTIVE PRESET & SLIDER CONTROLS -->
+    <div class="controls-card">
+      <div class="controls-title">Interactive Demo Controls & Stock Presets</div>
+      
+      <div class="presets-row">
+        <button class="preset-btn active" onclick="loadStock('TATASTEEL')">TATASTEEL (Neutral · 50)</button>
+        <button class="preset-btn" onclick="loadStock('RELIANCE')">RELIANCE (Buy · 78)</button>
+        <button class="preset-btn" onclick="loadStock('PAYTM')">PAYTM (Strong Buy · 92)</button>
+        <button class="preset-btn" onclick="loadStock('INFY')">INFY (Sell · 34)</button>
+        <button class="preset-btn" onclick="loadStock('ZOMATO')">ZOMATO (Strong Buy · 86)</button>
+      </div>
+
+      <div class="slider-row">
+        <span class="slider-label">Live Needle Test:</span>
+        <input type="range" class="score-slider" id="live-slider" min="0" max="100" value="50" oninput="onSliderMove(this.value)">
+        <span class="score-slider-val" id="slider-num">50</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const STOCKS = {
+      TATASTEEL: {
+        symbol: "TATASTEEL",
+        name: "Tata Steel Limited",
+        meta: "Metals & Mining · Market Cap: ₹2,31,619 Cr",
+        price: "186.02",
+        diff: "-17.1% vs 52W High",
+        diffClass: "bear",
+        low52: "₹114.25",
+        high52: "₹224.40",
+        thumbPct: "65%",
+        score: 50,
+        word: "NEUTRAL",
+        wordColor: "var(--c-neutral)",
+        technical: { score: 48, text: "48 (Hold)", color: "var(--c-neutral)" },
+        financial: { score: 74, text: "74 (Good)", color: "var(--c-buy)" },
+        valuation: { score: 62, text: "62 (Fair)", color: "var(--c-buy)" }
+      },
+      RELIANCE: {
+        symbol: "RELIANCE",
+        name: "Reliance Industries Ltd",
+        meta: "Oil & Gas / Digital · Market Cap: ₹16,59,630 Cr",
+        price: "1,244.00",
+        diff: "-15.2% vs 52W High",
+        diffClass: "bear",
+        low52: "₹1,235.30",
+        high52: "₹1,467.00",
+        thumbPct: "15%",
+        score: 78,
+        word: "BUY",
+        wordColor: "var(--c-buy)",
+        technical: { score: 72, text: "72 (Buy)", color: "var(--c-buy)" },
+        financial: { score: 81, text: "81 (High)", color: "var(--c-strong-buy)" },
+        valuation: { score: 75, text: "75 (Fair)", color: "var(--c-buy)" }
+      },
+      PAYTM: {
+        symbol: "PAYTM",
+        name: "One97 Communications Ltd",
+        meta: "Fintech & Payments · Market Cap: ₹1,14,890 Cr",
+        price: "1,807.70",
+        diff: "-2.6% vs 52W High",
+        diffClass: "bull",
+        low52: "₹310.00",
+        high52: "₹1,855.00",
+        thumbPct: "96%",
+        score: 92,
+        word: "STRONG BUY",
+        wordColor: "var(--c-strong-buy)",
+        technical: { score: 94, text: "94 (Strong)", color: "var(--c-strong-buy)" },
+        financial: { score: 86, text: "86 (Solvent)", color: "var(--c-strong-buy)" },
+        valuation: { score: 82, text: "82 (High)", color: "var(--c-strong-buy)" }
+      },
+      INFY: {
+        symbol: "INFY",
+        name: "Infosys Limited",
+        meta: "IT Services · Market Cap: ₹6,82,410 Cr",
+        price: "1,642.10",
+        diff: "-18.5% vs 52W High",
+        diffClass: "bear",
+        low52: "₹1,350.00",
+        high52: "₹2,015.00",
+        thumbPct: "42%",
+        score: 34,
+        word: "SELL",
+        wordColor: "var(--c-sell)",
+        technical: { score: 32, text: "32 (Weak)", color: "var(--c-sell)" },
+        financial: { score: 78, text: "78 (Solid)", color: "var(--c-buy)" },
+        valuation: { score: 45, text: "45 (Priced)", color: "var(--c-neutral)" }
+      },
+      ZOMATO: {
+        symbol: "ZOMATO",
+        name: "Zomato Limited",
+        meta: "Online Food Delivery · Market Cap: ₹2,48,500 Cr",
+        price: "282.40",
+        diff: "-1.8% vs 52W High",
+        diffClass: "bull",
+        low52: "₹112.50",
+        high52: "₹287.60",
+        thumbPct: "97%",
+        score: 86,
+        word: "STRONG BUY",
+        wordColor: "var(--c-strong-buy)",
+        technical: { score: 90, text: "90 (Strong)", color: "var(--c-strong-buy)" },
+        financial: { score: 82, text: "82 (Profitable)", color: "var(--c-strong-buy)" },
+        valuation: { score: 72, text: "72 (Growth)", color: "var(--c-buy)" }
+      }
+    };
+
+    function updateGauge(score, word, wordColor, tech, fin, val) {
+      // Angle: 0 score = -90deg (pointing left to Strong Sell), 100 score = +90deg (pointing right to Strong Buy)
+      // Angle sweep is 180 degrees (-90deg to +90deg)
+      const angle = -90 + (score / 100) * 180;
+      document.getElementById('gauge-needle').style.transform = `rotate(${angle}deg)`;
+
+      // Verdict Word & Score
+      const vWord = document.getElementById('v-word');
+      vWord.textContent = word;
+      vWord.style.color = wordColor;
+      document.getElementById('v-caption').textContent = `DNA Health Score: ${score} / 100`;
+
+      // 3 Parameter Bars
+      document.getElementById('bar-tech').style.width = `${tech.score}%`;
+      document.getElementById('bar-tech').style.background = tech.color;
+      document.getElementById('tag-tech').textContent = tech.text;
+      document.getElementById('tag-tech').style.color = tech.color;
+
+      document.getElementById('bar-fin').style.width = `${fin.score}%`;
+      document.getElementById('bar-fin').style.background = fin.color;
+      document.getElementById('tag-fin').textContent = fin.text;
+      document.getElementById('tag-fin').style.color = fin.color;
+
+      document.getElementById('bar-val').style.width = `${val.score}%`;
+      document.getElementById('bar-val').style.background = val.color;
+      document.getElementById('tag-val').textContent = val.text;
+      document.getElementById('tag-val').style.color = val.color;
+    }
+
+    function loadStock(key) {
+      const d = STOCKS[key];
+      if (!d) return;
+
+      document.querySelectorAll('.preset-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent.includes(key));
+      });
+
+      document.getElementById('d-symbol').textContent = d.symbol;
+      document.getElementById('d-meta').textContent = d.meta;
+      document.getElementById('d-price').textContent = `₹${d.price}`;
+      
+      const diffEl = document.getElementById('d-diff');
+      diffEl.className = `diff-badge ${d.diffClass}`;
+      document.getElementById('d-diff-text').textContent = d.diff;
+
+      document.getElementById('d-52l').textContent = d.low52;
+      document.getElementById('d-52h').textContent = d.high52;
+      document.getElementById('d-range-thumb').style.left = d.thumbPct;
+
+      document.getElementById('live-slider').value = d.score;
+      document.getElementById('slider-num').textContent = d.score;
+
+      updateGauge(d.score, d.word, d.wordColor, d.technical, d.financial, d.valuation);
+    }
+
+    function onSliderMove(val) {
+      const score = parseInt(val, 10);
+      document.getElementById('slider-num').textContent = score;
+
+      let word = "NEUTRAL";
+      let wordColor = "var(--c-neutral)";
+      if (score >= 80) {
+        word = "STRONG BUY";
+        wordColor = "var(--c-strong-buy)";
+      } else if (score >= 60) {
+        word = "BUY";
+        wordColor = "var(--c-buy)";
+      } else if (score >= 40) {
+        word = "NEUTRAL";
+        wordColor = "var(--c-neutral)";
+      } else if (score >= 20) {
+        word = "SELL";
+        wordColor = "var(--c-sell)";
+      } else {
+        word = "STRONG SELL";
+        wordColor = "var(--c-strong-sell)";
+      }
+
+      const techScore = Math.min(100, Math.max(0, Math.round(score * 0.95 + (Math.sin(score) * 5))));
+      const finScore = Math.min(100, Math.max(0, Math.round(score * 0.85 + 15)));
+      const valScore = Math.min(100, Math.max(0, Math.round(score * 0.9 + 5)));
+
+      const getCol = (s) => s >= 75 ? "var(--c-strong-buy)" : s >= 55 ? "var(--c-buy)" : s >= 40 ? "var(--c-neutral)" : "var(--c-strong-sell)";
+      const getTxt = (s) => s >= 75 ? `${s} (Strong)` : s >= 55 ? `${s} (Good)` : s >= 40 ? `${s} (Neutral)` : `${s} (Weak)`;
+
+      updateGauge(
+        score, 
+        word, 
+        wordColor,
+        { score: techScore, text: getTxt(techScore), color: getCol(techScore) },
+        { score: finScore, text: getTxt(finScore), color: getCol(finScore) },
+        { score: valScore, text: getTxt(valScore), color: getCol(valScore) }
+      );
+    }
+
+    function toggleTheme() {
+      const root = document.documentElement;
+      const isDark = root.getAttribute('data-theme') === 'dark';
+      const newTheme = isDark ? 'light' : 'dark';
+      root.setAttribute('data-theme', newTheme);
+      document.getElementById('theme-icon').textContent = isDark ? '🌙' : '☀️';
+      document.getElementById('theme-text').textContent = isDark ? 'Dark Mode' : 'Light Mode';
+    }
+
+    // Initialize with TATASTEEL
+    loadStock('TATASTEEL');
+  </script>
+</body>
+</html>
