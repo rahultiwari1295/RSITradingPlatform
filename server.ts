@@ -1022,14 +1022,21 @@ async function startServer() {
   app.get("/api/dna/chart/:symbol", async (req, res) => {
     const symbol = (req.params.symbol || "").trim().toUpperCase();
     const view = ((req.query.view as string) || "tactical").toLowerCase();
-    const filename = view === "macro" ? `${symbol}_macro.png` : `${symbol}_tactical.png`;
-    const localChartPath = path.resolve(process.cwd(), `../vps_data_live/Data/dna_charts/${filename}`);
+    const theme = ((req.query.theme as string) || "light").toLowerCase();
+    const themeFilename = `${symbol}_${view}_${theme}.png`;
+    const viewFilename = `${symbol}_${view}.png`;
+    const localThemePath = path.resolve(process.cwd(), `../vps_data_live/Data/dna_charts/${themeFilename}`);
+    const localViewPath = path.resolve(process.cwd(), `../vps_data_live/Data/dna_charts/${viewFilename}`);
     const fallbackPath = path.resolve(process.cwd(), `../vps_data_live/Data/dna_charts/${symbol}.png`);
-    if (fs.existsSync(localChartPath)) {
+    if (fs.existsSync(localThemePath)) {
       res.setHeader("Content-Type", "image/png");
       res.setHeader("Cache-Control", "public, max-age=3600");
-      return res.sendFile(localChartPath);
-    } else if (fs.existsSync(fallbackPath) && view !== "macro") {
+      return res.sendFile(localThemePath);
+    } else if (fs.existsSync(localViewPath)) {
+      res.setHeader("Content-Type", "image/png");
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      return res.sendFile(localViewPath);
+    } else if (fs.existsSync(fallbackPath)) {
       res.setHeader("Content-Type", "image/png");
       res.setHeader("Cache-Control", "public, max-age=3600");
       return res.sendFile(fallbackPath);

@@ -111,6 +111,30 @@ export default function StockDNAScreen() {
   const [copyToast, setCopyToast] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [chartPerspective, setChartPerspective] = useState<"tactical" | "macro">("tactical");
+  const [currentTheme, setCurrentTheme] = useState<"light" | "dark">(() => {
+    if (typeof document !== "undefined") {
+      const docTheme = document.documentElement.dataset.theme as "light" | "dark";
+      if (docTheme) return docTheme;
+      const stored = localStorage.getItem("theme") as "light" | "dark";
+      if (stored) return stored;
+    }
+    return "light";
+  });
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const updateTheme = () => {
+      const docTheme = (document.documentElement.dataset.theme as "light" | "dark") || 
+                        (localStorage.getItem("theme") as "light" | "dark") || 
+                        "light";
+      setCurrentTheme(docTheme);
+    };
+    updateTheme();
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
+
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [photoScale, setPhotoScale] = useState(1);
   const [photoTranslate, setPhotoTranslate] = useState({ x: 0, y: 0 });
@@ -749,7 +773,7 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                 <h3>Institutional Technical Chart</h3>
               </div>
 
-              {/* Perspective (Tactical vs Macro) + Open Fullscreen Image */}
+              {/* Perspective (Tactical vs Macro) */}
               <div className="dna-chart-header-actions">
                 <div className="dna-chart-toggle-group perspective">
                   <button 
@@ -769,20 +793,6 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                     🌐 Macro (1Y)
                   </button>
                 </div>
-
-                <button 
-                  type="button"
-                  className="dna-zoom-expand-btn"
-                  onClick={() => {
-                    setPhotoScale(1);
-                    setPhotoTranslate({ x: 0, y: 0 });
-                    setIsZoomOpen(true);
-                  }}
-                  title="Open Fullscreen Image"
-                >
-                  <Maximize2 className="w-3.5 h-3.5 mr-1.5" />
-                  <span>Open Image</span>
-                </button>
               </div>
             </div>
 
@@ -807,8 +817,8 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
               title="Click to open photo"
             >
               <img 
-                key={`${report.symbol}-${chartPerspective}`}
-                src={`${getApiBaseUrl()}/api/dna/chart/${report.symbol}?view=${chartPerspective}`}
+                key={`${report.symbol}-${chartPerspective}-${currentTheme}`}
+                src={`${getApiBaseUrl()}/api/dna/chart/${report.symbol}?view=${chartPerspective}&theme=${currentTheme}`}
                 alt={`${report.symbol} ${chartPerspective} Analyst Snapshot Chart`}
                 className="dna-analyst-img"
                 loading="eager"
@@ -816,7 +826,7 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                   const target = e.currentTarget;
                   if (!target.dataset.retried) {
                     target.dataset.retried = "1";
-                    target.src = `/api/dna/chart/${report.symbol}?view=${chartPerspective}`;
+                    target.src = `/api/dna/chart/${report.symbol}?view=${chartPerspective}&theme=${currentTheme}`;
                   }
                 }}
               />
@@ -864,8 +874,8 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                 }}
               >
                 <img 
-                  key={`pv-${report.symbol}-${chartPerspective}`}
-                  src={`${getApiBaseUrl()}/api/dna/chart/${report.symbol}?view=${chartPerspective}`}
+                  key={`pv-${report.symbol}-${chartPerspective}-${currentTheme}`}
+                  src={`${getApiBaseUrl()}/api/dna/chart/${report.symbol}?view=${chartPerspective}&theme=${currentTheme}`}
                   alt={`${report.symbol} ${chartPerspective} Chart`} 
                   className="dna-pure-photo"
                   style={{

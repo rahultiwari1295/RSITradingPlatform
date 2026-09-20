@@ -15,7 +15,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const view = ((req.query.view as string) || 'tactical').toLowerCase();
-  const targetUrl = `${VPS_HOST}/api/dna/chart/${encodeURIComponent(symbol)}?view=${encodeURIComponent(view)}`;
+  const theme = ((req.query.theme as string) || 'light').toLowerCase();
+  const targetUrl = `${VPS_HOST}/api/dna/chart/${encodeURIComponent(symbol)}?view=${encodeURIComponent(view)}&theme=${encodeURIComponent(theme)}`;
 
   try {
     const response = await fetch(targetUrl, {

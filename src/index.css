@@ -4336,6 +4336,23 @@ body::before{
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
 }
 
+[data-theme="light"] .dna-analyst-image-container {
+  background: #FFFFFF;
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .dna-analyst-overlay {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+[data-theme="light"] .dna-analyst-badge {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #0F172A;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+}
+
 /* Pure Fullscreen Photo Viewer (No frames, No header, No footer) */
 .dna-photo-fullscreen-viewer {
   position: fixed;
