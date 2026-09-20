@@ -339,12 +339,19 @@ body::before{
 .screen::-webkit-scrollbar{display:none}
 .screen.active{opacity:1;pointer-events:auto;transform:none}
 
-/* Enforce exact same margin for Stock DNA screen as Signals screen (16px left/right) */
+/* Enforce exact same margin for Stock DNA screen as Signals screen */
 #screen-dna {
-  padding: 18px 16px 32px;
+  padding: 16px 16px 80px;
+}
+@media (max-width: 768px) {
+  #screen-dna {
+    padding: 12px 8px 80px;
+  }
 }
 #screen-dna .dna-luxury-wrap,
-#screen-dna .dna-container {
+#screen-dna .dna-container,
+#screen-dna .dna-masterpiece-wrapper,
+#screen-dna .atelier-container {
   padding-left: 0 !important;
   padding-right: 0 !important;
   margin-left: 0 !important;

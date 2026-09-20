@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Search, Dna, Share2, CheckCircle, AlertTriangle, 
-  ExternalLink, ZoomIn, X, Activity
+  ExternalLink, ZoomIn, X, Activity, ArrowLeft
 } from "lucide-react";
 import "./StockDNALuxury.css";
 import "./StockDNAMasterpiece.css";
@@ -257,7 +257,7 @@ async function apiDnaFetch<T>(endpoint: string): Promise<T> {
 
 export default function StockDNAScreen() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStock, setSelectedStock] = useState("TATASTEEL");
+  const [selectedStock, setSelectedStock] = useState("");
   const [report, setReport] = useState<StockDnaReport | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -353,15 +353,15 @@ export default function StockDNAScreen() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Initial load
+  // Initial load: Only load if ?symbol=XYZ is present in the URL query string
   useEffect(() => {
-    let initialSymbol = "TATASTEEL";
     if (typeof window !== "undefined") {
       const p = new URLSearchParams(window.location.search);
       const s = p.get("symbol");
-      if (s) initialSymbol = s.trim().toUpperCase();
+      if (s && s.trim()) {
+        fetchStockDna(s.trim().toUpperCase());
+      }
     }
-    fetchStockDna(initialSymbol);
   }, []);
 
   const fetchStockDna = async (symbol: string) => {
@@ -393,6 +393,7 @@ export default function StockDNAScreen() {
         setTimeout(() => {
           setReport(data);
           setIsLoading(false);
+          window.scrollTo({ top: 0, behavior: "smooth" });
         }, 250);
       }, 400);
     } catch (err: any) {
@@ -400,6 +401,14 @@ export default function StockDNAScreen() {
       setIsLoading(false);
       setErrorMsg(err.message || "Failed to load Stock DNA report.");
     }
+  };
+
+  const handleResetToHome = () => {
+    setReport(null);
+    setSelectedStock("");
+    setSearchQuery("");
+    setErrorMsg(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const showToast = (msg: string) => {
@@ -462,8 +471,8 @@ Check full interactive analysis: ${window.location.href}`;
     : 45;
 
   // Candlestick Chart Source
-  const chartSrc = `/api/dna/chart/${selectedStock}?view=${chartPerspective}&theme=${currentTheme}`;
-  const fallbackChartSrc = `${VPS_DEFAULT_BASE}/api/dna/chart/${selectedStock}?view=${chartPerspective}&theme=${currentTheme}`;
+  const chartSrc = `/api/dna/chart/${report?.symbol || selectedStock}?view=${chartPerspective}&theme=${currentTheme}`;
+  const fallbackChartSrc = `${VPS_DEFAULT_BASE}/api/dna/chart/${report?.symbol || selectedStock}?view=${chartPerspective}&theme=${currentTheme}`;
 
   // Market Cap Formatter
   const getFormattedMcap = () => {
@@ -477,134 +486,163 @@ Check full interactive analysis: ${window.location.href}`;
   return (
     <div className="dna-masterpiece-wrapper atelier-container" data-theme={currentTheme}>
       
-      {/* 1. TOP FLOATING NAVIGATION CAPSULE */}
-      <header className="atelier-nav">
-        <a href="#" className="brand-cluster" onClick={(e) => e.preventDefault()}>
-          <div className="brand-glyph">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
-              <polyline points="16 7 22 7 22 13"></polyline>
-            </svg>
-          </div>
-          <div className="brand-title-wrap">
-            <span className="brand-title">QuantSync</span>
-            <span className="brand-tag">DNA Atelier</span>
-          </div>
-        </a>
+      {/* =========================================================================
+          STATE A: DNA HOME SCREEN (WHEN NO REPORT IS LOADED AND NOT LOADING)
+          ========================================================================= */}
+      {!report && !isLoading && (
+        <div className="dna-luxury-wrap">
+          {/* Top Brand Header */}
+          <div className="dna-hero-header">
+            <div className="dna-brand-badge">
+              <Dna className="w-3.5 h-3.5" style={{ color: "var(--accent, #3B82F6)" }} />
+              <span>QuantSync DNA · Algorithmic Decoder</span>
+            </div>
+            <h1 className="dna-main-title">
+              Stock <em>DNA</em> Intelligence
+            </h1>
+            <p className="dna-subtitle">
+              Institutional multi-timeframe geometry, CMT execution cards, and real Screener financials across Indian equities.
+            </p>
 
-        {/* Search Bar & Presets Cluster */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", position: "relative" }}>
-          <div className="stock-search-wrapper">
-            <span style={{ fontSize: "13px", marginRight: "6px", opacity: 0.7 }}>🔍</span>
-            <input 
-              ref={searchInputRef}
-              type="text" 
-              id="ticker-search-input"
-              className="stock-search-input" 
-              placeholder="Search NSE ticker (e.g. INFY, SBIN)..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && searchQuery.trim()) {
-                  fetchStockDna(searchQuery.trim());
-                }
-              }}
-            />
-            <button 
-              id="search-action-btn"
-              className="stock-search-btn" 
-              onClick={() => {
-                if (searchQuery.trim()) fetchStockDna(searchQuery.trim());
-              }}
-            >
-              ANALYZE
-            </button>
+            {/* Search Console */}
+            <div className="dna-search-wrapper" ref={dropdownRef}>
+              <div className="dna-search-box">
+                <Search className="dna-search-icon" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  className="dna-search-input"
+                  placeholder="Search stock symbol (e.g. TATASTEEL, PAYTM, RELIANCE, INFY)..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => {
+                    if (suggestions.length > 0) setIsDropdownOpen(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && searchQuery.trim()) {
+                      fetchStockDna(searchQuery);
+                    }
+                  }}
+                />
+                {searchQuery && (
+                  <button 
+                    className="dna-clear-btn" 
+                    onClick={() => { setSearchQuery(""); setSuggestions([]); }}
+                    aria-label="Clear search"
+                  >
+                    ✕
+                  </button>
+                )}
+                <button 
+                  className="dna-submit-btn" 
+                  onClick={() => {
+                    if (searchQuery.trim()) fetchStockDna(searchQuery);
+                  }}
+                >
+                  <Dna className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
+                  <span className="dna-btn-text">Decode DNA</span>
+                </button>
+              </div>
 
-            {/* Suggestions Dropdown */}
-            {isDropdownOpen && suggestions.length > 0 && (
-              <div 
-                ref={dropdownRef} 
-                style={{
-                  position: "absolute",
-                  top: "100%",
-                  left: 0,
-                  right: 0,
-                  marginTop: "6px",
-                  background: "var(--bg-card)",
-                  border: "1px solid var(--border-light)",
-                  borderRadius: "var(--radius-md)",
-                  boxShadow: "var(--card-shadow)",
-                  zIndex: 200,
-                  overflow: "hidden",
-                  maxHeight: "280px",
-                  overflowY: "auto"
-                }}
-              >
-                {suggestions.map((item) => (
-                  <div
-                    key={item.symbol}
-                    style={{
-                      padding: "10px 14px",
-                      cursor: "pointer",
-                      borderBottom: "1px solid var(--border-subtle)",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center"
-                    }}
+              {/* Autocomplete Dropdown */}
+              {isDropdownOpen && suggestions.length > 0 && (
+                <div className="dna-suggestions-popover">
+                  <div className="dna-suggestions-header">
+                    <span>Matching Equities ({suggestions.length})</span>
+                    <span className="dna-popover-tag">NSE Live Database</span>
+                  </div>
+                  <div className="dna-suggestions-list">
+                    {suggestions.map((s) => (
+                      <div
+                        key={s.symbol}
+                        className="dna-suggestion-item"
+                        onClick={() => {
+                          setSearchQuery(s.symbol);
+                          fetchStockDna(s.symbol);
+                        }}
+                      >
+                        <div className="dna-sug-left">
+                          <span className="dna-sug-symbol">{s.symbol}</span>
+                          <span className="dna-sug-name">{s.name}</span>
+                        </div>
+                        <div className="dna-sug-right">
+                          {s.candleCount && (
+                            <span className="dna-sug-candles">{s.candleCount} bars</span>
+                          )}
+                          <span className="dna-sug-nse">NSE</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Ticker Chips */}
+              <div className="dna-stock-chip-row" style={{ marginTop: "12px" }}>
+                {QUICK_STOCKS.map((sym) => (
+                  <button
+                    key={sym}
+                    className="dna-stock-chip"
                     onClick={() => {
-                      fetchStockDna(item.symbol);
-                      setSearchQuery("");
-                      setIsDropdownOpen(false);
+                      setSearchQuery(sym);
+                      fetchStockDna(sym);
                     }}
                   >
-                    <div>
-                      <span style={{ fontWeight: 800, color: "var(--text-main)", marginRight: "8px" }}>{item.symbol}</span>
-                      <span style={{ fontSize: "12px", color: "var(--text-dim)" }}>{item.name}</span>
-                    </div>
-                    <span style={{ fontSize: "10.5px", color: "var(--primary)", fontWeight: 700 }}>NSE</span>
-                  </div>
+                    {sym}
+                  </button>
                 ))}
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Quick Stock Presets Switcher */}
-          <div className="quick-stock-switcher">
-            {QUICK_STOCKS.map((stk) => (
-              <button 
-                key={stk} 
-                className={`stock-chip-btn ${selectedStock === stk ? "active" : ""}`}
-                onClick={() => fetchStockDna(stk)}
-              >
-                {stk}
-              </button>
-            ))}
+          {/* DNA Discovery Feature Highlights */}
+          <div className="dna-home-feature-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "14px", marginTop: "24px" }}>
+            <div className="citadel-card" style={{ padding: "20px 18px", border: "1px solid var(--border-subtle)" }}>
+              <div style={{ fontSize: "24px", marginBottom: "8px" }}>🎯</div>
+              <h3 style={{ fontSize: "15px", fontWeight: 800, color: "var(--text-main)", marginBottom: "4px" }}>
+                CMT Price Geometry
+              </h3>
+              <p style={{ fontSize: "12.5px", color: "var(--text-dim)", lineHeight: 1.5 }}>
+                20/50/200 EMA confluences, Fibonacci retracements, and live candlestick structural maps.
+              </p>
+            </div>
+
+            <div className="citadel-card" style={{ padding: "20px 18px", border: "1px solid var(--border-subtle)" }}>
+              <div style={{ fontSize: "24px", marginBottom: "8px" }}>🛡️</div>
+              <h3 style={{ fontSize: "15px", fontWeight: 800, color: "var(--text-main)", marginBottom: "4px" }}>
+                Solvency & Fortress Audit
+              </h3>
+              <p style={{ fontSize: "12.5px", color: "var(--text-dim)", lineHeight: 1.5 }}>
+                Quantitative balance sheet health, debt-to-equity, and proportional borrowings vs reserves buffer.
+              </p>
+            </div>
+
+            <div className="citadel-card" style={{ padding: "20px 18px", border: "1px solid var(--border-subtle)" }}>
+              <div style={{ fontSize: "24px", marginBottom: "8px" }}>🐳</div>
+              <h3 style={{ fontSize: "15px", fontWeight: 800, color: "var(--text-main)", marginBottom: "4px" }}>
+                Whales & Sector Radar
+              </h3>
+              <p style={{ fontSize: "12.5px", color: "var(--text-dim)", lineHeight: 1.5 }}>
+                Mutual fund and FII flow tracks paired with head-to-head tactical peer radar.
+              </p>
+            </div>
           </div>
         </div>
-
-        {/* Theme & Action Cluster */}
-        <div className="nav-actions">
-          <button 
-            className="theme-toggle-btn" 
-            onClick={toggleTheme} 
-            title="Toggle Light / Dark Mode"
-          >
-            <span id="theme-icon">{currentTheme === "dark" ? "☀️" : "🌙"}</span>
-          </button>
-        </div>
-      </header>
+      )}
 
       {/* ERROR ALERT */}
-      {errorMsg && (
-        <div style={{ background: "rgba(244, 63, 94, 0.15)", border: "1px solid var(--bearish)", borderRadius: "var(--radius-md)", padding: "14px 18px", color: "var(--bearish)", marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px" }}>
+      {errorMsg && !isLoading && (
+        <div style={{ background: "rgba(244, 63, 94, 0.15)", border: "1px solid var(--bearish)", borderRadius: "var(--radius-md)", padding: "14px 18px", color: "var(--bearish)", margin: "16px 0", display: "flex", alignItems: "center", gap: "10px" }}>
           <AlertTriangle className="w-5 h-5 flex-shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
-      {/* 2. LOADING STATE: RADAR SCANNING PROGRESS CONSOLE */}
+      {/* =========================================================================
+          STATE B: RADAR SCANNING PROGRESS CONSOLE (DURING FETCH)
+          ========================================================================= */}
       {isLoading && (
-        <div className="dna-loading-card" style={{ background: "var(--bg-card)", border: "1px solid var(--border-light)", borderRadius: "var(--radius-xl)", padding: "32px 24px", textAlign: "center", margin: "20px 0", boxShadow: "var(--card-shadow)" }}>
+        <div className="dna-loading-card" style={{ background: "var(--bg-card)", border: "1px solid var(--border-light)", borderRadius: "var(--radius-xl)", padding: "32px 20px", textAlign: "center", margin: "20px 0", boxShadow: "var(--card-shadow)" }}>
           <div className="dna-loading-radar-ring" style={{ width: "64px", height: "64px", margin: "0 auto 16px auto", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "var(--primary-subtle)", border: "1px solid var(--primary)" }}>
             <Activity className="w-8 h-8 text-blue-500 animate-pulse" />
           </div>
@@ -637,9 +675,37 @@ Check full interactive analysis: ${window.location.href}`;
         </div>
       )}
 
-      {/* 3. REPORT MASTERPIECE VIEW (RENDERED ONCE DATA ARRIVES) */}
+      {/* =========================================================================
+          STATE C: REPORT MASTERPIECE VIEW (RENDERED ONCE DATA ARRIVES)
+          ========================================================================= */}
       {!isLoading && report && (
         <div>
+          {/* TOP BAR: BACK TO SEARCH BUTTON (NO SEARCH BAR ON TOP!) */}
+          <div className="dna-report-header-bar">
+            <button 
+              className="dna-btn-back-home"
+              onClick={handleResetToHome}
+              title="Back to Stock DNA Home"
+            >
+              <span className="dna-back-arrow">←</span>
+              <span>Back to Search</span>
+            </button>
+
+            <div className="dna-report-active-ticker">
+              <span className="dna-pulse-dot" />
+              <span>{report.symbol}</span>
+              <span className="dna-ticker-exchange">NSE</span>
+            </div>
+
+            <button 
+              className="theme-toggle-btn" 
+              onClick={toggleTheme} 
+              title="Toggle Light / Dark Mode"
+            >
+              <span>{currentTheme === "dark" ? "☀️" : "🌙"}</span>
+            </button>
+          </div>
+
           {/* SECTION 2: HERO CITADEL (IDENTITY & QUANT GAUGE) */}
           <section className="hero-citadel">
             
@@ -1042,7 +1108,7 @@ Check full interactive analysis: ${window.location.href}`;
             <div className="chart-viewport" onClick={() => setIsLightboxOpen(true)} title="Click to view full-resolution institutional chart">
               <img 
                 id="main-chart-img" 
-                key={`chart_${selectedStock}_${chartPerspective}_${currentTheme}`}
+                key={`chart_${report.symbol}_${chartPerspective}_${currentTheme}`}
                 className="chart-actual-img" 
                 src={chartSrc} 
                 alt="Technical Structure Chart" 
@@ -1075,7 +1141,7 @@ Check full interactive analysis: ${window.location.href}`;
             <div style={{ display: "flex", gap: "10px", marginTop: "14px", paddingTop: "14px", borderTop: "1px solid var(--border-subtle)" }}>
               <button 
                 type="button" 
-                className="stock-search-btn" 
+                className="dna-btn-back-home" 
                 style={{ flex: 1, padding: "10px", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
                 onClick={handleShareReport}
               >
@@ -1084,8 +1150,8 @@ Check full interactive analysis: ${window.location.href}`;
               </button>
               <button 
                 type="button" 
-                className="stock-search-btn" 
-                style={{ flex: 1, padding: "10px", fontSize: "12px", background: "linear-gradient(135deg, #10B981, #059669)", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                className="dna-btn-back-home" 
+                style={{ flex: 1, padding: "10px", fontSize: "12px", background: "linear-gradient(135deg, #10B981, #059669)", color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
                 onClick={handleShareWhatsApp}
               >
                 <span>WhatsApp</span>
@@ -1487,7 +1553,7 @@ Check full interactive analysis: ${window.location.href}`;
               </button>
               <img 
                 id="lightbox-chart-img" 
-                key={`lightbox_${selectedStock}_${chartPerspective}_${currentTheme}`}
+                key={`lightbox_${report.symbol}_${chartPerspective}_${currentTheme}`}
                 className="modal-chart-stage" 
                 src={chartSrc} 
                 alt="Institutional Candlestick Lightbox"
