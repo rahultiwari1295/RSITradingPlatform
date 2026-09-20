@@ -282,17 +282,17 @@ const DISCOVERY_SHELVES: Record<string, { label: string; icon: string; subtitle:
         dist52w: "-2.4%"
       },
       {
-        symbol: "TATAMOTORS",
-        name: "Tata Motors Limited",
-        sector: "Auto & EV",
-        price: "₹972.10",
-        score: 84,
+        symbol: "TATAPOWER",
+        name: "Tata Power Company Limited",
+        sector: "Power & Clean Energy",
+        price: "₹425.80",
+        score: 86,
         stance: "BULLISH",
-        stanceLabel: "Uptrend Runner",
-        hook: "JLR debt reduction ahead of schedule with market-leading domestic EV market share.",
-        pe: "15.4",
-        roce: "17.8%",
-        dist52w: "-5.0%"
+        stanceLabel: "Clean Energy Leader",
+        hook: "Surging EV charging network and green renewable capacity expansion with robust cash flows.",
+        pe: "34.2",
+        roce: "14.5%",
+        dist52w: "-4.2%"
       }
     ]
   },
@@ -361,17 +361,17 @@ const DISCOVERY_SHELVES: Record<string, { label: string; icon: string; subtitle:
     subtitle: "Equities surfing above their rising 20 EMA with bullish volume expansion",
     stocks: [
       {
-        symbol: "ZOMATO",
-        name: "Zomato Limited",
-        sector: "Internet & Consumer",
-        price: "₹264.10",
-        score: 85,
+        symbol: "COCHINSHIP",
+        name: "Cochin Shipyard Limited",
+        sector: "Defense & Marine",
+        price: "₹1,890.20",
+        score: 87,
         stance: "BULLISH",
         stanceLabel: "Super-Trend Active",
-        hook: "Blinkit quick-commerce hypergrowth powering exponential EBITDA margin expansion.",
-        pe: "85.0",
-        roce: "14.8%",
-        dist52w: "-1.8%"
+        hook: "Indigenous aircraft carrier and defense vessel pipeline powering record revenue visibility.",
+        pe: "48.5",
+        roce: "23.4%",
+        dist52w: "-2.8%"
       },
       {
         symbol: "BEL",
@@ -476,7 +476,7 @@ const DISCOVERY_SHELVES: Record<string, { label: string; icon: string; subtitle:
 };
 
 const QUICK_STOCKS = [
-  "TATASTEEL", "PAYTM", "RELIANCE", "TATAMOTORS", "HDFCBANK", "INFY", "ITC"
+  "TATASTEEL", "PAYTM", "RELIANCE", "TATAPOWER", "HDFCBANK", "INFY", "ITC"
 ];
 
 const SCAN_STEPS = [
@@ -532,6 +532,19 @@ export default function StockDNAScreen() {
 
   // Discovery Shelf state
   const [activeShelf, setActiveShelf] = useState<string>("trending");
+  const [shelvesData, setShelvesData] = useState<Record<string, { label: string; icon: string; subtitle: string; stocks: CuratedStock[] }>>(DISCOVERY_SHELVES);
+
+  useEffect(() => {
+    apiDnaFetch<Record<string, any>>("/api/dna/discovery")
+      .then((data) => {
+        if (data && data.trending && Array.isArray(data.trending.stocks) && data.trending.stocks.length > 0) {
+          setShelvesData(data);
+        }
+      })
+      .catch((e) => {
+        console.warn("Using fallback discovery shelves:", e);
+      });
+  }, []);
 
   // Theme support
   const [currentTheme, setCurrentTheme] = useState<"dark" | "light">("dark");
@@ -887,7 +900,7 @@ Check full interactive analysis: ${window.location.href}`;
 
             {/* Thematic Tabs */}
             <div className="dna-shelf-tabs">
-              {Object.entries(DISCOVERY_SHELVES).map(([key, shelf]) => (
+              {Object.entries(shelvesData).map(([key, shelf]) => (
                 <button
                   key={key}
                   className={`dna-shelf-tab-btn ${activeShelf === key ? "active" : ""}`}
@@ -901,12 +914,12 @@ Check full interactive analysis: ${window.location.href}`;
 
             {/* Active Shelf Subtitle */}
             <div style={{ fontSize: "12px", color: "var(--text-dim)", marginBottom: "14px", paddingLeft: "4px" }}>
-              {DISCOVERY_SHELVES[activeShelf]?.subtitle}
+              {shelvesData[activeShelf]?.subtitle}
             </div>
 
             {/* Stock Radar Cards Grid */}
             <div className="dna-discovery-grid">
-              {DISCOVERY_SHELVES[activeShelf]?.stocks.map((stock) => (
+              {shelvesData[activeShelf]?.stocks?.map((stock) => (
                 <div
                   key={stock.symbol}
                   className="dna-stock-card"

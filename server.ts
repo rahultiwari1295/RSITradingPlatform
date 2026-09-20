@@ -996,6 +996,20 @@ async function startServer() {
     });
   });
 
+  app.get("/api/dna/discovery", (req, res) => {
+    execFile("python3", [dnaScriptPath, "discovery"], { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+      if (err) {
+        console.error("[DNA Engine] Error fetching discovery shelves:", stderr || err.message);
+        return res.status(500).json({ error: "Failed to load discovery shelves" });
+      }
+      try {
+        return res.json(JSON.parse(stdout));
+      } catch (e: any) {
+        return res.status(500).json({ error: "Invalid JSON from discovery engine" });
+      }
+    });
+  });
+
   app.get("/api/dna/report/:symbol", (req, res) => {
     const symbol = req.params.symbol.trim().toUpperCase();
     const force = req.query.force === "true";
