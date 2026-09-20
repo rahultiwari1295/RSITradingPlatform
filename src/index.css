@@ -4996,6 +4996,121 @@ body::before{
   transform: translateY(-1px);
 }
 
+/* Dual Conviction vs Invalidation Grid */
+.dna-dual-reasons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.dna-reason-card {
+  padding: 20px 22px;
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.dna-reason-card.buy {
+  background: rgba(16, 185, 129, 0.04);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+}
+
+[data-theme="light"] .dna-reason-card.buy {
+  background: #F0FDF4;
+  border-color: #BBF7D0;
+}
+
+.dna-reason-card.avoid {
+  background: rgba(239, 68, 68, 0.04);
+  border: 1px solid rgba(239, 68, 68, 0.22);
+}
+
+[data-theme="light"] .dna-reason-card.avoid {
+  background: #FEF2F2;
+  border-color: #FECACA;
+}
+
+.dna-reason-header {
+  margin-bottom: 14px;
+}
+
+.dna-reason-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.dna-reason-badge.buy {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
+}
+
+[data-theme="light"] .dna-reason-badge.buy {
+  background: #DCFCE7;
+  color: #15803D;
+}
+
+.dna-reason-badge.avoid {
+  background: rgba(239, 68, 68, 0.15);
+  color: #EF4444;
+}
+
+[data-theme="light"] .dna-reason-badge.avoid {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+
+.dna-reason-title-box h4 {
+  font-size: 14.5px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--ink1);
+}
+
+.dna-reason-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.dna-reason-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12.8px;
+  line-height: 1.5;
+  color: var(--ink2);
+}
+
+.dna-reason-bullet {
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1.5;
+  flex-shrink: 0;
+}
+
+.dna-reason-bullet.buy {
+  color: #10B981;
+}
+
+.dna-reason-bullet.avoid {
+  color: #EF4444;
+}
+
+.dna-reason-text {
+  flex: 1;
+}
+
 
 
 

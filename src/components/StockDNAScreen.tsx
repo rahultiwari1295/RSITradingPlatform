@@ -38,6 +38,10 @@ interface StockDnaReport {
   ui_report: {
     dna_archetype: string;
     dna_health_score: number;
+    stance?: "BULLISH" | "NEUTRAL" | "BEARISH" | string;
+    action_title?: string;
+    why_buy_reasons?: string[];
+    why_avoid_reasons?: string[];
     beginner_summary: {
       what_is_happening: string;
       the_opportunity: string;
@@ -48,9 +52,13 @@ interface StockDnaReport {
       chart_pattern_detected: string;
       momentum_state: string;
       key_triggers: string;
+      volume_footprint?: string;
+      fibonacci_confluence?: string;
     };
     trade_execution_card: {
       action: string;
+      action_title?: string;
+      stance?: string;
       entry_zone: string;
       stop_loss: number;
       target_1: number;
@@ -728,6 +736,18 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
                   <span className="dna-spec-k">Momentum & Divergence</span>
                   <span className="dna-spec-v">{report.ui_report.pro_analysis.momentum_state}</span>
                 </div>
+                {report.ui_report.pro_analysis.volume_footprint && (
+                  <div className="dna-pro-spec-row">
+                    <span className="dna-spec-k">Volume & VSA Footprint</span>
+                    <span className="dna-spec-v">{report.ui_report.pro_analysis.volume_footprint}</span>
+                  </div>
+                )}
+                {report.ui_report.pro_analysis.fibonacci_confluence && (
+                  <div className="dna-pro-spec-row">
+                    <span className="dna-spec-k">Fibonacci Confluence</span>
+                    <span className="dna-spec-v font-mono">{report.ui_report.pro_analysis.fibonacci_confluence}</span>
+                  </div>
+                )}
                 <div className="dna-pro-spec-row">
                   <span className="dna-spec-k">Key Breakout Trigger</span>
                   <span className="dna-spec-v">{report.ui_report.pro_analysis.key_triggers}</span>
@@ -738,7 +758,7 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
               <div className="dna-trade-blueprint">
                 <div className="dna-trade-top">
                   <span className={`dna-action-pill ${getActionBadgeClass(report.ui_report.trade_execution_card.action)}`}>
-                    {report.ui_report.trade_execution_card.action.replace(/_/g, " ")}
+                    {report.ui_report.trade_execution_card.action_title || report.ui_report.trade_execution_card.action.replace(/_/g, " ")}
                   </span>
                   <span className="dna-rr-tag">R:R {report.ui_report.trade_execution_card.risk_to_reward_ratio}</span>
                 </div>
@@ -764,6 +784,48 @@ Decoded by QuantSync Algorithmic Terminal: ${shareUrl}`;
               </div>
             </div>
           </div>
+
+          {/* Dual Perspective: Why to Enter (Conviction) vs Why to Avoid / Invalidation Risks */}
+          {((report.ui_report.why_buy_reasons && report.ui_report.why_buy_reasons.length > 0) || 
+            (report.ui_report.why_avoid_reasons && report.ui_report.why_avoid_reasons.length > 0)) && (
+            <div className="dna-dual-reasons-grid">
+              {/* Bullish Conviction Catalysts */}
+              <div className="dna-card dna-reason-card buy">
+                <div className="dna-reason-header buy">
+                  <div className="dna-reason-title-box">
+                    <span className="dna-reason-badge buy">🎯 CONVICTION CATALYSTS</span>
+                    <h4>Why to Enter / Trade Thesis</h4>
+                  </div>
+                </div>
+                <ul className="dna-reason-list">
+                  {(report.ui_report.why_buy_reasons || []).map((reason, idx) => (
+                    <li key={idx} className="dna-reason-item buy">
+                      <span className="dna-reason-bullet buy">✓</span>
+                      <span className="dna-reason-text">{reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Risk Hazards & Invalidation Triggers */}
+              <div className="dna-card dna-reason-card avoid">
+                <div className="dna-reason-header avoid">
+                  <div className="dna-reason-title-box">
+                    <span className="dna-reason-badge avoid">⚠️ RISK HAZARDS & HURDLES</span>
+                    <h4>Why to Avoid / Obstacles & Traps</h4>
+                  </div>
+                </div>
+                <ul className="dna-reason-list">
+                  {(report.ui_report.why_avoid_reasons || []).map((reason, idx) => (
+                    <li key={idx} className="dna-reason-item avoid">
+                      <span className="dna-reason-bullet avoid">✕</span>
+                      <span className="dna-reason-text">{reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
 
           {/* Institutional Technical Snapshot Chart (Tactical 4M vs Macro 1Y) */}
           <div className="dna-card dna-chart-card">
