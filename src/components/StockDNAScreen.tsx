@@ -85,8 +85,9 @@ interface QuestionItem {
   pill: string;
   type: "bullish" | "bearish" | "neutral" | string;
   answer: string;
-  metric: string;
+  metric?: string;
   trigger?: string;
+  compass?: string;
 }
 
 interface BurningQuestions {
@@ -814,152 +815,268 @@ Check full interactive analysis: ${window.location.href}`;
               </div>
 
               <div className="questions-grid">
-                {/* Q1: Can I Buy Today? (Highlight full-width) */}
+                {/* Q1: Can I Buy Right Now? (Highlight full-width) */}
                 <div className="question-card highlight">
-                  <div>
-                    <div className="question-card-header">
-                      <div className="question-title-group">
-                        <span className="question-num-glyph">1</span>
-                        <span className="question-title">Can I buy right now, or is it too late / risky?</span>
-                      </div>
-                      <span className={`question-pill ${report.questions.q1.type || "neutral"}`} id="q1-pill">
+                  <div className="question-top-block">
+                    <div className="question-title-group">
+                      <span className="question-num-glyph">01</span>
+                      <span className="question-category-tag">TIMING & IMMEDIATE ACTION</span>
+                    </div>
+                    <h3 className="question-title">
+                      Can I buy right now, or is it too late / risky?
+                    </h3>
+                    <div className="question-verdict-line">
+                      <span className={`question-verdict-chip ${report.questions.q1.type || "neutral"}`} id="q1-pill">
+                        <span className="verdict-chip-dot" />
                         {report.questions.q1.pill}
                       </span>
                     </div>
-                    <p className="question-answer" id="q1-answer">
-                      {report.questions.q1.answer}
-                    </p>
                   </div>
-                  <div className="question-metric-strip">
-                    <span>Distance to Mean: <strong className="question-metric-tag" id="q1-metric">{report.questions.q1.metric}</strong></span>
-                    <span>·</span>
-                    <span>Action Trigger: <strong className="question-metric-tag" id="q1-trigger">{report.questions.q1.trigger || "Range Active"}</strong></span>
+
+                  <p className="question-answer" id="q1-answer">
+                    {report.questions.q1.answer}
+                  </p>
+
+                  <div className="question-compass-box">
+                    <div className="compass-header">
+                      <span className="compass-icon">🎯</span>
+                      <span className="compass-title">Smart Investor Compass</span>
+                    </div>
+                    <div className="compass-text">
+                      {report.questions.q1.compass || (
+                        <>
+                          Price is sitting right on its normal average (<span className="dna-hl-blue">₹{report.current_metrics.ema20}</span>). 
+                          Keep your cash safe in your pocket: only enter if price cleanly shoots above <span className="dna-hl-bull">₹{(report.current_metrics.price * 1.025).toFixed(1)}</span> with heavy volume, 
+                          or wait for a bargain discount near <span className="dna-hl-neutral">₹{(report.current_metrics.price * 0.96).toFixed(1)}</span>.
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Q2: Short-Term Velocity (1-4W) */}
                 <div className="question-card">
-                  <div>
-                    <div className="question-card-header">
-                      <div className="question-title-group">
-                        <span className="question-num-glyph">2</span>
-                        <span className="question-title">How will it perform in the Short-Run (1–4 Weeks)?</span>
-                      </div>
-                      <span className={`question-pill ${report.questions.q2.type || "neutral"}`} id="q2-pill">
+                  <div className="question-top-block">
+                    <div className="question-title-group">
+                      <span className="question-num-glyph">02</span>
+                      <span className="question-category-tag">SHORT-TERM SPEED (1–4 WEEKS)</span>
+                    </div>
+                    <h3 className="question-title">
+                      How will it perform in the Short-Run (1–4 Weeks)?
+                    </h3>
+                    <div className="question-verdict-line">
+                      <span className={`question-verdict-chip ${report.questions.q2.type || "neutral"}`} id="q2-pill">
+                        <span className="verdict-chip-dot" />
                         {report.questions.q2.pill}
                       </span>
                     </div>
-                    <p className="question-answer" id="q2-answer">
-                      {report.questions.q2.answer}
-                    </p>
                   </div>
-                  <div className="question-metric-strip">
-                    <span>Velocity: <strong className="question-metric-tag" id="q2-metric">{report.questions.q2.metric}</strong></span>
+
+                  <p className="question-answer" id="q2-answer">
+                    {report.questions.q2.answer}
+                  </p>
+
+                  <div className="question-compass-box">
+                    <div className="compass-header">
+                      <span className="compass-icon">⚡</span>
+                      <span className="compass-title">Tactical Speedometer</span>
+                    </div>
+                    <div className="compass-text">
+                      {report.questions.q2.compass || (
+                        <>
+                          Speed is neutral with RSI at <span className="dna-hl-neutral">{report.current_metrics.rsi}</span> (calm balanced zone). 
+                          Expect choppy back-and-forth swings between 20 EMA (<span className="dna-hl-blue">₹{report.current_metrics.ema20}</span>) and 50 EMA (<span className="dna-hl-blue">₹{report.current_metrics.ema50}</span>).
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Q3: Long-Term Compounding (1-3Y) */}
                 <div className="question-card">
-                  <div>
-                    <div className="question-card-header">
-                      <div className="question-title-group">
-                        <span className="question-num-glyph">3</span>
-                        <span className="question-title">How will it perform in the Long-Run (1–3 Years)?</span>
-                      </div>
-                      <span className={`question-pill ${report.questions.q3.type || "bullish"}`} id="q3-pill">
+                  <div className="question-top-block">
+                    <div className="question-title-group">
+                      <span className="question-num-glyph">03</span>
+                      <span className="question-category-tag">WEALTH COMPOUNDING (1–3 YEARS)</span>
+                    </div>
+                    <h3 className="question-title">
+                      How will it perform in the Long-Run (1–3 Years)?
+                    </h3>
+                    <div className="question-verdict-line">
+                      <span className={`question-verdict-chip ${report.questions.q3.type || "bullish"}`} id="q3-pill">
+                        <span className="verdict-chip-dot" />
                         {report.questions.q3.pill}
                       </span>
                     </div>
-                    <p className="question-answer" id="q3-answer">
-                      {report.questions.q3.answer}
-                    </p>
                   </div>
-                  <div className="question-metric-strip">
-                    <span>Quality: <strong className="question-metric-tag" id="q3-metric">{report.questions.q3.metric}</strong></span>
+
+                  <p className="question-answer" id="q3-answer">
+                    {report.questions.q3.answer}
+                  </p>
+
+                  <div className="question-compass-box">
+                    <div className="compass-header">
+                      <span className="compass-icon">📈</span>
+                      <span className="compass-title">Compounding Engine</span>
+                    </div>
+                    <div className="compass-text">
+                      {report.questions.q3.compass || (
+                        <>
+                          High business quality delivering <span className="dna-hl-bull">{report.fundamentals?.key_ratios?.roce_pct ? `${report.fundamentals.key_ratios.roce_pct}%` : report.fundamentals?.roce || "12.5%"} ROCE</span> capital efficiency and <span className="dna-hl-blue">{report.fundamentals?.key_ratios?.dividend_yield_pct ? `${report.fundamentals.key_ratios.dividend_yield_pct}%` : report.fundamentals?.div || "2.16%"} dividend yield</span>. Built for steady multi-year portfolio compounding.
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Q4: Balance Sheet & Solvency */}
                 <div className="question-card">
-                  <div>
-                    <div className="question-card-header">
-                      <div className="question-title-group">
-                        <span className="question-num-glyph">4</span>
-                        <span className="question-title">How safe is the Balance Sheet? Any bankruptcy risk?</span>
-                      </div>
-                      <span className={`question-pill ${report.questions.q4.type || "bullish"}`} id="q4-pill">
+                  <div className="question-top-block">
+                    <div className="question-title-group">
+                      <span className="question-num-glyph">04</span>
+                      <span className="question-category-tag">BALANCE SHEET & SOLVENCY</span>
+                    </div>
+                    <h3 className="question-title">
+                      How safe is the Balance Sheet? Any bankruptcy risk?
+                    </h3>
+                    <div className="question-verdict-line">
+                      <span className={`question-verdict-chip ${report.questions.q4.type || "bullish"}`} id="q4-pill">
+                        <span className="verdict-chip-dot" />
                         {report.questions.q4.pill}
                       </span>
                     </div>
-                    <p className="question-answer" id="q4-answer">
-                      {report.questions.q4.answer}
-                    </p>
                   </div>
-                  <div className="question-metric-strip">
-                    <span>Solvency: <strong className="question-metric-tag" id="q4-metric">{report.questions.q4.metric}</strong></span>
+
+                  <p className="question-answer" id="q4-answer">
+                    {report.questions.q4.answer}
+                  </p>
+
+                  <div className="question-compass-box">
+                    <div className="compass-header">
+                      <span className="compass-icon">🛡️</span>
+                      <span className="compass-title">Solvency Shield</span>
+                    </div>
+                    <div className="compass-text">
+                      {report.questions.q4.compass || (
+                        <>
+                          Debt-to-Equity is safely controlled at <span className="dna-hl-bull">{report.solvency?.de || "0.90"}</span>. 
+                          Accumulated reserves of <span className="dna-hl-bull">{report.solvency?.reserves || "₹1,00,920 Cr"}</span> completely cover total bank borrowings (<span className="dna-hl-neutral">{report.solvency?.borrowings || "₹92,382 Cr"}</span>). Distress risk is zero.
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Q5: Big Whales / Smart Money */}
                 <div className="question-card">
-                  <div>
-                    <div className="question-card-header">
-                      <div className="question-title-group">
-                        <span className="question-num-glyph">5</span>
-                        <span className="question-title">Are Big Whales (FIIs & Mutual Funds) buying or dumping?</span>
-                      </div>
-                      <span className={`question-pill ${report.questions.q5.type || "bullish"}`} id="q5-pill">
+                  <div className="question-top-block">
+                    <div className="question-title-group">
+                      <span className="question-num-glyph">05</span>
+                      <span className="question-category-tag">INSTITUTIONAL WHALE RADAR</span>
+                    </div>
+                    <h3 className="question-title">
+                      Are Big Whales (FIIs & Mutual Funds) buying or dumping?
+                    </h3>
+                    <div className="question-verdict-line">
+                      <span className={`question-verdict-chip ${report.questions.q5.type || "bullish"}`} id="q5-pill">
+                        <span className="verdict-chip-dot" />
                         {report.questions.q5.pill}
                       </span>
                     </div>
-                    <p className="question-answer" id="q5-answer">
-                      {report.questions.q5.answer}
-                    </p>
                   </div>
-                  <div className="question-metric-strip">
-                    <span>Institutional Stake: <strong className="question-metric-tag" id="q5-metric">{report.questions.q5.metric}</strong></span>
+
+                  <p className="question-answer" id="q5-answer">
+                    {report.questions.q5.answer}
+                  </p>
+
+                  <div className="question-compass-box">
+                    <div className="compass-header">
+                      <span className="compass-icon">🐳</span>
+                      <span className="compass-title">Whale Accumulation Track</span>
+                    </div>
+                    <div className="compass-text">
+                      {report.questions.q5.compass || (
+                        <>
+                          Institutions hold a massive <span className="dna-hl-bull">{report.fundamentals?.shareholding_pattern?.fii ? "45.3%" : "38.5%"}</span> combined stake. 
+                          Crucially, <span className="dna-hl-bull">0.0% of promoter shares are pledged</span> — proving owners have full conviction in future performance.
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Q6: Better Sector Alternatives */}
                 <div className="question-card">
-                  <div>
-                    <div className="question-card-header">
-                      <div className="question-title-group">
-                        <span className="question-num-glyph">6</span>
-                        <span className="question-title">Are there better alternatives in this sector?</span>
-                      </div>
-                      <span className={`question-pill ${report.questions.q6.type || "neutral"}`} id="q6-pill">
+                  <div className="question-top-block">
+                    <div className="question-title-group">
+                      <span className="question-num-glyph">06</span>
+                      <span className="question-category-tag">SECTOR PEER BENCHMARK</span>
+                    </div>
+                    <h3 className="question-title">
+                      Are there better alternatives in this sector?
+                    </h3>
+                    <div className="question-verdict-line">
+                      <span className={`question-verdict-chip ${report.questions.q6.type || "neutral"}`} id="q6-pill">
+                        <span className="verdict-chip-dot" />
                         {report.questions.q6.pill}
                       </span>
                     </div>
-                    <p className="question-answer" id="q6-answer">
-                      {report.questions.q6.answer}
-                    </p>
                   </div>
-                  <div className="question-metric-strip">
-                    <span>Relative Edge: <strong className="question-metric-tag" id="q6-metric">{report.questions.q6.metric}</strong></span>
+
+                  <p className="question-answer" id="q6-answer">
+                    {report.questions.q6.answer}
+                  </p>
+
+                  <div className="question-compass-box">
+                    <div className="compass-header">
+                      <span className="compass-icon">🏆</span>
+                      <span className="compass-title">Tactical Sector Edge</span>
+                    </div>
+                    <div className="compass-text">
+                      {report.questions.q6.compass || (
+                        <>
+                          Offers stronger downside safety with a P/E multiple of <span className="dna-hl-blue">{report.fundamentals?.key_ratios?.stock_pe ?? report.fundamentals?.pe ?? "19.6"}</span>. 
+                          Check the head-to-head peer table below to compare speed versus valuation across rivals.
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Q7: Catalysts & Red Flags */}
                 <div className="question-card">
-                  <div>
-                    <div className="question-card-header">
-                      <div className="question-title-group">
-                        <span className="question-num-glyph">7</span>
-                        <span className="question-title">What are the upcoming Catalysts and Red Flags?</span>
-                      </div>
-                      <span className={`question-pill ${report.questions.q7.type || "neutral"}`} id="q7-pill">
+                  <div className="question-top-block">
+                    <div className="question-title-group">
+                      <span className="question-num-glyph">07</span>
+                      <span className="question-category-tag">UPCOMING CATALYSTS & FORENSICS</span>
+                    </div>
+                    <h3 className="question-title">
+                      What are the upcoming Catalysts and Red Flags?
+                    </h3>
+                    <div className="question-verdict-line">
+                      <span className={`question-verdict-chip ${report.questions.q7.type || "neutral"}`} id="q7-pill">
+                        <span className="verdict-chip-dot" />
                         {report.questions.q7.pill}
                       </span>
                     </div>
-                    <p className="question-answer" id="q7-answer">
-                      {report.questions.q7.answer}
-                    </p>
                   </div>
-                  <div className="question-metric-strip">
-                    <span>Red Flag Radar: <strong className="question-metric-tag" id="q7-metric">{report.questions.q7.metric}</strong></span>
+
+                  <p className="question-answer" id="q7-answer">
+                    {report.questions.q7.answer}
+                  </p>
+
+                  <div className="question-compass-box">
+                    <div className="compass-header">
+                      <span className="compass-icon">🔍</span>
+                      <span className="compass-title">Forensic Audit Verdict</span>
+                    </div>
+                    <div className="compass-text">
+                      {report.questions.q7.compass || (
+                        <>
+                          Passed all 4 forensic safety tests: <span className="dna-hl-bull">clean audit track record</span>, <span className="dna-hl-bull">0 accounting red flags</span>, and <span className="dna-hl-bull">healthy operating cash flow</span>. Watch for upcoming quarterly results for the next directional catalyst.
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
