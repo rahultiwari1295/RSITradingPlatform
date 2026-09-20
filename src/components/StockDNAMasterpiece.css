@@ -2501,3 +2501,430 @@
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.3); opacity: 0.6; }
 }
+
+/* ==========================================================================
+   NEXT-LEVEL STOCK DNA DISCOVERY HUB & CURATED RADAR SHELVES
+   ========================================================================== */
+
+/* Micro-Stats Ribbon */
+.dna-stats-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.dna-stat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  padding: 4px 10px;
+  border-radius: 999px;
+  transition: all 0.2s ease;
+}
+
+[data-theme="light"] .dna-stat-badge {
+  background: #F1F5F9;
+  border-color: #E2E8F0;
+  color: #475569;
+}
+
+.dna-stat-badge strong {
+  color: var(--text-main);
+}
+
+[data-theme="light"] .dna-stat-badge strong {
+  color: #0F172A;
+}
+
+/* Discovery Hub Container */
+.dna-discovery-hub {
+  margin-top: 28px;
+}
+
+.dna-discovery-header {
+  margin-bottom: 16px;
+}
+
+.dna-shelf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary);
+  background: var(--primary-subtle);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+}
+
+.dna-shelf-main-title {
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.dna-shelf-subtitle {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* Thematic Shelf Tab Switcher */
+.dna-shelf-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 12px 2px;
+  margin-bottom: 14px;
+  scrollbar-width: none;
+}
+.dna-shelf-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.dna-shelf-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="light"] .dna-shelf-tab-btn {
+  background: #FFFFFF;
+  border-color: #CBD5E1;
+  color: #475569;
+}
+
+.dna-shelf-tab-btn:hover {
+  border-color: var(--border-light);
+  color: var(--text-main);
+  transform: translateY(-1px);
+}
+
+.dna-shelf-tab-btn.active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.16), rgba(139, 92, 246, 0.16));
+  border-color: var(--primary);
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
+}
+
+[data-theme="light"] .dna-shelf-tab-btn.active {
+  background: #EFF6FF;
+  border-color: #3B82F6;
+  color: #1D4ED8;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+/* Stock Discovery Grid */
+.dna-discovery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+/* Stock Radar Card */
+.dna-stock-card {
+  background: var(--bg-surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 18px;
+  padding: 18px 18px 16px 18px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--card-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+[data-theme="light"] .dna-stock-card {
+  background: #FFFFFF;
+  border-color: #E2E8F0;
+  box-shadow: 0 4px 18px -4px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.dna-stock-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.dna-stock-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.65), 0 0 20px rgba(59, 130, 246, 0.1);
+}
+
+[data-theme="light"] .dna-stock-card:hover {
+  border-color: #93C5FD;
+  box-shadow: 0 12px 28px -6px rgba(59, 130, 246, 0.15), 0 1px 4px rgba(15, 23, 42, 0.05);
+}
+
+.dna-stock-card:hover::before {
+  opacity: 1;
+}
+
+/* Card Top: Identity & Score */
+.dna-stock-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dna-stock-sym-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dna-stock-sym-title {
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dna-stock-name-text {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.dna-stock-score-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.dna-score-num {
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--bullish);
+}
+
+.dna-score-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+/* Price & Stance Strip */
+.dna-stock-price-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+
+[data-theme="light"] .dna-stock-price-strip {
+  background: #F8FAFC;
+  border-color: #E2E8F0;
+}
+
+.dna-stock-ltp {
+  font-family: var(--font-mono, monospace);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+[data-theme="light"] .dna-stock-ltp {
+  color: #0F172A;
+}
+
+.dna-stock-stance-pill {
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dna-stock-stance-pill.bullish {
+  background: var(--bullish-subtle);
+  color: var(--bullish);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.dna-stock-stance-pill.neutral {
+  background: var(--neutral-subtle);
+  color: var(--neutral);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Card Hook */
+.dna-stock-hook {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .dna-stock-hook {
+  color: #334155;
+}
+
+/* Micro Metrics Bar */
+.dna-stock-metrics-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.dna-mini-metric {
+  display: flex;
+  flex-direction: column;
+}
+
+.dna-mini-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+
+.dna-mini-val {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+[data-theme="light"] .dna-mini-val {
+  color: #0F172A;
+}
+
+/* Card Action Footer */
+.dna-stock-card-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-top: 2px;
+  transition: transform 0.2s ease;
+}
+
+.dna-stock-card:hover .dna-stock-card-action {
+  color: #60A5FA;
+  transform: translateX(2px);
+}
+
+/* Quantitative Engine 3-Step Pipeline */
+.dna-pipeline-section {
+  margin-top: 36px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.dna-pipeline-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.dna-pipeline-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+[data-theme="light"] .dna-pipeline-card {
+  background: #FFFFFF;
+  border-color: #E2E8F0;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+.dna-pipeline-card:hover {
+  border-color: var(--border-light);
+  transform: translateY(-2px);
+}
+
+.dna-pipe-step-num {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--primary-subtle);
+  color: var(--primary);
+  display: inline-block;
+  width: fit-content;
+}
+
+.dna-pipe-title {
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.dna-pipe-desc {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-dim);
+}

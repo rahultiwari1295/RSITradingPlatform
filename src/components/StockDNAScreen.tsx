@@ -222,6 +222,259 @@ interface StockDnaReport {
   catalysts?: CatalystsRadar;
 }
 
+interface CuratedStock {
+  symbol: string;
+  name: string;
+  sector: string;
+  price: string;
+  score: number;
+  stance: "BULLISH" | "NEUTRAL" | "BEARISH";
+  stanceLabel: string;
+  hook: string;
+  pe: string;
+  roce: string;
+  dist52w: string;
+}
+
+const DISCOVERY_SHELVES: Record<string, { label: string; icon: string; subtitle: string; stocks: CuratedStock[] }> = {
+  trending: {
+    label: "Hot Institutional Radar",
+    icon: "🔥",
+    subtitle: "Most actively scanned equities with dynamic technical setups and high institutional interest",
+    stocks: [
+      {
+        symbol: "TATASTEEL",
+        name: "Tata Steel Limited",
+        sector: "Metals & Mining",
+        price: "₹186.02",
+        score: 82,
+        stance: "NEUTRAL",
+        stanceLabel: "Breakout Watch",
+        hook: "Resting on its 20 EMA corridor with ₹1.0L Cr reserves and zero promoter pledging.",
+        pe: "19.6",
+        roce: "12.5%",
+        dist52w: "-3.1%"
+      },
+      {
+        symbol: "PAYTM",
+        name: "One97 Communications",
+        sector: "Fintech & Digital",
+        price: "₹712.40",
+        score: 76,
+        stance: "BULLISH",
+        stanceLabel: "Strong Momentum",
+        hook: "High-velocity reversal with FII fund inflows and expanding operating cash flow.",
+        pe: "N/A",
+        roce: "8.4%",
+        dist52w: "-14.2%"
+      },
+      {
+        symbol: "RELIANCE",
+        name: "Reliance Industries",
+        sector: "Energy & Telecom",
+        price: "₹2,980.50",
+        score: 88,
+        stance: "BULLISH",
+        stanceLabel: "Core Accumulation",
+        hook: "Dominant conglomerate moat with 5G capex monetization and massive balance sheet safety.",
+        pe: "24.8",
+        roce: "14.2%",
+        dist52w: "-2.4%"
+      },
+      {
+        symbol: "TATAMOTORS",
+        name: "Tata Motors Limited",
+        sector: "Auto & EV",
+        price: "₹972.10",
+        score: 84,
+        stance: "BULLISH",
+        stanceLabel: "Uptrend Runner",
+        hook: "JLR debt reduction ahead of schedule with market-leading domestic EV market share.",
+        pe: "15.4",
+        roce: "17.8%",
+        dist52w: "-5.0%"
+      }
+    ]
+  },
+  solvency: {
+    label: "Solvency Fortress Kings",
+    icon: "🛡️",
+    subtitle: "Virtually zero debt, massive accumulated cash reserves, and Solvency Grade A+",
+    stocks: [
+      {
+        symbol: "HDFCBANK",
+        name: "HDFC Bank Limited",
+        sector: "Private Banking",
+        price: "₹1,640.25",
+        score: 86,
+        stance: "BULLISH",
+        stanceLabel: "Value Compounder",
+        hook: "India's premier banking fortress trading at decade-low price-to-book valuation.",
+        pe: "18.2",
+        roce: "16.1%",
+        dist52w: "-6.8%"
+      },
+      {
+        symbol: "TCS",
+        name: "Tata Consultancy Services",
+        sector: "IT Services",
+        price: "₹4,250.00",
+        score: 91,
+        stance: "BULLISH",
+        stanceLabel: "Bulletproof Fortress",
+        hook: "Debt-free balance sheet with an extraordinary 55%+ ROCE and consistent dividend payouts.",
+        pe: "28.5",
+        roce: "58.2%",
+        dist52w: "-4.1%"
+      },
+      {
+        symbol: "ITC",
+        name: "ITC Limited",
+        sector: "FMCG & Hotels",
+        price: "₹504.80",
+        score: 87,
+        stance: "BULLISH",
+        stanceLabel: "Cash Cow Giant",
+        hook: "Monopoly cigarette cash engine funding hotel demerger and fast-growing FMCG brands.",
+        pe: "26.2",
+        roce: "39.4%",
+        dist52w: "-2.1%"
+      },
+      {
+        symbol: "INFY",
+        name: "Infosys Limited",
+        sector: "IT Services",
+        price: "₹1,885.00",
+        score: 85,
+        stance: "BULLISH",
+        stanceLabel: "Zero-Debt Cash Rich",
+        hook: "Surplus cash reserves of ₹38,000+ Cr with enterprise AI contract wins ramping up.",
+        pe: "27.1",
+        roce: "40.5%",
+        dist52w: "-3.5%"
+      }
+    ]
+  },
+  velocity: {
+    label: "High-Velocity Momentum",
+    icon: "🚀",
+    subtitle: "Equities surfing above their rising 20 EMA with bullish volume expansion",
+    stocks: [
+      {
+        symbol: "ZOMATO",
+        name: "Zomato Limited",
+        sector: "Internet & Consumer",
+        price: "₹264.10",
+        score: 85,
+        stance: "BULLISH",
+        stanceLabel: "Super-Trend Active",
+        hook: "Blinkit quick-commerce hypergrowth powering exponential EBITDA margin expansion.",
+        pe: "85.0",
+        roce: "14.8%",
+        dist52w: "-1.8%"
+      },
+      {
+        symbol: "BEL",
+        name: "Bharat Electronics",
+        sector: "Aerospace & Defense",
+        price: "₹295.40",
+        score: 89,
+        stance: "BULLISH",
+        stanceLabel: "Defense Supercycle",
+        hook: "All-time high order book with indigenization tailwinds and 33% ROCE.",
+        pe: "42.1",
+        roce: "33.6%",
+        dist52w: "-3.2%"
+      },
+      {
+        symbol: "HAL",
+        name: "Hindustan Aeronautics",
+        sector: "Defense Aviation",
+        price: "₹4,680.00",
+        score: 88,
+        stance: "BULLISH",
+        stanceLabel: "High-Speed Runner",
+        hook: "Tejas fighter jet & helicopter multi-year order backlog with zero bank borrowings.",
+        pe: "36.4",
+        roce: "30.5%",
+        dist52w: "-4.9%"
+      },
+      {
+        symbol: "DIXON",
+        name: "Dixon Technologies",
+        sector: "Electronics & EMS",
+        price: "₹13,420.00",
+        score: 83,
+        stance: "BULLISH",
+        stanceLabel: "PLI Breakout",
+        hook: "Smartphone and electronic manufacturing capacity expanding at 45%+ CAGR.",
+        pe: "78.2",
+        roce: "29.1%",
+        dist52w: "-2.6%"
+      }
+    ]
+  },
+  whales: {
+    label: "Whale Accumulation",
+    icon: "🐳",
+    subtitle: "Heavy Mutual Fund & Foreign Institutional buying with 0.0% promoter pledging",
+    stocks: [
+      {
+        symbol: "BHARTIARTL",
+        name: "Bharti Airtel Limited",
+        sector: "Telecommunications",
+        price: "₹1,680.50",
+        score: 90,
+        stance: "BULLISH",
+        stanceLabel: "Whale Inflow Surge",
+        hook: "ARPU expanding towards ₹240 with massive domestic institutional stake increase.",
+        pe: "54.2",
+        roce: "16.8%",
+        dist52w: "-1.5%"
+      },
+      {
+        symbol: "ICICIBANK",
+        name: "ICICI Bank Limited",
+        sector: "Private Banking",
+        price: "₹1,275.00",
+        score: 92,
+        stance: "BULLISH",
+        stanceLabel: "Institutional Favorite",
+        hook: "Best-in-class NPA hygiene and ROA of 2.3% with heavy mutual fund accumulation.",
+        pe: "17.4",
+        roce: "17.5%",
+        dist52w: "-1.9%"
+      },
+      {
+        symbol: "LT",
+        name: "Larsen & Toubro",
+        sector: "Capital Goods & Infra",
+        price: "₹3,560.00",
+        score: 87,
+        stance: "BULLISH",
+        stanceLabel: "Mega Order Flow",
+        hook: "Record international order book from Middle East energy capex and domestic railways.",
+        pe: "31.2",
+        roce: "15.9%",
+        dist52w: "-4.2%"
+      },
+      {
+        symbol: "SUNPHARMA",
+        name: "Sun Pharmaceutical",
+        sector: "Pharmaceuticals",
+        price: "₹1,840.00",
+        score: 86,
+        stance: "BULLISH",
+        stanceLabel: "Global Specialty Leader",
+        hook: "Specialty dermatology and oncology portfolio outperforming generic pricing drag.",
+        pe: "35.8",
+        roce: "18.2%",
+        dist52w: "-2.0%"
+      }
+    ]
+  }
+};
+
 const QUICK_STOCKS = [
   "TATASTEEL", "PAYTM", "RELIANCE", "TATAMOTORS", "HDFCBANK", "INFY", "ITC"
 ];
@@ -276,6 +529,9 @@ export default function StockDNAScreen() {
 
   // Bento Tab Deep-Dive state
   const [bentoTab, setBentoTab] = useState<"fundamentals" | "pl" | "ownership">("fundamentals");
+
+  // Discovery Shelf state
+  const [activeShelf, setActiveShelf] = useState<string>("trending");
 
   // Theme support
   const [currentTheme, setCurrentTheme] = useState<"dark" | "light">("dark");
@@ -589,43 +845,163 @@ Check full interactive analysis: ${window.location.href}`;
                       fetchStockDna(sym);
                     }}
                   >
-                    {sym}
+                    <span className="dna-pulse-dot" style={{ width: "5px", height: "5px" }} />
+                    <span>{sym}</span>
                   </button>
                 ))}
+              </div>
+
+              {/* Micro-Stats Ribbon */}
+              <div className="dna-stats-ribbon">
+                <span className="dna-stat-badge">
+                  <span className="dna-pulse-dot" style={{ width: "5px", height: "5px" }} />
+                  <strong>1,318</strong> NSE Equities
+                </span>
+                <span className="dna-stat-badge">
+                  <strong>5-Year</strong> Daily Candlesticks
+                </span>
+                <span className="dna-stat-badge">
+                  <strong>CMT</strong> Geometry Engine
+                </span>
+                <span className="dna-stat-badge">
+                  <strong>Screener</strong> Financials
+                </span>
               </div>
             </div>
           </div>
 
-          {/* DNA Discovery Feature Highlights */}
-          <div className="dna-home-feature-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "14px", marginTop: "24px" }}>
-            <div className="citadel-card" style={{ padding: "20px 18px", border: "1px solid var(--border-subtle)" }}>
-              <div style={{ fontSize: "24px", marginBottom: "8px" }}>🎯</div>
-              <h3 style={{ fontSize: "15px", fontWeight: 800, color: "var(--text-main)", marginBottom: "4px" }}>
-                CMT Price Geometry
-              </h3>
-              <p style={{ fontSize: "12.5px", color: "var(--text-dim)", lineHeight: 1.5 }}>
-                20/50/200 EMA confluences, Fibonacci retracements, and live candlestick structural maps.
+          {/* NEXT-LEVEL THEMATIC RADAR SHELVES */}
+          <div className="dna-discovery-hub">
+            <div className="dna-discovery-header">
+              <div className="dna-shelf-badge">
+                <span>🧬</span>
+                <span>Live Institutional Radar · High Conviction</span>
+              </div>
+              <h2 className="dna-shelf-main-title">
+                Today's Curated Stock DNA Radars
+              </h2>
+              <p className="dna-shelf-subtitle">
+                Explore high-conviction Indian equities categorized by institutional strength, fortress solvency, and whale flow.
               </p>
             </div>
 
-            <div className="citadel-card" style={{ padding: "20px 18px", border: "1px solid var(--border-subtle)" }}>
-              <div style={{ fontSize: "24px", marginBottom: "8px" }}>🛡️</div>
-              <h3 style={{ fontSize: "15px", fontWeight: 800, color: "var(--text-main)", marginBottom: "4px" }}>
-                Solvency & Fortress Audit
-              </h3>
-              <p style={{ fontSize: "12.5px", color: "var(--text-dim)", lineHeight: 1.5 }}>
-                Quantitative balance sheet health, debt-to-equity, and proportional borrowings vs reserves buffer.
-              </p>
+            {/* Thematic Tabs */}
+            <div className="dna-shelf-tabs">
+              {Object.entries(DISCOVERY_SHELVES).map(([key, shelf]) => (
+                <button
+                  key={key}
+                  className={`dna-shelf-tab-btn ${activeShelf === key ? "active" : ""}`}
+                  onClick={() => setActiveShelf(key)}
+                >
+                  <span>{shelf.icon}</span>
+                  <span>{shelf.label}</span>
+                </button>
+              ))}
             </div>
 
-            <div className="citadel-card" style={{ padding: "20px 18px", border: "1px solid var(--border-subtle)" }}>
-              <div style={{ fontSize: "24px", marginBottom: "8px" }}>🐳</div>
-              <h3 style={{ fontSize: "15px", fontWeight: 800, color: "var(--text-main)", marginBottom: "4px" }}>
-                Whales & Sector Radar
-              </h3>
-              <p style={{ fontSize: "12.5px", color: "var(--text-dim)", lineHeight: 1.5 }}>
-                Mutual fund and FII flow tracks paired with head-to-head tactical peer radar.
-              </p>
+            {/* Active Shelf Subtitle */}
+            <div style={{ fontSize: "12px", color: "var(--text-dim)", marginBottom: "14px", paddingLeft: "4px" }}>
+              {DISCOVERY_SHELVES[activeShelf]?.subtitle}
+            </div>
+
+            {/* Stock Radar Cards Grid */}
+            <div className="dna-discovery-grid">
+              {DISCOVERY_SHELVES[activeShelf]?.stocks.map((stock) => (
+                <div
+                  key={stock.symbol}
+                  className="dna-stock-card"
+                  onClick={() => {
+                    setSearchQuery(stock.symbol);
+                    fetchStockDna(stock.symbol);
+                  }}
+                  title={`Click to decode ${stock.symbol} DNA`}
+                >
+                  <div className="dna-stock-card-top">
+                    <div className="dna-stock-sym-group">
+                      <div className="dna-stock-sym-title">
+                        <span>{stock.symbol}</span>
+                        <span className="sector-badge" style={{ fontSize: "10px", padding: "1px 6px" }}>{stock.sector}</span>
+                      </div>
+                      <div className="dna-stock-name-text">{stock.name}</div>
+                    </div>
+                    <div className="dna-stock-score-badge">
+                      <span className="dna-score-num">{stock.score}</span>
+                      <span className="dna-score-label">DNA SCORE</span>
+                    </div>
+                  </div>
+
+                  <div className="dna-stock-price-strip">
+                    <span className="dna-stock-ltp">{stock.price}</span>
+                    <span className={`dna-stock-stance-pill ${stock.stance.toLowerCase()}`}>
+                      <span>{stock.stance === "BULLISH" ? "🟢" : "🟡"}</span>
+                      <span>{stock.stanceLabel}</span>
+                    </span>
+                  </div>
+
+                  <p className="dna-stock-hook">
+                    {stock.hook}
+                  </p>
+
+                  <div className="dna-stock-metrics-bar">
+                    <div className="dna-mini-metric">
+                      <span className="dna-mini-label">P/E Multiple</span>
+                      <span className="dna-mini-val">{stock.pe}</span>
+                    </div>
+                    <div className="dna-mini-metric">
+                      <span className="dna-mini-label">ROCE %</span>
+                      <span className="dna-mini-val" style={{ color: "var(--bullish)" }}>{stock.roce}</span>
+                    </div>
+                    <div className="dna-mini-metric">
+                      <span className="dna-mini-label">52W High</span>
+                      <span className="dna-mini-val">{stock.dist52w}</span>
+                    </div>
+                  </div>
+
+                  <div className="dna-stock-card-action">
+                    <span>Decode Full Stock DNA</span>
+                    <span>→</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Quantitative Engine 3-Step Visual Architecture */}
+            <div className="dna-pipeline-section">
+              <div style={{ textAlign: "center", marginBottom: "16px" }}>
+                <span className="section-badge" style={{ fontSize: "10px" }}>QUANTITATIVE DECODER ENGINE</span>
+                <h3 style={{ fontSize: "18px", fontWeight: 800, color: "var(--text-main)", margin: "4px 0" }}>
+                  How QuantSync Decodes Every Stock
+                </h3>
+                <p style={{ fontSize: "12px", color: "var(--text-dim)", maxWidth: "560px", margin: "0 auto" }}>
+                  Combining 1,300+ daily OHLCV bars with audited balance sheets to reveal the truth before you risk capital.
+                </p>
+              </div>
+
+              <div className="dna-pipeline-grid">
+                <div className="dna-pipeline-card">
+                  <div className="dna-pipe-step-num">STEP 01</div>
+                  <div className="dna-pipe-title">Multi-Timeframe Geometry</div>
+                  <div className="dna-pipe-desc">
+                    Automated 20, 50 & 200 EMA ribbons, Fibonacci clusters, dynamic channel projections, and volume footprint verification.
+                  </div>
+                </div>
+
+                <div className="dna-pipeline-card">
+                  <div className="dna-pipe-step-num">STEP 02</div>
+                  <div className="dna-pipe-title">Solvency & Fortress Audit</div>
+                  <div className="dna-pipe-desc">
+                    Quantitative balance sheet stress-testing: debt-to-equity ratios, cash reserves coverage track, and distress probability.
+                  </div>
+                </div>
+
+                <div className="dna-pipeline-card">
+                  <div className="dna-pipe-step-num">STEP 03</div>
+                  <div className="dna-pipe-title">Whale Footprints & 7 Answers</div>
+                  <div className="dna-pipe-desc">
+                    Tracking FII & mutual fund quarterly accumulation flows, 0.0% pledge safety, and direct plain-English action execution plans.
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
