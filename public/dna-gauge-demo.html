@@ -116,7 +116,7 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.03);
     }
 
-    /* MAIN HERO CARD */
+    /* MAIN HERO CARD (Always Horizontal Side-by-Side) */
     .hero-card {
       background: var(--bg-card);
       border: 1px solid var(--border-main);
@@ -124,8 +124,8 @@
       padding: 22px 24px;
       box-shadow: var(--shadow-card);
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+      gap: 20px;
       align-items: center;
       position: relative;
       overflow: hidden;
@@ -134,9 +134,18 @@
 
     @media (max-width: 640px) {
       .hero-card {
-        grid-template-columns: 1fr;
-        gap: 20px;
-        padding: 18px 16px;
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+        gap: 8px;
+        padding: 12px 10px;
+        border-radius: 14px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .hero-card {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 6px;
+        padding: 10px 7px;
       }
     }
 
@@ -496,6 +505,99 @@
       font-weight: 800;
       color: var(--c-buy);
       min-width: 32px;
+    }
+
+    @media (max-width: 640px) {
+      .demo-container {
+        padding: 10px 10px 40px 10px;
+      }
+      .col-asset {
+        gap: 6px;
+      }
+      .asset-title {
+        font-size: clamp(16px, 4.4vw, 22px);
+      }
+      .exchange-tag {
+        font-size: 8.5px;
+        padding: 2px 4px;
+      }
+      .asset-subtitle {
+        font-size: 10.5px;
+      }
+      .current-price {
+        font-size: clamp(20px, 5.5vw, 28px);
+        letter-spacing: -1px;
+      }
+      .diff-badge-wrap {
+        gap: 4px;
+        flex-wrap: wrap;
+      }
+      .price-diff {
+        font-size: 9.5px;
+        padding: 2.5px 6px;
+      }
+      .price-context-caption {
+        font-size: 9px;
+      }
+      .range-labels {
+        font-size: 8px;
+      }
+      .range-track {
+        height: 3px;
+      }
+      .range-thumb {
+        width: 7px;
+        height: 7px;
+        top: -2px;
+      }
+      .col-gauge {
+        padding: 8px 6px;
+        border-radius: 12px;
+      }
+      .gauge-wrapper {
+        max-width: 160px;
+      }
+      .verdict-box {
+        margin-top: -3px;
+        margin-bottom: 5px;
+      }
+      .verdict-word {
+        font-size: 13.5px;
+      }
+      .verdict-score-caption {
+        font-size: 9px;
+      }
+      .pillars-container {
+        gap: 4px;
+        padding-top: 6px;
+      }
+      .pillar-row {
+        grid-template-columns: minmax(34px, auto) 1fr auto;
+        gap: 4px;
+        font-size: 9.5px;
+      }
+      .pillar-name {
+        font-size: 9px;
+        gap: 2px;
+      }
+      .pillar-bar-track {
+        height: 4px;
+        min-width: 22px;
+      }
+      .pillar-val-tag {
+        font-size: 9px;
+      }
+      .test-panel {
+        padding: 12px 14px;
+      }
+      .preset-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+      }
+      .preset-btn {
+        padding: 5px 6px;
+        font-size: 10px;
+      }
     }
   </style>
 </head>

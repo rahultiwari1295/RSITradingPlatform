@@ -97,7 +97,7 @@
   box-shadow: 0 2px 10px var(--dna-primary-glow);
 }
 
-/* Hero Header Section — TradingView Style Grid */
+/* Hero Header Section — TradingView Style Grid (Always Horizontal Side-by-Side) */
 .dna-hero-card {
   background: var(--dna-bg-card);
   border: 1px solid var(--dna-border-main);
@@ -106,8 +106,8 @@
   margin-bottom: 14px;
   box-shadow: var(--dna-shadow-sm);
   display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  gap: 24px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 20px;
   align-items: center;
   position: relative;
   overflow: hidden;
@@ -116,9 +116,18 @@
 
 @media (max-width: 640px) {
   .dna-hero-card {
-    grid-template-columns: 1fr;
-    gap: 20px;
-    padding: 18px 16px;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 8px;
+    padding: 12px 10px;
+    border-radius: 14px;
+  }
+}
+
+@media (max-width: 380px) {
+  .dna-hero-card {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px;
+    padding: 10px 7px;
   }
 }
 
@@ -369,6 +378,19 @@
   align-items: center;
   gap: 8px;
   font-size: 11px;
+}
+
+.dna-pillar-label-short {
+  display: none;
+}
+.dna-pillar-label-full {
+  display: inline;
+}
+.dna-pillar-val-short {
+  display: none;
+}
+.dna-pillar-val-full {
+  display: inline;
 }
 
 .dna-pillar-name {
@@ -1166,4 +1188,409 @@
 .dna-toast-popup.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+/* ==========================================================================
+   COMPREHENSIVE PHONE & MOBILE UI OPTIMIZATION
+   Strictly maintains horizontal layout for Hero Card & aligns every component
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  /* Outer layout */
+  .dna-container {
+    padding: 10px 10px 85px 10px;
+  }
+
+  /* Search & Autocomplete */
+  .dna-search-input {
+    font-size: 16px; /* Prevents unwanted auto-zoom on iOS */
+    padding: 11px 14px 11px 40px;
+    border-radius: 14px;
+  }
+  .dna-quick-chips {
+    gap: 5px;
+    margin-top: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 2px;
+  }
+  .dna-stock-chip {
+    padding: 5px 9px;
+    font-size: 11px;
+    border-radius: 12px;
+  }
+
+  /* Hero Card — Strictly Horizontal Side-by-Side */
+  .dna-hero-card {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 8px;
+    padding: 12px 10px;
+    border-radius: 14px;
+    margin-bottom: 12px;
+  }
+  .dna-hero-asset-col {
+    gap: 6px;
+  }
+  .dna-asset-title {
+    font-size: clamp(16px, 4.4vw, 22px);
+  }
+  .dna-exchange-pill {
+    font-size: 8.5px;
+    padding: 2px 4px;
+  }
+  .dna-asset-subtitle {
+    font-size: 10.5px;
+  }
+  .dna-price-stack {
+    gap: 3px;
+    margin-top: 2px;
+  }
+  .dna-current-price {
+    font-size: clamp(20px, 5.5vw, 28px);
+    letter-spacing: -1px;
+  }
+  .dna-diff-badge-wrap {
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .dna-price-diff {
+    font-size: 9.5px;
+    padding: 2.5px 6px;
+    border-radius: 5px;
+  }
+  .dna-price-context-caption {
+    font-size: 9px;
+  }
+  .dna-range-bar-box {
+    margin-top: 2px;
+    gap: 2px;
+    width: 100%;
+  }
+  .dna-range-labels {
+    font-size: 8px;
+  }
+  .dna-range-track {
+    height: 3px;
+  }
+  .dna-range-thumb {
+    width: 7px;
+    height: 7px;
+    top: -2px;
+  }
+
+  /* Speedometer Gauge & 3 Pillars in Right Column */
+  .dna-hero-gauge-col {
+    padding: 8px 6px 8px 6px;
+    border-radius: 12px;
+  }
+  .dna-tv-gauge-wrapper {
+    max-width: 160px;
+  }
+  .dna-tv-verdict-box {
+    margin-top: -3px;
+    margin-bottom: 5px;
+  }
+  .dna-tv-verdict-word {
+    font-size: 13.5px;
+  }
+  .dna-tv-score-caption {
+    font-size: 9px;
+  }
+  .dna-pillars-container {
+    gap: 4px;
+    padding-top: 6px;
+  }
+  .dna-pillar-row {
+    grid-template-columns: minmax(34px, auto) 1fr auto;
+    gap: 4px;
+    font-size: 9.5px;
+  }
+  .dna-pillar-name {
+    font-size: 9px;
+    gap: 2px;
+  }
+  .dna-pillar-label-full {
+    display: none;
+  }
+  .dna-pillar-label-short {
+    display: inline;
+  }
+  .dna-pillar-bar-track {
+    height: 4px;
+    min-width: 22px;
+    border-radius: 2px;
+  }
+  .dna-pillar-val-tag {
+    font-size: 9px;
+  }
+
+  /* Mode Switcher */
+  .dna-mode-switcher {
+    padding: 3px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+  .dna-mode-btn {
+    padding: 8px 10px;
+    font-size: 12px;
+    gap: 5px;
+    border-radius: 9px;
+  }
+
+  /* Cards, Verdict & Trade Plan */
+  .dna-card {
+    padding: 14px 12px;
+    border-radius: 14px;
+    margin-bottom: 12px;
+  }
+  .dna-card-headline {
+    font-size: 14.5px;
+    line-height: 1.35;
+    margin-bottom: 8px;
+  }
+  .dna-card-badge-pill {
+    font-size: 9.5px;
+    padding: 3px 8px;
+  }
+  .dna-confidence-pill {
+    font-size: 9.5px;
+    padding: 2.5px 7px;
+  }
+  .dna-briefing-callout {
+    padding: 10px 12px;
+    border-radius: 10px;
+  }
+  .dna-callout-text {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .dna-trade-grid {
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .dna-trade-item {
+    padding: 9px 10px;
+    border-radius: 10px;
+    gap: 2px;
+  }
+  .dna-trade-label {
+    font-size: 8px;
+  }
+  .dna-trade-value {
+    font-size: 13px;
+  }
+
+  /* Dual Theses */
+  .dna-thesis-grid {
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .dna-thesis-card {
+    padding: 12px 14px;
+    border-radius: 13px;
+  }
+  .dna-thesis-header {
+    font-size: 10.5px;
+    margin-bottom: 5px;
+  }
+  .dna-thesis-bold {
+    font-size: 13px;
+    margin-bottom: 5px;
+    line-height: 1.35;
+  }
+  .dna-thesis-detail-wrap {
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+  .dna-thesis-detail {
+    font-size: 11.5px;
+    line-height: 1.45;
+  }
+
+  /* Candlestick Chart & Bottom Buttons */
+  .dna-chart-wrapper {
+    border-radius: 14px;
+    margin-bottom: 12px;
+  }
+  .dna-chart-header {
+    padding: 10px 12px;
+  }
+  .dna-chart-title {
+    font-size: 12px;
+    gap: 4px;
+  }
+  .dna-chart-tab {
+    padding: 3px 8px;
+    font-size: 10.5px;
+  }
+  .dna-chart-legend-bar {
+    padding: 6px 10px;
+    gap: 4px;
+    font-size: 9px;
+  }
+  .dna-legend-chip {
+    font-size: 8.5px;
+    padding: 2px 5px;
+  }
+  .dna-legend-zoom-prompt {
+    font-size: 9px;
+  }
+  .dna-chart-bottom-actions {
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+  .dna-chart-bottom-actions .dna-btn-share-report {
+    padding: 10px 8px;
+    font-size: 11.5px;
+    border-radius: 8px;
+    gap: 5px;
+  }
+  .dna-chart-bottom-actions .dna-btn-whatsapp {
+    padding: 10px 8px;
+    font-size: 12px;
+    border-radius: 8px;
+    gap: 5px;
+  }
+
+  /* Discovery Banner */
+  .dna-pro-discovery-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px 12px;
+    border-radius: 14px;
+    margin-top: 12px;
+  }
+  .dna-pro-discovery-title {
+    font-size: 14px;
+  }
+  .dna-pro-discovery-subtitle {
+    font-size: 11px;
+  }
+  .dna-pro-discovery-action-btn {
+    justify-content: center;
+    width: 100%;
+    padding: 10px;
+    font-size: 12px;
+  }
+
+  /* Pro View Components */
+  .dna-pro-back-bar {
+    padding: 4px 2px 10px 2px;
+  }
+  .dna-btn-back-summary {
+    font-size: 11px;
+    padding: 6px 12px;
+  }
+  .dna-pro-back-caption {
+    font-size: 10px;
+  }
+  .dna-pro-subnav {
+    gap: 6px;
+    padding: 4px 2px 10px 2px;
+  }
+  .dna-subnav-pill {
+    font-size: 10.5px;
+    padding: 5px 11px;
+  }
+  .dna-ratio-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .dna-ratio-card {
+    padding: 10px;
+  }
+  .dna-ratio-label {
+    font-size: 9px;
+  }
+  .dna-ratio-val {
+    font-size: 16px;
+  }
+  .dna-ratio-hint {
+    font-size: 9.5px;
+  }
+  .dna-sh-stack {
+    height: 14px;
+    margin: 8px 0;
+  }
+  .dna-sh-legend {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .dna-sh-item {
+    padding: 8px;
+  }
+  .dna-sh-val {
+    font-size: 13px;
+  }
+  .dna-table-wrap {
+    margin-top: 8px;
+  }
+  .dna-data-table {
+    min-width: 360px;
+    font-size: 11px;
+  }
+  .dna-data-table th, .dna-data-table td {
+    padding: 8px 9px;
+  }
+  .dna-pc-card {
+    padding: 10px 12px;
+  }
+  .dna-pc-title {
+    font-size: 10.5px;
+  }
+  .dna-pc-list {
+    font-size: 11px;
+    gap: 5px;
+  }
+
+  /* Sticky Bottom Bar */
+  .dna-bottom-bar {
+    padding: 8px 10px;
+    gap: 8px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+  .dna-btn-share-report {
+    padding: 10px 8px;
+    font-size: 12px;
+    border-radius: 10px;
+  }
+  .dna-btn-whatsapp {
+    padding: 10px 10px;
+    font-size: 12.5px;
+    border-radius: 10px;
+  }
+}
+
+/* Extra Compact Phones (iPhone SE, Galaxy S compact, width <= 375px) */
+@media (max-width: 375px) {
+  .dna-hero-card {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px;
+    padding: 10px 7px;
+  }
+  .dna-asset-title {
+    font-size: 16px;
+  }
+  .dna-current-price {
+    font-size: 20px;
+  }
+  .dna-price-context-caption {
+    display: none;
+  }
+  .dna-hero-gauge-col {
+    padding: 6px 4px;
+  }
+  .dna-pillar-val-full {
+    display: none;
+  }
+  .dna-pillar-val-short {
+    display: inline;
+  }
+  .dna-trade-grid {
+    gap: 6px;
+  }
+  .dna-trade-item {
+    padding: 8px 7px;
+  }
 }

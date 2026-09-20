@@ -760,27 +760,48 @@ export default function StockDNAScreen() {
               {/* 3 Core Parameter Bars */}
               <div className="dna-pillars-container">
                 <div className="dna-pillar-row">
-                  <span className="dna-pillar-name">🔬 Technical</span>
+                  <span className="dna-pillar-name">
+                    <span className="dna-pillar-icon">🔬</span>
+                    <span className="dna-pillar-label-full">Technical</span>
+                    <span className="dna-pillar-label-short">Tech</span>
+                  </span>
                   <div className="dna-pillar-bar-track">
                     <div className="dna-pillar-bar-fill" style={{ width: `${techScore}%`, background: techColor }} />
                   </div>
-                  <span className="dna-pillar-val-tag" style={{ color: techColor }}>{techText}</span>
+                  <span className="dna-pillar-val-tag" style={{ color: techColor }}>
+                    <span className="dna-pillar-val-full">{techText}</span>
+                    <span className="dna-pillar-val-short">{techScore}</span>
+                  </span>
                 </div>
 
                 <div className="dna-pillar-row">
-                  <span className="dna-pillar-name">🏛️ Financial</span>
+                  <span className="dna-pillar-name">
+                    <span className="dna-pillar-icon">🏛️</span>
+                    <span className="dna-pillar-label-full">Financial</span>
+                    <span className="dna-pillar-label-short">Fin</span>
+                  </span>
                   <div className="dna-pillar-bar-track">
                     <div className="dna-pillar-bar-fill" style={{ width: `${finScore}%`, background: finColor }} />
                   </div>
-                  <span className="dna-pillar-val-tag" style={{ color: finColor }}>{finText}</span>
+                  <span className="dna-pillar-val-tag" style={{ color: finColor }}>
+                    <span className="dna-pillar-val-full">{finText}</span>
+                    <span className="dna-pillar-val-short">{finScore}</span>
+                  </span>
                 </div>
 
                 <div className="dna-pillar-row">
-                  <span className="dna-pillar-name">🎯 Valuation</span>
+                  <span className="dna-pillar-name">
+                    <span className="dna-pillar-icon">🎯</span>
+                    <span className="dna-pillar-label-full">Valuation</span>
+                    <span className="dna-pillar-label-short">Val</span>
+                  </span>
                   <div className="dna-pillar-bar-track">
                     <div className="dna-pillar-bar-fill" style={{ width: `${valScore}%`, background: valColor }} />
                   </div>
-                  <span className="dna-pillar-val-tag" style={{ color: valColor }}>{valText}</span>
+                  <span className="dna-pillar-val-tag" style={{ color: valColor }}>
+                    <span className="dna-pillar-val-full">{valText}</span>
+                    <span className="dna-pillar-val-short">{valScore}</span>
+                  </span>
                 </div>
               </div>
             </div>
