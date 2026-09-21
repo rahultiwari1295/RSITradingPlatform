@@ -3545,7 +3545,7 @@ export default function App() {
 
         {/* ===== DNA SCREEN ===== */}
         <section className={`screen ${activeTab === "dna" ? "active" : ""}`} id="screen-dna">
-          <StockDNAScreen />
+          <StockDNAScreen theme={theme} />
         </section>
 
         {/* ===== CHARTS SCREEN ===== */}

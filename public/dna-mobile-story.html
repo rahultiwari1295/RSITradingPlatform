@@ -5,6 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>QuantSync DNA · Next-Gen Stock Intelligence Citadel</title>
   
+  <script>
+    // Early synchronous theme detection to prevent any dark/light flash
+    (function() {
+      var t = 'dark';
+      try {
+        var p = new URLSearchParams(window.location.search);
+        var qTheme = p.get('theme');
+        if (qTheme === 'light' || qTheme === 'dark') {
+          t = qTheme;
+        } else if (window.parent && window.parent.document && window.parent.document.documentElement) {
+          var pDoc = window.parent.document.documentElement;
+          t = pDoc.dataset.theme || (pDoc.classList.contains('dark') ? 'dark' : 'light');
+        } else {
+          var saved = localStorage.getItem('theme');
+          if (saved === 'light' || saved === 'dark') t = saved;
+        }
+      } catch (e) {}
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  
   <!-- Premium Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -67,10 +88,12 @@
       --bg-card-hover: rgba(16, 23, 40, 0.95);
       --bg-surface-elevated: rgba(18, 27, 46, 0.7);
       --bg-inner: rgba(6, 10, 18, 0.85);
+      --bg-canvas: #060A12;
       
       --border-card: rgba(255, 255, 255, 0.08);
       --border-card-hover: rgba(255, 255, 255, 0.18);
       --border-subtle: rgba(255, 255, 255, 0.05);
+      --border-highlight: rgba(59, 130, 246, 0.35);
 
       --text-main: #F8FAFC;
       --text-muted: #94A3B8;
@@ -88,24 +111,223 @@
       --bg-body: #F4F6FA;
       --bg-mesh: radial-gradient(at 50% 0%, rgba(220, 232, 255, 0.6) 0px, transparent 65%),
                  radial-gradient(at 100% 100%, rgba(230, 238, 250, 0.5) 0px, transparent 60%);
-      --bg-card: rgba(255, 255, 255, 0.92);
-      --bg-card-hover: #FFFFFF;
+      --bg-card: #FFFFFF;
+      --bg-card-hover: #F8FAFC;
       --bg-surface-elevated: #F8FAFC;
       --bg-inner: #F1F5F9;
+      --bg-canvas: #FFFFFF;
 
       --border-card: rgba(0, 0, 0, 0.08);
       --border-card-hover: rgba(0, 0, 0, 0.15);
-      --border-subtle: rgba(0, 0, 0, 0.04);
+      --border-subtle: rgba(0, 0, 0, 0.05);
+      --border-highlight: rgba(37, 99, 235, 0.35);
 
       --text-main: #0F172A;
       --text-muted: #475569;
-      --text-dim: #94A3B8;
+      --text-dim: #64748B;
       --text-highlight: #000000;
 
       --gauge-track: #E2E8F0;
-      --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.06);
-      --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.1);
-      --shadow-glow: 0 0 30px rgba(59, 130, 246, 0.12);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
+      --shadow-glow: 0 0 25px rgba(37, 99, 235, 0.12);
+    }
+
+    /* Light Theme Explicit Element Overrides */
+    [data-theme="light"] body::before {
+      background-image: radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+    }
+
+    [data-theme="light"] .app-frame-wrapper {
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
+    }
+
+    [data-theme="light"] .home-search-box {
+      background: #FFFFFF !important;
+      border: 1.5px solid rgba(0, 0, 0, 0.12) !important;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06) !important;
+    }
+
+    [data-theme="light"] .home-search-input {
+      color: #0F172A !important;
+    }
+
+    [data-theme="light"] .home-search-input::placeholder {
+      color: #94A3B8 !important;
+    }
+
+    [data-theme="light"] .home-stock-chip {
+      background: #FFFFFF !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+      color: #1E293B !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    [data-theme="light"] .home-stock-chip:hover {
+      background: rgba(37, 99, 235, 0.08) !important;
+      border-color: #2563EB !important;
+      color: #2563EB !important;
+    }
+
+    [data-theme="light"] .radar-card {
+      background: #FFFFFF !important;
+      border: 1px solid rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    [data-theme="light"] .radar-card:hover {
+      border-color: rgba(37, 99, 235, 0.35) !important;
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08) !important;
+    }
+
+    [data-theme="light"] .radar-card-title {
+      color: #0F172A !important;
+    }
+
+    [data-theme="light"] .radar-card-desc {
+      color: #64748B !important;
+    }
+
+    [data-theme="light"] .radar-stock-badge {
+      background: #F1F5F9 !important;
+      border: 1px solid rgba(0, 0, 0, 0.08) !important;
+      color: #334155 !important;
+    }
+
+    [data-theme="light"] .radar-stock-badge:hover {
+      background: rgba(37, 99, 235, 0.1) !important;
+      color: #2563EB !important;
+      border-color: #2563EB !important;
+    }
+
+    [data-theme="light"] .dna-autocomplete-list {
+      background: #FFFFFF !important;
+      border: 1px solid rgba(0, 0, 0, 0.12) !important;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12) !important;
+    }
+
+    [data-theme="light"] .autocomplete-item {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+    }
+
+    [data-theme="light"] .autocomplete-item:hover {
+      background: rgba(37, 99, 235, 0.06) !important;
+    }
+
+    [data-theme="light"] .ac-symbol {
+      color: #0F172A !important;
+    }
+
+    [data-theme="light"] .ac-name {
+      color: #64748B !important;
+    }
+
+    [data-theme="light"] .ac-badge {
+      background: #F1F5F9 !important;
+      color: #475569 !important;
+    }
+
+    [data-theme="light"] .hero-citadel-card {
+      background: #FFFFFF !important;
+      border: 1px solid rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    [data-theme="light"] .stock-headline-name {
+      color: #0F172A !important;
+    }
+
+    [data-theme="light"] .stock-company-full {
+      color: #64748B !important;
+    }
+
+    [data-theme="light"] .price-large {
+      color: #0F172A !important;
+    }
+
+    [data-theme="light"] .q-bento-card {
+      background: #FFFFFF !important;
+      border: 1px solid rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    [data-theme="light"] .action-plan-card {
+      background: #F8FAFC !important;
+      border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    }
+
+    [data-theme="light"] .tactical-reason-row {
+      background: #F8FAFC !important;
+      border: 1px solid rgba(0, 0, 0, 0.06) !important;
+      color: #334155 !important;
+    }
+
+    [data-theme="light"] .peer-alt-table th {
+      background: #F1F5F9 !important;
+      color: #475569 !important;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+    }
+
+    [data-theme="light"] .peer-alt-table td {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+      color: #1E293B !important;
+    }
+
+    [data-theme="light"] .peer-alt-table tr:hover td {
+      background: rgba(37, 99, 235, 0.04) !important;
+    }
+
+    [data-theme="light"] .trust-strip {
+      background: #FFFFFF !important;
+      border: 1px solid rgba(0, 0, 0, 0.06) !important;
+      color: #64748B !important;
+    }
+
+    [data-theme="light"] .chip-btn {
+      background: #FFFFFF !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+      color: #1E293B !important;
+    }
+
+    [data-theme="light"] .chip-btn:hover {
+      background: rgba(37, 99, 235, 0.08) !important;
+      color: #2563EB !important;
+    }
+
+    [data-theme="light"] .chip-btn.active {
+      background: #2563EB !important;
+      color: #FFFFFF !important;
+      border-color: #2563EB !important;
+    }
+
+    [data-theme="light"] .back-home-btn {
+      background: #FFFFFF !important;
+      border: 1px solid rgba(0, 0, 0, 0.1) !important;
+      color: #1E293B !important;
+    }
+
+    [data-theme="light"] .back-home-btn:hover {
+      background: rgba(37, 99, 235, 0.08) !important;
+      color: #2563EB !important;
+    }
+
+    [data-theme="light"] .search-input-box {
+      background: #FFFFFF !important;
+      border: 1px solid rgba(0, 0, 0, 0.12) !important;
+    }
+
+    [data-theme="light"] #stock-search {
+      color: #0F172A !important;
+    }
+
+    [data-theme="light"] .q-answer-box {
+      color: #334155 !important;
+    }
+
+    [data-theme="light"] .compass-narrative {
+      color: #1E293B !important;
     }
 
     /* Global Reset */
@@ -3496,10 +3718,14 @@
       document.getElementById('btn-chart-4m').classList.toggle('active', !isMacro);
       document.getElementById('btn-chart-1y').classList.toggle('active', isMacro);
 
-      const sym = document.getElementById('hero-symbol').textContent.trim();
+      const symEl = document.getElementById('hero-symbol');
+      const sym = symEl ? symEl.textContent.trim() : "";
+      if (!sym) return;
+
       const theme = document.documentElement.getAttribute('data-theme') || 'dark';
       const img = document.getElementById('chart-api-img');
       const svg = document.getElementById('chart-svg-canvas');
+      if (!img) return;
 
       const chartUrl = `/api/dna/chart/${sym}?view=${view}&theme=${theme}&t=${Date.now()}`;
       img.src = chartUrl;
@@ -3966,10 +4192,61 @@
       const html = document.documentElement;
       const current = html.getAttribute('data-theme') || 'dark';
       const next = current === 'dark' ? 'light' : 'dark';
-      html.setAttribute('data-theme', next);
-      document.getElementById('theme-icon').textContent = next === 'dark' ? '🌙' : '☀️';
-      switchChartView(currentChartView);
+      setTheme(next);
     }
+
+    function setTheme(theme) {
+      if (!theme || (theme !== 'light' && theme !== 'dark')) {
+        theme = 'dark';
+      }
+      const html = document.documentElement;
+      html.setAttribute('data-theme', theme);
+      try {
+        localStorage.setItem('theme', theme);
+      } catch (e) {}
+
+      const themeIcon = document.getElementById('theme-icon');
+      if (themeIcon) {
+        themeIcon.textContent = theme === 'dark' ? '🌙' : '☀️';
+      }
+
+      // Re-fetch chart in new theme if a stock report is currently active
+      try {
+        const symEl = document.getElementById('hero-symbol');
+        if (symEl && symEl.textContent.trim() && typeof switchChartView === 'function') {
+          switchChartView(currentChartView);
+        }
+      } catch (e) {}
+    }
+
+    // Listen to parent postMessage (e.g. from StockDNAScreen in React)
+    window.addEventListener('message', function(e) {
+      if (e.data && (e.data.type === 'THEME_CHANGE' || e.data.type === 'theme')) {
+        var t = e.data.theme || e.data.value;
+        if (t) setTheme(t);
+      }
+    });
+
+    // Listen to multi-window / local storage sync
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'theme' && e.newValue) {
+        setTheme(e.newValue);
+      }
+    });
+
+    // Observe parent document dataset / class changes for real-time 0ms toggle sync
+    try {
+      if (window.parent && window.parent.document && window.parent.document.documentElement) {
+        var pDoc = window.parent.document.documentElement;
+        var pObserver = new MutationObserver(function() {
+          var pTheme = pDoc.dataset.theme || (pDoc.classList.contains('dark') ? 'dark' : 'light');
+          if (pTheme) setTheme(pTheme);
+        });
+        pObserver.observe(pDoc, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+        var currentParentTheme = pDoc.dataset.theme || (pDoc.classList.contains('dark') ? 'dark' : 'light');
+        if (currentParentTheme) setTheme(currentParentTheme);
+      }
+    } catch (e) {}
 
     function resetToHome() {
       const homeView = document.getElementById('dna-home-view');

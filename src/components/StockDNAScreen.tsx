@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 
+interface StockDNAScreenProps {
+  theme?: "dark" | "light";
+}
+
 /**
  * StockDNAScreen
  * Embeds the ultra-premium mobile-first Stock DNA Story experience.
  * Features:
+ *  - Dynamic Light & Dark Mode synchronization with top header toggle
  *  - 180° Speedometer Arc Gauge with animated needle & institutional verdict
  *  - 3-Card Tactical Action Plan (Buy The Dip, Momentum Breakout, Emergency Exit)
  *  - Interactive 4-Month Tactical & 1-Year Macro Candlestick Charts with Lightbox Modal
@@ -11,28 +16,44 @@ import React, { useState, useEffect, useRef } from "react";
  *  - The 7 Plain-English Burning Questions with Smart Investor Compass
  *  - DNA Home Search Console with live autocomplete and discovery radar shelves
  */
-export default function StockDNAScreen() {
+export default function StockDNAScreen({ theme }: StockDNAScreenProps) {
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Read current query parameters to support deep linking (e.g. ?stock=TCS or ?symbol=TCS)
-  const [targetSrc, setTargetSrc] = useState("/dna-mobile-story.html");
+  // Determine current active theme
+  const activeTheme = theme || (typeof window !== "undefined" && (document.documentElement.dataset.theme as "dark" | "light")) || "dark";
 
-  useEffect(() => {
+  // Build target iframe URL preserving stock query param and syncing theme
+  const [targetSrc, setTargetSrc] = useState(() => {
+    let initialStock = "";
     if (typeof window !== "undefined") {
       const searchParams = new URLSearchParams(window.location.search);
-      const stock = searchParams.get("stock") || searchParams.get("sym") || searchParams.get("symbol");
-      if (stock) {
-        setTargetSrc(`/dna-mobile-story.html?stock=${encodeURIComponent(stock.toUpperCase())}`);
-      } else {
-        setTargetSrc("/dna-mobile-story.html");
+      initialStock = searchParams.get("stock") || searchParams.get("sym") || searchParams.get("symbol") || "";
+    }
+    const params = new URLSearchParams();
+    if (initialStock) params.set("stock", initialStock.toUpperCase());
+    params.set("theme", activeTheme);
+    return `/dna-mobile-story.html?${params.toString()}`;
+  });
+
+  // Whenever theme changes in parent app, notify the iframe via postMessage
+  useEffect(() => {
+    if (iframeRef.current?.contentWindow) {
+      try {
+        iframeRef.current.contentWindow.postMessage({
+          type: "THEME_CHANGE",
+          theme: activeTheme,
+        }, "*");
+      } catch (err) {
+        console.warn("Could not postMessage to DNA iframe:", err);
       }
     }
-  }, []);
+  }, [activeTheme]);
 
   return (
     <div 
       className="dna-screen-root"
+      data-theme={activeTheme}
       style={{
         position: "relative",
         width: "100%",
@@ -41,7 +62,7 @@ export default function StockDNAScreen() {
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
-        background: "#080B11",
+        background: "transparent",
       }}
     >
       {/* Loading Skeleton Backdrop */}
@@ -54,11 +75,12 @@ export default function StockDNAScreen() {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            background: "#080B11",
+            background: activeTheme === "light" ? "#F4F6FA" : "#080B11",
             zIndex: 2,
             gap: 12,
-            color: "#94A3B8",
+            color: activeTheme === "light" ? "#64748B" : "#94A3B8",
             fontFamily: "var(--font-sans, system-ui, -apple-system, sans-serif)",
+            transition: "background 0.2s ease",
           }}
         >
           <div 
@@ -66,12 +88,12 @@ export default function StockDNAScreen() {
               width: 42,
               height: 42,
               borderRadius: "50%",
-              border: "3px solid rgba(59, 130, 246, 0.2)",
+              border: `3px solid ${activeTheme === "light" ? "rgba(37, 99, 235, 0.2)" : "rgba(59, 130, 246, 0.2)"}`,
               borderTopColor: "#3B82F6",
               animation: "spin 0.8s linear infinite",
             }} 
           />
-          <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.03em", color: "#F8FAFC" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.03em", color: activeTheme === "light" ? "#0F172A" : "#F8FAFC" }}>
             Loading Stock DNA Engine...
           </div>
           <style>{`
@@ -88,16 +110,25 @@ export default function StockDNAScreen() {
         ref={iframeRef}
         src={targetSrc}
         title="Stock DNA Institutional Intelligence"
-        onLoad={() => setIframeLoaded(true)}
+        onLoad={() => {
+          setIframeLoaded(true);
+          // Ensure theme is set immediately on initial load
+          try {
+            iframeRef.current?.contentWindow?.postMessage({
+              type: "THEME_CHANGE",
+              theme: activeTheme,
+            }, "*");
+          } catch (e) {}
+        }}
         style={{
           width: "100%",
           height: "100%",
           flex: 1,
           border: "none",
           display: "block",
-          background: "#080B11",
+          background: "transparent",
           opacity: iframeLoaded ? 1 : 0,
-          transition: "opacity 0.25s ease-in-out",
+          transition: "opacity 0.2s ease-in-out",
         }}
         allow="clipboard-write"
       />
