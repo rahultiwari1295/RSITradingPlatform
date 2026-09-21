@@ -13,6 +13,18 @@
       "destination": "/api/dna?action=search"
     },
     {
+      "source": "/dna-mobile-story.html",
+      "destination": "/dna-mobile-story.html"
+    },
+    {
+      "source": "/dna",
+      "destination": "/dna-mobile-story.html"
+    },
+    {
+      "source": "/dna-story",
+      "destination": "/dna-mobile-story.html"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
