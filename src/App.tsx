@@ -1169,6 +1169,7 @@ export default function App() {
   const [chartSub, setChartSub] = useState<"live" | "scanner" | "portal">("live");
   const [range, setRange] = useState<number>(90);
   const [isScannerOpen, setIsScannerOpen] = useState(true);
+  const [isEngineInfoOpen, setIsEngineInfoOpen] = useState(false);
   const [v2ChartSel, setV2ChartSel] = useState<number>(0);
   const [dnaResetTrigger, setDnaResetTrigger] = useState<number>(0);
 
