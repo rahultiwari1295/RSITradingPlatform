@@ -5013,22 +5013,6 @@
       }, 160);
     }
 
-      // Smooth reveal: loading screen stays visible until the real data is completely in place!
-      setTimeout(() => {
-        if (loadingView) loadingView.style.display = 'none';
-        if (reportView) reportView.style.display = 'block';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 160);
-
-      // Hard safety failsafe: NEVER leave user stuck on loading screen under any circumstances
-      setTimeout(() => {
-        if (loadingView && loadingView.style.display !== 'none') {
-          loadingView.style.display = 'none';
-          if (reportView) reportView.style.display = 'block';
-        }
-      }, 4500);
-    }
-
     function populateReportUi(data) {
       if (!data) return;
 
