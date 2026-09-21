@@ -2006,6 +2006,318 @@
       font-size: 16px;
     }
 
+    /* ==========================================================================
+       EXECUTIVE SHARE & WHATSAPP SUITE
+       ========================================================================== */
+    .report-nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      width: 100%;
+    }
+
+    .quick-share-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      color: var(--text-main);
+      padding: 7px 14px;
+      border-radius: var(--r-pill);
+      font-family: var(--font-display);
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--ease-fast);
+      box-shadow: var(--shadow-sm);
+    }
+    .quick-share-btn:hover {
+      background: var(--bg-surface-elevated);
+      border-color: #25D366;
+      color: #10B981;
+      transform: translateY(-1px);
+    }
+    [data-theme="light"] .quick-share-btn {
+      background: #FFFFFF;
+      border-color: #E2E8F0;
+      color: #0F172A;
+    }
+
+    .dna-share-citadel {
+      margin-top: 28px;
+      background: linear-gradient(135deg, rgba(37, 211, 102, 0.06) 0%, rgba(59, 130, 246, 0.04) 100%);
+      border: 1px solid rgba(37, 211, 102, 0.35);
+      border-radius: var(--r-xl);
+      padding: 20px 18px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+    }
+
+    [data-theme="light"] .dna-share-citadel {
+      background: linear-gradient(135deg, #F0FDF4 0%, #EFF6FF 100%);
+      border: 1px solid #86EFAC;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.07);
+    }
+
+    .share-citadel-header {
+      margin-bottom: 14px;
+    }
+
+    .share-badge-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .share-pill-badge {
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #10B981;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.28);
+      padding: 3px 9px;
+      border-radius: var(--r-pill);
+    }
+
+    [data-theme="light"] .share-pill-badge {
+      color: #047857;
+      background: #DCFCE7;
+      border-color: #86EFAC;
+    }
+
+    .share-live-tag {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .share-citadel-title {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin: 0 0 6px 0;
+      letter-spacing: -0.015em;
+    }
+
+    .share-citadel-sub {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .share-preview-card {
+      background: var(--bg-inner);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-md);
+      padding: 12px;
+      margin: 14px 0 16px 0;
+    }
+
+    [data-theme="light"] .share-preview-card {
+      background: #FFFFFF;
+      border-color: #E2E8F0;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+
+    .preview-card-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .preview-dot.green {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 6px #10B981;
+    }
+
+    .preview-title {
+      font-family: var(--font-display);
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+    }
+
+    .preview-channel-pill {
+      margin-left: auto;
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: var(--r-pill);
+      background: var(--bg-surface-elevated);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .share-preview-content {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.55;
+      color: var(--text-main);
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+
+    [data-theme="light"] .share-preview-content {
+      color: #334155;
+    }
+
+    .share-actions-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .share-action-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: var(--r-lg);
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      text-align: left;
+    }
+
+    .share-action-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* WhatsApp button */
+    .share-action-btn.whatsapp-btn {
+      background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+      color: #FFFFFF;
+      box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+    }
+    .share-action-btn.whatsapp-btn:hover {
+      box-shadow: 0 6px 18px rgba(37, 211, 102, 0.45);
+      filter: brightness(1.04);
+    }
+
+    /* Native share with photo button */
+    .share-action-btn.native-share-btn {
+      background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+      color: #FFFFFF;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+    }
+    .share-action-btn.native-share-btn:hover {
+      box-shadow: 0 6px 18px rgba(59, 130, 246, 0.45);
+      filter: brightness(1.04);
+    }
+
+    /* Copy Link button */
+    .share-action-btn.copy-link-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      color: var(--text-main);
+    }
+    [data-theme="light"] .share-action-btn.copy-link-btn {
+      background: #FFFFFF;
+      border-color: #CBD5E1;
+      color: #0F172A;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    .share-action-btn.copy-link-btn:hover {
+      background: var(--bg-surface-elevated);
+      border-color: var(--primary);
+    }
+
+    .share-btn-emoji {
+      font-size: 22px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .share-btn-icon {
+      flex-shrink: 0;
+    }
+
+    .share-btn-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .share-btn-main {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+    }
+
+    .share-btn-sub {
+      font-size: 11px;
+      opacity: 0.88;
+      font-weight: 500;
+      line-height: 1.2;
+    }
+
+    /* Toast Notification */
+    .share-toast-notification {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #0F172A;
+      color: #FFFFFF;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: var(--r-pill);
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      z-index: 10000;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    [data-theme="light"] .share-toast-notification {
+      background: #0F172A;
+      color: #FFFFFF;
+    }
+
+    .share-toast-notification.active {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .toast-icon {
+      color: #10B981;
+      font-weight: 900;
+    }
+
     /* Footer Provenance */
     .footer-provenance-box {
       margin-top: 24px;
@@ -2759,11 +3071,17 @@
          ==================================================================== -->
     <div id="dna-report-view" class="dna-report-container" style="display:none;">
 
-      <!-- CLEAN SINGLE BACK BUTTON (NO CLUTTER, NO SEARCH BAR, NO QUICK TICKERS) -->
+      <!-- CLEAN TOP BAR: BACK BUTTON & QUICK SHARE -->
       <div class="report-nav-bar">
         <button class="back-home-btn" onclick="resetToHome()" title="Back to DNA Home">
           <span>←</span>
           <span>Back to Search</span>
+        </button>
+        <button class="quick-share-btn" onclick="quickShareBriefing()" title="Share stock briefing">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="vertical-align:-2px; margin-right:4px;">
+            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/>
+          </svg>
+          <span>Share</span>
         </button>
       </div>
 
@@ -3373,6 +3691,66 @@
         </div>
       </article>
 
+    </section>
+
+    <!-- ====================================================================
+         EXECUTIVE SHARE & WHATSAPP DOCK (BRIEFING + CHART PHOTO + DEEPLINK)
+         ==================================================================== -->
+    <section class="dna-share-citadel" id="dna-share-section">
+      <div class="share-citadel-header">
+        <div class="share-badge-row">
+          <span class="share-pill-badge">⚡ 1-Tap Institutional Sharing</span>
+          <span class="share-live-tag">✓ Direct Deeplink</span>
+        </div>
+        <h3 class="share-citadel-title">
+          Share <span id="share-stock-name">TCS</span> Intelligence Briefing
+        </h3>
+        <p class="share-citadel-sub">
+          Share actionable entry levels, momentum targets, stop loss, and direct interactive deep link to other investors & groups.
+        </p>
+      </div>
+
+      <!-- Live Briefing Snippet Preview -->
+      <div class="share-preview-card">
+        <div class="preview-card-top">
+          <span class="preview-dot green"></span>
+          <span class="preview-title">Generated Briefing Message</span>
+          <span class="preview-channel-pill" id="preview-stance-badge">⏳ Wait For Dip</span>
+        </div>
+        <pre class="share-preview-content" id="share-briefing-preview"></pre>
+      </div>
+
+      <!-- 1-Tap Action Buttons -->
+      <div class="share-actions-grid">
+        <!-- 1. WhatsApp Share -->
+        <button class="share-action-btn whatsapp-btn" onclick="shareToWhatsApp()" title="Share directly to WhatsApp chat or group">
+          <svg class="share-btn-icon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2m.01 1.67c4.56 0 8.25 3.69 8.25 8.24 0 2.2-.86 4.28-2.42 5.84a8.216 8.216 0 0 1-5.83 2.42c-1.42 0-2.82-.37-4.06-1.07l-.29-.17-3.13.82.83-3.05-.19-.31c-.77-1.28-1.18-2.75-1.18-4.26 0-4.55 3.69-8.22 8.24-8.22m4.52 11.66c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.24-.75-.67-1.26-1.49-1.4-1.74-.15-.25-.02-.39.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.17.04-.32-.02-.45-.06-.13-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.87.85-.87 2.08 0 1.22.89 2.4 1.02 2.57.13.17 1.76 2.68 4.26 3.76.6.26 1.06.41 1.42.53.6.19 1.15.16 1.58.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.15-1.18-.06-.1-.23-.17-.48-.29z"/>
+          </svg>
+          <div class="share-btn-text">
+            <span class="share-btn-main">Share to WhatsApp</span>
+            <span class="share-btn-sub">Instant chat & group formatted briefing</span>
+          </div>
+        </button>
+
+        <!-- 2. Native Share with Chart Photo -->
+        <button class="share-action-btn native-share-btn" onclick="shareWithChartPhoto()" title="Open native share sheet with chart photo attached">
+          <span class="share-btn-emoji">📤</span>
+          <div class="share-btn-text">
+            <span class="share-btn-main">Share with Chart Photo</span>
+            <span class="share-btn-sub">Attach HD chart image + deep-link</span>
+          </div>
+        </button>
+
+        <!-- 3. Copy Deep Link & Briefing -->
+        <button class="share-action-btn copy-link-btn" onclick="copyBriefingToClipboard()" title="Copy formatted briefing and deep link to clipboard">
+          <span class="share-btn-emoji" id="copy-btn-icon">🔗</span>
+          <div class="share-btn-text">
+            <span class="share-btn-main" id="copy-btn-text">Copy Deep Link & Briefing</span>
+            <span class="share-btn-sub">One-tap copy to clipboard</span>
+          </div>
+        </button>
+      </div>
     </section>
 
     <!-- FOOTER PROVENANCE -->
@@ -4519,6 +4897,9 @@
       document.getElementById('q7-contingent').textContent = data.q7.contingent;
       document.getElementById('news-headline-1').textContent = data.q7.news1;
       document.getElementById('news-headline-2').textContent = data.q7.news2;
+
+      // Update the Share Suite preview message and deeplink
+      updateSharePreview();
     }
 
     async function selectStock(sym, skipScanAnimation = false) {
@@ -4527,6 +4908,11 @@
       if (window.history && window.history.pushState) {
         window.history.pushState({ stock: cleanSym }, '', `?stock=${cleanSym}`);
       }
+      try {
+        if (window.parent && window.parent !== window && window.parent.history && window.parent.history.pushState) {
+          window.parent.history.pushState({ tab: 'dna', stock: cleanSym }, '', `?tab=dna&stock=${cleanSym}`);
+        }
+      } catch (e) {}
 
       document.querySelectorAll('.chip-btn').forEach(btn => {
         btn.classList.toggle('active', btn.textContent.trim().toUpperCase().startsWith(cleanSym));
@@ -4773,6 +5159,210 @@
       }
     });
 
+    // ==========================================================================
+    // EXECUTIVE SHARING & WHATSAPP SUITE LOGIC
+    // ==========================================================================
+    function getDnaDeeplink(sym) {
+      const s = (sym || document.getElementById('hero-symbol')?.textContent || 'TCS').trim().toUpperCase();
+      let origin = window.location.origin;
+      try {
+        if (window.parent && window.parent.location && window.parent.location.origin) {
+          origin = window.parent.location.origin;
+        }
+      } catch (e) {}
+      return `${origin}/?tab=dna&stock=${encodeURIComponent(s)}`;
+    }
+
+    function generateShareBriefing() {
+      const sym = (document.getElementById('hero-symbol')?.textContent || 'TCS').trim().toUpperCase();
+      const name = document.getElementById('hero-comp-name')?.textContent?.trim() || sym;
+      const price = document.getElementById('hero-price')?.textContent?.trim() || '';
+      const change = document.getElementById('hero-change')?.textContent?.trim() || '';
+      const stance = document.getElementById('verdict-badge-text')?.textContent?.trim() || 'QUANT VERDICT';
+
+      const dip = document.getElementById('q1-dip-price')?.textContent?.trim() || 'Wait for Dip';
+      const breakout = document.getElementById('q1-breakout-price')?.textContent?.trim() || 'Watch Level';
+      const stop = document.getElementById('q1-stop-price')?.textContent?.trim() || 'Safety Floor';
+      const target = document.getElementById('q2-target1')?.textContent?.trim() || 'Target 1';
+      const rsi = document.getElementById('q2-rsi')?.textContent?.trim() || '';
+      const solvency = document.getElementById('q4-grade')?.textContent?.trim() || 'Grade AAA+';
+      const roce = document.getElementById('q3-roce')?.textContent?.trim() || '';
+
+      const deeplink = getDnaDeeplink(sym);
+
+      const lines = [
+        `⚡ *QuantSync DNA Intelligence Briefing*`,
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+        `🏢 *${sym}* · ${name}`,
+        `💰 *Price:* ${price} (${change}) | *Stance:* ${stance}`,
+        ``,
+        `🎯 *ACTION PLAN & ENTRY LEVELS:*`,
+        `• 🟢 *Best Dip Entry:* ${dip}`,
+        `• 🚀 *Breakout Trigger:* ${breakout}`,
+        `• 🔴 *Safety Stop:* ${stop}`,
+        `• 🎯 *Momentum Target:* ${target}`,
+        ``,
+        `📊 *QUANT RADAR:*`,
+        rsi ? `• Technical Speed: RSI ${rsi}` : '',
+        solvency ? `• Balance Sheet: ${solvency}` : '',
+        roce ? `• Capital Efficiency: ROCE ${roce}` : '',
+        ``,
+        `🔗 *Live Interactive DNA Report:*`,
+        `${deeplink}`,
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+        `QuantSync Quantitative Verification Suite`
+      ].filter(l => l !== '');
+
+      return {
+        sym,
+        name,
+        stance,
+        deeplink,
+        text: lines.join('\n')
+      };
+    }
+
+    function updateSharePreview() {
+      try {
+        const briefing = generateShareBriefing();
+        const symEl = document.getElementById('share-stock-name');
+        if (symEl) symEl.textContent = briefing.sym;
+        
+        const previewEl = document.getElementById('share-briefing-preview');
+        if (previewEl) previewEl.textContent = briefing.text;
+
+        const stanceEl = document.getElementById('preview-stance-badge');
+        if (stanceEl) stanceEl.textContent = briefing.stance;
+      } catch (e) {
+        console.warn('[Share] Error updating preview:', e);
+      }
+    }
+
+    async function getChartImageFile() {
+      try {
+        const sym = (document.getElementById('hero-symbol')?.textContent || 'TCS').trim().toUpperCase();
+        const img = document.getElementById('chart-api-img');
+        if (img && img.src && img.style.display !== 'none' && !img.src.startsWith('data:')) {
+          const resp = await fetch(img.src);
+          if (resp.ok) {
+            const blob = await resp.blob();
+            return new File([blob], `${sym}_QuantSync_Chart.png`, { type: blob.type || 'image/png' });
+          }
+        }
+      } catch (e) {
+        console.warn('[Share] Chart image fetch exception:', e);
+      }
+      return null;
+    }
+
+    function shareToWhatsApp() {
+      const briefing = generateShareBriefing();
+      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(briefing.text)}`;
+      window.open(whatsappUrl, '_blank');
+      showShareToast('Opening WhatsApp with live briefing...');
+    }
+
+    async function shareWithChartPhoto() {
+      const briefing = generateShareBriefing();
+      showShareToast('Preparing chart & briefing...');
+      
+      const file = await getChartImageFile();
+      if (navigator.share) {
+        try {
+          if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: `QuantSync DNA: ${briefing.sym}`,
+              text: briefing.text,
+              files: [file]
+            });
+            showShareToast('✓ Shared with chart photo!');
+            return;
+          } else {
+            await navigator.share({
+              title: `QuantSync DNA: ${briefing.sym}`,
+              text: briefing.text,
+              url: briefing.deeplink
+            });
+            showShareToast('✓ Shared briefing!');
+            return;
+          }
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            console.warn('[Share] Native share failed:', err);
+          } else {
+            return; // User cancelled
+          }
+        }
+      }
+      // Fallback to WhatsApp
+      shareToWhatsApp();
+    }
+
+    function copyBriefingToClipboard() {
+      const briefing = generateShareBriefing();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(briefing.text).then(() => {
+          onCopySuccess();
+        }).catch(() => {
+          fallbackCopyText(briefing.text);
+        });
+      } else {
+        fallbackCopyText(briefing.text);
+      }
+    }
+
+    function fallbackCopyText(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        onCopySuccess();
+      } catch (err) {
+        showShareToast('Could not copy automatically');
+      }
+      document.body.removeChild(ta);
+    }
+
+    function onCopySuccess() {
+      const btnText = document.getElementById('copy-btn-text');
+      const btnIcon = document.getElementById('copy-btn-icon');
+      if (btnText) btnText.textContent = '✓ Copied to Clipboard!';
+      if (btnIcon) btnIcon.textContent = '✓';
+      showShareToast('✓ Briefing & deep-link copied!');
+      setTimeout(() => {
+        if (btnText) btnText.textContent = 'Copy Deep Link & Briefing';
+        if (btnIcon) btnIcon.textContent = '🔗';
+      }, 2500);
+    }
+
+    function quickShareBriefing() {
+      const shareSection = document.getElementById('dna-share-section');
+      if (shareSection) {
+        shareSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        shareSection.style.outline = '2px solid #25D366';
+        setTimeout(() => { shareSection.style.outline = 'none'; }, 1500);
+      } else {
+        shareToWhatsApp();
+      }
+    }
+
+    let toastTimer = null;
+    function showShareToast(msg) {
+      const toast = document.getElementById('dna-share-toast');
+      const msgEl = document.getElementById('toast-message');
+      if (!toast) return;
+      if (msgEl) msgEl.textContent = msg;
+      toast.classList.add('active');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('active');
+      }, 3000);
+    }
+
     // Handle browser back/forward buttons
     window.addEventListener('popstate', (e) => {
       const urlParams = new URLSearchParams(window.location.search);
@@ -4793,5 +5383,11 @@
       resetToHome();
     }
   </script>
+
+  <!-- FLOATING SHARE TOAST NOTIFICATION -->
+  <div id="dna-share-toast" class="share-toast-notification">
+    <span class="toast-icon">✓</span>
+    <span class="toast-msg" id="toast-message">Briefing & deep link copied!</span>
+  </div>
 </body>
 </html>

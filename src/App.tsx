@@ -1162,6 +1162,11 @@ export default function App() {
       if (p && ["home", "signals", "portfolio", "dna", "charts", "intel", "more"].includes(p)) {
         return p as any;
       }
+      // If direct deep link contains ?stock= or ?sym=, automatically open the DNA screen!
+      const stockParam = new URLSearchParams(window.location.search).get("stock") || new URLSearchParams(window.location.search).get("sym");
+      if (stockParam) {
+        return "dna";
+      }
     }
     return "home";
   });
