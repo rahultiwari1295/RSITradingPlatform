@@ -941,79 +941,76 @@
     }
 
     /* ==========================================================================
-       2-TIER QUESTION CARD HEADER (MOBILE-FIRST NO-CRUSH ARCHITECTURE)
+       QUESTION CARD HEADER: CLEAN TOP-BAR + FULL-WIDTH HEADLINE
        ========================================================================== */
     .q-header-block {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      margin-bottom: 12px;
+      gap: 10px;
+      margin-bottom: 14px;
       width: 100%;
     }
 
-    .q-meta-line {
+    .q-top-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
-      width: 100%;
-    }
-
-    .q-persona-tag {
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--primary);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .q-title-group {
-      display: flex;
-      align-items: flex-start;
       gap: 10px;
       width: 100%;
     }
 
-    .q-num-glyph {
-      width: 26px;
-      height: 26px;
-      border-radius: 8px;
+    .q-category-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
       background: var(--bg-surface-elevated);
       border: 1px solid var(--border-subtle);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      font-weight: 800;
-      color: var(--text-main);
+      border-radius: var(--r-pill);
+      padding: 3px 10px 3px 4px;
       flex-shrink: 0;
-      margin-top: 1px;
     }
 
-    .q-headline-question {
-      font-family: var(--font-display);
-      font-size: 17px;
+    [data-theme="light"] .q-category-chip {
+      background: #F1F5F9;
+      border-color: #E2E8F0;
+    }
+
+    .q-num-pill {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
       font-weight: 800;
-      letter-spacing: -0.01em;
-      color: var(--text-main);
-      line-height: 1.3;
-      flex: 1;
+      color: var(--primary);
+      background: var(--primary-subtle);
+      border-radius: var(--r-pill);
+      padding: 2px 7px;
+      line-height: 1.2;
+    }
+
+    .q-category-text {
+      font-family: var(--font-display);
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    [data-theme="light"] .q-category-text {
+      color: #475569;
     }
 
     .q-verdict-badge {
-      flex-shrink: 0;
       font-family: var(--font-display);
       font-size: 11px;
       font-weight: 800;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.02em;
       text-transform: uppercase;
-      padding: 4px 10px;
+      padding: 4px 12px;
       border-radius: var(--r-pill);
       white-space: nowrap;
+      flex-shrink: 0;
+      box-shadow: var(--shadow-sm);
     }
 
     .q-verdict-badge.bullish {
@@ -1021,18 +1018,32 @@
       color: var(--good);
       border: 1px solid var(--good-border);
     }
+    [data-theme="light"] .q-verdict-badge.bullish {
+      background: #ECFDF5;
+      color: #059669;
+      border-color: #A7F3D0;
+    }
 
     .q-verdict-badge.neutral {
       background: var(--caution-subtle);
       color: var(--caution);
       border: 1px solid var(--caution-border);
     }
+    [data-theme="light"] .q-verdict-badge.neutral {
+      background: #FFFBEB;
+      color: #D97706;
+      border-color: #FDE68A;
+    }
 
     .q-verdict-badge.warning {
       background: rgba(245, 158, 11, 0.16);
       color: #F59E0B;
       border: 1px solid rgba(245, 158, 11, 0.4);
-      box-shadow: 0 0 10px rgba(245, 158, 11, 0.15);
+    }
+    [data-theme="light"] .q-verdict-badge.warning {
+      background: #FEF3C7;
+      color: #B45309;
+      border-color: #FCD34D;
     }
 
     .q-verdict-badge.bearish {
@@ -1040,42 +1051,127 @@
       color: var(--danger);
       border: 1px solid var(--danger-border);
     }
+    [data-theme="light"] .q-verdict-badge.bearish {
+      background: #FEF2F2;
+      color: #DC2626;
+      border-color: #FECDD3;
+    }
 
-    .text-good { color: var(--good) !important; }
-    .text-caution { color: var(--caution) !important; }
-    .text-danger { color: var(--danger) !important; }
-    .text-primary { color: var(--primary) !important; }
-    .text-purple { color: var(--purple) !important; }
+    .q-headline-question {
+      font-family: var(--font-display);
+      font-size: 17.5px;
+      font-weight: 800;
+      letter-spacing: -0.015em;
+      color: var(--text-main);
+      line-height: 1.35;
+      margin: 0;
+      text-align: left;
+      width: 100%;
+    }
 
-    /* Plain-English Truth Callout */
-    .q-plain-truth-box {
+    .q-horizon-tag {
+      display: inline-flex;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
       background: var(--bg-surface-elevated);
-      border-left: 3.5px solid var(--primary);
-      border-radius: 0 var(--r-md) var(--r-md) 0;
-      padding: 12px 14px;
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+      vertical-align: middle;
+      white-space: nowrap;
+      margin-left: 6px;
+    }
+
+    [data-theme="light"] .q-horizon-tag {
+      background: #F8FAFC;
+      border-color: #E2E8F0;
+      color: #64748B;
+    }
+
+    /* ==========================================================================
+       EXECUTIVE VERDICT CALLOUT (REPLACES HARSH GREEN BORDER LINE)
+       ========================================================================== */
+    .q-insight-callout {
+      border-radius: var(--r-md);
+      padding: 13px 16px;
       margin-bottom: 14px;
+      position: relative;
+      transition: var(--ease-fast);
     }
 
-    .q-plain-truth-box.good-border {
-      border-left-color: var(--good);
+    /* Dark Mode Tints */
+    .q-insight-callout.good-tint {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.09) 0%, rgba(16, 185, 129, 0.02) 100%);
+      border: 1px solid rgba(16, 185, 129, 0.25);
     }
-    .q-plain-truth-box.caution-border {
-      border-left-color: var(--caution);
+    .q-insight-callout.caution-tint {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.09) 0%, rgba(245, 158, 11, 0.02) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.25);
     }
-    .q-plain-truth-box.danger-border {
-      border-left-color: var(--danger);
+    .q-insight-callout.danger-tint {
+      background: linear-gradient(135deg, rgba(244, 63, 94, 0.09) 0%, rgba(244, 63, 94, 0.02) 100%);
+      border: 1px solid rgba(244, 63, 94, 0.25);
     }
 
-    .q-plain-answer-text {
+    /* Light Mode Tints */
+    [data-theme="light"] .q-insight-callout.good-tint {
+      background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
+      border: 1px solid #86EFAC;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.05);
+    }
+    [data-theme="light"] .q-insight-callout.caution-tint {
+      background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+      border: 1px solid #FCD34D;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.05);
+    }
+    [data-theme="light"] .q-insight-callout.danger-tint {
+      background: linear-gradient(135deg, #FFF1F2 0%, #FFE4E6 100%);
+      border: 1px solid #FDA4AF;
+      box-shadow: 0 2px 8px rgba(244, 63, 94, 0.05);
+    }
+
+    .insight-callout-header {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 6px;
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .q-insight-callout.good-tint .insight-callout-header { color: var(--good); }
+    [data-theme="light"] .q-insight-callout.good-tint .insight-callout-header { color: #047857; }
+
+    .q-insight-callout.caution-tint .insight-callout-header { color: var(--caution); }
+    [data-theme="light"] .q-insight-callout.caution-tint .insight-callout-header { color: #B45309; }
+
+    .q-insight-callout.danger-tint .insight-callout-header { color: var(--danger); }
+    [data-theme="light"] .q-insight-callout.danger-tint .insight-callout-header { color: #B91C1C; }
+
+    .insight-answer-text {
       font-size: 13.5px;
       line-height: 1.6;
       color: var(--text-main);
       font-weight: 500;
+      margin: 0;
     }
 
-    .q-plain-answer-text strong {
-      font-weight: 700;
+    [data-theme="light"] .insight-answer-text {
+      color: #1E293B;
+    }
+
+    .insight-answer-text strong {
+      font-weight: 800;
       color: var(--text-highlight);
+    }
+
+    [data-theme="light"] .insight-answer-text strong {
+      color: #0F172A;
     }
 
     /* Proof Canvas */
@@ -2011,29 +2107,34 @@
 
       /* Fix 2: Question Card Headers on Mobile */
       .q-bento-card {
-        padding: 15px 13px;
-        border-radius: var(--r-lg);
+        padding: 16px 14px;
+        border-radius: var(--r-xl);
       }
 
-      .q-meta-line {
+      .q-top-bar {
         gap: 6px;
       }
 
-      .q-persona-tag {
+      .q-category-text {
         font-size: 9.5px;
       }
 
+      .q-verdict-badge {
+        font-size: 10px;
+        padding: 3px 9px;
+      }
+
       .q-headline-question {
-        font-size: 15px;
+        font-size: 15.5px;
         line-height: 1.35;
       }
 
-      .q-plain-truth-box {
-        padding: 10px 12px;
+      .q-insight-callout {
+        padding: 11px 13px;
         margin-bottom: 12px;
       }
 
-      .q-plain-answer-text {
+      .insight-answer-text {
         font-size: 13px;
         line-height: 1.55;
       }
@@ -2753,14 +2854,14 @@
         <span>⚡ Select Your Audience Lens:</span>
       </div>
       <div class="audience-chips-strip">
-        <button class="aud-tab-btn active" onclick="filterAudience('all')">🌐 All 7 Briefings</button>
-        <button class="aud-tab-btn" onclick="filterAudience('q1')">🎯 1. Buy Today?</button>
-        <button class="aud-tab-btn" onclick="filterAudience('q2')">📈 2. Chart & Speed</button>
-        <button class="aud-tab-btn" onclick="filterAudience('q3')">💎 3. Long-Term Investor</button>
+        <button class="aud-tab-btn active" onclick="filterAudience('all')">🌐 All 7 Questions</button>
+        <button class="aud-tab-btn" onclick="filterAudience('q1')">🎯 1. Timing & Entry</button>
+        <button class="aud-tab-btn" onclick="filterAudience('q2')">📈 2. Technical Speed</button>
+        <button class="aud-tab-btn" onclick="filterAudience('q3')">💎 3. Compounding</button>
         <button class="aud-tab-btn" onclick="filterAudience('q4')">🛡️ 4. Solvency & Debt</button>
         <button class="aud-tab-btn" onclick="filterAudience('q5')">🐋 5. Smart Money</button>
-        <button class="aud-tab-btn" onclick="filterAudience('q6')">⚖️ 6. Sector Peers</button>
-        <button class="aud-tab-btn" onclick="filterAudience('q7')">📰 7. News & Red Flags</button>
+        <button class="aud-tab-btn" onclick="filterAudience('q6')">⚖️ 6. Peers & Value</button>
+        <button class="aud-tab-btn" onclick="filterAudience('q7')">📰 7. Catalysts</button>
       </div>
     </section>
 
@@ -2771,20 +2872,22 @@
            QUESTION 1: CAN I BUY TODAY? (FOR SWING TRADERS & TIMING)
            ==================================================================== -->
       <article class="q-bento-card highlight-action" id="card-q1" data-qid="q1">
-        <!-- 2-Tier Header: Meta Line (Left Persona + Right Badge) & Full Title -->
         <div class="q-header-block">
-          <div class="q-meta-line">
-            <span class="q-persona-tag">🎯 For Swing Traders & Timing Decision</span>
-            <span class="q-verdict-badge warning" id="q1-pill">⏳ Wait · Too Risky Today</span>
+          <div class="q-top-bar">
+            <div class="q-category-chip">
+              <span class="q-num-pill">01</span>
+              <span class="q-category-text">Timing & Entry</span>
+            </div>
+            <span class="q-verdict-badge warning" id="q1-pill">⏳ Wait · Too Risky</span>
           </div>
-          <div class="q-title-group">
-            <span class="q-num-glyph">1</span>
-            <h3 class="q-headline-question">Can I buy right now, or is it too late / risky?</h3>
-          </div>
+          <h3 class="q-headline-question">Can I buy right now, or is it too late / risky?</h3>
         </div>
 
-        <div class="q-plain-truth-box caution-border" id="q1-truth-box">
-          <p class="q-plain-answer-text" id="q1-answer">
+        <div class="q-insight-callout caution-tint" id="q1-truth-box">
+          <div class="insight-callout-header">
+            <span>✦ Plain-English Takeaway</span>
+          </div>
+          <p class="insight-answer-text" id="q1-answer">
             <strong>Don't Buy Today:</strong> TCS is hitting an invisible price ceiling near <strong>₹2,135</strong> right now. If you buy here, you risk buying at the peak. Wait for a pullback to <strong>₹2,060</strong> for a safe entry, or wait for it to cleanly break above <strong>₹2,140</strong>.
           </p>
         </div>
@@ -2830,20 +2933,22 @@
            QUESTION 2: CHART & TECHNICAL SPEED (WITH REAL 4M & 1Y CHART)
            ==================================================================== -->
       <article class="q-bento-card" id="card-q2" data-qid="q2">
-        <!-- 2-Tier Header: Meta Line & Full Title -->
         <div class="q-header-block">
-          <div class="q-meta-line">
-            <span class="q-persona-tag">📈 For Technical Traders & Chart Analysts</span>
+          <div class="q-top-bar">
+            <div class="q-category-chip">
+              <span class="q-num-pill">02</span>
+              <span class="q-category-text">Technical Speed</span>
+            </div>
             <span class="q-verdict-badge bullish" id="q2-pill">🟢 Upward Velocity</span>
           </div>
-          <div class="q-title-group">
-            <span class="q-num-glyph">2</span>
-            <h3 class="q-headline-question">What is the Chart & Technical Speed Saying? (1–4 Weeks)</h3>
-          </div>
+          <h3 class="q-headline-question">What is the Chart & Technical Speed Saying? <span class="q-horizon-tag">1–4 W</span></h3>
         </div>
 
-        <div class="q-plain-truth-box good-border">
-          <p class="q-plain-answer-text" id="q2-answer">
+        <div class="q-insight-callout good-tint" id="q2-truth-box">
+          <div class="insight-callout-header">
+            <span>✦ Plain-English Takeaway</span>
+          </div>
+          <p class="insight-answer-text" id="q2-answer">
             Powerful speed in motion. The stock is surfing calmly above its 20-day line (<strong>₹2,070</strong>) and 50-day line. As long as it holds this floor, the quick momentum target is <strong>₹2,240</strong>.
           </p>
         </div>
@@ -2899,20 +3004,22 @@
            QUESTION 3: LONG-TERM COMPOUNDING (1-3 YEARS)
            ==================================================================== -->
       <article class="q-bento-card" id="card-q3" data-qid="q3">
-        <!-- 2-Tier Header: Meta Line & Full Title -->
         <div class="q-header-block">
-          <div class="q-meta-line">
-            <span class="q-persona-tag">💎 For Long-Term Investors & Wealth Builders</span>
-            <span class="q-verdict-badge bullish" id="q3-pill">🟢 Elite Compounder</span>
+          <div class="q-top-bar">
+            <div class="q-category-chip">
+              <span class="q-num-pill">03</span>
+              <span class="q-category-text">Wealth Compounding</span>
+            </div>
+            <span class="q-verdict-badge bullish" id="q3-pill">🟢 Super Wealth Builder</span>
           </div>
-          <div class="q-title-group">
-            <span class="q-num-glyph">3</span>
-            <h3 class="q-headline-question">Is This a Multi-Year Compounding Machine? (1–3 Years)</h3>
-          </div>
+          <h3 class="q-headline-question">Is This a Multi-Year Compounding Machine? <span class="q-horizon-tag">1–3 Y</span></h3>
         </div>
 
-        <div class="q-plain-truth-box good-border">
-          <p class="q-plain-answer-text" id="q3-answer">
+        <div class="q-insight-callout good-tint" id="q3-truth-box">
+          <div class="insight-callout-header">
+            <span>✦ Plain-English Takeaway</span>
+          </div>
+          <p class="insight-answer-text" id="q3-answer">
             High-grade business engine with elite capital efficiency (<strong>ROCE 63.0%</strong>). Protected by strong market moats and high dividend generation, this is engineered for patient multi-year wealth accumulation.
           </p>
         </div>
@@ -2965,20 +3072,22 @@
            QUESTION 4: BALANCE SHEET & SOLVENCY SAFETY
            ==================================================================== -->
       <article class="q-bento-card" id="card-q4" data-qid="q4">
-        <!-- 2-Tier Header: Meta Line & Full Title -->
         <div class="q-header-block">
-          <div class="q-meta-line">
-            <span class="q-persona-tag">🛡️ For Fundamental & Balance Sheet Analysts</span>
+          <div class="q-top-bar">
+            <div class="q-category-chip">
+              <span class="q-num-pill">04</span>
+              <span class="q-category-text">Solvency & Debt</span>
+            </div>
             <span class="q-verdict-badge bullish" id="q4-pill">🟢 100% Fortress</span>
           </div>
-          <div class="q-title-group">
-            <span class="q-num-glyph">4</span>
-            <h3 class="q-headline-question">How Safe is the Balance Sheet? Any Bankruptcy Danger?</h3>
-          </div>
+          <h3 class="q-headline-question">How Safe is the Balance Sheet? Any Bankruptcy Danger?</h3>
         </div>
 
-        <div class="q-plain-truth-box good-border">
-          <p class="q-plain-answer-text" id="q4-answer">
+        <div class="q-insight-callout good-tint" id="q4-truth-box">
+          <div class="insight-callout-header">
+            <span>✦ Plain-English Takeaway</span>
+          </div>
+          <p class="insight-answer-text" id="q4-answer">
             <strong>Owes virtually zero money to banks</strong> (Debt-to-Equity is only <strong>0.11</strong>) and sits on a colossal piggy bank of <strong>₹1,06,878 Cr</strong> in reserves. Financial insolvency danger is <strong>0%</strong>.
           </p>
         </div>
@@ -3025,20 +3134,22 @@
            QUESTION 5: SMART MONEY & WHALES (FII/DII)
            ==================================================================== -->
       <article class="q-bento-card" id="card-q5" data-qid="q5">
-        <!-- 2-Tier Header: Meta Line & Full Title -->
         <div class="q-header-block">
-          <div class="q-meta-line">
-            <span class="q-persona-tag">🐋 For Smart Money & Institutional Flow Trackers</span>
+          <div class="q-top-bar">
+            <div class="q-category-chip">
+              <span class="q-num-pill">05</span>
+              <span class="q-category-text">Smart Money & Whales</span>
+            </div>
             <span class="q-verdict-badge bullish" id="q5-pill">🟢 Whale Accumulation</span>
           </div>
-          <div class="q-title-group">
-            <span class="q-num-glyph">5</span>
-            <h3 class="q-headline-question">Are Big Whales (FIIs & Mutual Funds) Buying or Dumping?</h3>
-          </div>
+          <h3 class="q-headline-question">Are Big Whales (FIIs & Mutual Funds) Buying or Dumping?</h3>
         </div>
 
-        <div class="q-plain-truth-box good-border">
-          <p class="q-plain-answer-text" id="q5-answer">
+        <div class="q-insight-callout good-tint" id="q5-truth-box">
+          <div class="insight-callout-header">
+            <span>✦ Plain-English Takeaway</span>
+          </div>
+          <p class="insight-answer-text" id="q5-answer">
             Big institutions hold a dominant <strong>22.5%</strong> stake alongside <strong>71.8%</strong> promoter holding. High delivery volume confirms real custodial holding rather than day-trader churn.
           </p>
         </div>
@@ -3102,20 +3213,22 @@
            QUESTION 6: VALUATION & DIRECT SECTOR ALTERNATIVES
            ==================================================================== -->
       <article class="q-bento-card" id="card-q6" data-qid="q6">
-        <!-- 2-Tier Header: Meta Line & Full Title -->
         <div class="q-header-block">
-          <div class="q-meta-line">
-            <span class="q-persona-tag">⚖️ For Sector Benchmarkers & Value Seekers</span>
+          <div class="q-top-bar">
+            <div class="q-category-chip">
+              <span class="q-num-pill">06</span>
+              <span class="q-category-text">Valuation & Peers</span>
+            </div>
             <span class="q-verdict-badge neutral" id="q6-pill">🟡 Fairly Priced</span>
           </div>
-          <div class="q-title-group">
-            <span class="q-num-glyph">6</span>
-            <h3 class="q-headline-question">Are There Better Value Alternatives in This Sector?</h3>
-          </div>
+          <h3 class="q-headline-question">Are There Better Value Alternatives in This Sector?</h3>
         </div>
 
-        <div class="q-plain-truth-box caution-border">
-          <p class="q-plain-answer-text" id="q6-answer">
+        <div class="q-insight-callout caution-tint" id="q6-truth-box">
+          <div class="insight-callout-header">
+            <span>✦ Plain-English Takeaway</span>
+          </div>
+          <p class="insight-answer-text" id="q6-answer">
             Trading at a P/E of <strong>15.29</strong> compared to the Industry Median of <strong>24.60</strong>. While cheaper than high-flying tech peers, its growth pace is mature. Excellent for downside defense.
           </p>
         </div>
@@ -3172,20 +3285,22 @@
            QUESTION 7: CATALYSTS, NEWS & FORENSIC RED FLAGS
            ==================================================================== -->
       <article class="q-bento-card" id="card-q7" data-qid="q7">
-        <!-- 2-Tier Header: Meta Line & Full Title -->
         <div class="q-header-block">
-          <div class="q-meta-line">
-            <span class="q-persona-tag">📰 For Forensic Auditors & News/Market Researchers</span>
+          <div class="q-top-bar">
+            <div class="q-category-chip">
+              <span class="q-num-pill">07</span>
+              <span class="q-category-text">Catalysts & Forensics</span>
+            </div>
             <span class="q-verdict-badge bullish" id="q7-pill">🟢 Clean Audit Track</span>
           </div>
-          <div class="q-title-group">
-            <span class="q-num-glyph">7</span>
-            <h3 class="q-headline-question">What Are the Catalysts, News Sparks & Red Flags?</h3>
-          </div>
+          <h3 class="q-headline-question">What Are the Catalysts, News Sparks & Red Flags?</h3>
         </div>
 
-        <div class="q-plain-truth-box good-border">
-          <p class="q-plain-answer-text" id="q7-answer">
+        <div class="q-insight-callout good-tint" id="q7-truth-box">
+          <div class="insight-callout-header">
+            <span>✦ Plain-English Takeaway</span>
+          </div>
+          <p class="insight-answer-text" id="q7-answer">
             Passed all <strong>4 critical forensic safety tests</strong> with <strong>0 accounting red flags</strong>. Upcoming quarterly earnings release and large IT deal wins are the primary price catalysts.
           </p>
         </div>
@@ -4305,15 +4420,30 @@
       document.getElementById('pill-ema200').textContent = data.ema200Status;
       document.getElementById('pill-solvency').textContent = data.solvencyStatus;
 
-      // Question 1: Buy Today? (Clean 3-Card Action Plan)
-      document.getElementById('q1-pill').textContent = data.q1.pill;
-      document.getElementById('q1-pill').className = `q-verdict-badge ${data.q1.type}`;
-      
-      const truthBox = document.getElementById('q1-truth-box');
-      if (truthBox) {
-        truthBox.className = `q-plain-truth-box ${data.q1.truthBorderClass || 'good-border'}`;
+      function setCardVerdict(qNum, qData) {
+        if (!qData) return;
+        const pillEl = document.getElementById(`q${qNum}-pill`);
+        if (pillEl) {
+          let pillText = (qData.pill || '').trim();
+          if (pillText.length > 22 && pillText.includes(' · ')) {
+            pillText = pillText.split(' · ')[0].trim();
+          }
+          if (!pillText.startsWith('🟢') && !pillText.startsWith('🟡') && !pillText.startsWith('🔴') && !pillText.startsWith('⏳') && !pillText.startsWith('⚪')) {
+            const icon = qData.type === 'bullish' ? '🟢 ' : (qData.type === 'bearish' ? '🔴 ' : (qData.type === 'warning' ? '⏳ ' : '🟡 '));
+            pillText = icon + pillText;
+          }
+          pillEl.textContent = pillText;
+          pillEl.className = `q-verdict-badge ${qData.type || 'neutral'}`;
+        }
+        const calloutEl = document.getElementById(`q${qNum}-truth-box`);
+        if (calloutEl) {
+          const tint = qData.type === 'bullish' ? 'good-tint' : (qData.type === 'bearish' ? 'danger-tint' : 'caution-tint');
+          calloutEl.className = `q-insight-callout ${tint}`;
+        }
       }
 
+      // Question 1: Buy Today? (Clean 3-Card Action Plan)
+      setCardVerdict(1, data.q1);
       document.getElementById('q1-answer').innerHTML = data.q1.answer;
       document.getElementById('q1-dip-price').textContent = data.q1.dipPrice || data.q1.optimalDip || "Wait for Dip";
       document.getElementById('q1-dip-sub').textContent = data.q1.dipSub || "Safe Pullback Zone";
@@ -4323,8 +4453,7 @@
       document.getElementById('q1-stop-sub').textContent = data.q1.stopSub || "Protect Capital";
 
       // Question 2: Chart & Technical Speed
-      document.getElementById('q2-pill').textContent = data.q2.pill;
-      document.getElementById('q2-pill').className = `q-verdict-badge ${data.q2.type}`;
+      setCardVerdict(2, data.q2);
       document.getElementById('q2-answer').innerHTML = data.q2.answer;
       document.getElementById('q2-rsi').textContent = data.q2.rsi;
       document.getElementById('q2-target1').textContent = data.q2.target1;
@@ -4334,8 +4463,7 @@
       switchChartView(currentChartView);
 
       // Question 3: Long-Term Compounding
-      document.getElementById('q3-pill').textContent = data.q3.pill;
-      document.getElementById('q3-pill').className = `q-verdict-badge ${data.q3.type}`;
+      setCardVerdict(3, data.q3);
       document.getElementById('q3-answer').innerHTML = data.q3.answer;
       document.getElementById('bar-sales-cagr').style.width = `${data.q3.salesPct}%`;
       document.getElementById('val-sales-cagr').textContent = data.q3.salesCagr;
@@ -4347,8 +4475,7 @@
       document.getElementById('q3-piotroski').textContent = data.q3.piotroski;
 
       // Question 4: Balance Sheet & Solvency
-      document.getElementById('q4-pill').textContent = data.q4.pill;
-      document.getElementById('q4-pill').className = `q-verdict-badge ${data.q4.type}`;
+      setCardVerdict(4, data.q4);
       document.getElementById('q4-answer').innerHTML = data.q4.answer;
       document.getElementById('scale-reserves-seg').style.width = `${data.q4.reservesPct}%`;
       document.getElementById('scale-debt-seg').style.width = `${100 - data.q4.reservesPct}%`;
@@ -4360,8 +4487,7 @@
       document.getElementById('q4-grade').textContent = data.q4.grade;
 
       // Question 5: Smart Money & Whales
-      document.getElementById('q5-pill').textContent = data.q5.pill;
-      document.getElementById('q5-pill').className = `q-verdict-badge ${data.q5.type}`;
+      setCardVerdict(5, data.q5);
       document.getElementById('q5-answer').innerHTML = data.q5.answer;
       document.getElementById('q5-promoter').textContent = data.q5.promoter;
       document.getElementById('q5-fii').textContent = data.q5.fii;
@@ -4373,8 +4499,7 @@
       document.getElementById('q5-fiiflow').textContent = data.q5.fiiflow;
 
       // Question 6: Sector Alternatives & Peers
-      document.getElementById('q6-pill').textContent = data.q6.pill;
-      document.getElementById('q6-pill').className = `q-verdict-badge ${data.q6.type}`;
+      setCardVerdict(6, data.q6);
       document.getElementById('q6-answer').innerHTML = data.q6.answer;
       document.getElementById('q6-slider-pin').style.left = data.q6.pinLeft;
       document.getElementById('q6-pe').textContent = data.q6.pe;
@@ -4386,8 +4511,7 @@
       renderSectorPeers(data.q6.peers);
 
       // Question 7: Catalysts, Results & News
-      document.getElementById('q7-pill').textContent = data.q7.pill;
-      document.getElementById('q7-pill').className = `q-verdict-badge ${data.q7.type}`;
+      setCardVerdict(7, data.q7);
       document.getElementById('q7-answer').innerHTML = data.q7.answer;
       document.getElementById('q7-results-date').textContent = data.q7.resultsDate;
       document.getElementById('q7-results-countdown').textContent = data.q7.resultsCountdown;
