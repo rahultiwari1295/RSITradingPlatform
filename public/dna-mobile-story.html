@@ -1218,127 +1218,340 @@
     /* ==========================================================================
        CHART CANVAS & TIMEFRAME CONTROLS (QUESTION 2)
        ========================================================================== */
-    .chart-box-wrapper {
-      margin-top: 10px;
-      margin-bottom: 12px;
-      border: 1px solid var(--border-card);
-      border-radius: var(--r-md);
-      background: #060912;
-      overflow: hidden;
-    }
-
-    .chart-header-strip {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 14px;
-      background: rgba(255, 255, 255, 0.03);
-      border-bottom: 1px solid var(--border-subtle);
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .chart-header-title {
-      font-size: 11px;
-      font-weight: 800;
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .chart-timeframe-btns {
+    /* ==========================================================================
+       CLEAN NATURAL PHOTO STAGE (NO BLACK BARS!)
+       ========================================================================== */
+    .chart-timeframe-switcher {
       display: flex;
       gap: 4px;
-      background: rgba(0, 0, 0, 0.3);
+      background: var(--bg-surface-elevated);
       padding: 3px;
       border-radius: var(--r-pill);
-      border: 1px solid var(--border-subtle);
+      border: 1px solid var(--border-card);
     }
 
-    .tf-btn {
+    .chart-tf-pill {
       background: transparent;
       border: none;
       color: var(--text-muted);
       font-family: var(--font-mono);
       font-size: 10.5px;
       font-weight: 700;
-      padding: 4px 10px;
+      padding: 4px 11px;
       border-radius: var(--r-pill);
       cursor: pointer;
       transition: var(--ease-fast);
     }
 
-    .tf-btn.active {
+    .chart-tf-pill.active {
+      background: var(--primary);
+      color: #FFFFFF;
+      box-shadow: 0 2px 8px var(--primary-glow);
+    }
+
+    [data-theme="light"] .chart-timeframe-switcher {
+      background: #F1F5F9;
+      border-color: rgba(0, 0, 0, 0.08);
+    }
+
+    .clean-chart-stage {
+      position: relative;
+      width: 100%;
+      margin-top: 10px;
+      border-radius: var(--r-md);
+      overflow: hidden;
+      cursor: pointer;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .clean-chart-img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: var(--r-md);
+      border: 1px solid var(--border-card);
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    .clean-chart-stage:hover .clean-chart-img {
+      box-shadow: var(--shadow-md);
+    }
+
+    .chart-svg-interactive {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .clean-zoom-badge {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--r-pill);
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #FFFFFF;
+      pointer-events: none;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* PURE MINIMAL FULLSCREEN PHOTO VIEWER (ZERO FRAMES, ZERO CRASHES) */
+    .photo-viewer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.94);
+      z-index: 999999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .photo-viewer-backdrop.active {
+      display: flex;
+      animation: pvFadeIn 0.2s ease-out forwards;
+    }
+
+    @keyframes pvFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .photo-viewer-close {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #FFFFFF;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 1000001;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: background 0.15s ease, transform 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .photo-viewer-close:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.08);
+    }
+
+    .photo-viewer-img {
+      max-width: 96vw;
+      max-height: 88vh;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.85);
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      pointer-events: auto;
+      cursor: zoom-out;
+    }
+
+    /* ==========================================================================
+       RADAR SCANNING PROGRESS CONSOLE (DURING FETCH)
+       ========================================================================== */
+    .dna-loading-container {
+      width: 100%;
+      max-width: 640px;
+      margin: 16px auto 40px auto;
+      padding: 0 4px;
+    }
+
+    .dna-loading-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--r-xl);
+      padding: 34px 20px;
+      text-align: center;
+      box-shadow: var(--shadow-md);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dna-radar-pulse-ring {
+      width: 70px;
+      height: 70px;
+      margin: 0 auto 16px auto;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: var(--primary-subtle);
+      border: 1.5px solid var(--primary);
+      box-shadow: 0 0 25px var(--primary-glow);
+    }
+
+    .radar-scan-sweep {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: var(--primary);
+      animation: radarSpin 1s linear infinite;
+    }
+
+    .radar-center-icon {
+      font-size: 24px;
+      animation: iconPulse 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes radarSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes iconPulse {
+      from { transform: scale(0.9); opacity: 0.8; }
+      to { transform: scale(1.15); opacity: 1; }
+    }
+
+    .dna-loading-title {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .dna-loading-title span {
+      color: var(--primary);
+    }
+
+    .dna-loading-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      max-width: 480px;
+      margin: 0 auto 18px auto;
+      line-height: 1.5;
+    }
+
+    .dna-progress-track {
+      height: 7px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: var(--r-pill);
+      overflow: hidden;
+      max-width: 400px;
+      margin: 0 auto 20px auto;
+    }
+
+    [data-theme="light"] .dna-progress-track {
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .dna-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary) 0%, #8B5CF6 50%, var(--good) 100%);
+      border-radius: var(--r-pill);
+      transition: width 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .dna-scan-steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      max-width: 440px;
+      margin: 0 auto;
+      text-align: left;
+    }
+
+    .dna-scan-step-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      border-radius: var(--r-md);
+      transition: var(--ease-fast);
+    }
+
+    .dna-scan-step-item.pending {
+      opacity: 0.35;
+    }
+
+    .dna-scan-step-item.active {
+      opacity: 1;
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .dna-scan-step-item.done {
+      opacity: 0.9;
+    }
+
+    .step-icon-badge {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      flex-shrink: 0;
+      background: var(--bg-surface-elevated);
+      color: var(--text-dim);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .dna-scan-step-item.active .step-icon-badge {
       background: var(--primary);
       color: #FFFFFF;
       box-shadow: 0 0 10px var(--primary-glow);
     }
 
-    .chart-display-canvas {
-      position: relative;
-      width: 100%;
-      height: 240px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(circle at 50% 50%, rgba(16, 26, 48, 0.3) 0%, #060912 80%);
+    .dna-scan-step-item.done .step-icon-badge {
+      background: var(--good);
+      color: #FFFFFF;
     }
 
-    .chart-svg-interactive {
-      width: 100%;
-      height: 100%;
-      display: block;
+    .step-content-wrap {
+      flex: 1;
     }
 
-    .chart-actual-img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      display: none;
+    .step-text-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.2;
     }
 
-    .chart-zoom-cue {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      background: rgba(11, 16, 28, 0.85);
-      backdrop-filter: blur(8px);
-      border: 1px solid var(--border-card);
-      border-radius: var(--r-pill);
-      padding: 4px 9px;
-      font-size: 10px;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      pointer-events: none;
-    }
-
-    .chart-legend-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 8px 14px;
-      background: rgba(255, 255, 255, 0.02);
-      border-top: 1px solid var(--border-subtle);
-      font-size: 10px;
-      font-family: var(--font-mono);
+    .step-text-desc {
+      font-size: 11px;
       color: var(--text-dim);
-      flex-wrap: wrap;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .l-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
+      margin-top: 2px;
     }
 
     /* ==========================================================================
@@ -2416,44 +2629,41 @@
     </div>
 
     <!-- ====================================================================
-         2. DNA REPORT VIEW (Hidden until user searches/selects a stock)
+         2. RADAR SCANNING PROGRESS CONSOLE (DURING SEARCH / SCAN)
+         ==================================================================== -->
+    <div id="dna-loading-view" class="dna-loading-container" style="display:none;">
+      <div class="dna-loading-card">
+        <div class="dna-radar-pulse-ring">
+          <div class="radar-scan-sweep"></div>
+          <div class="radar-center-icon">⚡</div>
+        </div>
+        <h3 class="dna-loading-title">
+          Scanning Institutional Geometry for <span id="loading-stock-symbol">TCS</span>
+        </h3>
+        <p class="dna-loading-subtitle">
+          Synthesizing 5-year OHLCV candlesticks, volume footprint, multi-timeframe EMAs & balance sheet safety...
+        </p>
+        <div class="dna-progress-track">
+          <div class="dna-progress-fill" id="loading-progress-bar" style="width: 15%;"></div>
+        </div>
+        <div class="dna-scan-steps-list" id="loading-steps-list">
+          <!-- Dynamic 5 steps populated by JavaScript -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         3. DNA REPORT VIEW (Revealed once scanning completes)
          ==================================================================== -->
     <div id="dna-report-view" class="dna-report-container" style="display:none;">
 
-      <!-- Back to Search Nav Bar -->
+      <!-- CLEAN SINGLE BACK BUTTON (NO CLUTTER, NO SEARCH BAR, NO QUICK TICKERS) -->
       <div class="report-nav-bar">
-        <button class="back-home-btn" onclick="resetToHome()">
+        <button class="back-home-btn" onclick="resetToHome()" title="Back to DNA Home">
           <span>←</span>
-          <span>Back to DNA Search</span>
+          <span>Back to Search</span>
         </button>
-
-        <!-- Quick Ticker Switcher -->
-        <div style="display:flex; align-items:center; gap:6px; overflow-x:auto;">
-          <span style="font-size:10px; font-family:var(--font-mono); color:var(--text-dim);">Quick:</span>
-          <button class="chip-btn" onclick="selectStock('TCS')">TCS</button>
-          <button class="chip-btn" onclick="selectStock('TITAN')">TITAN</button>
-          <button class="chip-btn" onclick="selectStock('RELIANCE')">RELIANCE</button>
-          <button class="chip-btn" onclick="selectStock('HUDCO')">HUDCO</button>
-        </div>
       </div>
-
-      <!-- SEARCH & STOCKS STRIP -->
-      <section class="stock-picker-strip">
-      <div class="search-input-box">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="stock-search" placeholder="Search 2,367 NSE stocks (e.g. TCS, Reliance, Titan, Hudco)..." onkeyup="filterStocks(this.value)" onkeydown="if(event.key === 'Enter') { selectStock(this.value.trim().toUpperCase()); this.blur(); }">
-      </div>
-      <div class="ticker-chips-row" id="ticker-chips">
-        <button class="chip-btn active" onclick="selectStock('TCS')">TCS</button>
-        <button class="chip-btn" onclick="selectStock('RELIANCE')">RELIANCE</button>
-        <button class="chip-btn" onclick="selectStock('HDFCBANK')">HDFCBANK</button>
-        <button class="chip-btn" onclick="selectStock('TITAN')">TITAN</button>
-        <button class="chip-btn" onclick="selectStock('POLYCAB')">POLYCAB</button>
-        <button class="chip-btn" onclick="selectStock('HUDCO')">HUDCO (PSU)</button>
-        <button class="chip-btn" onclick="selectStock('BAJAJST')">BAJAJST</button>
-        <button class="chip-btn" onclick="selectStock('ACGL')">ACGL</button>
-      </div>
-    </section>
 
     <!-- HERO CITADEL: ASSET IDENTITY & 180° SPEEDOMETER ARC GAUGE -->
     <section class="hero-citadel-card">
@@ -2641,37 +2851,26 @@
         <div class="q-proof-canvas">
           <div class="proof-canvas-title">
             <span>📊 Real Structure Candlestick Chart</span>
-            <span class="proof-verified-tag">✓ Daily Candle History</span>
+            <div class="chart-timeframe-switcher">
+              <button class="chart-tf-pill active" id="btn-chart-4m" onclick="switchChartView('tactical')">4M Tactical</button>
+              <button class="chart-tf-pill" id="btn-chart-1y" onclick="switchChartView('macro')">1Y Macro</button>
+            </div>
           </div>
 
-          <!-- The Real Technical Chart Container -->
-          <div class="chart-box-wrapper">
-            <div class="chart-header-strip">
-              <div class="chart-header-title">
-                <span>📈 Institutional Candlestick Structure</span>
-              </div>
-              <div class="chart-timeframe-btns">
-                <button class="tf-btn active" id="btn-chart-4m" onclick="switchChartView('tactical')">4M Tactical</button>
-                <button class="tf-btn" id="btn-chart-1y" onclick="switchChartView('macro')">1Y Macro</button>
-              </div>
-            </div>
-
-            <!-- SVG / Image Canvas -->
-            <div class="chart-display-canvas" onclick="openChartLightbox()" title="Click to view full-resolution chart">
-              <svg class="chart-svg-interactive" id="chart-svg-canvas" viewBox="0 0 600 240"></svg>
-              <img id="chart-api-img" class="chart-actual-img" alt="Technical Structure Chart" onerror="this.style.display='none'; document.getElementById('chart-svg-canvas').style.display='block';">
-              <div class="chart-zoom-cue">
-                <span>🔍 Tap to Zoom</span>
-              </div>
-            </div>
-
-            <!-- Chart Legend Strip -->
-            <div class="chart-legend-row">
-              <div class="legend-item"><span class="l-dot" style="background:#3B82F6;"></span> 20 EMA</div>
-              <div class="legend-item"><span class="l-dot" style="background:#F59E0B;"></span> 50 EMA</div>
-              <div class="legend-item"><span class="l-dot" style="background:#8B5CF6;"></span> 200 EMA</div>
-              <div class="legend-item"><span class="l-dot" style="background:#10B981;"></span> Target 1 Floor</div>
-              <div class="legend-item"><span class="l-dot" style="background:#F43F5E;"></span> Stop Loss</div>
+          <!-- Seamless Natural Photo Stage (NO black bars, NO letterbox frames!) -->
+          <div class="clean-chart-stage" onclick="openChartLightbox()" title="Tap to view full resolution photo">
+            <img 
+              id="chart-api-img" 
+              class="clean-chart-img" 
+              alt="Technical Structure Candlestick Chart" 
+              draggable="false"
+              oncontextmenu="return false;"
+              ondragstart="return false;"
+              onerror="this.style.display='none'; document.getElementById('chart-svg-canvas').style.display='block';"
+            />
+            <svg class="chart-svg-interactive" id="chart-svg-canvas" style="display:none;" viewBox="0 0 600 280"></svg>
+            <div class="clean-zoom-badge">
+              <span>🔍 Tap to Zoom</span>
             </div>
           </div>
 
@@ -3075,22 +3274,19 @@
 
   </main>
 
-  <!-- LIGHTBOX MODAL FOR CHART FULLSCREEN ZOOM -->
-  <div class="lightbox-backdrop" id="chart-lightbox" onclick="closeChartLightbox(event)">
-    <div class="lightbox-dialog" onclick="event.stopPropagation()">
-      <button class="lightbox-close-btn" onclick="closeChartLightbox()">✕</button>
-      <div style="margin-bottom:12px; font-family:var(--font-display); font-size:18px; font-weight:800;" id="lightbox-title">
-        TCS Technical Structure Chart
-      </div>
-      <div style="height:460px; background:#040711; border-radius:var(--r-lg); overflow:hidden; display:flex; align-items:center; justify-content:center; position:relative;">
-        <img id="lightbox-img" style="width:100%; height:100%; object-fit:contain;" alt="Full Resolution Technical Chart" />
-        <svg id="lightbox-svg" style="width:100%; height:100%; display:none;" viewBox="0 0 800 360"></svg>
-      </div>
-      <div style="margin-top:12px; display:flex; justify-content:space-between; font-size:11px; font-family:var(--font-mono); color:var(--text-dim);">
-        <span>20 EMA (Blue) · 50 EMA (Amber) · 200 EMA (Purple)</span>
-        <span>Click anywhere outside to close</span>
-      </div>
-    </div>
+  <!-- PURE MINIMAL FULLSCREEN PHOTO VIEWER (ZERO FRAMES, ZERO CRASHES) -->
+  <div id="chart-photo-viewer" class="photo-viewer-backdrop" onclick="closePhotoViewer()">
+    <button class="photo-viewer-close" onclick="closePhotoViewer(event)" aria-label="Close Photo">✕</button>
+    <img 
+      id="photo-viewer-image" 
+      class="photo-viewer-img" 
+      src="" 
+      alt="Full Resolution Technical Chart" 
+      draggable="false"
+      oncontextmenu="return false;"
+      ondragstart="return false;"
+      onclick="event.stopPropagation()"
+    />
   </div>
 
   <!-- ==========================================================================
@@ -3742,28 +3938,33 @@
     }
 
     function openChartLightbox() {
-      const sym = document.getElementById('hero-symbol').textContent.trim();
+      const sym = (document.getElementById('hero-symbol')?.textContent || 'TCS').trim().toUpperCase();
       const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-      document.getElementById('lightbox-title').textContent = `${sym} Technical Structure Chart · (${currentChartView === 'macro' ? '1-Year Macro' : '4-Month Tactical'})`;
-      const lightboxImg = document.getElementById('lightbox-img');
-      const lightboxSvg = document.getElementById('lightbox-svg');
-      if (lightboxImg) {
-        lightboxImg.src = `/api/dna/chart/${sym}?view=${currentChartView}&theme=${theme}&t=${Date.now()}`;
-        lightboxImg.style.display = 'block';
-        if (lightboxSvg) lightboxSvg.style.display = 'none';
-        lightboxImg.onerror = function() {
-          lightboxImg.style.display = 'none';
-          if (lightboxSvg) {
-            lightboxSvg.style.display = 'block';
-            drawInteractiveCandlestickChart('lightbox-svg', currentChartView === 'macro');
-          }
-        };
+      const viewer = document.getElementById('chart-photo-viewer');
+      const photoImg = document.getElementById('photo-viewer-image');
+      const inlineImg = document.getElementById('chart-api-img');
+
+      if (!photoImg || !viewer) return;
+
+      if (inlineImg && inlineImg.src && inlineImg.style.display !== 'none' && !inlineImg.src.includes('undefined')) {
+        photoImg.src = inlineImg.src;
+      } else {
+        photoImg.src = `/api/dna/chart/${sym}?view=${currentChartView}&theme=${theme}&t=${Date.now()}`;
       }
-      document.getElementById('chart-lightbox').classList.add('open');
+
+      viewer.classList.add('active');
+      document.body.style.overflow = 'hidden';
     }
 
-    function closeChartLightbox(e) {
-      document.getElementById('chart-lightbox').classList.remove('open');
+    function closePhotoViewer(e) {
+      if (e) {
+        e.stopPropagation();
+      }
+      const viewer = document.getElementById('chart-photo-viewer');
+      if (viewer) {
+        viewer.classList.remove('active');
+        document.body.style.overflow = '';
+      }
     }
 
     function renderSectorPeers(peers) {
@@ -3989,42 +4190,89 @@
       };
     }
 
-    async function selectStock(sym) {
-      const cleanSym = (sym || "TCS").trim().toUpperCase();
+    const SCAN_STEPS = [
+      { title: "Locating Stock Record", desc: "Querying 1,318 equities in stock_history.db..." },
+      { title: "Slicing 5-Year Candlesticks", desc: "Extracting 1,300+ daily OHLCV bars & volume profile..." },
+      { title: "Computing Geometry & Pivots", desc: "Scanning weekly swing extrema & Fibonacci clusters..." },
+      { title: "Technical Radar Analysis", desc: "Evaluating 20/50/200 EMAs, RSI divergence & ATR bands..." },
+      { title: "Formulating Tactical Action Plan", desc: "Synthesizing dip, breakout and capital protection levels..." }
+    ];
 
-      // Transition from DNA Home View to DNA Report View
-      const homeView = document.getElementById('dna-home-view');
-      const reportView = document.getElementById('dna-report-view');
-      if (homeView) homeView.style.display = 'none';
-      if (reportView) reportView.style.display = 'block';
-      const popover = document.getElementById('home-search-popover');
-      if (popover) popover.style.display = 'none';
+    let radarTimer = null;
 
-      if (window.history && window.history.pushState) {
-        window.history.pushState({ stock: cleanSym }, '', `?stock=${cleanSym}`);
-      }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-
-      document.querySelectorAll('.chip-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.textContent.trim().toUpperCase().startsWith(cleanSym));
-      });
-
-      // Update immediate symbol indicator
-      document.getElementById('hero-symbol').textContent = cleanSym;
-
-      let report = null;
-      try {
-        const res = await fetch(`/api/dna/report/${encodeURIComponent(cleanSym)}`);
-        if (res.ok) {
-          report = await res.json();
+    function renderScanSteps(activeStep) {
+      const listEl = document.getElementById('loading-steps-list');
+      if (!listEl) return;
+      listEl.innerHTML = SCAN_STEPS.map((step, idx) => {
+        let stateClass = 'pending';
+        let icon = (idx + 1);
+        if (idx < activeStep) {
+          stateClass = 'done';
+          icon = '✓';
+        } else if (idx === activeStep) {
+          stateClass = 'active';
+          icon = '⚡';
         }
-      } catch (err) {
-        console.warn(`[DNA Live] Fetch failed for ${cleanSym}, falling back:`, err);
+        return `
+          <div class="dna-scan-step-item ${stateClass}">
+            <div class="step-icon-badge">${icon}</div>
+            <div class="step-content-wrap">
+              <div class="step-label" style="font-weight:700; font-size:12px; color:var(--text-main);">${step.title}</div>
+              <div class="step-desc" style="font-size:10.5px; color:var(--text-dim);">${step.desc}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function startRadarScanning(sym, onFinish) {
+      if (radarTimer) {
+        clearInterval(radarTimer);
+        radarTimer = null;
       }
+      const homeView = document.getElementById('dna-home-view');
+      const loadingView = document.getElementById('dna-loading-view');
+      const reportView = document.getElementById('dna-report-view');
+      const popover = document.getElementById('home-search-popover');
 
-      const fallback = STOCK_STORE[cleanSym] || STOCK_STORE["TCS"] || {};
-      const data = report ? transformDnaReportToUi(report, fallback) : fallback;
+      if (popover) popover.style.display = 'none';
+      if (homeView) homeView.style.display = 'none';
+      if (reportView) reportView.style.display = 'none';
+      if (loadingView) loadingView.style.display = 'block';
 
+      const symEl = document.getElementById('loading-stock-symbol');
+      if (symEl) symEl.textContent = sym;
+
+      const progBar = document.getElementById('loading-progress-bar');
+      if (progBar) progBar.style.width = '10%';
+
+      let currentStep = 0;
+      renderScanSteps(0);
+
+      const stepDuration = 220; // 5 steps * 220ms = ~1.1s snappy institutional feel
+      radarTimer = setInterval(() => {
+        currentStep++;
+        if (currentStep < SCAN_STEPS.length) {
+          renderScanSteps(currentStep);
+          if (progBar) {
+            const pct = Math.round(((currentStep + 1) / SCAN_STEPS.length) * 100);
+            progBar.style.width = `${pct}%`;
+          }
+        } else {
+          clearInterval(radarTimer);
+          radarTimer = null;
+          if (progBar) progBar.style.width = '100%';
+          setTimeout(() => {
+            if (loadingView) loadingView.style.display = 'none';
+            if (reportView) reportView.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (typeof onFinish === 'function') onFinish();
+          }, 120);
+        }
+      }, stepDuration);
+    }
+
+    function populateReportUi(data) {
       document.getElementById('hero-symbol').textContent = data.symbol;
       document.getElementById('hero-tier').textContent = data.tier;
       document.getElementById('hero-sector').textContent = data.sector;
@@ -4148,6 +4396,58 @@
       document.getElementById('news-headline-2').textContent = data.q7.news2;
     }
 
+    async function selectStock(sym, skipScanAnimation = false) {
+      const cleanSym = (sym || "TCS").trim().toUpperCase();
+
+      if (window.history && window.history.pushState) {
+        window.history.pushState({ stock: cleanSym }, '', `?stock=${cleanSym}`);
+      }
+
+      document.querySelectorAll('.chip-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.trim().toUpperCase().startsWith(cleanSym));
+      });
+
+      // Update immediate symbol indicator
+      const heroSym = document.getElementById('hero-symbol');
+      if (heroSym) heroSym.textContent = cleanSym;
+
+      // Start data fetch in parallel
+      const fetchPromise = (async () => {
+        let rep = null;
+        try {
+          const res = await fetch(`/api/dna/report/${encodeURIComponent(cleanSym)}`);
+          if (res.ok) rep = await res.json();
+        } catch (err) {
+          console.warn(`[DNA Live] Fetch failed for ${cleanSym}, falling back:`, err);
+        }
+        return rep;
+      })();
+
+      const renderData = async () => {
+        const report = await fetchPromise;
+        const fallback = STOCK_STORE[cleanSym] || STOCK_STORE["TCS"] || {};
+        const data = report ? transformDnaReportToUi(report, fallback) : fallback;
+        populateReportUi(data);
+      };
+
+      if (skipScanAnimation) {
+        const homeView = document.getElementById('dna-home-view');
+        const loadingView = document.getElementById('dna-loading-view');
+        const reportView = document.getElementById('dna-report-view');
+        const popover = document.getElementById('home-search-popover');
+        if (popover) popover.style.display = 'none';
+        if (homeView) homeView.style.display = 'none';
+        if (loadingView) loadingView.style.display = 'none';
+        if (reportView) reportView.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        await renderData();
+      } else {
+        startRadarScanning(cleanSym, async () => {
+          await renderData();
+        });
+      }
+    }
+
     function filterAudience(qid) {
       document.querySelectorAll('.aud-tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('onclick').includes(qid));
@@ -4221,9 +4521,12 @@
 
     // Listen to parent postMessage (e.g. from StockDNAScreen in React)
     window.addEventListener('message', function(e) {
-      if (e.data && (e.data.type === 'THEME_CHANGE' || e.data.type === 'theme')) {
+      if (!e.data) return;
+      if (e.data.type === 'THEME_CHANGE' || e.data.type === 'theme') {
         var t = e.data.theme || e.data.value;
         if (t) setTheme(t);
+      } else if (e.data.type === 'RESET_TO_HOME' || e.data === 'RESET_TO_HOME') {
+        resetToHome();
       }
     });
 
@@ -4249,10 +4552,21 @@
     } catch (e) {}
 
     function resetToHome() {
+      if (radarTimer) {
+        clearInterval(radarTimer);
+        radarTimer = null;
+      }
+      closePhotoViewer();
+
       const homeView = document.getElementById('dna-home-view');
+      const loadingView = document.getElementById('dna-loading-view');
       const reportView = document.getElementById('dna-report-view');
-      if (homeView) homeView.style.display = 'flex';
+      const popover = document.getElementById('home-search-popover');
+
+      if (loadingView) loadingView.style.display = 'none';
       if (reportView) reportView.style.display = 'none';
+      if (homeView) homeView.style.display = 'flex';
+      if (popover) popover.style.display = 'none';
 
       if (window.history && window.history.pushState) {
         window.history.pushState(null, '', window.location.pathname);
@@ -4261,9 +4575,28 @@
       const inp = document.getElementById('home-search-input');
       if (inp) {
         inp.value = '';
-        setTimeout(() => inp.focus(), 100);
+        setTimeout(() => inp.focus(), 120);
       }
     }
+
+    // Touch and Gesture Protection for Fullscreen Photo Viewer
+    document.addEventListener('DOMContentLoaded', () => {
+      const pv = document.getElementById('chart-photo-viewer');
+      if (pv) {
+        pv.addEventListener('touchmove', (e) => {
+          e.preventDefault();
+        }, { passive: false });
+        pv.addEventListener('gesturestart', (e) => {
+          e.preventDefault();
+        });
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closePhotoViewer();
+      }
+    });
 
     function submitHomeSearch() {
       const inp = document.getElementById('home-search-input');

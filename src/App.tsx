@@ -1169,8 +1169,8 @@ export default function App() {
   const [chartSub, setChartSub] = useState<"live" | "scanner" | "portal">("live");
   const [range, setRange] = useState<number>(90);
   const [isScannerOpen, setIsScannerOpen] = useState(true);
-  const [isEngineInfoOpen, setIsEngineInfoOpen] = useState(false);
   const [v2ChartSel, setV2ChartSel] = useState<number>(0);
+  const [dnaResetTrigger, setDnaResetTrigger] = useState<number>(0);
 
   // Transitional Animation State (Rocket hitting bulls eye)
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -3545,7 +3545,7 @@ export default function App() {
 
         {/* ===== DNA SCREEN ===== */}
         <section className={`screen ${activeTab === "dna" ? "active" : ""}`} id="screen-dna">
-          <StockDNAScreen theme={theme} />
+          <StockDNAScreen theme={theme} resetTrigger={dnaResetTrigger} />
         </section>
 
         {/* ===== CHARTS SCREEN ===== */}
@@ -3964,7 +3964,10 @@ export default function App() {
         </button>
         <button
           className={`tab ${activeTab === "dna" ? "active" : ""}`}
-          onClick={() => setActiveTab("dna")}
+          onClick={() => {
+            setActiveTab("dna");
+            setDnaResetTrigger((prev) => prev + 1);
+          }}
           data-tab="dna"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

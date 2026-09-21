@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 
 interface StockDNAScreenProps {
   theme?: "dark" | "light";
+  resetTrigger?: number;
 }
 
 /**
@@ -16,7 +17,7 @@ interface StockDNAScreenProps {
  *  - The 7 Plain-English Burning Questions with Smart Investor Compass
  *  - DNA Home Search Console with live autocomplete and discovery radar shelves
  */
-export default function StockDNAScreen({ theme }: StockDNAScreenProps) {
+export default function StockDNAScreen({ theme, resetTrigger }: StockDNAScreenProps) {
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -49,6 +50,21 @@ export default function StockDNAScreen({ theme }: StockDNAScreenProps) {
       }
     }
   }, [activeTheme]);
+
+  // Whenever user taps DNA in bottom tabbar, tell iframe to reset to home search view
+  useEffect(() => {
+    if (resetTrigger && resetTrigger > 0) {
+      if (iframeRef.current?.contentWindow) {
+        try {
+          iframeRef.current.contentWindow.postMessage({
+            type: "RESET_TO_HOME",
+          }, "*");
+        } catch (err) {
+          console.warn("Could not post RESET_TO_HOME to DNA iframe:", err);
+        }
+      }
+    }
+  }, [resetTrigger]);
 
   return (
     <div 
