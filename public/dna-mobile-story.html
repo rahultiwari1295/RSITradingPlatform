@@ -1420,6 +1420,7 @@
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       touch-action: none;
+      overflow: hidden;
       user-select: none;
       -webkit-user-select: none;
     }
@@ -1473,7 +1474,40 @@
       -webkit-user-select: none;
       -webkit-touch-callout: none;
       pointer-events: auto;
-      cursor: zoom-out;
+      cursor: grab;
+      touch-action: none;
+      transform-origin: center center;
+      will-change: transform;
+    }
+    .photo-viewer-img.zoomed {
+      cursor: grab;
+    }
+    .photo-viewer-img.dragging {
+      cursor: grabbing;
+      transition: none !important;
+    }
+    .photo-viewer-zoom-hint {
+      position: absolute;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.55);
+      color: rgba(255,255,255,0.75);
+      font-size: 11px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      pointer-events: none;
+      white-space: nowrap;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.12);
+      animation: hintFade 2.5s ease-out 1s forwards;
+      opacity: 1;
+    }
+    @keyframes hintFade {
+      0% { opacity: 1; }
+      70% { opacity: 1; }
+      100% { opacity: 0; }
     }
 
     /* ==========================================================================
@@ -3929,7 +3963,7 @@
   </main>
 
   <!-- PURE MINIMAL FULLSCREEN PHOTO VIEWER (ZERO FRAMES, ZERO CRASHES) -->
-  <div id="chart-photo-viewer" class="photo-viewer-backdrop" onclick="closePhotoViewer()">
+  <div id="chart-photo-viewer" class="photo-viewer-backdrop">
     <button class="photo-viewer-close" onclick="closePhotoViewer(event)" aria-label="Close Photo">✕</button>
     <img 
       id="photo-viewer-image" 
@@ -3941,6 +3975,7 @@
       ondragstart="return false;"
       onclick="event.stopPropagation()"
     />
+    <div class="photo-viewer-zoom-hint">🤏 Pinch to zoom · Double-tap to reset</div>
   </div>
 
   <!-- ==========================================================================
@@ -4608,6 +4643,8 @@
 
       viewer.classList.add('active');
       document.body.style.overflow = 'hidden';
+      // Reset zoom state every time viewer opens
+      resetPhotoZoom();
     }
 
     function closePhotoViewer(e) {
@@ -4618,6 +4655,7 @@
       if (viewer) {
         viewer.classList.remove('active');
         document.body.style.overflow = '';
+        resetPhotoZoom();
       }
     }
 
@@ -5422,17 +5460,145 @@
       }
     }
 
-    // Touch and Gesture Protection for Fullscreen Photo Viewer
+    // =========================================================
+    // PINCH-TO-ZOOM + PAN for Chart Photo Viewer
+    // =========================================================
+    let pvScale = 1, pvTx = 0, pvTy = 0;
+    let pvLastScale = 1, pvLastTx = 0, pvLastTy = 0;
+    let pvTouchStartDist = 0, pvTouchMidX = 0, pvTouchMidY = 0;
+    let pvPanStartX = 0, pvPanStartY = 0;
+    let pvIsPinching = false, pvIsPanning = false;
+    let pvDoubleTapTimer = null, pvLastTap = 0;
+
+    function resetPhotoZoom() {
+      pvScale = 1; pvTx = 0; pvTy = 0;
+      pvLastScale = 1; pvLastTx = 0; pvLastTy = 0;
+      const img = document.getElementById('photo-viewer-image');
+      if (img) {
+        img.style.transition = 'transform 0.25s ease';
+        img.style.transform = 'translate(0px, 0px) scale(1)';
+        img.classList.remove('zoomed', 'dragging');
+      }
+    }
+
+    function applyPhotoTransform(animated) {
+      const img = document.getElementById('photo-viewer-image');
+      if (!img) return;
+      img.style.transition = animated ? 'transform 0.2s ease' : 'none';
+      img.style.transform = `translate(${pvTx}px, ${pvTy}px) scale(${pvScale})`;
+      img.classList.toggle('zoomed', pvScale > 1.05);
+    }
+
+    function clampTranslation() {
+      const img = document.getElementById('photo-viewer-image');
+      if (!img) return;
+      const rect = img.getBoundingClientRect();
+      const vw = window.innerWidth, vh = window.innerHeight;
+      // Allow panning only when zoomed in
+      const maxTx = Math.max(0, (rect.width * pvScale - vw) / 2);
+      const maxTy = Math.max(0, (rect.height * pvScale - vh) / 2);
+      pvTx = Math.max(-maxTx, Math.min(maxTx, pvTx));
+      pvTy = Math.max(-maxTy, Math.min(maxTy, pvTy));
+    }
+
+    function getTouchDist(t1, t2) {
+      const dx = t2.clientX - t1.clientX, dy = t2.clientY - t1.clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const pv = document.getElementById('chart-photo-viewer');
-      if (pv) {
-        pv.addEventListener('touchmove', (e) => {
+      const img = document.getElementById('photo-viewer-image');
+      if (!pv || !img) return;
+
+      // Block default scroll/zoom on the backdrop but allow our custom gestures
+      pv.addEventListener('touchmove', (e) => {
+        if (e.touches.length >= 2 || pvIsPanning) {
+          e.preventDefault(); // block browser scroll/zoom during pinch/pan
+        }
+      }, { passive: false });
+
+      // ── TOUCH START ──────────────────────────────────────────
+      img.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+        const now = Date.now();
+
+        if (e.touches.length === 2) {
+          // Pinch start
+          pvIsPinching = true;
+          pvIsPanning = false;
+          pvTouchStartDist = getTouchDist(e.touches[0], e.touches[1]);
+          pvTouchMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+          pvTouchMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+          pvLastScale = pvScale;
+          pvLastTx = pvTx;
+          pvLastTy = pvTy;
+          img.classList.add('dragging');
+        } else if (e.touches.length === 1) {
+          // Double-tap to reset
+          if (now - pvLastTap < 280) {
+            clearTimeout(pvDoubleTapTimer);
+            resetPhotoZoom();
+            pvLastTap = 0;
+            return;
+          }
+          pvLastTap = now;
+          // Single touch pan (only when zoomed)
+          if (pvScale > 1.05) {
+            pvIsPanning = true;
+            pvPanStartX = e.touches[0].clientX - pvTx;
+            pvPanStartY = e.touches[0].clientY - pvTy;
+            img.classList.add('dragging');
+          }
+        }
+      }, { passive: true });
+
+      // ── TOUCH MOVE ───────────────────────────────────────────
+      img.addEventListener('touchmove', (e) => {
+        e.stopPropagation();
+        if (e.touches.length === 2 && pvIsPinching) {
           e.preventDefault();
-        }, { passive: false });
-        pv.addEventListener('gesturestart', (e) => {
+          const newDist = getTouchDist(e.touches[0], e.touches[1]);
+          const rawScale = pvLastScale * (newDist / pvTouchStartDist);
+          pvScale = Math.min(6, Math.max(1, rawScale));
+
+          // Zoom toward pinch midpoint
+          const newMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+          const newMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+          pvTx = pvLastTx + (newMidX - pvTouchMidX);
+          pvTy = pvLastTy + (newMidY - pvTouchMidY);
+
+          clampTranslation();
+          applyPhotoTransform(false);
+        } else if (e.touches.length === 1 && pvIsPanning) {
           e.preventDefault();
-        });
-      }
+          pvTx = e.touches[0].clientX - pvPanStartX;
+          pvTy = e.touches[0].clientY - pvPanStartY;
+          clampTranslation();
+          applyPhotoTransform(false);
+        }
+      }, { passive: false });
+
+      // ── TOUCH END ────────────────────────────────────────────
+      img.addEventListener('touchend', (e) => {
+        e.stopPropagation();
+        img.classList.remove('dragging');
+        if (e.touches.length < 2) pvIsPinching = false;
+        if (e.touches.length === 0) pvIsPanning = false;
+        // Snap back to 1x if nearly at 1
+        if (pvScale < 1.08) {
+          pvScale = 1; pvTx = 0; pvTy = 0;
+          applyPhotoTransform(true);
+        } else {
+          clampTranslation();
+          applyPhotoTransform(true);
+        }
+      }, { passive: true });
+
+      // ── CLICK BACKDROP TO CLOSE (but not when zoomed/panned) ─
+      pv.addEventListener('click', (e) => {
+        if (e.target === pv && pvScale <= 1.05) closePhotoViewer(e);
+      });
     });
 
     window.addEventListener('keydown', (e) => {
