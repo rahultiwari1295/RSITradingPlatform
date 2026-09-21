@@ -2394,22 +2394,22 @@ export default function App() {
   const streakDays = terminalData?.streak?.current || 7;
   const streakBest = terminalData?.streak?.best_this_year || 12;
 
-  // Scanner values: Universe -> Setups -> AI Approved -> Gate Approved -> Traded
+  // Scanner values: 3 Clear Steps for users: Universe -> Found by Strategy -> Selected by AI
   const scCount = scannerReport?.scanned_count || (engine === "v2" ? 2165 : 1318);
   const patternCount = scannerReport?.pattern_count ?? scannerReport?.tech_filter_count ?? (engine === "v2" ? 1 : 4);
-  const aiApprovedCount = scannerReport?.ai_approved_count ?? (engine === "v2" ? 0 : 2);
-  const gateApprovedCount = scannerReport?.gate_approved_count ?? scannerReport?.quality_gate_count ?? (engine === "v2" ? 0 : 2);
   const tradedCount = scannerReport?.traded_count ?? scannerReport?.selected_count ?? 0;
 
   const scannerNote = useMemo(() => {
-    if (scannerReport?.ai_note) return scannerReport.ai_note;
-    if (tradedCount === 0 && gateApprovedCount === 0) {
-      return `AI evaluated ${scCount.toLocaleString()} universe stocks: ${patternCount} setup detected, but 0 passed Market Regime Gate today · Preserving capital during drawdown.`;
+    if (tradedCount === 0) {
+      return `AI evaluated ${scCount.toLocaleString()} universe stocks: ${patternCount} setup spotted by strategy, but 0 selected by AI today · Market conditions unfavorable, preserving capital.`;
     }
-    return `AI evaluated ${scCount.toLocaleString()} universe stocks: ${patternCount} setups detected, ${aiApprovedCount} passed AI conviction, ${gateApprovedCount} passed Market Gate, and ${tradedCount} trades triggered.`;
-  }, [scCount, patternCount, aiApprovedCount, gateApprovedCount, tradedCount, scannerReport?.ai_note]);
+    return `AI evaluated ${scCount.toLocaleString()} universe stocks: ${patternCount} setups spotted by strategy, and ${tradedCount} top conviction ${tradedCount === 1 ? "stock" : "stocks"} selected by AI.`;
+  }, [scCount, patternCount, tradedCount]);
 
-  const scannerTop3 = scannerReport?.top3 || [];
+  // Only show top cards if stocks were actually selected & entered today
+  const scannerTop3 = (tradedCount > 0 && scannerReport?.top3 && scannerReport.top3.length > 0)
+    ? scannerReport.top3
+    : [];
 
   return (
     <div className="app" id="app" ref={appRef}>
@@ -3028,11 +3028,9 @@ export default function App() {
                   <div className="scanner-body-inner">
                     <div className="funnel" id="funnel">
                       {[
-                        ["Universe Scanned", scCount, scCount],
-                        ["Strategy Setups Detected", patternCount, scCount],
-                        ["Passed AI Conviction (≥55%)", aiApprovedCount, Math.max(patternCount, 1)],
-                        ["Passed Market Gate (N500)", gateApprovedCount, Math.max(aiApprovedCount, 1)],
-                        ["Executed by Arbiter", tradedCount, Math.max(gateApprovedCount, 1)],
+                        ["Stocks Scanned", scCount, scCount],
+                        ["Found by Strategy", patternCount, scCount],
+                        ["Selected by AI Conviction", tradedCount, Math.max(patternCount, 1)],
                       ].map((st, i) => (
                         <div key={i} className="fstep">
                           <div className="fl">{st[0]}</div>
