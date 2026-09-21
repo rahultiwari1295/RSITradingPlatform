@@ -33,6 +33,7 @@ export default function AddPositionModal({
   const [buyPrice, setBuyPrice] = useState<number | "">("");
   const [quantity, setQuantity] = useState<number | "">(10);
   const [strategyName, setStrategyName] = useState("Manual");
+  const [ltpPrice, setLtpPrice] = useState<number | null>(null);
 
   // Autocomplete state
   const [searchResults, setSearchResults] = useState<StockSearchResult[]>([]);
@@ -96,8 +97,6 @@ export default function AddPositionModal({
       setIsSearching(false);
     }, 150);
   };
-
-  const [ltpPrice, setLtpPrice] = useState<number | null>(null);
 
   const handleSelectStock = async (stock: StockSearchResult) => {
     const sym = stock.symbol.toUpperCase().trim();
