@@ -2394,23 +2394,22 @@ export default function App() {
   const streakDays = terminalData?.streak?.current || 7;
   const streakBest = terminalData?.streak?.best_this_year || 12;
 
-  // Scanner values
-  const scCount = scannerReport?.scanned_count || (engine === "v2" ? 847 : 1318);
-  const techCount = scannerReport?.tech_filter_count || (engine === "v2" ? 142 : 214);
-  const qualityCount = scannerReport?.quality_gate_count || 38;
-  const selCount = scannerReport?.selected_count || (engine === "v2" ? 3 : 2);
-  const scannerNote = useMemo(() => {
-    if (selCount === 0) {
-      return `AI evaluated ${scCount} stocks across technical filters and quality gates, but 0 stocks qualified for AI conviction entry today.`;
-    }
-    return `AI evaluated ${scCount} universe stocks: ${qualityCount} passed strict quality gates, and ${selCount} stocks qualified for conviction entry today.`;
-  }, [scCount, qualityCount, selCount]);
+  // Scanner values: Universe -> Setups -> AI Approved -> Gate Approved -> Traded
+  const scCount = scannerReport?.scanned_count || (engine === "v2" ? 2165 : 1318);
+  const patternCount = scannerReport?.pattern_count ?? scannerReport?.tech_filter_count ?? (engine === "v2" ? 1 : 4);
+  const aiApprovedCount = scannerReport?.ai_approved_count ?? (engine === "v2" ? 0 : 2);
+  const gateApprovedCount = scannerReport?.gate_approved_count ?? scannerReport?.quality_gate_count ?? (engine === "v2" ? 0 : 2);
+  const tradedCount = scannerReport?.traded_count ?? scannerReport?.selected_count ?? 0;
 
-  const scannerTop3 = scannerReport?.top3 || (selCount > 0 ? [
-    { symbol: engine === "v2" ? "VIJAYA" : "UNITEDPOLY", score: 94, stars: 5 },
-    { symbol: engine === "v2" ? "GRINFRA" : "AEGISLOG", score: 87, stars: 4.5 },
-    { symbol: engine === "v2" ? "TARSONS" : "CAPLIPOINT", score: 81, stars: 4 },
-  ] : []);
+  const scannerNote = useMemo(() => {
+    if (scannerReport?.ai_note) return scannerReport.ai_note;
+    if (tradedCount === 0 && gateApprovedCount === 0) {
+      return `AI evaluated ${scCount.toLocaleString()} universe stocks: ${patternCount} setup detected, but 0 passed Market Regime Gate today · Preserving capital during drawdown.`;
+    }
+    return `AI evaluated ${scCount.toLocaleString()} universe stocks: ${patternCount} setups detected, ${aiApprovedCount} passed AI conviction, ${gateApprovedCount} passed Market Gate, and ${tradedCount} trades triggered.`;
+  }, [scCount, patternCount, aiApprovedCount, gateApprovedCount, tradedCount, scannerReport?.ai_note]);
+
+  const scannerTop3 = scannerReport?.top3 || [];
 
   return (
     <div className="app" id="app" ref={appRef}>
@@ -3017,7 +3016,7 @@ export default function App() {
                     <div>
                       <div style={{ fontSize: 12.5, fontWeight: 700 }}>Today's AI Scanner Report</div>
                       <div style={{ fontSize: 10, color: "var(--ink3)", marginTop: 2 }} id="scannerSub">
-                        {scCount} scanned → {selCount} selected
+                        {scCount.toLocaleString()} scanned → {tradedCount} entered
                       </div>
                     </div>
                   </div>
@@ -3029,15 +3028,16 @@ export default function App() {
                   <div className="scanner-body-inner">
                     <div className="funnel" id="funnel">
                       {[
-                        ["Stocks scanned", scCount, scCount],
-                        ["Passed technical filters", techCount, scCount],
-                        ["Passed quality gate", qualityCount, scCount],
-                        ["Selected by AI conviction", selCount, scCount],
+                        ["Universe Scanned", scCount, scCount],
+                        ["Strategy Setups Detected", patternCount, scCount],
+                        ["Passed AI Conviction (≥55%)", aiApprovedCount, Math.max(patternCount, 1)],
+                        ["Passed Market Gate (N500)", gateApprovedCount, Math.max(aiApprovedCount, 1)],
+                        ["Executed by Arbiter", tradedCount, Math.max(gateApprovedCount, 1)],
                       ].map((st, i) => (
                         <div key={i} className="fstep">
                           <div className="fl">{st[0]}</div>
                           <div className="fbar">
-                            <span style={{ width: `${((st[1] as number) / (st[2] as number || 1)) * 100}%` }} />
+                            <span style={{ width: `${Math.min(100, Math.max(st[1] ? 4 : 0, ((st[1] as number) / (st[2] as number || 1)) * 100))}%` }} />
                           </div>
                           <div className="fn">{st[1]}</div>
                         </div>

@@ -135,6 +135,10 @@ export interface ScannerReport {
   tech_filter_count: number;
   quality_gate_count: number;
   selected_count: number;
+  pattern_count?: number;
+  ai_approved_count?: number;
+  gate_approved_count?: number;
+  traded_count?: number;
   top3: Array<{
     symbol: string;
     score: number;
