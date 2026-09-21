@@ -10,6 +10,7 @@ interface AddPositionModalProps {
     buyPrice: number;
     quantity: number;
     strategyName?: string;
+    currentPrice?: number;
     date?: string;
   }) => void;
 }
@@ -96,13 +97,31 @@ export default function AddPositionModal({
     }, 150);
   };
 
-  const handleSelectStock = (stock: StockSearchResult) => {
+  const [ltpPrice, setLtpPrice] = useState<number | null>(null);
+
+  const handleSelectStock = async (stock: StockSearchResult) => {
     const sym = stock.symbol.toUpperCase().trim();
     setSymbol(sym);
     setShowDropdown(false);
 
-    if (stock.price || stock.close) {
-      setBuyPrice(Number(stock.price || stock.close));
+    let priceToSet = stock.price || stock.close;
+
+    // If price wasn't in the search result, fetch it directly from /api/stock/quote
+    if (!priceToSet) {
+      try {
+        const res = await fetch(`/api/stock/quote/${encodeURIComponent(sym)}`);
+        if (res.ok) {
+          const q = await res.json();
+          if (q && q.close) {
+            priceToSet = q.close;
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (priceToSet) {
+      setBuyPrice(Number(priceToSet));
+      setLtpPrice(Number(priceToSet));
     }
   };
 
@@ -119,12 +138,14 @@ export default function AddPositionModal({
       buyPrice: Number(buyPrice),
       quantity: Number(quantity),
       strategyName: strategyName || "Manual",
+      currentPrice: ltpPrice || Number(buyPrice),
       date: new Date().toISOString().split("T")[0]
     });
 
     setSymbol("");
     setBuyPrice("");
     setQuantity(10);
+    setLtpPrice(null);
     onClose();
   };
 

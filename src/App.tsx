@@ -2068,13 +2068,49 @@ export default function App() {
         return changed ? updated : prev;
       });
     }
+
+    // Also fetch latest DB candle closes for non-algorithmic holdings (e.g. manual stocks)
+    if (portfolio.length > 0) {
+      const activeSymbols = new Set(allInTradeTrades.map((t: any) => (t.sym || t.symbol || "").toUpperCase().trim()));
+      const pendingManualHoldings = portfolio.filter((p: any) => {
+        const s = (p.symbol || "").toUpperCase().trim();
+        return s && !activeSymbols.has(s);
+      });
+
+      pendingManualHoldings.forEach((pos: any) => {
+        const s = (pos.symbol || "").toUpperCase().trim();
+        fetch(`/api/stock/quote/${encodeURIComponent(s)}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((q) => {
+            if (q && q.close && Number(q.close) > 0) {
+              const latestClose = Number(q.close);
+              setPortfolio((prev) =>
+                prev.map((item) => {
+                  if ((item.symbol || "").toUpperCase().trim() === s && item.currentPrice !== latestClose) {
+                    const buyP = Number(item.buyPrice || 0);
+                    return {
+                      ...item,
+                      currentPrice: latestClose,
+                      currentROI: buyP > 0 ? ((latestClose - buyP) / buyP) * 100 : 0
+                    };
+                  }
+                  return item;
+                })
+              );
+            }
+          })
+          .catch(() => {});
+      });
+    }
   }, [allInTradeTrades]);
 
   // Buy submission handler (Cloud synced via Firestore)
-  const handleBuySubmit = (data: { symbol: string; buyPrice: number; quantity: number; strategyName?: string }) => {
+  const handleBuySubmit = (data: { symbol: string; buyPrice: number; quantity: number; strategyName?: string; currentPrice?: number }) => {
     const symKey = (data.symbol || "").toUpperCase().trim();
     const activeMatch = allInTradeTrades.find((s: any) => (s.sym || s.symbol || "").toUpperCase().trim() === symKey);
-    const ltp = activeMatch?.now || activeMatch?.currentPrice ? Number(activeMatch.now || activeMatch.currentPrice) : data.buyPrice;
+    const ltp = activeMatch?.now || activeMatch?.currentPrice 
+      ? Number(activeMatch.now || activeMatch.currentPrice) 
+      : (data.currentPrice && data.currentPrice > 0 ? Number(data.currentPrice) : data.buyPrice);
     const isSignalActive = !!activeMatch;
 
     const newPosition: ManualPortfolioTrade = {
@@ -2093,6 +2129,31 @@ export default function App() {
     };
 
     setPortfolio((prev) => [newPosition, ...prev]);
+
+    // If activeMatch was not found, trigger live quote fetch from SQLite DB to ensure latest candle close LTP is populated
+    if (!activeMatch && symKey) {
+      fetch(`/api/stock/quote/${encodeURIComponent(symKey)}`)
+        .then((res) => res.ok ? res.json() : null)
+        .then((q) => {
+          if (q && q.close && Number(q.close) > 0) {
+            const dbLtp = Number(q.close);
+            setPortfolio((prev) =>
+              prev.map((p) => {
+                if ((p.symbol || "").toUpperCase().trim() === symKey && p.tradeId === newPosition.tradeId) {
+                  return {
+                    ...p,
+                    currentPrice: dbLtp,
+                    currentROI: p.buyPrice > 0 ? ((dbLtp - p.buyPrice) / p.buyPrice) * 100 : 0
+                  };
+                }
+                return p;
+              })
+            );
+          }
+        })
+        .catch(() => {});
+    }
+
     showToast(`Added ${data.quantity} shares of ${data.symbol} to Portfolio`);
     setBuyModalItem(null);
   };

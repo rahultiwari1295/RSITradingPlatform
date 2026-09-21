@@ -80,6 +80,28 @@ export default function PortfolioView({
     return map;
   }, [inTradeTrades]);
 
+  // State to store live DB quotes fetched directly from SQLite for non-strategy/manual holdings
+  const [liveDbQuotes, setLiveDbQuotes] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const symsToFetch = activeHoldings
+      .map((h: any) => (h.symbol || "").toUpperCase().trim())
+      .filter((s: string) => s && !activeSignalMap.has(s) && liveDbQuotes[s] === undefined);
+
+    if (symsToFetch.length === 0) return;
+
+    symsToFetch.forEach((sym: string) => {
+      fetch(`/api/stock/quote/${encodeURIComponent(sym)}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && data.close && Number(data.close) > 0) {
+            setLiveDbQuotes((prev) => ({ ...prev, [sym]: Number(data.close) }));
+          }
+        })
+        .catch(() => {});
+    });
+  }, [activeHoldings, activeSignalMap]);
+
   // Aggregate metrics
   const { totalInvested, totalCurrentValue, totalUnrealizedPnL, returnPct } = useMemo(() => {
     let invested = 0;
@@ -88,17 +110,20 @@ export default function PortfolioView({
     activeHoldings.forEach((trade: any) => {
       const sym = (trade.symbol || "").toUpperCase().trim();
       const activeMatch = activeSignalMap.get(sym);
+      const dbLtp = liveDbQuotes[sym];
       const buyPrice = Number(trade.buyPrice || 0);
       const qty = Number(trade.quantity || 1);
       invested += buyPrice * qty;
 
+      let curPrice = buyPrice;
       if (activeMatch) {
-        const curPrice = Number(activeMatch.currentPrice || activeMatch.entryPrice || trade.currentPrice || buyPrice);
-        currentVal += curPrice * qty;
-      } else {
-        const curPrice = Number(trade.currentPrice || buyPrice);
-        currentVal += curPrice * qty;
+        curPrice = Number(activeMatch.currentPrice || activeMatch.entryPrice || trade.currentPrice || buyPrice);
+      } else if (dbLtp && dbLtp > 0) {
+        curPrice = dbLtp;
+      } else if (trade.currentPrice && Number(trade.currentPrice) > 0) {
+        curPrice = Number(trade.currentPrice);
       }
+      currentVal += curPrice * qty;
     });
 
     const pnl = currentVal - invested;
@@ -109,7 +134,7 @@ export default function PortfolioView({
       totalUnrealizedPnL: pnl,
       returnPct: pct
     };
-  }, [activeHoldings, activeSignalMap]);
+  }, [activeHoldings, activeSignalMap, liveDbQuotes]);
 
   // Realized statistics
   const { totalRealizedPnL, winCount, lossCount, winRate } = useMemo(() => {
@@ -318,10 +343,13 @@ export default function PortfolioView({
                 const qty = Number(holding.quantity || 1);
                 const invested = buy * qty;
 
-                // Sync live LTP directly from active signals
+                // Sync live LTP directly from active signals or SQLite DB quote
+                const dbLtp = liveDbQuotes[sym];
                 const cur = isSignalActive
                   ? Number(activeMatch.currentPrice || activeMatch.entryPrice || holding.currentPrice || buy)
-                  : (holding.currentPrice ? Number(holding.currentPrice) : buy);
+                  : (dbLtp && dbLtp > 0 
+                      ? dbLtp 
+                      : (holding.currentPrice && Number(holding.currentPrice) > 0 ? Number(holding.currentPrice) : buy));
 
                 const currentVal = cur * qty;
                 const pnl = currentVal - invested;
