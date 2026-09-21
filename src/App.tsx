@@ -1154,7 +1154,7 @@ export default function App() {
     return (localStorage.getItem("engine") as "v2" | "v3") || "v2";
   });
   const [theme, setTheme] = useState<"dark" | "light">(() => {
-    return (localStorage.getItem("theme") as "dark" | "light") || "dark";
+    return (localStorage.getItem("theme") as "dark" | "light") || "light";
   });
   const [activeTab, setActiveTab] = useState<"home" | "signals" | "portfolio" | "dna" | "charts" | "intel" | "more">(() => {
     if (typeof window !== "undefined") {

@@ -22,7 +22,7 @@ export default function StockDNAScreen({ theme, resetTrigger }: StockDNAScreenPr
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Determine current active theme
-  const activeTheme = theme || (typeof window !== "undefined" && (document.documentElement.dataset.theme as "dark" | "light")) || "dark";
+  const activeTheme = theme || (typeof window !== "undefined" && (document.documentElement.dataset.theme as "dark" | "light")) || "light";
 
   // Build target iframe URL preserving stock query param and syncing theme
   const [targetSrc, setTargetSrc] = useState(() => {

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -8,7 +8,7 @@
   <script>
     // Early synchronous theme detection to prevent any dark/light flash
     (function() {
-      var t = 'dark';
+      var t = 'light';
       try {
         var p = new URLSearchParams(window.location.search);
         var qTheme = p.get('theme');
@@ -20,6 +20,7 @@
         } else {
           var saved = localStorage.getItem('theme');
           if (saved === 'light' || saved === 'dark') t = saved;
+          else t = 'light';
         }
       } catch (e) {}
       document.documentElement.setAttribute('data-theme', t);
