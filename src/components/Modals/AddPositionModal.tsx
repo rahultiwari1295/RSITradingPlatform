@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { X, Plus, ShieldCheck } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { X, Plus, Search, Loader2 } from "lucide-react";
 import { formatINR } from "../../lib/utils";
 
 interface AddPositionModalProps {
@@ -14,6 +14,15 @@ interface AddPositionModalProps {
   }) => void;
 }
 
+interface StockSearchResult {
+  symbol: string;
+  name?: string;
+  company_name?: string;
+  candleCount?: number;
+  price?: number;
+  close?: number;
+}
+
 export default function AddPositionModal({
   isOpen,
   onClose,
@@ -22,7 +31,80 @@ export default function AddPositionModal({
   const [symbol, setSymbol] = useState("");
   const [buyPrice, setBuyPrice] = useState<number | "">("");
   const [quantity, setQuantity] = useState<number | "">(10);
-  const [strategyName, setStrategyName] = useState("Breakout Setup");
+  const [strategyName, setStrategyName] = useState("Manual");
+
+  // Autocomplete state
+  const [searchResults, setSearchResults] = useState<StockSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Reset when opened
+  useEffect(() => {
+    if (isOpen) {
+      setSymbol("");
+      setBuyPrice("");
+      setQuantity(10);
+      setStrategyName("Manual");
+      setSearchResults([]);
+      setShowDropdown(false);
+    }
+  }, [isOpen]);
+
+  const handleSymbolChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.toUpperCase();
+    setSymbol(val);
+
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+
+    const query = val.trim();
+    if (!query) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    setIsSearching(true);
+    searchTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/dna/search?q=${encodeURIComponent(query)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setSearchResults(data.slice(0, 7));
+            setShowDropdown(true);
+            setIsSearching(false);
+            return;
+          }
+        }
+      } catch (err) {
+        // Fallback or ignore
+      }
+      setIsSearching(false);
+    }, 150);
+  };
+
+  const handleSelectStock = (stock: StockSearchResult) => {
+    const sym = stock.symbol.toUpperCase().trim();
+    setSymbol(sym);
+    setShowDropdown(false);
+
+    if (stock.price || stock.close) {
+      setBuyPrice(Number(stock.price || stock.close));
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -36,7 +118,7 @@ export default function AddPositionModal({
       symbol: symbol.toUpperCase().trim(),
       buyPrice: Number(buyPrice),
       quantity: Number(quantity),
-      strategyName,
+      strategyName: strategyName || "Manual",
       date: new Date().toISOString().split("T")[0]
     });
 
@@ -118,13 +200,14 @@ export default function AddPositionModal({
               Add Paper Position
             </div>
             <div style={{ fontSize: 11.5, color: "var(--ink3)", marginTop: 2 }}>
-              Manually track a stock position in your portfolio
+              Manually track any stock position in your portfolio
             </div>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div>
+          {/* Symbol Input with Autocomplete */}
+          <div style={{ position: "relative" }} ref={dropdownRef}>
             <label
               style={{
                 display: "block",
@@ -137,28 +220,112 @@ export default function AddPositionModal({
                 fontFamily: "'JetBrains Mono', monospace"
               }}
             >
-              Symbol (NSE / BSE)
+              Symbol (Search any stock)
             </label>
-            <input
-              type="text"
-              value={symbol}
-              onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-              placeholder="e.g. RELIANCE, TATASTEEL"
-              style={{
-                width: "100%",
-                background: "var(--s2)",
-                border: "1px solid var(--line)",
-                borderRadius: 12,
-                padding: "11px 14px",
-                fontSize: 14,
-                fontWeight: 800,
-                color: "var(--ink1)",
-                outline: "none",
-                fontFamily: "'JetBrains Mono', monospace",
-                textTransform: "uppercase"
-              }}
-              required
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type="text"
+                value={symbol}
+                onChange={handleSymbolChange}
+                onFocus={() => {
+                  if (searchResults.length > 0) setShowDropdown(true);
+                }}
+                placeholder="Type name or symbol e.g. TATA, RELIANCE..."
+                style={{
+                  width: "100%",
+                  background: "var(--s2)",
+                  border: "1px solid var(--line)",
+                  borderRadius: 12,
+                  padding: "11px 36px 11px 14px",
+                  fontSize: 14,
+                  fontWeight: 800,
+                  color: "var(--ink1)",
+                  outline: "none",
+                  fontFamily: "'JetBrains Mono', monospace",
+                  textTransform: "uppercase",
+                  boxSizing: "border-box"
+                }}
+                required
+                autoComplete="off"
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  right: 12,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  pointerEvents: "none",
+                  color: "var(--ink3)",
+                  display: "flex",
+                  alignItems: "center"
+                }}
+              >
+                {isSearching ? (
+                  <Loader2 style={{ width: 15, height: 15, animation: "spin 1s linear infinite" }} />
+                ) : (
+                  <Search style={{ width: 15, height: 15 }} />
+                )}
+              </div>
+            </div>
+
+            {/* Autocomplete Dropdown */}
+            {showDropdown && searchResults.length > 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 4px)",
+                  left: 0,
+                  right: 0,
+                  background: "var(--s1)",
+                  border: "1px solid var(--line-2)",
+                  borderRadius: 12,
+                  boxShadow: "0 12px 30px rgba(0,0,0,0.5)",
+                  zIndex: 1000,
+                  maxHeight: 220,
+                  overflowY: "auto",
+                  padding: "4px 0"
+                }}
+              >
+                {searchResults.map((s, i) => (
+                  <div
+                    key={s.symbol + i}
+                    onClick={() => handleSelectStock(s)}
+                    style={{
+                      padding: "8px 14px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      cursor: "pointer",
+                      borderBottom: i === searchResults.length - 1 ? "none" : "1px solid var(--line)",
+                      transition: "background 0.15s"
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--s2)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ink1)" }}>
+                        {s.symbol}
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--ink3)", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {s.name || s.company_name || ""}
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        padding: "2px 6px",
+                        borderRadius: 6,
+                        background: "var(--s3)",
+                        color: "var(--ink2)",
+                        fontWeight: 700
+                      }}
+                    >
+                      NSE
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -193,7 +360,8 @@ export default function AddPositionModal({
                   fontWeight: 800,
                   color: "var(--ink1)",
                   outline: "none",
-                  fontFamily: "'JetBrains Mono', monospace"
+                  fontFamily: "'JetBrains Mono', monospace",
+                  boxSizing: "border-box"
                 }}
                 required
               />
@@ -229,7 +397,8 @@ export default function AddPositionModal({
                   fontWeight: 800,
                   color: "var(--ink1)",
                   outline: "none",
-                  fontFamily: "'JetBrains Mono', monospace"
+                  fontFamily: "'JetBrains Mono', monospace",
+                  boxSizing: "border-box"
                 }}
                 required
               />
@@ -264,9 +433,11 @@ export default function AddPositionModal({
                 fontWeight: 700,
                 color: "var(--ink1)",
                 outline: "none",
-                cursor: "pointer"
+                cursor: "pointer",
+                boxSizing: "border-box"
               }}
             >
+              <option value="Manual">Manual</option>
               <option value="Breakout Setup">Breakout Setup</option>
               <option value="Wyckoff Spring">Wyckoff Spring</option>
               <option value="Decouple Momentum">Decouple Momentum</option>

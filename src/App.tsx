@@ -2054,7 +2054,8 @@ export default function App() {
               };
             }
           } else {
-            if (p.isActiveInStrategy !== false) {
+            const isManual = (p.strategyName || "").toLowerCase().trim() === "manual";
+            if (!isManual && p.isActiveInStrategy !== false) {
               changed = true;
               return {
                 ...p,

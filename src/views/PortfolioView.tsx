@@ -330,6 +330,8 @@ export default function PortfolioView({
                 const stratName = activeMatch?.strategyName || holding.strategyName || "Institutional Momentum";
                 const holdingEngine = holding.engine || (activeMatch as any)?.engine || (stratName.toLowerCase().includes("pattern") || stratName.toLowerCase().includes("v3") ? "v3" : "v2");
 
+                const isManual = (holding.strategyName || "").toLowerCase().trim() === "manual";
+
                 return (
                   <div
                     key={holding.tradeId || holding.id || idx}
@@ -361,13 +363,19 @@ export default function PortfolioView({
                             <span className="pill" style={{ fontSize: 9.5, padding: "2px 7px" }}>
                               {qty} QTY
                             </span>
-                            <span
-                              className={`pill ${holdingEngine === "v2" ? "blue" : "purple"}`}
-                              style={{ fontSize: 9, padding: "2px 6.5px", fontWeight: 700 }}
-                            >
-                              {holdingEngine === "v2" ? "V2 PRO AI" : "V3 PATTERN AI"}
-                            </span>
-                            {isSignalActive ? (
+                            {!isManual && (
+                              <span
+                                className={`pill ${holdingEngine === "v2" ? "blue" : "purple"}`}
+                                style={{ fontSize: 9, padding: "2px 6.5px", fontWeight: 700 }}
+                              >
+                                {holdingEngine === "v2" ? "V2 PRO AI" : "V3 PATTERN AI"}
+                              </span>
+                            )}
+                            {isManual ? (
+                              <span className="pill" style={{ fontSize: 9.5, padding: "2px 7px", background: "rgba(255,255,255,0.07)", color: "var(--ink2)", fontWeight: 700 }}>
+                                ✍️ MANUAL
+                              </span>
+                            ) : isSignalActive ? (
                               <span className="pill green" style={{ fontSize: 9.5, padding: "2px 7px" }}>
                                 <span
                                   style={{
@@ -416,7 +424,7 @@ export default function PortfolioView({
                       <div className="pf-col">
                         <div className="pf-lbl" style={{ display: "flex", alignItems: "center", gap: 4 }}>
                           <span>Live LTP</span>
-                          {isSignalActive && (
+                          {(isSignalActive || isManual) && (
                             <span
                               style={{
                                 width: 5,
@@ -440,8 +448,8 @@ export default function PortfolioView({
                       </div>
                     </div>
 
-                    {/* Inactive Strategy Warning Banner */}
-                    {!isSignalActive && (
+                    {/* Inactive Strategy Warning Banner (Only for algorithmic strategy setups, not for Manual) */}
+                    {!isSignalActive && !isManual && (
                       <div className="pf-alert">
                         <AlertTriangle style={{ width: 15, height: 15, flexShrink: 0, marginTop: 1 }} />
                         <div>
