@@ -9,10 +9,8 @@ function getBaseUrl(): string {
   if (typeof window !== "undefined") {
     const envUrl = (import.meta as any).env?.VITE_VPS_API_URL;
     if (envUrl) return envUrl;
-    // If running on localhost on port 3000/5173, express or vite proxies /api requests
-    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-      return "";
-    }
+    // In browser (both localhost and deployed on Vercel), route /api calls via same-origin proxy
+    return "";
   }
   return VPS_DEFAULT_BASE;
 }
