@@ -351,6 +351,11 @@ body::before{
   }
 }
 
+/* Screener Screen full width with optimal mobile/desktop margins */
+#screen-screener {
+  padding: 10px 8px 32px !important;
+}
+
 /* ============================================================
    TAB BAR
    ============================================================ */

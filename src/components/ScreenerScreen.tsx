@@ -103,7 +103,7 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
   };
 
   return (
-    <div className="screener-screen-root" style={{ padding: "16px 14px 40px", maxWidth: 900, margin: "0 auto" }}>
+    <div className="screener-screen-root" style={{ padding: "12px 6px 36px", width: "100%", maxWidth: "100%", margin: "0" }}>
       {/* ─── HEADER HERO BANNER ─── */}
       <div
         className="card"
