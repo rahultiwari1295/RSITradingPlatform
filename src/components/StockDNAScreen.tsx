@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 interface StockDNAScreenProps {
   theme?: "dark" | "light";
   resetTrigger?: number;
+  selectedStock?: string;
   onSwitchTab?: (tab: string) => void;
 }
 
@@ -18,7 +19,7 @@ interface StockDNAScreenProps {
  *  - The 7 Plain-English Burning Questions with Smart Investor Compass
  *  - DNA Home Search Console with live autocomplete and discovery radar shelves
  */
-export default function StockDNAScreen({ theme, resetTrigger, onSwitchTab }: StockDNAScreenProps) {
+export default function StockDNAScreen({ theme, resetTrigger, selectedStock, onSwitchTab }: StockDNAScreenProps) {
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -40,8 +41,8 @@ export default function StockDNAScreen({ theme, resetTrigger, onSwitchTab }: Sto
 
   // Build target iframe URL preserving stock query param and syncing theme
   const [targetSrc, setTargetSrc] = useState(() => {
-    let initialStock = "";
-    if (typeof window !== "undefined") {
+    let initialStock = selectedStock || "";
+    if (!initialStock && typeof window !== "undefined") {
       const searchParams = new URLSearchParams(window.location.search);
       initialStock = searchParams.get("stock") || searchParams.get("sym") || searchParams.get("symbol") || "";
     }
@@ -50,6 +51,23 @@ export default function StockDNAScreen({ theme, resetTrigger, onSwitchTab }: Sto
     params.set("theme", activeTheme);
     return `/dna-mobile-story.html?${params.toString()}`;
   });
+
+  // When selectedStock changes dynamically (e.g. user clicked a stock in Screener), notify iframe
+  useEffect(() => {
+    if (selectedStock && selectedStock.trim()) {
+      const s = selectedStock.trim().toUpperCase();
+      if (iframeRef.current?.contentWindow) {
+        try {
+          iframeRef.current.contentWindow.postMessage({
+            type: "LOAD_STOCK",
+            stock: s,
+          }, "*");
+        } catch (err) {
+          console.warn("Could not post LOAD_STOCK to DNA iframe:", err);
+        }
+      }
+    }
+  }, [selectedStock, iframeLoaded]);
 
   // Whenever theme changes in parent app, notify the iframe via postMessage
   useEffect(() => {

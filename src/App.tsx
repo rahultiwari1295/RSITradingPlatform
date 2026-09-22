@@ -1179,6 +1179,12 @@ export default function App() {
   const [isEngineInfoOpen, setIsEngineInfoOpen] = useState(false);
   const [v2ChartSel, setV2ChartSel] = useState<number>(0);
   const [dnaResetTrigger, setDnaResetTrigger] = useState<number>(0);
+  const [selectedDnaStock, setSelectedDnaStock] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("stock") || new URLSearchParams(window.location.search).get("sym") || "";
+    }
+    return "";
+  });
 
   // Transitional Animation State (Rocket hitting bulls eye)
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -3632,6 +3638,7 @@ export default function App() {
           <StockDNAScreen
             theme={theme}
             resetTrigger={dnaResetTrigger}
+            selectedStock={selectedDnaStock}
             onSwitchTab={(tab) => setActiveTab(tab as any)}
           />
         </section>
@@ -3966,6 +3973,7 @@ export default function App() {
             theme={theme}
             onSelectStock={(sym) => {
               // Deep dive into DNA when stock is tapped in Screener
+              setSelectedDnaStock(sym);
               setActiveTab("dna");
               if (typeof window !== "undefined") {
                 const url = new URL(window.location.href);

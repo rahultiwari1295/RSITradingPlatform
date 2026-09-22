@@ -4975,6 +4975,8 @@
         if (t) setTheme(t);
       } else if (e.data.type === 'RESET_TO_HOME' || e.data === 'RESET_TO_HOME') {
         resetToHome();
+      } else if (e.data.type === 'LOAD_STOCK' && e.data.stock) {
+        selectStock(e.data.stock);
       }
     });
 
