@@ -23,6 +23,7 @@ import { getActionTagInfo } from "./lib/signalStatus";
 import InstitutionalPatternChart from "./components/charts/InstitutionalPatternChart";
 import TradingViewStockDetail from "./components/TradingViewStockDetail";
 import StockDNAScreen from "./components/StockDNAScreen";
+import ScreenerScreen from "./components/ScreenerScreen";
 
 /* ============================================================
    FORMATTERS & HELPERS
@@ -1156,10 +1157,10 @@ export default function App() {
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     return (localStorage.getItem("theme") as "dark" | "light") || "light";
   });
-  const [activeTab, setActiveTab] = useState<"home" | "signals" | "portfolio" | "dna" | "charts" | "intel" | "more">(() => {
+  const [activeTab, setActiveTab] = useState<"home" | "signals" | "portfolio" | "dna" | "charts" | "intel" | "screener" | "more">(() => {
     if (typeof window !== "undefined") {
       const p = new URLSearchParams(window.location.search).get("tab");
-      if (p && ["home", "signals", "portfolio", "dna", "charts", "intel", "more"].includes(p)) {
+      if (p && ["home", "signals", "portfolio", "dna", "charts", "intel", "screener", "more"].includes(p)) {
         return p as any;
       }
       // If direct deep link contains ?stock= or ?sym=, automatically open the DNA screen!
@@ -1170,6 +1171,7 @@ export default function App() {
     }
     return "dna";
   });
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [sigSub, setSigSub] = useState<"active" | "closed">("active");
   const [chartSub, setChartSub] = useState<"live" | "scanner" | "portal">("live");
   const [range, setRange] = useState<number>(90);
@@ -2433,6 +2435,22 @@ export default function App() {
               <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" />
             </svg>
           </button>
+          <button
+            className={`theme-btn ${isMoreOpen || activeTab === "more" ? "active" : ""}`}
+            id="userMoreBtn"
+            onClick={() => setIsMoreOpen(true)}
+            aria-label="User profile and settings"
+            title="Account, Settings & Platform Diagnostics"
+            style={{
+              background: isMoreOpen ? "var(--s3)" : undefined,
+              borderColor: isMoreOpen ? "var(--accent)" : undefined
+            }}
+          >
+            <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, stroke: "currentColor", fill: "none", strokeWidth: 1.8 }}>
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </button>
         </div>
       </header>
 
@@ -3611,7 +3629,11 @@ export default function App() {
 
         {/* ===== DNA SCREEN ===== */}
         <section className={`screen ${activeTab === "dna" ? "active" : ""}`} id="screen-dna">
-          <StockDNAScreen theme={theme} resetTrigger={dnaResetTrigger} />
+          <StockDNAScreen
+            theme={theme}
+            resetTrigger={dnaResetTrigger}
+            onSwitchTab={(tab) => setActiveTab(tab as any)}
+          />
         </section>
 
         {/* ===== CHARTS SCREEN ===== */}
@@ -3938,6 +3960,23 @@ export default function App() {
 
 
 
+        {/* ===== SCREENER SCREEN (INSTITUTIONAL PATTERN INTELLIGENCE) ===== */}
+        <section className={`screen ${activeTab === "screener" ? "active" : ""}`} id="screen-screener">
+          <ScreenerScreen
+            theme={theme}
+            onSelectStock={(sym) => {
+              // Deep dive into DNA when stock is tapped in Screener
+              setActiveTab("dna");
+              if (typeof window !== "undefined") {
+                const url = new URL(window.location.href);
+                url.searchParams.set("tab", "dna");
+                url.searchParams.set("stock", sym);
+                window.history.pushState({}, "", url.toString());
+              }
+            }}
+          />
+        </section>
+
         {/* ===== MORE SCREEN ===== */}
         <section className={`screen ${activeTab === "more" ? "active" : ""}`} id="screen-more">
           <div className="card" style={{ textAlign: "center", padding: "24px 16px" }}>
@@ -4100,12 +4139,24 @@ export default function App() {
           )}
         </button>
         <button
-          className={`tab ${activeTab === "more" ? "active" : ""}`}
-          onClick={() => setActiveTab("more")}
-          data-tab="more"
+          className={`tab ${activeTab === "screener" ? "active" : ""}`}
+          onClick={() => setActiveTab("screener")}
+          data-tab="screener"
         >
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" /><path d="M12 2.6v2.8M12 18.6v2.8M21.4 12h-2.8M5.4 12H2.6M18.6 5.4l-2 2M7.4 16.6l-2 2M18.6 18.6l-2-2M7.4 7.4l-2-2" /></svg>
-          More
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+          </svg>
+          Screener
+          <span style={{
+            position: "absolute",
+            top: 5,
+            right: "calc(50% - 19px)",
+            width: 5,
+            height: 5,
+            borderRadius: "50%",
+            background: "#10B981",
+            boxShadow: "0 0 6px #10B981"
+          }} />
         </button>
       </nav>
 
@@ -4320,29 +4371,112 @@ export default function App() {
         </div>
       )}
 
-      {/* Global Toast */}
-      {toastMessage && (
-        <div style={{
-          position: "fixed",
-          bottom: 80,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 9999,
-          background: "var(--ink)",
-          color: "var(--bg)",
-          padding: "8px 18px",
-          borderRadius: 20,
-          fontSize: 12,
-          fontWeight: 700,
-          boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          pointerEvents: "none"
-        }}>
-          <span>{toastMessage}</span>
+      {/* ============ MORE & PROFILE SLIDE-UP MODAL SHEET ============ */}
+      <div
+        className={`backdrop ${isMoreOpen ? "on" : ""}`}
+        id="moreBackdrop"
+        onClick={() => setIsMoreOpen(false)}
+        style={{ zIndex: 60 }}
+      />
+      <div
+        className={`sheet ${isMoreOpen ? "on" : ""}`}
+        id="moreSheet"
+        style={{ zIndex: 61, maxHeight: "82%" }}
+      >
+        <div className="sheet-grip" onClick={() => setIsMoreOpen(false)}>
+          <i />
         </div>
-      )}
+        <div className="sheet-body" style={{ overflowY: "auto", padding: "12px 18px 36px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, var(--accent), #3B82F6)",
+                  display: "grid",
+                  placeItems: "center",
+                  color: "#fff",
+                  fontWeight: 800,
+                  fontSize: 16
+                }}
+              >
+                {user?.email?.slice(0, 1).toUpperCase() || "Q"}
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "var(--ink1)" }}>
+                  {user?.email || "Trader Account"}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--ink3)" }}>
+                  QuantSync Pro · {systemStatus?.version || "v2.4.1"}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsMoreOpen(false)}
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: "50%",
+                border: "1px solid var(--line-2)",
+                background: "var(--s2)",
+                color: "var(--ink2)",
+                cursor: "pointer",
+                display: "grid",
+                placeItems: "center",
+                fontSize: 14
+              }}
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="sec-head"><span className="micro">Appearance & Theme</span></div>
+          <div className="card" style={{ padding: 0, marginBottom: 14 }}>
+            <div className="setrow" id="themeRowMore" onClick={toggleTheme}>
+              <div className="l">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" /><path d="M12 2v2.4M12 19.6V22M22 12h-2.4M4.4 12H2M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7M19.1 19.1l-1.7-1.7M6.6 6.6 4.9 4.9" /></svg>
+                Display Mode
+              </div>
+              <div className="r">
+                <span id="themeLabelMore">{theme === "dark" ? "Dark Obsidian" : "Clean Light"}</span>
+                <div className={`switch ${theme === "dark" ? "on" : ""}`} />
+              </div>
+            </div>
+            <div className="setrow" onClick={() => switchEngine(engine === "v2" ? "v3" : "v2")}>
+              <div className="l">
+                <svg viewBox="0 0 24 24"><path d="M3 17V7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v10" /><path d="M8 20h8" /></svg>
+                Primary Trading Engine
+              </div>
+              <div className="r" id="defaultEngineMore">
+                {engine === "v2" ? "V2 · AI Trading" : "V3 · Chart Engine"}
+              </div>
+            </div>
+          </div>
+
+          <div className="sec-head"><span className="micro">Live Alert Preferences</span></div>
+          <div className="card" style={{ padding: 0, marginBottom: 14 }}>
+            <div className="setrow"><div className="l">High Conviction Buy Signals</div><div className="switch on" /></div>
+            <div className="setrow"><div className="l">Target & Trailing Stop Alerts</div><div className="switch on" /></div>
+            <div className="setrow"><div className="l">Near-Breakout Squeeze Radar</div><div className="switch on" /></div>
+            <div className="setrow"><div className="l">Daily EOD Settlement Summary</div><div className="switch on" /></div>
+          </div>
+
+          <div className="sec-head"><span className="micro">System Diagnostics & Data Feeds</span></div>
+          <div className="card" style={{ padding: 0, marginBottom: 14 }}>
+            <div className="setrow"><div className="l">Universe Equities</div><div className="r num">{systemConfig?.universeStocks || 1318} NSE stocks</div></div>
+            <div className="setrow"><div className="l">History Database</div><div className="r num">{systemConfig?.historySource || "stock_history.db"}</div></div>
+            <div className="setrow"><div className="l">Screener Cache</div><div className="r num">stock_dna_cache.db</div></div>
+            <div className="setrow"><div className="l">V2 Machine Learning</div><div className="r num">Active · 62% Min Confidence</div></div>
+          </div>
+
+          <div style={{ textAlign: "center", fontSize: 10, color: "var(--ink3)", margin: "20px 0 8px", lineHeight: 1.8 }}>
+            "Every pixel earns its place."<br />
+            <span style={{ opacity: 0.55 }}>QuantSync Production Trading Engine · Institutional Suite</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

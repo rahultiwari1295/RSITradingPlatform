@@ -3349,7 +3349,7 @@
     // 3. POPULATE SECTOR PEER BENCHMARK (WITH CLICKABLE PEER ROWS)
     const pTbody = document.getElementById('peers-tbody');
     if (pTbody && data.peers) {
-      pTbody.innerHTML = data.peers.map(p => `
+      let rowsHtml = data.peers.map(p => `
         <tr class="peer-row ${p.isCurrent ? 'active-stock' : ''}" onclick="loadStock('${p.symbol}')" style="cursor: pointer;" title="Click to analyze ${p.symbol}">
           <td>
             <div class="peer-symbol-cell">
@@ -3359,8 +3359,8 @@
           </td>
           <td><span style="font-family:var(--font-mono); font-weight:700;">${p.price}</span></td>
           <td>
-            <span class="peer-score-chip" style="background: ${p.score >= 70 ? 'rgba(16, 185, 129, 0.15)' : p.score >= 40 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(244, 63, 94, 0.15)'}; color: ${p.score >= 70 ? 'var(--bullish)' : p.score >= 40 ? 'var(--neutral)' : 'var(--bearish)'};">
-              ${p.score}
+            <span class="peer-score-chip" style="background: ${typeof p.score === 'number' ? (p.score >= 70 ? 'rgba(16, 185, 129, 0.15)' : p.score >= 40 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(244, 63, 94, 0.15)') : 'rgba(148, 163, 184, 0.12)'}; color: ${typeof p.score === 'number' ? (p.score >= 70 ? 'var(--bullish)' : p.score >= 40 ? 'var(--neutral)' : 'var(--bearish)') : 'var(--text-dim)'};">
+              ${p.score !== null && p.score !== undefined ? p.score : '—'}
             </span>
           </td>
           <td>${p.pe}</td>
@@ -3374,6 +3374,17 @@
           </td>
         </tr>
       `).join('');
+
+      if (data.peers.length === 1) {
+        rowsHtml += `
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 14px; font-size: 12.5px; color: var(--text-dim); font-style: italic; border-top: 1px dashed var(--border-subtle);">
+              ℹ️ Direct peer comparison benchmarks for ${data.sector || 'this sector'} are currently being indexed.
+            </td>
+          </tr>
+        `;
+      }
+      pTbody.innerHTML = rowsHtml;
     }
 
     // Fundamentals Multiples

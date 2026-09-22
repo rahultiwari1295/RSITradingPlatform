@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>QuantSync Institutional Screener · Pattern & Breakout Radar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #080B11;
+      --bg-card: #0F141C;
+      --bg-card-hover: #151C28;
+      --bg-surface: #1E2638;
+      --border-card: rgba(255, 255, 255, 0.08);
+      --border-subtle: rgba(255, 255, 255, 0.05);
+      --text-main: #F1F5F9;
+      --text-muted: #94A3B8;
+      --text-dim: #64748B;
+      --accent: #3B82F6;
+      --profit: #10B981;
+      --loss: #EF4444;
+      --warning: #F59E0B;
+      --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    [data-theme="light"] {
+      --bg-base: #F8FAFC;
+      --bg-card: #FFFFFF;
+      --bg-card-hover: #F1F5F9;
+      --bg-surface: #E2E8F0;
+      --border-card: #E2E8F0;
+      --border-subtle: #F1F5F9;
+      --text-main: #0F172A;
+      --text-muted: #475569;
+      --text-dim: #64748B;
+      --accent: #2563EB;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      padding: 16px;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .header-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .badge-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .title {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .accuracy-box {
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.28);
+      text-align: right;
+    }
+    .accuracy-val {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--profit);
+      font-family: var(--font-mono);
+    }
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-subtle);
+      text-align: center;
+    }
+    .kpi-num {
+      font-size: 16px;
+      font-weight: 800;
+      margin-top: 2px;
+    }
+    .tabs-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      margin-bottom: 12px;
+      scrollbar-width: none;
+    }
+    .tab-btn {
+      padding: 8px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border-card);
+      background: var(--bg-card);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: rgba(59, 130, 246, 0.18);
+      border-color: var(--accent);
+      color: var(--text-main);
+    }
+    .filter-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .search-input {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border-card);
+      background: var(--bg-surface);
+      color: var(--text-main);
+      font-size: 13px;
+      outline: none;
+      font-family: inherit;
+    }
+    .filters-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .select-ctl {
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-card);
+      background: var(--bg-surface);
+      color: var(--text-main);
+      font-size: 11.5px;
+      font-weight: 600;
+      font-family: inherit;
+    }
+    .chip-ctl {
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-card);
+      background: var(--bg-surface);
+      color: var(--text-muted);
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .chip-ctl.on {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(59, 130, 246, 0.15);
+    }
+    .stocks-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .stock-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 16px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .stock-card:hover {
+      transform: translateX(3px);
+      border-color: var(--accent);
+    }
+    .stock-card.near { border-left: 3px solid var(--warning); }
+    .stock-card.success { border-left: 3px solid var(--profit); }
+    .stock-card.failed { border-left: 3px solid var(--loss); }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .sym {
+      font-size: 15px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+    }
+    .badge-pill {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--bg-surface);
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-left: 6px;
+    }
+    .pattern-strip {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: var(--bg-surface);
+      font-size: 11.5px;
+    }
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: 10px;
+      font-size: 10.5px;
+    }
+    .metric-label { color: var(--text-dim); }
+    .metric-val { font-family: var(--font-mono); font-weight: 700; color: var(--text-main); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header-card">
+      <div>
+        <div class="badge-chip">⚡ QuantSync Screener Engine</div>
+        <div class="title">Pattern & Breakout Radar</div>
+        <div class="subtitle" id="scanMeta">Scanning 1,318 NSE Universe Equities</div>
+      </div>
+      <div class="accuracy-box" id="accuracyBox" style="display:none;">
+        <div style="font-size: 9.5px; font-weight: 700; color: var(--profit); text-transform: uppercase;">90D Win Rate</div>
+        <div class="accuracy-val" id="accuracyVal">0%</div>
+        <div style="font-size: 9.5px; color: var(--text-dim);" id="accuracyMeta">Verified signals</div>
+      </div>
+    </div>
+
+    <!-- Primary Tabs -->
+    <div class="tabs-bar">
+      <button class="tab-btn active" onclick="setTab('all', this)">All Scanned <span id="countAll"></span></button>
+      <button class="tab-btn" onclick="setTab('near_breakout', this)">🎯 Near Breakout <span id="countNear"></span></button>
+      <button class="tab-btn" onclick="setTab('success', this)">🚀 Breakout Confirmed <span id="countSuccess"></span></button>
+      <button class="tab-btn" onclick="setTab('failed', this)">⚠️ Failed Breakout <span id="countFailed"></span></button>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-card">
+      <input type="text" class="search-input" id="searchInput" placeholder="Search ticker or company name..." oninput="handleSearch(this.value)">
+      <div class="filters-row">
+        <select class="select-ctl" id="mcapSelect" onchange="applyFilters()">
+          <option value="">All Market Caps</option>
+          <option value="Large Cap">Large Cap</option>
+          <option value="Mid Cap">Mid Cap</option>
+          <option value="Small Cap">Small Cap</option>
+        </select>
+        <select class="select-ctl" id="stanceSelect" onchange="applyFilters()">
+          <option value="">All Stances</option>
+          <option value="BULLISH">🟢 Bullish Conviction</option>
+          <option value="NEUTRAL">🟡 Neutral</option>
+          <option value="BEARISH">🔴 Bearish / Avoid</option>
+        </select>
+        <button class="chip-ctl" id="psuChip" onclick="toggleChip('psu')">🏛️ PSU Stocks</button>
+        <button class="chip-ctl" id="fnoChip" onclick="toggleChip('fno')">⚡ F&O Traded</button>
+      </div>
+    </div>
+
+    <!-- Stock Cards -->
+    <div class="stocks-list" id="stocksList">
+      <div style="text-align: center; padding: 40px; color: var(--text-dim);">Loading screener intelligence...</div>
+    </div>
+  </div>
+
+  <script>
+    let currentTab = 'all';
+    let onlyPsu = false;
+    let onlyFno = false;
+    let searchVal = '';
+
+    function init() {
+      // Sync theme with URL or parent
+      const urlParams = new URLSearchParams(window.location.search);
+      const th = urlParams.get('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', th);
+
+      loadSummary();
+      loadAccuracy();
+      loadBreakoutCounts();
+      applyFilters();
+    }
+
+    async function loadSummary() {
+      try {
+        const res = await fetch('/api/screener/summary');
+        const data = await res.json();
+        if (data && data.scan_date) {
+          document.getElementById('scanMeta').textContent = `1,318 Universe Equities · Updated ${data.scan_date}`;
+        }
+      } catch (e) {}
+    }
+
+    async function loadAccuracy() {
+      try {
+        const res = await fetch('/api/screener/accuracy?days=90');
+        const data = await res.json();
+        if (data && data.win_rate_pct > 0) {
+          document.getElementById('accuracyBox').style.display = 'block';
+          document.getElementById('accuracyVal').textContent = data.win_rate_pct + '%';
+          document.getElementById('accuracyMeta').textContent = `${data.winners} of ${data.total_resolved_signals} signals verified`;
+        }
+      } catch (e) {}
+    }
+
+    async function loadBreakoutCounts() {
+      try {
+        const res = await fetch('/api/screener/breakouts');
+        const data = await res.json();
+        if (data) {
+          document.getElementById('countNear').textContent = (data.near_breakout || []).length;
+          document.getElementById('countSuccess').textContent = (data.success || []).length;
+          document.getElementById('countFailed').textContent = (data.failed || []).length;
+        }
+      } catch (e) {}
+    }
+
+    function setTab(tab, btn) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyFilters();
+    }
+
+    function toggleChip(type) {
+      if (type === 'psu') {
+        onlyPsu = !onlyPsu;
+        document.getElementById('psuChip').classList.toggle('on', onlyPsu);
+      } else if (type === 'fno') {
+        onlyFno = !onlyFno;
+        document.getElementById('fnoChip').classList.toggle('on', onlyFno);
+      }
+      applyFilters();
+    }
+
+    function handleSearch(v) {
+      searchVal = v.trim();
+      applyFilters();
+    }
+
+    async function applyFilters() {
+      const listEl = document.getElementById('stocksList');
+      listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-dim);">Filtering screener universe...</div>';
+
+      const params = new URLSearchParams();
+      if (currentTab === 'near_breakout') params.set('pattern_stage', 'NEAR_BREAKOUT');
+      if (currentTab === 'success') params.set('breakout_status', 'SUCCESS');
+      if (currentTab === 'failed') params.set('breakout_status', 'FAILED');
+
+      const mcap = document.getElementById('mcapSelect').value;
+      if (mcap) params.set('mcap_tier', mcap);
+
+      const st = document.getElementById('stanceSelect').value;
+      if (st) params.set('stance', st);
+
+      if (onlyPsu) params.set('is_psu', '1');
+      if (onlyFno) params.set('is_fno', '1');
+      if (searchVal) params.set('search', searchVal);
+
+      try {
+        const res = await fetch(`/api/screener?${params.toString()}`);
+        const data = await res.json();
+        renderStocks(data.rows || []);
+        if (currentTab === 'all') {
+          document.getElementById('countAll').textContent = data.total || 0;
+        }
+      } catch (e) {
+        listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--loss);">Failed to load screener data.</div>';
+      }
+    }
+
+    function renderStocks(rows) {
+      const listEl = document.getElementById('stocksList');
+      if (!rows.length) {
+        listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-dim);">No stocks match your filter criteria.</div>';
+        return;
+      }
+
+      listEl.innerHTML = rows.map(s => {
+        const isNear = s.pattern_stage === 'NEAR_BREAKOUT';
+        const isSuccess = s.breakout_status === 'SUCCESS';
+        const isFailed = s.breakout_status === 'FAILED';
+        const cardClass = isSuccess ? 'success' : (isNear ? 'near' : (isFailed ? 'failed' : ''));
+        const score = s.dna_score || 50;
+        const scoreCol = score >= 75 ? 'var(--profit)' : (score >= 50 ? 'var(--warning)' : 'var(--loss)');
+
+        return `
+          <div class="stock-card ${cardClass}" onclick="openDna('${s.symbol}')">
+            <div class="card-top">
+              <div>
+                <div style="display:flex; align-items:center;">
+                  <span class="sym">${s.symbol}</span>
+                  ${s.mcap_tier ? `<span class="badge-pill">${s.mcap_tier}</span>` : ''}
+                  ${s.is_psu === 1 ? `<span class="badge-pill" style="color:var(--accent); background:rgba(59,130,246,0.15)">PSU</span>` : ''}
+                  ${s.is_fno === 1 ? `<span class="badge-pill" style="color:var(--warning); background:rgba(245,158,11,0.15)">F&O</span>` : ''}
+                </div>
+                <div style="font-size:11px; color:var(--text-dim); margin-top:3px;">${s.company_name || s.sector || '—'}</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:14px; font-weight:800; font-family:var(--font-mono);">₹${Number(s.curr_price || 0).toLocaleString('en-IN', {minimumFractionDigits:2})}</div>
+                <div style="font-size:10px; font-weight:700; color:${scoreCol}; margin-top:2px;">DNA Score: ${score}/100</div>
+              </div>
+            </div>
+
+            <div class="pattern-strip">
+              <div>📐 <b>${s.pattern_type || 'Consolidation Range'}</b></div>
+              <div>${isNear ? `<span style="color:var(--warning); font-weight:800;">🎯 Near (${s.consecutive_days_near || 1}d)</span>` : (isSuccess ? '<span style="color:var(--profit); font-weight:800;">🚀 Success</span>' : (isFailed ? '<span style="color:var(--loss); font-weight:800;">⚠️ Failed</span>' : s.pattern_stage || 'FORMING'))}</div>
+            </div>
+
+            <div class="metrics-row">
+              <div><span class="metric-label">Breakout: </span><span class="metric-val">${s.breakout_level ? '₹' + Number(s.breakout_level).toFixed(1) : '—'}</span></div>
+              <div><span class="metric-label">RSI: </span><span class="metric-val">${s.rsi !== null && s.rsi !== undefined ? Number(s.rsi).toFixed(1) : '—'}</span></div>
+              <div><span class="metric-label">ROCE: </span><span class="metric-val">${s.roce_pct !== null && s.roce_pct !== undefined ? Number(s.roce_pct).toFixed(1) + '%' : '—'}</span></div>
+              <div><span class="metric-label">P/E: </span><span class="metric-val">${s.pe_ratio !== null && s.pe_ratio !== undefined ? Number(s.pe_ratio).toFixed(1) : '—'}</span></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openDna(sym) {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'SELECT_STOCK', symbol: sym }, '*');
+      } else {
+        window.location.href = `/dna-mobile-story.html?stock=${sym}`;
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

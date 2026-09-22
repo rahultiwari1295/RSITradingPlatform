@@ -286,4 +286,36 @@ export const quantsyncApi = {
     apiFetch<{ count: number; movers: Array<any> }>(
       `/api/intel/movers`
     ),
+
+  getScreenerRows: (params?: Record<string, any>) => {
+    const qs = params ? "?" + new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== "").map(([k, v]) => [k, String(v)])
+    ).toString() : "";
+    return apiFetch<{ scan_date: string; total: number; limit: number; offset: number; rows: Array<any> }>(`/api/screener${qs}`);
+  },
+
+  getScreenerBreakouts: (scanDate?: string) =>
+    apiFetch<{ scan_date: string; success: Array<any>; near_breakout: Array<any>; failed: Array<any> }>(
+      `/api/screener/breakouts${scanDate ? `?scan_date=${scanDate}` : ""}`
+    ),
+
+  getScreenerSummary: (scanDate?: string) =>
+    apiFetch<{
+      scan_date: string;
+      total_stocks: number;
+      pattern_stages: Record<string, number>;
+      breakout_statuses: Record<string, number>;
+      stances: Record<string, number>;
+      top_sectors: Record<string, number>;
+    }>(`/api/screener/summary${scanDate ? `?scan_date=${scanDate}` : ""}`),
+
+  getScreenerAccuracy: (days: number = 90) =>
+    apiFetch<{
+      lookback_window_days: number;
+      total_resolved_signals: number;
+      winners: number;
+      losers: number;
+      inconclusive: number;
+      win_rate_pct: number;
+    }>(`/api/screener/accuracy?days=${days}`),
 };

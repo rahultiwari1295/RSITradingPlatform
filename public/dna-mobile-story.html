@@ -1884,6 +1884,18 @@
       color: var(--caution);
       border: 1px solid var(--caution-border);
     }
+    .peer-action-badge.neutral {
+      background: rgba(148, 163, 184, 0.12);
+      color: var(--text-dim);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+    .peer-action-badge.unscanned {
+      background: transparent;
+      color: var(--text-dim);
+      border: 1px dashed rgba(148, 163, 184, 0.35);
+      opacity: 0.65;
+      font-style: italic;
+    }
 
     /* -------------------------------------------------------------
        CUSTOM MINI-CHARTS & SCALES
@@ -3134,13 +3146,69 @@
         </div>
       </div>
 
-      <!-- Thematic Discovery Radars -->
+      <!-- Screener Quick Launch Banner -->
+      <div 
+        style="
+          margin: 18px 0 14px;
+          padding: 16px 18px;
+          border-radius: var(--r-lg);
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(59, 130, 246, 0.08));
+          border: 1px solid rgba(16, 185, 129, 0.35);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          cursor: pointer;
+          transition: var(--ease-spring);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        "
+        onclick="navigateToScreener()"
+      >
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            display: grid;
+            place-items: center;
+            font-size: 20px;
+          ">
+            ⚡
+          </div>
+          <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:14px; font-weight:800; color:var(--text-main); font-family:var(--font-display);">Pattern Screener Radar</span>
+              <span style="font-size:9px; font-weight:800; padding:2px 7px; border-radius:999px; background:#10B981; color:#fff; letter-spacing:0.04em;">NEW</span>
+            </div>
+            <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
+              Scan Ascending Triangles, Near-Breakouts, and Success/Failed Patterns across 1,318 equities
+            </div>
+          </div>
+        </div>
+        <div style="
+          padding: 8px 14px;
+          border-radius: 999px;
+          background: #10B981;
+          color: #fff;
+          font-weight: 700;
+          font-size: 11.5px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-shrink: 0;
+        ">
+          <span>Open Radar</span>
+          <span>➔</span>
+        </div>
+      </div>
+
       <div class="discovery-section-header">
         <div class="discovery-section-title">
           <span>⚡</span>
           <span>Today's Curated DNA Radars</span>
         </div>
-        <span style="font-size:11px; font-family:var(--font-mono); color:var(--text-dim);">Live Database Scan</span>
+        <span style="font-size:11px; font-family:var(--font-mono); color:var(--text-dim);">Curated Showcase</span>
       </div>
 
       <div class="discovery-radars-grid">
@@ -3982,545 +4050,7 @@
        DATA ENGINE & INTERACTIVE LOGIC
        ========================================================================== -->
   <script>
-    // Audited Datasets for Representative Stocks with Peers & Charts
-    const STOCK_STORE = {
-      "TCS": {
-        symbol: "TCS",
-        name: "Tata Consultancy Services",
-        tier: "Large-Cap",
-        sector: "IT Services",
-        group: "Tata Group",
-        is_psu: false,
-        price: "₹2,107.00",
-        change: "+₹28.40 (+1.35%)",
-        isUp: true,
-        w52_low: "₹1,940",
-        w52_high: "₹2,410",
-        w52_pct: 42,
-        dnaScore: 94,
-        quantVerdict: "🟢 Elite Compounder",
-        quantVerdictClass: "bullish",
-        rsi: "58.4",
-        ema200Status: "Above",
-        solvencyStatus: "Fortress",
-
-        q1: {
-          pill: "⏳ Wait · Too Risky Today",
-          type: "warning",
-          truthBorderClass: "caution-border",
-          answer: "<strong>Don't Buy Today:</strong> TCS is hitting an invisible price ceiling near <strong>₹2,135</strong> right now. If you buy here, you risk buying at the peak. Wait for a pullback to <strong>₹2,060</strong> for a safe entry, or wait for it to cleanly break above <strong>₹2,140</strong>.",
-          dipPrice: "₹2,060 – ₹2,085",
-          dipSub: "Safe Pullback Zone",
-          breakoutPrice: "Above ₹2,140",
-          breakoutSub: "If price surges",
-          stopPrice: "₹2,020.00",
-          stopSub: "Protect Capital"
-        },
-        q2: {
-          pill: "🟢 Upward Velocity",
-          type: "bullish",
-          answer: "Powerful speed in motion. The stock is surfing calmly above its 20-day line (<strong>₹2,070</strong>) and 50-day line. As long as it holds this floor, the quick momentum target is <strong>₹2,240</strong>.",
-          rsi: "58.4 (Bullish Flow)",
-          target1: "₹2,240.00",
-          ema20: "₹2,070.00",
-          ema50: "₹2,040.00"
-        },
-        q3: {
-          pill: "🟢 Elite Compounder",
-          type: "bullish",
-          answer: "High-grade business engine with elite capital efficiency (<strong>ROCE 63.0%</strong>). Protected by strong market moats and high dividend generation, this is engineered for patient multi-year wealth accumulation.",
-          salesCagr: "+11.2%",
-          salesPct: 55,
-          profitCagr: "+9.8%",
-          profitPct: 48,
-          roce: "63.0%",
-          roe: "51.8%",
-          divyield: "3.09%",
-          piotroski: "6 / 9 (Sound)"
-        },
-        q4: {
-          pill: "🟢 100% Fortress",
-          type: "bullish",
-          answer: "<strong>Owes virtually zero money to banks</strong> (Debt-to-Equity is only <strong>0.11</strong>) and sits on a colossal piggy bank of <strong>₹1,06,878 Cr</strong> in reserves. Financial insolvency danger is <strong>0%</strong>.",
-          reservesStr: "₹1,06,878 Cr (90%)",
-          borrowingsStr: "₹11,283 Cr (10%)",
-          reservesPct: 90,
-          dte: "0.11",
-          netdebt: "-₹95,595 Cr",
-          interestCov: "84.5x (Bulletproof)",
-          grade: "Grade AAA+"
-        },
-        q5: {
-          pill: "🟢 Whale Accumulation",
-          type: "bullish",
-          answer: "Big institutions hold a dominant <strong>22.5%</strong> stake alongside <strong>71.8%</strong> promoter holding. Delivery volume of <strong>68.4%</strong> confirms real custody accumulation.",
-          promoter: "71.8%",
-          fii: "12.5%",
-          dii: "10.0%",
-          public: "5.7%",
-          delivery: "68.4% (Custodial)",
-          pledged: "0.0% (Clean)",
-          accdist: "Grade B",
-          fiiflow: "+0.12% Net Inflow"
-        },
-        q6: {
-          pill: "🟡 Fairly Priced",
-          type: "neutral",
-          answer: "Trading at a P/E of <strong>15.29</strong> compared to the Industry Median of <strong>24.60</strong>. While cheaper than high-flying tech peers, its growth pace is mature. Excellent for downside defense.",
-          pinLeft: "38%",
-          pe: "15.29",
-          indpe: "24.60",
-          histPe: "27.40 (-44% Discount)",
-          peg: "1.56 (Moderate)",
-          pb: "8.40",
-          peers: [
-            { symbol: "INFY", name: "Infosys Limited", pe: "24.10", roce: "41.2%", cagr3y: "+13.4%", badge: "Growth Alternative", badgeClass: "blue" },
-            { symbol: "HCLTECH", name: "HCL Technologies", pe: "21.80", roce: "34.5%", cagr3y: "+11.8%", badge: "Best Dividend (4.8%)", badgeClass: "good" },
-            { symbol: "WIPRO", name: "Wipro Limited", pe: "19.50", roce: "18.2%", cagr3y: "+5.8%", badge: "Value Turnaround", badgeClass: "amber" },
-            { symbol: "LTIM", name: "LTIMindtree", pe: "32.40", roce: "29.8%", cagr3y: "+18.1%", badge: "High-Beta Growth", badgeClass: "blue" }
-          ]
-        },
-        q7: {
-          pill: "🟢 Clean Audit Track",
-          type: "bullish",
-          answer: "Passed all <strong>4 critical forensic safety tests</strong> with <strong>0 accounting red flags</strong>. Upcoming quarterly earnings release and large IT deal wins are the primary price catalysts.",
-          resultsDate: "14 Oct 2026",
-          resultsCountdown: "23 Days Ahead",
-          contingent: "<0.5% Net Worth",
-          news1: "TCS secures multi-year cloud transformation contract from top European financial conglomerate.",
-          news2: "Tata Group technology cluster maintains strong cash generation ahead of Q3 performance review."
-        }
-      },
-
-      "RELIANCE": {
-        symbol: "RELIANCE",
-        name: "Reliance Industries Limited",
-        tier: "Mega-Cap",
-        sector: "Conglomerate / Energy & Retail",
-        group: "Reliance Group",
-        is_psu: false,
-        price: "₹1,260.45",
-        change: "-₹6.15 (-0.48%)",
-        isUp: false,
-        w52_low: "₹1,120",
-        w52_high: "₹1,609",
-        w52_pct: 35,
-        dnaScore: 88,
-        quantVerdict: "🟢 Safe Compounder",
-        quantVerdictClass: "bullish",
-        rsi: "46.2",
-        ema200Status: "Above",
-        solvencyStatus: "Safe A",
-
-        q1: {
-          pill: "⏳ Wait on Sidelines",
-          type: "warning",
-          truthBorderClass: "caution-border",
-          answer: "<strong>Wait on Sidelines:</strong> Reliance is bumping right against a ceiling near <strong>₹1,290</strong>. Let it cool down toward <strong>₹1,240</strong> before risking your money.",
-          dipPrice: "₹1,235 – ₹1,250",
-          dipSub: "Support Floor",
-          breakoutPrice: "Above ₹1,295",
-          breakoutSub: "If breakout clears",
-          stopPrice: "₹1,210.00",
-          stopSub: "Protect Capital"
-        },
-        q2: {
-          pill: "🟡 Sideways Base Building",
-          type: "neutral",
-          answer: "Consolidation phase. Moving averages are flattening as the stock absorbs previous gains. A push above <strong>₹1,290</strong> unlocks the next sprint toward <strong>₹1,360</strong>.",
-          rsi: "46.2 (Calm Range)",
-          target1: "₹1,360.00",
-          ema20: "₹1,268.00",
-          ema50: "₹1,255.00"
-        },
-        q3: {
-          pill: "🟢 Conglomerate Moat",
-          type: "bullish",
-          answer: "India's highest EBITDA generator. Twin engines of Jio telecom and Reliance Retail provide secular compounding alongside energy cash flows.",
-          salesCagr: "+8.9%",
-          salesPct: 45,
-          profitCagr: "+7.4%",
-          profitPct: 38,
-          roce: "10.3%",
-          roe: "8.91%",
-          divyield: "0.49%",
-          piotroski: "6 / 9 (Sound)"
-        },
-        q4: {
-          pill: "🟢 Conservative Structure",
-          type: "bullish",
-          answer: "Carries borrowings of <strong>₹3,62,445 Cr</strong> balanced by huge accumulated reserves of <strong>₹7,97,801 Cr</strong>. Debt-to-Equity is conservative at <strong>0.45</strong>.",
-          reservesStr: "₹7,97,801 Cr (69%)",
-          borrowingsStr: "₹3,62,445 Cr (31%)",
-          reservesPct: 69,
-          dte: "0.45",
-          netdebt: "₹1,85,600 Cr",
-          interestCov: "12.4x (Healthy)",
-          grade: "Grade A Solid"
-        },
-        q5: {
-          pill: "🟢 Whale Dominance",
-          type: "bullish",
-          answer: "Institutional whales hold <strong>39.3%</strong> (FII 21.6%, DII 17.7%) with <strong>0.0% promoter pledging</strong>. Strong sovereign wealth fund backing.",
-          promoter: "50.3%",
-          fii: "21.6%",
-          dii: "17.7%",
-          public: "10.4%",
-          delivery: "61.5% (High Holding)",
-          pledged: "0.0% (Clean)",
-          accdist: "Grade C",
-          fiiflow: "+0.28% Net Inflow"
-        },
-        q6: {
-          pill: "🟢 Attractive P/E",
-          type: "bullish",
-          answer: "P/E of <strong>22.22</strong> is modest given telecom and retail asset monetization optionality. Strong relative valuation cushion.",
-          pinLeft: "52%",
-          pe: "22.22",
-          indpe: "16.70",
-          histPe: "24.80 (-10% Discount)",
-          peg: "2.10 (Moderate)",
-          pb: "2.10",
-          peers: [
-            { symbol: "ONGC", name: "Oil & Natural Gas Corp", pe: "7.80", roce: "14.8%", cagr3y: "+12.1%", badge: "Deep Value PSU", badgeClass: "good" },
-            { symbol: "BPCL", name: "Bharat Petroleum", pe: "8.40", roce: "22.1%", cagr3y: "+9.2%", badge: "High Dividend Yield", badgeClass: "good" },
-            { symbol: "ADANIENT", name: "Adani Enterprises", pe: "72.40", roce: "12.5%", cagr3y: "+26.4%", badge: "High-Beta Infra", badgeClass: "amber" },
-            { symbol: "TRENT", name: "Trent Limited", pe: "112.00", roce: "26.4%", cagr3y: "+44.1%", badge: "Retail Growth Pureplay", badgeClass: "blue" }
-          ]
-        },
-        q7: {
-          pill: "🟢 Clean Audit Track",
-          type: "bullish",
-          answer: "Zero accounting red flags. Upcoming catalysts include anticipated retail/telecom IPO timelines and solar gigafactory commissioning.",
-          resultsDate: "21 Oct 2026",
-          resultsCountdown: "30 Days Ahead",
-          contingent: "<2.1% Net Worth",
-          news1: "Reliance Retail accelerates physical store footprint across Tier-2 and Tier-3 urban clusters.",
-          news2: "Foreign institutional investors maintain consistent holdings across mega-cap index leaders."
-        }
-      },
-
-      "TITAN": {
-        symbol: "TITAN",
-        name: "Titan Company Limited",
-        tier: "Large-Cap",
-        sector: "Consumer Discretionary / Jewellery",
-        group: "Tata Group",
-        is_psu: false,
-        price: "₹3,425.00",
-        change: "+₹41.50 (+1.23%)",
-        isUp: true,
-        w52_low: "₹3,055",
-        w52_high: "₹3,886",
-        w52_pct: 54,
-        dnaScore: 89,
-        quantVerdict: "🟢 Monopolistic Moat",
-        quantVerdictClass: "bullish",
-        rsi: "61.2",
-        ema200Status: "Above",
-        solvencyStatus: "Manageable",
-
-        q1: {
-          pill: "🟢 Good to Buy (On Dip)",
-          type: "bullish",
-          truthBorderClass: "good-border",
-          answer: "<strong>Good Entry Spot:</strong> Titan has pulled back into a strong bargain support floor near <strong>₹3,380 – ₹3,415</strong>. You can buy here with a safety stop at <strong>₹3,270</strong>.",
-          dipPrice: "₹3,380 – ₹3,415",
-          dipSub: "At Support Floor",
-          breakoutPrice: "Above ₹3,565",
-          breakoutSub: "Next rally target",
-          stopPrice: "₹3,270.00",
-          stopSub: "Strict Emergency Stop"
-        },
-        q2: {
-          pill: "🟢 Strong Uptrend",
-          type: "bullish",
-          answer: "Active momentum surfing above all short-term moving averages. Next technical target is <strong>₹3,650</strong>.",
-          rsi: "61.2 (Active Flow)",
-          target1: "₹3,650.00",
-          ema20: "₹3,380.00",
-          ema50: "₹3,320.00"
-        },
-        q3: {
-          pill: "🟢 Ultra Compounder",
-          type: "bullish",
-          answer: "Tanishq jewellery holds an uncontested consumer trust moat. Generates fantastic <strong>37.7% ROE</strong> and <strong>20.5% ROCE</strong>.",
-          salesCagr: "+24.5%",
-          salesPct: 82,
-          profitCagr: "+20.1%",
-          profitPct: 75,
-          roce: "20.5%",
-          roe: "37.7%",
-          divyield: "0.32%",
-          piotroski: "5 / 9 (Good)"
-        },
-        q4: {
-          pill: "🟡 Gold Lease Leverage",
-          type: "neutral",
-          answer: "Debt-to-Equity is <strong>1.95</strong> primarily due to gold metal loan leases (operating working capital) backed by liquid 24K bullion inventory.",
-          reservesStr: "₹11,480 Cr (34%)",
-          borrowingsStr: "₹22,390 Cr (66%)",
-          reservesPct: 34,
-          dte: "1.95",
-          netdebt: "₹18,200 Cr",
-          interestCov: "8.9x (Bullion Backed)",
-          grade: "Grade A Bullion"
-        },
-        q5: {
-          pill: "🟢 Institutional Conviction",
-          type: "bullish",
-          answer: "Foreign & domestic institutions hold <strong>30.5%</strong>. Promoter group holds <strong>52.9%</strong> with 0.0% pledged.",
-          promoter: "52.9%",
-          fii: "18.2%",
-          dii: "12.3%",
-          public: "16.6%",
-          delivery: "72.1% (High Delivery)",
-          pledged: "0.0% (Clean)",
-          accdist: "Grade A",
-          fiiflow: "+0.45% Net Inflow"
-        },
-        q6: {
-          pill: "🔴 Premium Valuation",
-          type: "bearish",
-          answer: "P/E of <strong>74.07</strong> commands an elite luxury premium over sector median (31.8). Investors pay up for unmatched brand trust.",
-          pinLeft: "82%",
-          pe: "74.07",
-          indpe: "31.80",
-          histPe: "68.20 (+8% Premium)",
-          peg: "2.85 (Rich)",
-          pb: "27.50",
-          peers: [
-            { symbol: "KALYANKJIL", name: "Kalyan Jewellers", pe: "58.20", roce: "17.4%", cagr3y: "+28.1%", badge: "Fast Retail Expansion", badgeClass: "blue" },
-            { symbol: "SENCO", name: "Senco Gold Limited", pe: "38.40", roce: "19.2%", cagr3y: "+22.4%", badge: "Value Jewellery Peer", badgeClass: "good" },
-            { symbol: "TRENT", name: "Trent Limited", pe: "112.00", roce: "26.4%", cagr3y: "+44.1%", badge: "Tata Sister Growth", badgeClass: "blue" }
-          ]
-        },
-        q7: {
-          pill: "🟢 Clean Audit Track",
-          type: "bullish",
-          answer: "Passes all forensic safety checks. Festive and wedding jewellery demand provides robust revenue visibility.",
-          resultsDate: "03 Nov 2026",
-          resultsCountdown: "43 Days Ahead",
-          contingent: "<0.8% Net Worth",
-          news1: "Titan reports robust double-digit festive jewellery retail sales across northern and western belts.",
-          news2: "Tata luxury brand expands international store footprint in North America and GCC markets."
-        }
-      },
-
-      "HUDCO": {
-        symbol: "HUDCO",
-        name: "Housing & Urban Dev Corp Ltd",
-        tier: "Mid-Cap",
-        sector: "Financial Services / PSU Housing Finance",
-        group: "Government of India (PSU)",
-        is_psu: true,
-        price: "₹218.40",
-        change: "+₹5.20 (+2.44%)",
-        isUp: true,
-        w52_low: "₹72.00",
-        w52_high: "₹353.95",
-        w52_pct: 52,
-        dnaScore: 84,
-        quantVerdict: "🟢 PSU Growth Dividend",
-        quantVerdictClass: "bullish",
-        rsi: "54.1",
-        ema200Status: "Above",
-        solvencyStatus: "Sovereign PSU",
-
-        q1: {
-          pill: "🟢 Steady Accumulation",
-          type: "bullish",
-          truthBorderClass: "good-border",
-          answer: "<strong>Steady Accumulation:</strong> HUDCO is resting at its solid support floor near <strong>₹212 – ₹222</strong>. Good spot to accumulate with a stop at <strong>₹195</strong>.",
-          dipPrice: "₹212 – ₹222",
-          dipSub: "PSU Value Floor",
-          breakoutPrice: "Above ₹236.50",
-          breakoutSub: "If momentum returns",
-          stopPrice: "₹195.00",
-          stopSub: "Downside Safety Stop"
-        },
-        q2: {
-          pill: "🟡 Base Consolidation",
-          type: "neutral",
-          answer: "Consolidating gains after 52-week peak. Holding above 200 EMA indicates long-term secular bull trend is completely intact.",
-          rsi: "54.1 (Balanced Flow)",
-          target1: "₹260.00",
-          ema20: "₹216.00",
-          ema50: "₹224.00"
-        },
-        q3: {
-          pill: "🟢 Sovereign Capex Vehicle",
-          type: "bullish",
-          answer: "Primary lending vehicle for national urban infrastructure and affordable housing. Offers a generous dividend yield of <strong>2.15%</strong>.",
-          salesCagr: "+12.8%",
-          salesPct: 58,
-          profitCagr: "+15.2%",
-          profitPct: 64,
-          roce: "9.8%",
-          roe: "14.2%",
-          divyield: "2.15%",
-          piotroski: "7 / 9 (Strong)"
-        },
-        q4: {
-          pill: "🟢 Sovereign Backed (PSU)",
-          type: "bullish",
-          answer: "As a PSU financier, borrowings of <strong>₹62,400 Cr</strong> are channeled into government infrastructure projects. Quasi-sovereign credit rating (AAA).",
-          reservesStr: "₹16,420 Cr (21%)",
-          borrowingsStr: "₹62,400 Cr (79%)",
-          reservesPct: 21,
-          dte: "3.80",
-          netdebt: "NBFC Lending Asset",
-          interestCov: "2.4x (Sovereign Lending)",
-          grade: "Grade AAA (Sovereign)"
-        },
-        q5: {
-          pill: "🟢 Government Backed",
-          type: "bullish",
-          answer: "Government of India holds <strong>75.0%</strong>. Mutual funds and FIIs hold <strong>15.2%</strong>. Zero promoter pledging.",
-          promoter: "75.0%",
-          fii: "8.1%",
-          dii: "7.1%",
-          public: "9.8%",
-          delivery: "58.2% (Delivery Holding)",
-          pledged: "0.0% (Clean)",
-          accdist: "Grade B",
-          fiiflow: "+0.30% Net Inflow"
-        },
-        q6: {
-          pill: "🟢 Bargain Valuation",
-          type: "bullish",
-          answer: "P/E of <strong>16.80</strong> is cheap for an infrastructure financier growing profits at 15%+ with low non-performing assets.",
-          pinLeft: "42%",
-          pe: "16.80",
-          indpe: "21.40",
-          histPe: "11.20 (+50% Re-rating)",
-          peg: "1.10 (Attractive)",
-          pb: "2.40",
-          peers: [
-            { symbol: "PFC", name: "Power Finance Corp", pe: "6.40", roce: "11.8%", cagr3y: "+14.2%", badge: "High Dividend (3.8%)", badgeClass: "good" },
-            { symbol: "RECLTD", name: "REC Limited", pe: "6.80", roce: "12.1%", cagr3y: "+15.8%", badge: "Power Capex Peer", badgeClass: "good" },
-            { symbol: "IRFC", name: "Indian Railway Finance", pe: "28.20", roce: "5.2%", cagr3y: "+11.4%", badge: "Rail Infra Sovereign", badgeClass: "blue" },
-            { symbol: "LICHSGFIN", name: "LIC Housing Finance", pe: "5.90", roce: "10.2%", cagr3y: "+8.4%", badge: "Retail Housing Value", badgeClass: "good" }
-          ]
-        },
-        q7: {
-          pill: "🟢 Clean Audit Track",
-          type: "bullish",
-          answer: "Clean PSU audit track record. Direct beneficiary of budgetary outlays for urban infrastructure and smart cities.",
-          resultsDate: "28 Oct 2026",
-          resultsCountdown: "37 Days Ahead",
-          contingent: "0.0% (Sovereign)",
-          news1: "Cabinet approves fresh budgetary allocation for urban infrastructure and PM Awas Yojana.",
-          news2: "Domestic mutual funds increase allocation to high-dividend public sector financial champions."
-        }
-      }
-    };
-
-    // Enrich remaining stocks with rich defaults & peers
-    ["HDFCBANK", "POLYCAB", "BAJAJST", "ACGL"].forEach(sym => {
-      STOCK_STORE[sym] = JSON.parse(JSON.stringify(STOCK_STORE["TCS"]));
-      STOCK_STORE[sym].symbol = sym;
-      if (sym === "HDFCBANK") {
-        STOCK_STORE[sym].name = "HDFC Bank Limited";
-        STOCK_STORE[sym].tier = "Mega-Cap";
-        STOCK_STORE[sym].sector = "Banking / Financial Services";
-        STOCK_STORE[sym].group = "HDFC Group";
-        STOCK_STORE[sym].price = "₹1,640.20";
-        STOCK_STORE[sym].change = "+₹14.80 (+0.91%)";
-        STOCK_STORE[sym].q1 = {
-          pill: "🟡 Wait for Breakout",
-          type: "neutral",
-          truthBorderClass: "caution-border",
-          answer: "<strong>Consolidating Range:</strong> HDFC Bank is trading midway in a flat corridor. Best strategy is to buy dips near <strong>₹1,615</strong> or buy only if it cleanly crosses <strong>₹1,680</strong>.",
-          dipPrice: "₹1,610 – ₹1,630",
-          dipSub: "Channel Floor",
-          breakoutPrice: "Above ₹1,680",
-          breakoutSub: "Trendline Breakout",
-          stopPrice: "₹1,580.00",
-          stopSub: "Safety Floor"
-        };
-        STOCK_STORE[sym].q6.pe = "18.20";
-        STOCK_STORE[sym].q6.indpe = "19.50";
-        STOCK_STORE[sym].q6.peers = [
-          { symbol: "ICICIBANK", name: "ICICI Bank Ltd", pe: "17.40", roce: "17.8%", cagr3y: "+21.2%", badge: "Growth Private Bank", badgeClass: "good" },
-          { symbol: "SBIN", name: "State Bank of India", pe: "10.80", roce: "16.4%", cagr3y: "+18.5%", badge: "PSU Banking Giant", badgeClass: "good" },
-          { symbol: "KOTAKBANK", name: "Kotak Mahindra Bank", pe: "20.10", roce: "14.2%", cagr3y: "+14.8%", badge: "Safe Quality Peer", badgeClass: "blue" }
-        ];
-      } else if (sym === "POLYCAB") {
-        STOCK_STORE[sym].name = "Polycab India Limited";
-        STOCK_STORE[sym].tier = "Large-Cap";
-        STOCK_STORE[sym].sector = "Wires & Cables / FMEG";
-        STOCK_STORE[sym].group = "Polycab Group";
-        STOCK_STORE[sym].price = "₹6,850.00";
-        STOCK_STORE[sym].change = "+₹85.00 (+1.26%)";
-        STOCK_STORE[sym].q1 = {
-          pill: "🟢 Strong Momentum",
-          type: "bullish",
-          truthBorderClass: "good-border",
-          answer: "<strong>High Momentum:</strong> Polycab is on a strong institutional rally. Buy on shallow dips near <strong>₹6,750</strong> with a stop loss at <strong>₹6,420</strong>.",
-          dipPrice: "₹6,650 – ₹6,750",
-          dipSub: "Shallow Dip",
-          breakoutPrice: "Above ₹7,160",
-          breakoutSub: "Fresh All-Time High",
-          stopPrice: "₹6,420.00",
-          stopSub: "Trailing Stop"
-        };
-        STOCK_STORE[sym].q3.roce = "28.4%";
-        STOCK_STORE[sym].q6.peers = [
-          { symbol: "KEI", name: "KEI Industries Ltd", pe: "46.20", roce: "26.1%", cagr3y: "+20.4%", badge: "Direct Competitor", badgeClass: "blue" },
-          { symbol: "HAVELLS", name: "Havells India Ltd", pe: "68.40", roce: "21.5%", cagr3y: "+16.8%", badge: "FMEG Brand Leader", badgeClass: "amber" },
-          { symbol: "RRKABEL", name: "R R Kabel Limited", pe: "38.50", roce: "19.8%", cagr3y: "+24.2%", badge: "Value Cable Alternative", badgeClass: "good" }
-        ];
-      } else if (sym === "BAJAJST") {
-        STOCK_STORE[sym].name = "Bajaj Steel Industries";
-        STOCK_STORE[sym].tier = "Small-Cap";
-        STOCK_STORE[sym].sector = "Industrial Machinery";
-        STOCK_STORE[sym].group = "Bajaj Group";
-        STOCK_STORE[sym].price = "₹920.00";
-        STOCK_STORE[sym].change = "+₹18.00 (+2.00%)";
-        STOCK_STORE[sym].q1 = {
-          pill: "🟢 Value Dip Buy",
-          type: "bullish",
-          truthBorderClass: "good-border",
-          answer: "<strong>Solid Support:</strong> Bajaj Steel is resting comfortably above its 50 EMA. Low debt makes entries near <strong>₹890</strong> attractive with a stop at <strong>₹840</strong>.",
-          dipPrice: "₹880 – ₹905",
-          dipSub: "Value Floor",
-          breakoutPrice: "Above ₹985",
-          breakoutSub: "Breakout Target",
-          stopPrice: "₹840.00",
-          stopSub: "Capital Defense"
-        };
-        STOCK_STORE[sym].q4.dte = "0.08";
-        STOCK_STORE[sym].q6.peers = [
-          { symbol: "ISGEC", name: "ISGEC Heavy Engineering", pe: "22.40", roce: "15.8%", cagr3y: "+14.2%", badge: "Heavy Equipment Peer", badgeClass: "good" },
-          { symbol: "ELECON", name: "Elecon Engineering", pe: "32.10", roce: "24.5%", cagr3y: "+28.4%", badge: "Gears Momentum Leader", badgeClass: "blue" }
-        ];
-      } else if (sym === "ACGL") {
-        STOCK_STORE[sym].name = "Automobile Corp of Goa";
-        STOCK_STORE[sym].tier = "Micro-Cap";
-        STOCK_STORE[sym].sector = "Auto Ancillary";
-        STOCK_STORE[sym].group = "Tata Group";
-        STOCK_STORE[sym].price = "₹1,840.00";
-        STOCK_STORE[sym].change = "+₹32.00 (+1.77%)";
-        STOCK_STORE[sym].q1 = {
-          pill: "🟢 Accumulate on Dips",
-          type: "bullish",
-          truthBorderClass: "good-border",
-          answer: "<strong>Debt-Free Quality:</strong> ACGL offers high-moat manufacturing backed by Tata. Accumulate pullbacks toward <strong>₹1,800</strong> with a stop at <strong>₹1,710</strong>.",
-          dipPrice: "₹1,780 – ₹1,815",
-          dipSub: "Tata Anchor Support",
-          breakoutPrice: "Above ₹1,970",
-          breakoutSub: "Breakout Run",
-          stopPrice: "₹1,710.00",
-          stopSub: "Stop Loss"
-        };
-        STOCK_STORE[sym].q4.dte = "0.02";
-        STOCK_STORE[sym].q6.peers = [
-          { symbol: "JAMNAAUTO", name: "Jamna Auto Industries", pe: "24.50", roce: "22.8%", cagr3y: "+16.4%", badge: "Commercial Vehicle Peer", badgeClass: "good" },
-          { symbol: "SUBROS", name: "Subros Limited", pe: "34.20", roce: "14.2%", cagr3y: "+18.1%", badge: "Auto Cooling Leader", badgeClass: "blue" }
-        ];
-      }
-    });
+    // NOTE: STOCK_STORE removed — all data comes from /api/dna/report/{sym} exclusively.
 
     // Interactive SVG Candlestick Chart Engine
     let currentChartView = 'tactical';
@@ -4659,31 +4189,45 @@
       }
     }
 
+    // XSS-safe text escaping for peer data interpolated into innerHTML
+    function esc(str) {
+      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
     function renderSectorPeers(peers) {
       const container = document.getElementById('sector-peers-grid');
-      if (!container || !peers || peers.length === 0) return;
+      if (!container) return;
+      if (!peers || peers.length === 0) {
+        container.innerHTML = '<div style="text-align:center;color:var(--text-dim);font-size:12px;padding:20px 0;">No tracked sector peers available for this stock.</div>';
+        return;
+      }
 
-      container.innerHTML = peers.map(p => `
-        <div class="peer-card-row" onclick="selectStock('${p.symbol}')" title="Click to analyze ${p.symbol}">
+      container.innerHTML = peers.map(p => {
+        const sym = esc(p.symbol);
+        const nm  = esc(p.name);
+        const pe  = esc(p.pe  || '—');
+        const roce= esc(p.roce || '—');
+        // cagr3y is NOT fabricated — only show if backend provided it
+        const cagr = (p.cagr3y && p.cagr3y !== '—') ? esc(p.cagr3y) : '—';
+        const badge = esc(p.badge || 'Peer');
+        const bCls = esc(p.badgeClass || 'neutral');
+        return `
+        <div class="peer-card-row" onclick="selectStock('${sym}')" title="Click to analyze ${sym}">
           <div class="peer-identity-cell">
             <div class="peer-ticker-line">
-              <span>${p.symbol}</span>
-              <span style="font-size:10px; color:var(--text-dim);">➔</span>
+              <span>${sym}</span>
+              <span style="font-size:10px; color:var(--text-dim);">&#10148;</span>
             </div>
-            <div class="peer-company-name">${p.name}</div>
+            <div class="peer-company-name">${nm}</div>
           </div>
-          
           <div class="peer-metrics-flex">
-            <div class="peer-metric-sub">P/E: <strong>${p.pe}</strong></div>
-            <div class="peer-metric-sub">ROCE: <strong>${p.roce}</strong></div>
-            <div class="peer-metric-sub">3Y Growth: <strong>${p.cagr3y || '+18.2%'}</strong></div>
+            <div class="peer-metric-sub">P/E: <strong>${pe}</strong></div>
+            <div class="peer-metric-sub">ROCE: <strong>${roce}</strong></div>
+            <div class="peer-metric-sub">3Y Growth: <strong>${cagr}</strong></div>
           </div>
-
-          <span class="peer-action-badge ${p.badgeClass}">
-            ${p.badge}
-          </span>
-        </div>
-      `).join('');
+          <span class="peer-action-badge ${bCls}">${badge}</span>
+        </div>`;
+      }).join('');
     }
 
     function transformDnaReportToUi(rep, fallback = {}) {
@@ -4755,21 +4299,38 @@
 
       // Question 3 Long Term Compounding
       const q3Raw = q.q3 || {};
-      const roceVal = kr.roce_pct !== undefined && kr.roce_pct !== null ? kr.roce_pct.toFixed(1) + '%' : (fallback.q3 ? fallback.q3.roce : '22.4%');
-      const roeVal = kr.roe_pct !== undefined && kr.roe_pct !== null ? kr.roe_pct.toFixed(1) + '%' : (fallback.q3 ? fallback.q3.roe : '18.1%');
-      const divYieldVal = kr.dividend_yield_pct !== undefined && kr.dividend_yield_pct !== null ? kr.dividend_yield_pct.toFixed(2) + '%' : '1.20%';
+      const roceVal = kr.roce_pct !== undefined && kr.roce_pct !== null ? kr.roce_pct.toFixed(1) + '%' : '—';
+      const roeVal  = kr.roe_pct  !== undefined && kr.roe_pct  !== null ? kr.roe_pct.toFixed(1)  + '%' : '—';
+      const divYieldVal = kr.dividend_yield_pct !== undefined && kr.dividend_yield_pct !== null ? kr.dividend_yield_pct.toFixed(2) + '%' : '—';
+
+      // Sales/Profit CAGR — backend stores these in CompanyMaster but they are NOT in key_ratios.
+      // Pull from q3Raw if the AI text engine surfaced them; otherwise show "—" — NEVER fabricate.
+      const salesCagrRaw   = q3Raw.sales_cagr_3y   !== undefined ? q3Raw.sales_cagr_3y   : null;
+      const profitCagrRaw  = q3Raw.profit_cagr_3y  !== undefined ? q3Raw.profit_cagr_3y  : null;
+      const salesCagrStr   = salesCagrRaw  !== null ? (salesCagrRaw >= 0 ? '+' : '') + Number(salesCagrRaw).toFixed(1)  + '%' : '—';
+      const profitCagrStr  = profitCagrRaw !== null ? (profitCagrRaw >= 0 ? '+' : '') + Number(profitCagrRaw).toFixed(1) + '%' : '—';
+      // Bar width: 0–30% CAGR → 0–100% bar; if unavailable → 0%
+      const salesPctBar    = salesCagrRaw  !== null ? Math.min(100, Math.max(0, Math.round((salesCagrRaw  / 30) * 100))) : 0;
+      const profitPctBar   = profitCagrRaw !== null ? Math.min(100, Math.max(0, Math.round((profitCagrRaw / 30) * 100))) : 0;
+
+      // Piotroski: internal_model_score.score is 0–100; map proportionally to 0–9 scale
+      const piotRaw = f.internal_model_score?.score;
+      const piotroskiStr = (piotRaw !== undefined && piotRaw !== null)
+        ? Math.round((piotRaw / 100) * 9) + ' / 9'
+        : '—';
+
       const q3 = {
         pill: q3Raw.pill || 'Steady Wealth Builder',
         type: q3Raw.type || 'bullish',
         answer: q3Raw.answer || 'Established business model generating steady cash flow and return on capital.',
-        salesCagr: '+14.2%',
-        salesPct: 65,
-        profitCagr: '+18.5%',
-        profitPct: 75,
+        salesCagr: salesCagrStr,
+        salesPct:  salesPctBar,
+        profitCagr: profitCagrStr,
+        profitPct:  profitPctBar,
         roce: roceVal,
-        roe: roeVal,
+        roe:  roeVal,
         divyield: divYieldVal,
-        piotroski: f.internal_model_score?.score ? Math.min(9, Math.max(5, Math.round(f.internal_model_score.score / 10))) + ' / 9' : '8 / 9'
+        piotroski: piotroskiStr
       };
 
       // Question 4 Balance Sheet & Solvency
@@ -4777,26 +4338,34 @@
       const borrowingsStr = solv.borrowings || (f.balance_sheet?.Borrowings ? '₹' + f.balance_sheet.Borrowings + ' Cr' : '₹0 Cr');
       const reservesStr = solv.reserves || (f.balance_sheet?.Reserves ? '₹' + f.balance_sheet.Reserves + ' Cr' : '₹10,000 Cr');
       const dteVal = solv.de || (kr.debt_to_equity !== undefined && kr.debt_to_equity !== null ? kr.debt_to_equity.toString() : '0.10');
+      // Q4: wire reservesPct to real backend value — backend gives string like "53%" or "90%"
+      const reservesPctRaw = solv.barReservesPct ? parseInt(solv.barReservesPct) : null;
       const q4 = {
         pill: q4Raw.pill || (parseFloat(dteVal) < 0.5 ? 'Virtually Debt-Free · Fortress' : 'Manageable Capital Structure'),
         type: q4Raw.type || (parseFloat(dteVal) < 0.5 ? 'bullish' : 'neutral'),
         answer: q4Raw.answer || `${rep.company_name || rep.symbol} maintains adequate capital reserves against debt obligations.`,
-        reservesPct: 75,
+        reservesPct: reservesPctRaw !== null ? reservesPctRaw : 50,  // 50/50 neutral default, NOT 75 fabricated-good
         reservesStr: reservesStr,
         borrowingsStr: borrowingsStr,
         dte: dteVal,
         netdebt: solv.summary?.toLowerCase().includes('virtually zero') || parseFloat(dteVal) === 0 ? 'Zero Net Debt' : 'Adequate Cushion',
-        interestCov: solv.coverageLabel ? solv.coverageLabel.split(' ')[0] : '12.4x',
-        grade: solv.grade || 'Grade A · Rock Solid'
+        interestCov: solv.coverageLabel ? solv.coverageLabel.split(' ')[0] : '—',
+        grade: solv.grade || '—'
       };
 
       // Question 5 Smart Money & Whales
       const q5Raw = q.q5 || {};
-      const promPct = sh.Promoters?.holding_pct !== undefined ? sh.Promoters.holding_pct.toFixed(1) + '%' : (fallback.q5 ? fallback.q5.promoter : '51.2%');
-      const fiiPct = sh.FIIs?.holding_pct !== undefined ? sh.FIIs.holding_pct.toFixed(1) + '%' : (fallback.q5 ? fallback.q5.fii : '18.4%');
-      const diiPct = sh.DIIs?.holding_pct !== undefined ? sh.DIIs.holding_pct.toFixed(1) + '%' : (fallback.q5 ? fallback.q5.dii : '15.2%');
-      const pubPct = sh.Public?.holding_pct !== undefined ? sh.Public.holding_pct.toFixed(1) + '%' : (fallback.q5 ? fallback.q5.public : '15.2%');
+      const promPct   = sh.Promoters?.holding_pct !== undefined ? sh.Promoters.holding_pct.toFixed(1) + '%' : '—';
+      const fiiPct    = sh.FIIs?.holding_pct      !== undefined ? sh.FIIs.holding_pct.toFixed(1)      + '%' : '—';
+      const diiPct    = sh.DIIs?.holding_pct      !== undefined ? sh.DIIs.holding_pct.toFixed(1)      + '%' : '—';
+      const pubPct    = sh.Public?.holding_pct    !== undefined ? sh.Public.holding_pct.toFixed(1)    + '%' : '—';
       const fiiChange = sh.FIIs?.qoq_change !== undefined ? (sh.FIIs.qoq_change >= 0 ? '+' : '') + sh.FIIs.qoq_change.toFixed(2) + '% QoQ' : 'Stable';
+      // Pledged: pulled from shareholding_pattern if backend provides it
+      const pledgedRaw = sh['Pledged Shares']?.holding_pct ?? sh['Pledged percentage']?.holding_pct ?? null;
+      const pledgedStr = pledgedRaw !== null ? pledgedRaw.toFixed(1) + '%' : '—';
+      // Delivery% & acc/dist: NOT in fundamentals — show honestly
+      const deliveryStr = '—';
+      const accdistStr  = fiiChange !== 'Stable' ? (sh.FIIs?.qoq_change > 0 ? 'Smart Money Buying' : 'Smart Money Selling') : 'Smart Money Holding';
       const q5 = {
         pill: q5Raw.pill || 'Balanced Institutional Stake',
         type: q5Raw.type || 'neutral',
@@ -4805,9 +4374,9 @@
         fii: fiiPct,
         dii: diiPct,
         public: pubPct,
-        delivery: '58.2%',
-        pledged: '0.0%',
-        accdist: 'Smart Money Holding',
+        delivery: deliveryStr,
+        pledged: pledgedStr,
+        accdist: accdistStr,
         fiiflow: fiiChange
       };
 
@@ -4820,26 +4389,25 @@
       if (rep.peers && rep.peers.length > 0) {
         peersList = rep.peers.map(p => ({
           symbol: p.symbol,
-          name: p.name,
+          name: p.name || p.symbol,
           price: p.price,
-          badge: p.verdict || 'Peer',
+          badge: p.verdict || 'Sector Peer',
           badgeClass: p.recClass || 'neutral',
-          pe: p.pe || '-',
-          roce: p.roce || '-',
-          cagr3y: '+18.4%'
+          pe: (p.pe !== undefined && p.pe !== null && p.pe !== '—') ? String(p.pe) : '—',
+          roce: (p.roce !== undefined && p.roce !== null && p.roce !== '—') ? String(p.roce) : '—',
+          cagr3y: '—'  // NOT fabricated — backend does not compute this per-peer
         }));
-      } else if (fallback.q6 && fallback.q6.peers) {
-        peersList = fallback.q6.peers;
       }
+      // Industry PE, Hist PE, PEG — backend does not compute these; show '—' rather than invent
       const q6 = {
         pill: q6Raw.pill || 'Sector Valuation Benchmark',
         type: q6Raw.type || 'neutral',
         answer: q6Raw.answer || `Valuation trades at ${peVal}x P/E relative to sector averages.`,
-        pinLeft: Math.min(85, Math.max(15, Math.round(parseFloat(peVal) * 1.5))) + '%',
+        pinLeft: (peVal !== '—' ? Math.min(85, Math.max(15, Math.round(parseFloat(peVal) * 1.5))) : 50) + '%',
         pe: peVal,
-        indpe: '26.8',
-        histPe: '25.0',
-        peg: '1.3',
+        indpe: q6Raw.industry_pe !== undefined ? String(q6Raw.industry_pe) : '—',
+        histPe: q6Raw.hist_pe    !== undefined ? String(q6Raw.hist_pe)    : '—',
+        peg:    q6Raw.peg        !== undefined ? String(q6Raw.peg)        : '—',
         pb: pbVal,
         peers: peersList
       };
@@ -4847,15 +4415,16 @@
       // Question 7 Catalysts & Traps
       const q7Raw = q.q7 || {};
       const newsList = rep.catalysts?.news || [];
-      const news1 = newsList[0]?.title || (fallback.q7 ? fallback.q7.news1 : 'Upcoming earnings release & management conference call');
-      const news2 = newsList[1]?.title || (fallback.q7 ? fallback.q7.news2 : 'Capacity expansion & operational performance tracking on schedule');
+      const news1 = newsList[0]?.title || q7Raw.news1 || 'No recent news tracked for this stock.';
+      const news2 = newsList[1]?.title || q7Raw.news2 || 'Monitor upcoming quarterly earnings release.';
+      // Results date & contingent: backend does not compute these yet — show '—' honestly
       const q7 = {
         pill: q7Raw.pill || 'Forensic Audit Clean · Catalyst Watch',
         type: q7Raw.type || 'neutral',
         answer: q7Raw.answer || 'Clean accounting checks with no auditor qualifications or promoter pledge risks.',
-        resultsDate: 'Next Quarter',
-        resultsCountdown: 'In 28 Days',
-        contingent: '0 Flags',
+        resultsDate:       q7Raw.results_date      !== undefined ? q7Raw.results_date      : '—',
+        resultsCountdown:  q7Raw.results_countdown !== undefined ? q7Raw.results_countdown : '—',
+        contingent:        q7Raw.contingent_pct    !== undefined ? String(q7Raw.contingent_pct) : '—',
         news1: news1,
         news2: news2
       };
@@ -5630,15 +5199,19 @@
           if (res.ok) {
             const list = await res.json();
             if (Array.isArray(list) && list.length > 0) {
-              popover.innerHTML = list.slice(0, 6).map(s => `
-                <div class="autocomplete-item" onclick="selectStock('${s.symbol}')">
+              popover.innerHTML = list.slice(0, 6).map(s => {
+                const sym = esc(s.symbol || '');
+                const nm  = esc(s.name || s.company_name || '');
+                const bars = s.candleCount ? esc(String(s.candleCount)) + ' bars' : 'NSE';
+                return `
+                <div class="autocomplete-item" onclick="selectStock('${sym}')">
                   <div class="ac-left">
-                    <span class="ac-symbol">${s.symbol}</span>
-                    <span class="ac-name">${s.name || s.company_name || ''}</span>
+                    <span class="ac-symbol">${sym}</span>
+                    <span class="ac-name">${nm}</span>
                   </div>
-                  <span class="ac-badge">${s.candleCount ? s.candleCount + ' bars' : 'NSE'}</span>
-                </div>
-              `).join('');
+                  <span class="ac-badge">${bars}</span>
+                </div>`;
+              }).join('');
               popover.style.display = 'block';
               return;
             }
@@ -5859,6 +5432,17 @@
       toastTimer = setTimeout(() => {
         toast.classList.remove('active');
       }, 3000);
+    }
+
+    // Navigate to Screener Radar (works inside parent React platform or standalone window)
+    function navigateToScreener() {
+      if (window.parent && window.parent !== window) {
+        try {
+          window.parent.postMessage({ type: 'SWITCH_TAB', tab: 'screener' }, '*');
+          return;
+        } catch (e) {}
+      }
+      window.location.href = '/screener.html';
     }
 
     // Handle browser back/forward buttons

@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 interface StockDNAScreenProps {
   theme?: "dark" | "light";
   resetTrigger?: number;
+  onSwitchTab?: (tab: string) => void;
 }
 
 /**
@@ -17,9 +18,22 @@ interface StockDNAScreenProps {
  *  - The 7 Plain-English Burning Questions with Smart Investor Compass
  *  - DNA Home Search Console with live autocomplete and discovery radar shelves
  */
-export default function StockDNAScreen({ theme, resetTrigger }: StockDNAScreenProps) {
+export default function StockDNAScreen({ theme, resetTrigger, onSwitchTab }: StockDNAScreenProps) {
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Listen for messages from inside iframe (e.g. user clicked Screener button inside DNA)
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === "SWITCH_TAB" && e.data?.tab) {
+        if (onSwitchTab) {
+          onSwitchTab(e.data.tab);
+        }
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [onSwitchTab]);
 
   // Determine current active theme
   const activeTheme = theme || (typeof window !== "undefined" && (document.documentElement.dataset.theme as "dark" | "light")) || "light";

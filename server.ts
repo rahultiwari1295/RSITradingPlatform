@@ -1123,6 +1123,51 @@ async function startServer() {
     }
   });
 
+  // Screener API proxy to local Python FastAPI backend (http://127.0.0.1:8000) or VPS
+  app.all(["/api/screener", "/api/screener/*"], async (req, res) => {
+    try {
+      const queryStr = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
+      const pathPart = req.params[0] ? `/${req.params[0]}` : "";
+      // Try local python server first on port 8000
+      let backendUrl = `http://127.0.0.1:8000/api/screener${pathPart}${queryStr}`;
+      try {
+        const localRes = await fetch(backendUrl, {
+          method: req.method,
+          headers: { Accept: "application/json" },
+          signal: AbortSignal.timeout(3000)
+        });
+        if (localRes.ok) {
+          const data = await localRes.json();
+          return res.json(data);
+        }
+      } catch (e) {
+        // Fallback to VPS endpoint
+        backendUrl = `https://quantsync-api.duckdns.org:8000/api/screener${pathPart}${queryStr}`;
+        const vpsRes = await fetch(backendUrl, {
+          method: req.method,
+          headers: { Accept: "application/json" },
+          signal: AbortSignal.timeout(8000)
+        });
+        if (vpsRes.ok) {
+          const data = await vpsRes.json();
+          return res.json(data);
+        }
+      }
+      return res.status(502).json({ error: "Could not connect to screener backend service" });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Serve standalone screener HTML directly at /screener and /screener.html
+  app.get(["/screener", "/screener.html"], (req, res) => {
+    const screenerPath = path.resolve(process.cwd(), "public", "screener.html");
+    if (fs.existsSync(screenerPath)) {
+      return res.sendFile(screenerPath);
+    }
+    return res.redirect("/?tab=screener");
+  });
+
   // Feeds: Sector & Industry Analysis endpoint (Cached & anti-blocked)
   app.get("/api/feeds/sectors", async (req, res) => {
     try {
