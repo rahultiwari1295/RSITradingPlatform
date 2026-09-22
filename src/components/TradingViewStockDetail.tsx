@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, memo } from "react";
 
 declare global {
-  namespace JSX {
+  namespace React.JSX {
     interface IntrinsicElements {
       "tv-technical-analysis": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         symbol?: string;

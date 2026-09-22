@@ -345,12 +345,22 @@ async function startServer() {
   ) => {
     try {
       const queryStr = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
-      const vpsUrl = `https://quantsync-api.duckdns.org:8000${reqPath}${queryStr}`;
-      const vpsRes = await fetch(vpsUrl, {
+      // Try local python server first on port 8000
+      let vpsUrl = `http://127.0.0.1:8000${reqPath}${queryStr}`;
+      let vpsRes = await fetch(vpsUrl, {
         method: req.method,
         headers: { "Accept": "application/json" },
-        signal: AbortSignal.timeout(8000),
-      });
+        signal: AbortSignal.timeout(2500),
+      }).catch(() => null);
+
+      if (!vpsRes || !vpsRes.ok) {
+        vpsUrl = `https://quantsync-api.duckdns.org:8000${reqPath}${queryStr}`;
+        vpsRes = await fetch(vpsUrl, {
+          method: req.method,
+          headers: { "Accept": "application/json" },
+          signal: AbortSignal.timeout(6000),
+        }).catch(() => null);
+      }
       if (vpsRes.ok) {
         let data = await vpsRes.json();
         if (transform) data = transform(data);

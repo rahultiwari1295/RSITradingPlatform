@@ -3615,6 +3615,7 @@ export default function App() {
                 currentROI: t.pnlPct ?? t.roiPct ?? t.chg ?? 0,
                 rMultiple: t.rMult || t.rMultiple,
                 timeInTrade: t.time || t.timeInTrade || t.date,
+                entryDate: t.entryDate || t.date || "Today",
               }))}
               onOpenAddModal={() => setIsAddPositionOpen(true)}
               onOpenBuyModal={handleOpenBuyModal}

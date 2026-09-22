@@ -6,13 +6,19 @@ interface ScreenerScreenProps {
   onSelectStock?: (symbol: string) => void;
 }
 
+const PATTERN_CATEGORIES = [
+  { id: "ALL", label: "All Setups", icon: "✨" },
+  { id: "Breakout Rally", label: "Breakout Rally", icon: "🚀" },
+  { id: "Double Bottom", label: "Double Bottom (W)", icon: "🇼" },
+  { id: "Horizontal Range", label: "Horizontal Base", icon: "📏" },
+  { id: "Orderly Pullback", label: "50-EMA Dip", icon: "📉" },
+  { id: "Volatility Contraction", label: "VCP Squeeze", icon: "🌪️" },
+  { id: "Triangle", label: "Triangle / Wedge", icon: "📐" },
+];
+
 export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenProps) {
-  const [activeTab, setActiveTab] = useState<"all" | "near_breakout" | "success" | "failed">("all");
-  const [stageFilter, setStageFilter] = useState<string>("ALL");
-  const [mcapFilter, setMcapFilter] = useState<string>("ALL");
-  const [stanceFilter, setStanceFilter] = useState<string>("ALL");
-  const [onlyPsu, setOnlyPsu] = useState<boolean>(false);
-  const [onlyFno, setOnlyFno] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<"near_breakout" | "success" | "failed">("near_breakout");
+  const [selectedPattern, setSelectedPattern] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -62,20 +68,50 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
       params.breakout_status = "SUCCESS";
     } else if (activeTab === "failed") {
       params.breakout_status = "FAILED";
-    } else {
-      if (stageFilter !== "ALL") params.pattern_stage = stageFilter;
     }
 
-    if (mcapFilter !== "ALL") params.mcap_tier = mcapFilter;
-    if (stanceFilter !== "ALL") params.stance = stanceFilter;
-    if (onlyPsu) params.is_psu = 1;
-    if (onlyFno) params.is_fno = 1;
-    if (searchQuery.trim()) params.search = searchQuery.trim();
+    if (selectedPattern !== "ALL") {
+      params.pattern_type = selectedPattern;
+    }
+
+    if (searchQuery.trim()) {
+      params.search = searchQuery.trim();
+    }
 
     quantsyncApi.getScreenerRows(params)
       .then((res) => {
-        setStocks(res.rows || []);
-        setTotalCount(res.total || 0);
+        let rows = res.rows || [];
+        // Secondary client-side guard for strict actionable entry rules
+        if (activeTab === "success") {
+          rows = rows.filter((s: any) => {
+            const hasPivot = s.breakout_level && Number(s.breakout_level) > 0;
+            const diffPct = hasPivot ? Math.abs((Number(s.curr_price) - Number(s.breakout_level)) / Number(s.breakout_level) * 100) : 999;
+            const freshDays = s.days_since_breakout !== null && s.days_since_breakout !== undefined && Number(s.days_since_breakout) < 6;
+            return diffPct <= 5.0 || freshDays;
+          });
+          // Sort latest to oldest breakout (0 days first)
+          rows.sort((a: any, b: any) => {
+            const da = a.days_since_breakout !== null && a.days_since_breakout !== undefined ? Number(a.days_since_breakout) : 999;
+            const db = b.days_since_breakout !== null && b.days_since_breakout !== undefined ? Number(b.days_since_breakout) : 999;
+            return da - db;
+          });
+        } else if (activeTab === "near_breakout") {
+          rows = rows.filter((s: any) => {
+            const hasPivot = s.breakout_level && Number(s.breakout_level) > 0;
+            if (!hasPivot) return false;
+            const distPct = (Number(s.breakout_level) - Number(s.curr_price)) / Number(s.breakout_level) * 100;
+            return Number(s.curr_price) < Number(s.breakout_level) && distPct <= 5.0 && distPct >= 0;
+          });
+          // Sort closest to pivot first
+          rows.sort((a: any, b: any) => {
+            const distA = (Number(a.breakout_level) - Number(a.curr_price)) / Number(a.breakout_level);
+            const distB = (Number(b.breakout_level) - Number(b.curr_price)) / Number(b.breakout_level);
+            return distA - distB;
+          });
+        }
+
+        setStocks(rows);
+        setTotalCount(res.total || rows.length);
         if (res.scan_date) setScanDate(res.scan_date);
       })
       .catch((err) => {
@@ -83,7 +119,7 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
         setStocks([]);
       })
       .finally(() => setLoading(false));
-  }, [activeTab, stageFilter, mcapFilter, stanceFilter, onlyPsu, onlyFno, searchQuery]);
+  }, [activeTab, selectedPattern, searchQuery]);
 
   useEffect(() => {
     fetchStocks();
@@ -154,46 +190,9 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
             </div>
           )}
         </div>
-
-        {/* Aggregate KPI Strip */}
-        {summary && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
-              gap: 8,
-              marginTop: 16,
-              paddingTop: 14,
-              borderTop: "1px solid var(--line-2)"
-            }}
-          >
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 10, color: "var(--ink3)", fontWeight: 600 }}>Universe</div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "var(--ink1)", marginTop: 2 }}>{summary.total_stocks || 0}</div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 10, color: "var(--ink3)", fontWeight: 600 }}>Near Breakout</div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "#F59E0B", marginTop: 2 }}>
-                {summary.pattern_stages?.NEAR_BREAKOUT || 0}
-              </div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 10, color: "var(--ink3)", fontWeight: 600 }}>Breakout Success</div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "var(--profit)", marginTop: 2 }}>
-                {summary.breakout_statuses?.SUCCESS || 0}
-              </div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 10, color: "var(--ink3)", fontWeight: 600 }}>Bullish Conviction</div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "var(--accent)", marginTop: 2 }}>
-                {summary.stances?.BULLISH || 0}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* ─── PRIMARY TABS (All / Near Breakout / Success / Failed) ─── */}
+      {/* ─── PRIMARY TABS (Near Breakout / Success / Failed) ─── */}
       <div
         style={{
           display: "flex",
@@ -204,30 +203,6 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
           scrollbarWidth: "none"
         }}
       >
-        <button
-          onClick={() => setActiveTab("all")}
-          style={{
-            padding: "8px 14px",
-            borderRadius: 10,
-            border: "1px solid",
-            borderColor: activeTab === "all" ? "var(--accent)" : "var(--line-2)",
-            background: activeTab === "all" ? "color-mix(in srgb, var(--accent) 18%, transparent)" : "var(--s2)",
-            color: activeTab === "all" ? "var(--ink1)" : "var(--ink3)",
-            fontWeight: 700,
-            fontSize: 12,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            whiteSpace: "nowrap"
-          }}
-        >
-          <span>All Scanned</span>
-          <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 10, background: "rgba(255,255,255,0.08)" }}>
-            {totalCount}
-          </span>
-        </button>
-
         <button
           onClick={() => setActiveTab("near_breakout")}
           style={{
@@ -301,7 +276,7 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
         </button>
       </div>
 
-      {/* ─── FILTER CONTROL BAR ─── */}
+      {/* ─── PATTERN EXPLORER & SEARCH BAR ─── */}
       <div
         className="card"
         style={{
@@ -309,7 +284,7 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
           marginBottom: 14,
           display: "flex",
           flexDirection: "column",
-          gap: 10
+          gap: 12
         }}
       >
         {/* Search input */}
@@ -353,103 +328,68 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
           )}
         </div>
 
-        {/* Dropdown Filters & Toggles */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-          {activeTab === "all" && (
-            <select
-              value={stageFilter}
-              onChange={(e) => setStageFilter(e.target.value)}
-              style={{
-                padding: "6px 10px",
-                borderRadius: 8,
-                border: "1px solid var(--line-2)",
-                background: "var(--s2)",
-                color: "var(--ink1)",
-                fontSize: 11,
-                fontWeight: 600
-              }}
-            >
-              <option value="ALL">All Stages</option>
-              <option value="NEAR_BREAKOUT">🎯 Near Breakout</option>
-              <option value="MATURE">Mature Pattern</option>
-              <option value="FORMING">Forming Base</option>
-              <option value="POST_BREAKOUT">Post Breakout</option>
-            </select>
-          )}
+        {/* Pattern Name Explorer Pills */}
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Explore Chart Patterns & Bases
+            </span>
+            {selectedPattern !== "ALL" && (
+              <button
+                onClick={() => setSelectedPattern("ALL")}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--accent)",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  padding: 0
+                }}
+              >
+                Clear Pattern Filter
+              </button>
+            )}
+          </div>
 
-          <select
-            value={mcapFilter}
-            onChange={(e) => setMcapFilter(e.target.value)}
+          <div
             style={{
-              padding: "6px 10px",
-              borderRadius: 8,
-              border: "1px solid var(--line-2)",
-              background: "var(--s2)",
-              color: "var(--ink1)",
-              fontSize: 11,
-              fontWeight: 600
+              display: "flex",
+              gap: 6,
+              overflowX: "auto",
+              paddingBottom: 4,
+              scrollbarWidth: "none"
             }}
           >
-            <option value="ALL">All Market Caps</option>
-            <option value="Large Cap">Large Cap</option>
-            <option value="Mid Cap">Mid Cap</option>
-            <option value="Small Cap">Small Cap</option>
-            <option value="Micro Cap">Micro Cap</option>
-          </select>
-
-          <select
-            value={stanceFilter}
-            onChange={(e) => setStanceFilter(e.target.value)}
-            style={{
-              padding: "6px 10px",
-              borderRadius: 8,
-              border: "1px solid var(--line-2)",
-              background: "var(--s2)",
-              color: "var(--ink1)",
-              fontSize: 11,
-              fontWeight: 600
-            }}
-          >
-            <option value="ALL">All Stances</option>
-            <option value="BULLISH">🟢 Bullish Conviction</option>
-            <option value="NEUTRAL">🟡 Neutral</option>
-            <option value="BEARISH">🔴 Bearish / Avoid</option>
-          </select>
-
-          {/* Quick Toggle Chips */}
-          <button
-            onClick={() => setOnlyPsu(!onlyPsu)}
-            style={{
-              padding: "6px 12px",
-              borderRadius: 8,
-              border: "1px solid",
-              borderColor: onlyPsu ? "var(--accent)" : "var(--line-2)",
-              background: onlyPsu ? "color-mix(in srgb, var(--accent) 20%, transparent)" : "var(--s2)",
-              color: onlyPsu ? "var(--accent)" : "var(--ink3)",
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: "pointer"
-            }}
-          >
-            🏛️ PSU Stocks
-          </button>
-
-          <button
-            onClick={() => setOnlyFno(!onlyFno)}
-            style={{
-              padding: "6px 12px",
-              borderRadius: 8,
-              border: "1px solid",
-              borderColor: onlyFno ? "var(--accent)" : "var(--line-2)",
-              background: onlyFno ? "color-mix(in srgb, var(--accent) 20%, transparent)" : "var(--s2)",
-              color: onlyFno ? "var(--accent)" : "var(--ink3)",
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: "pointer"
-            }}
-          >
-            ⚡ F&O Traded
-          </button>
+            {PATTERN_CATEGORIES.map((cat) => {
+              const isSelected = selectedPattern === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedPattern(cat.id)}
+                  style={{
+                    padding: "7px 12px",
+                    borderRadius: 999,
+                    border: "1px solid",
+                    borderColor: isSelected ? "var(--accent)" : "var(--line-2)",
+                    background: isSelected ? "color-mix(in srgb, var(--accent) 20%, transparent)" : "var(--s2)",
+                    color: isSelected ? "var(--ink1)" : "var(--ink3)",
+                    fontSize: 11.5,
+                    fontWeight: isSelected ? 800 : 600,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    whiteSpace: "nowrap",
+                    transition: "all 0.15s ease"
+                  }}
+                >
+                  <span style={{ fontSize: 13 }}>{cat.icon}</span>
+                  <span>{cat.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -472,19 +412,34 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
       ) : stocks.length === 0 ? (
         <div className="card" style={{ textAlign: "center", padding: "36px 16px" }}>
           <div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink1)" }}>No Stocks Match Filters</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink1)" }}>No Actionable Entry Setups Found</div>
           <div style={{ fontSize: 11.5, color: "var(--ink3)", marginTop: 4 }}>
-            Try adjusting pattern stage, stance, or market cap criteria.
+            Try selecting "All Setups" or clearing the pattern filter to see more stocks.
           </div>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {stocks.map((s, idx) => {
-            const isNear = s.pattern_stage === "NEAR_BREAKOUT";
+            const hasPivot = s.breakout_level && Number(s.breakout_level) > 0;
+            const cmp = Number(s.curr_price || 0);
+            const brk = Number(s.breakout_level || 0);
+            const tgt = Number(s.target_1 || 0);
+            const diffPct = hasPivot ? ((cmp - brk) / brk * 100) : 0;
+            const diffAbs = Math.abs(diffPct);
+            const targetGainPct = (tgt > 0 && cmp > 0) ? ((tgt - cmp) / cmp * 100) : null;
+
+            const isNear = s.pattern_stage === "NEAR_BREAKOUT" || (hasPivot && cmp < brk && diffAbs <= 5.0);
             const isSuccess = s.breakout_status === "SUCCESS";
             const isFailed = s.breakout_status === "FAILED";
             const score = s.dna_score || 50;
             const scoreColor = score >= 75 ? "var(--profit)" : score >= 50 ? "#F59E0B" : "var(--loss)";
+
+            const isMissed = diffAbs > 5.0;
+            const isSkip = !isMissed && targetGainPct !== null && targetGainPct < 5.0;
+            const isGoodToBuy = !isMissed && !isSkip;
+
+            const daysSince = s.days_since_breakout !== null && s.days_since_breakout !== undefined ? Number(s.days_since_breakout) : null;
+            const daysLabel = daysSince === 0 ? "🔥 Today (Day 0)" : daysSince === 1 ? "⚡ 1d ago" : daysSince !== null ? `⚡ ${daysSince}d ago` : "";
 
             return (
               <div
@@ -496,9 +451,9 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
                   cursor: "pointer",
                   transition: "transform 0.18s ease, border-color 0.2s ease",
                   borderLeft: isSuccess
-                    ? "3px solid var(--profit)"
+                    ? (isMissed ? "3px solid var(--loss)" : isSkip ? "3px solid #F59E0B" : "3px solid var(--profit)")
                     : isNear
-                    ? "3px solid #F59E0B"
+                    ? "3px solid var(--accent)"
                     : isFailed
                     ? "3px solid var(--loss)"
                     : "1px solid var(--line)"
@@ -506,26 +461,31 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
                 onMouseEnter={(e) => (e.currentTarget.style.transform = "translateX(3px)")}
                 onMouseLeave={(e) => (e.currentTarget.style.transform = "none")}
               >
-                {/* Top Row: Symbol, Company Name, Badges */}
+                {/* Top Row: Symbol, Pattern Tag, Price */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 15, fontWeight: 800, fontFamily: "var(--font-mono, monospace)", color: "var(--ink1)" }}>
+                      <span style={{ fontSize: 16, fontWeight: 800, fontFamily: "var(--font-mono, monospace)", color: "var(--ink1)" }}>
                         {s.symbol}
                       </span>
+                      {s.pattern_type && (
+                        <span
+                          style={{
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            padding: "2px 8px",
+                            borderRadius: 6,
+                            background: "color-mix(in srgb, var(--accent) 15%, transparent)",
+                            border: "1px solid color-mix(in srgb, var(--accent) 30%, transparent)",
+                            color: "var(--accent)"
+                          }}
+                        >
+                          📐 {s.pattern_type}
+                        </span>
+                      )}
                       {s.mcap_tier && (
                         <span style={{ fontSize: 9.5, padding: "2px 6px", borderRadius: 4, background: "var(--s2)", color: "var(--ink3)", fontWeight: 600 }}>
                           {s.mcap_tier}
-                        </span>
-                      )}
-                      {s.is_psu === 1 && (
-                        <span style={{ fontSize: 9.5, padding: "2px 6px", borderRadius: 4, background: "rgba(59,130,246,0.15)", color: "var(--accent)", fontWeight: 700 }}>
-                          🏛️ PSU
-                        </span>
-                      )}
-                      {s.is_fno === 1 && (
-                        <span style={{ fontSize: 9.5, padding: "2px 6px", borderRadius: 4, background: "rgba(245,158,11,0.15)", color: "#F59E0B", fontWeight: 700 }}>
-                          ⚡ F&O
                         </span>
                       )}
                     </div>
@@ -536,7 +496,7 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
 
                   {/* Price & DNA Score */}
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 800, fontFamily: "var(--font-mono, monospace)", color: "var(--ink1)" }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, fontFamily: "var(--font-mono, monospace)", color: "var(--ink1)" }}>
                       ₹{Number(s.curr_price || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </div>
                     <div style={{ fontSize: 10, fontWeight: 700, color: scoreColor, marginTop: 2 }}>
@@ -545,51 +505,115 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
                   </div>
                 </div>
 
-                {/* Middle Row: Pattern Type & Breakout Stage */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginTop: 10,
-                    padding: "8px 10px",
-                    borderRadius: 10,
-                    background: "var(--s2)",
-                    fontSize: 11
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ opacity: 0.7 }}>📐</span>
-                    <span style={{ fontWeight: 700, color: "var(--ink1)" }}>
-                      {s.pattern_type || "Consolidation Range"}
+                {/* Breakout Confirmed Banners */}
+                {isSuccess && hasPivot && isGoodToBuy && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: 6,
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      background: "rgba(16,185,129,0.12)",
+                      border: "1px solid rgba(16,185,129,0.25)",
+                      marginTop: 10
+                    }}
+                  >
+                    <span style={{ fontSize: 11.5, fontWeight: 800, color: "var(--profit)", display: "flex", alignItems: "center", gap: 5 }}>
+                      <span>🟢</span>
+                      <span>Good to Buy : {diffPct >= 0 ? `+${diffPct.toFixed(1)}%` : `${diffPct.toFixed(1)}%`} from Breakout (₹{brk.toFixed(1)})</span>
+                    </span>
+                    {daysLabel && (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "var(--ink2)", background: "rgba(255,255,255,0.06)", padding: "1px 6px", borderRadius: 4 }}>
+                        {daysLabel}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {isSuccess && hasPivot && isSkip && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: 6,
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      background: "rgba(245,158,11,0.12)",
+                      border: "1px solid rgba(245,158,11,0.25)",
+                      marginTop: 10
+                    }}
+                  >
+                    <span style={{ fontSize: 11.5, fontWeight: 800, color: "#F59E0B", display: "flex", alignItems: "center", gap: 5 }}>
+                      <span>⏭️</span>
+                      <span>SKIPP : {targetGainPct !== null ? `${targetGainPct.toFixed(1)}%` : "0%"} left in target</span>
+                    </span>
+                    {daysLabel && (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "var(--ink2)", background: "rgba(255,255,255,0.06)", padding: "1px 6px", borderRadius: 4 }}>
+                        {daysLabel}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {isSuccess && hasPivot && isMissed && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: 6,
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      background: "rgba(239,68,68,0.12)",
+                      border: "1px solid rgba(239,68,68,0.25)",
+                      marginTop: 10
+                    }}
+                  >
+                    <span style={{ fontSize: 11.5, fontWeight: 800, color: "var(--loss)", display: "flex", alignItems: "center", gap: 5 }}>
+                      <span>🛑</span>
+                      <span>MISSED : {diffPct >= 0 ? `+${diffPct.toFixed(1)}%` : `${diffPct.toFixed(1)}%`} from Breakout (₹{brk.toFixed(1)})</span>
+                    </span>
+                    {daysLabel && (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "var(--ink2)", background: "rgba(255,255,255,0.06)", padding: "1px 6px", borderRadius: 4 }}>
+                        {daysLabel}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Near Breakout Banner */}
+                {isNear && hasPivot && !isSuccess && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: 6,
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      background: "rgba(59,130,246,0.12)",
+                      border: "1px solid rgba(59,130,246,0.25)",
+                      marginTop: 10
+                    }}
+                  >
+                    <span style={{ fontSize: 11.5, fontWeight: 800, color: "var(--accent)", display: "flex", alignItems: "center", gap: 5 }}>
+                      <span>🎯</span>
+                      <span>Ready to Buy at ₹{brk.toFixed(1)}</span>
+                    </span>
+                    <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--ink2)", background: "rgba(255,255,255,0.06)", padding: "1px 6px", borderRadius: 4 }}>
+                      (just {diffAbs.toFixed(2)}% left for confirmation)
                     </span>
                   </div>
+                )}
 
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    {isNear && (
-                      <span style={{ padding: "2px 8px", borderRadius: 999, background: "rgba(245,158,11,0.2)", color: "#F59E0B", fontWeight: 800, fontSize: 10 }}>
-                        🎯 Near ({s.consecutive_days_near || 1}d)
-                      </span>
-                    )}
-                    {isSuccess && (
-                      <span style={{ padding: "2px 8px", borderRadius: 999, background: "rgba(16,185,129,0.2)", color: "var(--profit)", fontWeight: 800, fontSize: 10 }}>
-                        🚀 Breakout Success
-                      </span>
-                    )}
-                    {isFailed && (
-                      <span style={{ padding: "2px 8px", borderRadius: 999, background: "rgba(239,68,68,0.2)", color: "var(--loss)", fontWeight: 800, fontSize: 10 }}>
-                        ⚠️ Breakout Failed
-                      </span>
-                    )}
-                    {!isNear && !isSuccess && !isFailed && (
-                      <span style={{ padding: "2px 8px", borderRadius: 999, background: "var(--s3)", color: "var(--ink2)", fontWeight: 700, fontSize: 10 }}>
-                        {s.pattern_stage || "FORMING"}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Bottom Row: Key Metrics Grid (Zero synthetic values) */}
+                {/* Bottom Row: Key Metrics Grid */}
                 <div
                   style={{
                     display: "grid",
