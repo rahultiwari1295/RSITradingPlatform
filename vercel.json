@@ -13,6 +13,34 @@
       "destination": "/api/dna?action=search"
     },
     {
+      "source": "/api/terminal-data",
+      "destination": "/api/terminal-data"
+    },
+    {
+      "source": "/api/chart",
+      "destination": "/api/chart"
+    },
+    {
+      "source": "/api/intel",
+      "destination": "/api/intel"
+    },
+    {
+      "source": "/api/upcoming-stocks",
+      "destination": "/api/upcoming-stocks"
+    },
+    {
+      "source": "/api/feeds/:match*",
+      "destination": "/api/feeds/:match*"
+    },
+    {
+      "source": "/api/push-notification",
+      "destination": "/api/push-notification"
+    },
+    {
+      "source": "/api/:match*",
+      "destination": "https://quantsync-api.duckdns.org:8000/api/:match*"
+    },
+    {
       "source": "/dna-mobile-story.html",
       "destination": "/dna-mobile-story.html"
     },
@@ -30,3 +58,4 @@
     }
   ]
 }
+
