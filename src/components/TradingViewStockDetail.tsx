@@ -17,15 +17,15 @@ declare global {
   }
 }
 
-function toBseSymbol(sym: string | undefined): string {
-  if (!sym) return "BSE:TCS";
+function toTradingViewSymbol(sym: string | undefined): string {
+  if (!sym) return "NSE:RELIANCE";
   const clean = String(sym)
     .replace(/^(BSE:|NSE:)/i, "")
     .replace(/\.(NS|BO)$/i, "")
     .replace(/-BE$/i, "")
     .trim()
     .toUpperCase();
-  return `BSE:${clean}`;
+  return `NSE:${clean}`;
 }
 
 function getAiSelectedReasons(t: any): [string, string] {
@@ -74,7 +74,7 @@ const FundamentalWidget = memo(function FundamentalWidget({
     copyrightDiv.className = "tradingview-widget-copyright";
     copyrightDiv.style.fontSize = "11px";
     copyrightDiv.style.padding = "6px 8px";
-    copyrightDiv.innerHTML = `<a href="https://www.tradingview.com/symbols/${symbol.replace(":", "-")}/financials-overview/" rel="noopener nofollow" target="_blank"><span class="blue-text">${symbol.replace("BSE:", "")} fundamentals</span></a><span class="trademark"> by TradingView</span>`;
+    copyrightDiv.innerHTML = `<a href="https://www.tradingview.com/symbols/${symbol.replace(":", "-")}/financials-overview/" rel="noopener nofollow" target="_blank"><span class="blue-text">${symbol.replace(/^(NSE:|BSE:)/i, "")} fundamentals</span></a><span class="trademark"> by TradingView</span>`;
     container.current.appendChild(copyrightDiv);
 
     const script = document.createElement("script");
@@ -125,7 +125,7 @@ const AdvancedChartWidget = memo(function AdvancedChartWidget({
     copyrightDiv.className = "tradingview-widget-copyright";
     copyrightDiv.style.fontSize = "11px";
     copyrightDiv.style.padding = "6px 8px";
-    copyrightDiv.innerHTML = `<a href="https://www.tradingview.com/symbols/${symbol.replace(":", "-")}/" rel="noopener nofollow" target="_blank"><span class="blue-text">${symbol.replace("BSE:", "")} stock chart</span></a><span class="trademark"> by TradingView</span>`;
+    copyrightDiv.innerHTML = `<a href="https://www.tradingview.com/symbols/${symbol.replace(":", "-")}/" rel="noopener nofollow" target="_blank"><span class="blue-text">${symbol.replace(/^(NSE:|BSE:)/i, "")} stock chart</span></a><span class="trademark"> by TradingView</span>`;
     container.current.appendChild(copyrightDiv);
 
     const script = document.createElement("script");
@@ -401,9 +401,9 @@ export default function TradingViewStockDetail({
   INR = (n) => (n !== undefined ? `₹${Number(n).toLocaleString("en-IN")}` : "₹0"),
   INR2 = (n) => (n !== undefined ? `₹${Number(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "₹0.00"),
 }: TradingViewStockDetailProps) {
-  const symName = t.sym || t.symbol || "TCS";
-  const bseSymbol = toBseSymbol(symName);
-  const cleanSym = bseSymbol.replace("BSE:", "");
+  const symName = t.sym || t.symbol || "RELIANCE";
+  const tvSymbol = toTradingViewSymbol(symName);
+  const cleanSym = tvSymbol.replace("NSE:", "");
 
   const entry = Number(t.entry || t.price || t.entryPrice || 0);
   const now = Number(t.now || t.currentPrice || t.price || entry || 0);
@@ -518,8 +518,8 @@ export default function TradingViewStockDetail({
           }}
         >
           <tv-technical-analysis
-            key={`ta-${bseSymbol}-${theme}`}
-            symbol={bseSymbol}
+            key={`ta-${tvSymbol}-${theme}`}
+            symbol={tvSymbol}
             hide-logo-and-name="true"
             ratings-display-mode="gauge-and-breakdown"
             color-theme={theme === "dark" ? "dark" : "light"}
@@ -559,8 +559,8 @@ export default function TradingViewStockDetail({
           }}
         >
           <AdvancedChartWidget
-            key={`chart-${bseSymbol}-${theme}`}
-            symbol={bseSymbol}
+            key={`chart-${tvSymbol}-${theme}`}
+            symbol={tvSymbol}
             theme={theme}
           />
         </div>
@@ -587,8 +587,8 @@ export default function TradingViewStockDetail({
           }}
         >
           <tv-company-profile
-            key={`profile-${bseSymbol}-${theme}`}
-            symbol={bseSymbol}
+            key={`profile-${tvSymbol}-${theme}`}
+            symbol={tvSymbol}
             color-theme={theme === "dark" ? "dark" : "light"}
             style={{ width: "100%", display: "block" }}
           />
@@ -616,8 +616,8 @@ export default function TradingViewStockDetail({
           }}
         >
           <FundamentalWidget
-            key={`fund-${bseSymbol}-${theme}`}
-            symbol={bseSymbol}
+            key={`fund-${tvSymbol}-${theme}`}
+            symbol={tvSymbol}
             theme={theme}
           />
         </div>

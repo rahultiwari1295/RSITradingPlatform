@@ -839,12 +839,6 @@
       });
     }
 
-    function toBseSymbol(sym) {
-      if (!sym) return "BSE:RELIANCE";
-      const clean = String(sym).replace(/^(BSE:|NSE:)/i, "").replace(/\.(NS|BO)$/i, "").trim().toUpperCase();
-      return `BSE:${clean}`;
-    }
-
     // Main Init
     async function loadStockDetails() {
       renderScanSteps(0);
@@ -879,19 +873,23 @@
         // Brief delay to let user see 100% completion before smooth reveal
         await new Promise(r => setTimeout(r, 260));
 
-        // Render Views
+        // 1. Reveal content DOM FIRST so clientWidth & clientHeight are non-zero
+        const content = document.getElementById("stock-content");
+        content.style.display = "flex";
+
+        // 2. Hide loading view smoothly
+        const loader = document.getElementById("chart-loading-view");
+        if (loader) {
+          loader.style.opacity = "0";
+          setTimeout(() => {
+            loader.style.display = "none";
+          }, 220);
+        }
+
+        // 3. Render Views
         renderStockHero(data);
         renderTradingViewChart(chartData, data);
         renderTradingViewWidgets(stockSymbol);
-
-        // Hide loading view and display clean content
-        const loader = document.getElementById("chart-loading-view");
-        loader.style.opacity = "0";
-        setTimeout(() => {
-          loader.style.display = "none";
-          const content = document.getElementById("stock-content");
-          content.style.display = "flex";
-        }, 220);
 
       } catch (err) {
         clearInterval(stepTimer);
@@ -951,6 +949,12 @@
       document.getElementById("range-box").style.display = "flex";
     }
 
+    function toTradingViewSymbol(sym) {
+      if (!sym) return "NSE:RELIANCE";
+      const clean = String(sym).replace(/^(BSE:|NSE:)/i, "").replace(/\.(NS|BO)$/i, "").trim().toUpperCase();
+      return `NSE:${clean}`;
+    }
+
     function renderTradingViewChart(chartData, stockData) {
       const container = document.getElementById("tv-chart-container");
       if (!chartData || !chartData.candles || chartData.candles.length === 0) {
@@ -975,10 +979,17 @@
         chipsBox.innerHTML += `<span class="level-chip stop">🛑 SL: ${formatINR(sl)}</span>`;
       }
 
-      // Initialize Lightweight Chart
+      // Clear container and retain legend overlay
+      container.innerHTML = '<div class="chart-legend" id="chart-legend-box">Drawing candles & trendlines...</div>';
+
+      const rect = container.getBoundingClientRect();
+      const chartWidth = Math.max(container.clientWidth || rect.width || 360, 280);
+      const chartHeight = Math.max(container.clientHeight || rect.height || 440, 360);
+
+      // Initialize Lightweight Chart with guaranteed non-zero dimensions
       const chart = LightweightCharts.createChart(container, {
-        width: container.clientWidth,
-        height: container.clientHeight,
+        width: chartWidth,
+        height: chartHeight,
         layout: {
           background: { type: 'solid', color: '#FFFFFF' },
           textColor: '#64748B',
@@ -1090,25 +1101,33 @@
         });
       }
 
-      // 4. Draw Exact Geometric Trendlines (from chart_directives)
-      const directives = stockData.chart_directives || chartData.geometry || {};
-      const trendlines = directives.trendlines || [];
-      trendlines.forEach(tl => {
-        if (tl && tl.p1 && tl.p2 && tl.p1.date && tl.p2.date) {
-          const tlSeries = chart.addLineSeries({
-            color: tl.color || '#3B82F6',
-            lineWidth: 2,
-            lineStyle: tl.type === 'support' ? LightweightCharts.LineStyle.Solid : LightweightCharts.LineStyle.Dashed,
-            crosshairMarkerVisible: false,
-            priceLineVisible: false,
-          });
-          const points = [
-            { time: tl.p1.date.slice(0, 10), value: Number(tl.p1.price) },
-            { time: tl.p2.date.slice(0, 10), value: Number(tl.p2.price) }
-          ].sort((a, b) => a.time.localeCompare(b.time));
-          tlSeries.setData(points);
-        }
-      });
+      // 4. Draw Exact Geometric Trendlines safely
+      try {
+        const directives = stockData.chart_directives || chartData.geometry || {};
+        const trendlines = directives.trendlines || [];
+        trendlines.forEach(tl => {
+          if (tl && tl.p1 && tl.p2 && tl.p1.date && tl.p2.date) {
+            const d1 = tl.p1.date.slice(0, 10);
+            const d2 = tl.p2.date.slice(0, 10);
+            if (d1 !== d2) {
+              const tlSeries = chart.addLineSeries({
+                color: tl.color || '#3B82F6',
+                lineWidth: 2,
+                lineStyle: tl.type === 'support' ? LightweightCharts.LineStyle.Solid : LightweightCharts.LineStyle.Dashed,
+                crosshairMarkerVisible: false,
+                priceLineVisible: false,
+              });
+              const points = [
+                { time: d1, value: Number(tl.p1.price) },
+                { time: d2, value: Number(tl.p2.price) }
+              ].sort((a, b) => a.time.localeCompare(b.time));
+              tlSeries.setData(points);
+            }
+          }
+        });
+      } catch (tlErr) {
+        console.warn("Trendline render error:", tlErr);
+      }
 
       // Legend update on Crosshair Move
       const legendBox = document.getElementById("chart-legend-box");
@@ -1130,25 +1149,51 @@
         }
       });
 
-      // Responsive Resize
-      window.addEventListener("resize", () => {
-        if (chart && container) {
-          chart.applyOptions({
-            width: container.clientWidth,
-            height: container.clientHeight
-          });
+      // Fit all content in view immediately
+      chart.timeScale().fitContent();
+
+      // Responsive Resize with ResizeObserver
+      const resizeObserver = new ResizeObserver(entries => {
+        if (!entries || !entries.length) return;
+        const entry = entries[0];
+        const w = entry.contentRect.width;
+        const h = entry.contentRect.height;
+        if (w > 0 && h > 0) {
+          chart.applyOptions({ width: Math.round(w), height: Math.round(h) });
+          chart.timeScale().fitContent();
         }
       });
+      resizeObserver.observe(container);
+
+      // Multiple frame safety updates
+      requestAnimationFrame(() => {
+        if (container.clientWidth > 0) {
+          chart.applyOptions({
+            width: container.clientWidth,
+            height: container.clientHeight || 440
+          });
+          chart.timeScale().fitContent();
+        }
+      });
+      setTimeout(() => {
+        if (container.clientWidth > 0) {
+          chart.applyOptions({
+            width: container.clientWidth,
+            height: container.clientHeight || 440
+          });
+          chart.timeScale().fitContent();
+        }
+      }, 150);
     }
 
     function renderTradingViewWidgets(sym) {
-      const bse = toBseSymbol(sym);
+      const tvSym = toTradingViewSymbol(sym);
 
       // 1. Technical Analysis Custom Element
       const taBox = document.getElementById("tv-ta-wrapper");
       taBox.innerHTML = `
         <tv-technical-analysis
-          symbol="${bse}"
+          symbol="${tvSym}"
           hide-logo-and-name="true"
           ratings-display-mode="gauge-and-breakdown"
           color-theme="light"
@@ -1160,7 +1205,7 @@
       const profBox = document.getElementById("tv-profile-wrapper");
       profBox.innerHTML = `
         <tv-company-profile
-          symbol="${bse}"
+          symbol="${tvSym}"
           color-theme="light"
           style="width: 100%; display: block;"
         ></tv-company-profile>
@@ -1181,7 +1226,7 @@
       script.type = "text/javascript";
       script.async = true;
       script.innerHTML = JSON.stringify({
-        symbol: bse,
+        symbol: tvSym,
         colorTheme: "light",
         displayMode: "regular",
         isTransparent: false,
