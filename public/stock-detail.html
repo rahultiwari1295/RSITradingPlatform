@@ -697,7 +697,7 @@
           <h4>🧬 Institutional DNA Deep Dive</h4>
           <p>Read all 7 fundamental & catalyst questions (Smart Money, Timing, Risk, Solvency)</p>
         </div>
-        <a id="btn-dna-link" href="#" class="btn-dna-cta">View DNA Story →</a>
+        <a id="btn-dna-link" href="#" onclick="openFullDna(stockSymbol); return false;" class="btn-dna-cta">View DNA Story →</a>
       </div>
 
       <!-- 4. TRADINGVIEW FREE-SOURCE INTERACTIVE CHART BUILDER (LIGHTWEIGHT CHARTS) -->
@@ -760,11 +760,23 @@
     }
 
     function goBack() {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'CLOSE_STOCK_DETAIL' }, '*');
+        window.parent.postMessage({ type: 'BACK_TO_SEARCH' }, '*');
+      }
       if (window.history.length > 1 && document.referrer && document.referrer.includes(window.location.host)) {
         window.history.back();
       } else {
         window.location.href = "/screener.html";
       }
+    }
+
+    function openFullDna(sym) {
+      const s = sym || stockSymbol;
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'OPEN_DNA', symbol: s }, '*');
+      }
+      window.location.href = `/dna-mobile-story.html?stock=${encodeURIComponent(s)}`;
     }
 
     function shareStock() {

@@ -1775,9 +1775,24 @@ export default function App() {
   };
 
   /* ============================================================
+  useEffect(() => {
+    const handleMsg = (e: MessageEvent) => {
+      if (e.data?.type === "CLOSE_STOCK_DETAIL" || e.data?.type === "BACK_TO_SEARCH") {
+        setSheetOpen(false);
+      } else if (e.data?.type === "OPEN_DNA" && e.data?.symbol) {
+        setSheetOpen(false);
+        setSelectedDnaStock(e.data.symbol);
+        setActiveTab("dna");
+      }
+    };
+    window.addEventListener("message", handleMsg);
+    return () => window.removeEventListener("message", handleMsg);
+  }, []);
+
+  /* ============================================================
      BOTTOM SHEET OPEN / CLOSE
      ============================================================ */
-  const openSheet = (kind: "v2" | "v3" | "closed", trade: any) => {
+  const openSheet = (kind: "v2" | "v3" | "closed" | "screener_detail", trade: any) => {
     setSheetPayload({ kind, trade });
     setSheetOpen(true);
   };
@@ -3973,15 +3988,8 @@ export default function App() {
           <ScreenerScreen
             theme={theme}
             onSelectStock={(sym) => {
-              // Deep dive into DNA when stock is tapped in Screener
-              setSelectedDnaStock(sym);
-              setActiveTab("dna");
-              if (typeof window !== "undefined") {
-                const url = new URL(window.location.href);
-                url.searchParams.set("tab", "dna");
-                url.searchParams.set("stock", sym);
-                window.history.pushState({}, "", url.toString());
-              }
+              // Open dedicated Stock Detail view like Signals page (NOT DNA page)
+              openSheet("screener_detail", { symbol: sym, sym });
             }}
           />
         </section>
@@ -4187,6 +4195,19 @@ export default function App() {
           {sheetPayload && (() => {
             const t = sheetPayload.trade;
             const kind = sheetPayload.kind;
+
+            if (kind === "screener_detail") {
+              const sym = t?.symbol || t?.sym || "TCS";
+              return (
+                <div style={{ width: "100%", height: "100%", minHeight: "82vh", display: "flex", flexDirection: "column" }}>
+                  <iframe
+                    src={`/stock-detail.html?symbol=${encodeURIComponent(sym)}`}
+                    style={{ width: "100%", height: "100%", flex: 1, minHeight: "82vh", border: "none", borderRadius: 16 }}
+                    title={`Stock Detail - ${sym}`}
+                  />
+                </div>
+              );
+            }
 
             if (kind === "v2" || kind === "v3") {
               return (

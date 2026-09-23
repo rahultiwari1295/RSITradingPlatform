@@ -129,12 +129,7 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
     if (onSelectStock) {
       onSelectStock(sym);
     } else if (typeof window !== "undefined") {
-      // Navigate to DNA view for that stock
-      const url = new URL(window.location.href);
-      url.searchParams.set("tab", "dna");
-      url.searchParams.set("stock", sym);
-      window.history.pushState({}, "", url.toString());
-      window.dispatchEvent(new PopStateEvent("popstate"));
+      window.location.href = `/stock-detail.html?symbol=${encodeURIComponent(sym)}`;
     }
   };
 
