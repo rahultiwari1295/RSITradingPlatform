@@ -253,6 +253,79 @@
     }
     .metric-label { color: var(--text-dim); }
     .metric-val { font-family: var(--font-mono); font-weight: 700; color: var(--text-main); }
+
+      /* KPI row */
+      .kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:14px; padding-top:14px; border-top:1px solid var(--border-subtle); text-align:center; width:100%; }
+      .kpi-lbl { font-size:9.5px; color:var(--text-dim); font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+      .kpi-num { font-size:16px; font-weight:800; margin-top:2px; font-family:var(--font-mono); }
+      /* Breakout card extras */
+      .bk-lvls { display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; margin-top:10px; }
+      .bk-lbox { background:var(--bg-surface); border-radius:8px; padding:6px 8px; text-align:center; }
+      .bk-llbl { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim); margin-bottom:2px; }
+      .bk-lval { font-size:13px; font-weight:800; font-family:var(--font-mono); }
+      .bk-lval.entry { color:#06B6D4; }
+      .bk-lval.stop  { color:var(--loss); }
+      .bk-lval.tgt   { color:var(--profit); }
+      .bk-bar-wrap { margin-top:8px; }
+      .bk-bar-row  { display:flex; justify-content:space-between; align-items:center; margin-bottom:3px; }
+      .bk-bar-row span { font-size:10px; color:var(--text-dim); }
+      .bk-bar-bg   { height:4px; background:var(--bg-surface); border-radius:3px; overflow:hidden; }
+      .bk-bar-fill { height:100%; border-radius:3px; }
+      .rr-badge    { font-size:10.5px; font-weight:800; font-family:var(--font-mono); padding:1px 7px; border-radius:5px; border:1px solid; }
+      .rr-good { background:rgba(16,185,129,.12); border-color:rgba(16,185,129,.25); color:var(--profit); }
+      .rr-ok   { background:rgba(245,158,11,.1); border-color:rgba(245,158,11,.25); color:var(--warning); }
+      .rr-poor { background:rgba(239,68,68,.1); border-color:rgba(239,68,68,.25); color:var(--loss); }
+      .pattern-pills-wrap {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+      }
+      .pattern-pills-wrap::-webkit-scrollbar { display: none; }
+      .pattern-pill {
+        padding: 6px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border-card);
+        background: var(--bg-surface);
+        color: var(--text-muted);
+        font-size: 11.5px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+        transition: all 0.15s ease;
+      }
+      .pattern-pill.active {
+        border-color: var(--accent);
+        background: rgba(59, 130, 246, 0.18);
+        color: var(--text-main);
+        font-weight: 800;
+      }
+      .radar-entry-badge {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        margin-top: 8px;
+        font-size: 11px;
+        font-weight: 800;
+      }
+      .radar-entry-badge.success {
+        background: rgba(16, 185, 129, 0.12);
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        color: var(--profit);
+      }
+      .radar-entry-badge.near {
+        background: rgba(245, 158, 11, 0.12);
+        border: 1px solid rgba(245, 158, 11, 0.25);
+        color: var(--warning);
+      }
   </style>
 </head>
 <body>
@@ -260,9 +333,9 @@
     <!-- Header -->
     <div class="header-card">
       <div>
-        <div class="badge-chip">⚡ QuantSync Screener Engine</div>
+        <div class="badge-chip">⚡ QuantSync Institutional Screener</div>
         <div class="title">Pattern & Breakout Radar</div>
-        <div class="subtitle" id="scanMeta">Scanning 1,318 NSE Universe Equities</div>
+        <div class="subtitle" id="scanMeta">Scanned across 1,318 NSE universe equities</div>
       </div>
       <div class="accuracy-box" id="accuracyBox" style="display:none;">
         <div style="font-size: 9.5px; font-weight: 700; color: var(--profit); text-transform: uppercase;">90D Win Rate</div>
@@ -273,30 +346,28 @@
 
     <!-- Primary Tabs -->
     <div class="tabs-bar">
-      <button class="tab-btn active" onclick="setTab('all', this)">All Scanned <span id="countAll"></span></button>
-      <button class="tab-btn" onclick="setTab('near_breakout', this)">🎯 Near Breakout <span id="countNear"></span></button>
+      <button class="tab-btn active" onclick="setTab('near_breakout', this)">🎯 Near Breakout <span id="countNear"></span></button>
       <button class="tab-btn" onclick="setTab('success', this)">🚀 Breakout Confirmed <span id="countSuccess"></span></button>
       <button class="tab-btn" onclick="setTab('failed', this)">⚠️ Failed Breakout <span id="countFailed"></span></button>
     </div>
 
-    <!-- Filter Bar -->
+    <!-- Pattern Explorer & Search Bar -->
     <div class="filter-card">
-      <input type="text" class="search-input" id="searchInput" placeholder="Search ticker or company name..." oninput="handleSearch(this.value)">
-      <div class="filters-row">
-        <select class="select-ctl" id="mcapSelect" onchange="applyFilters()">
-          <option value="">All Market Caps</option>
-          <option value="Large Cap">Large Cap</option>
-          <option value="Mid Cap">Mid Cap</option>
-          <option value="Small Cap">Small Cap</option>
-        </select>
-        <select class="select-ctl" id="stanceSelect" onchange="applyFilters()">
-          <option value="">All Stances</option>
-          <option value="BULLISH">🟢 Bullish Conviction</option>
-          <option value="NEUTRAL">🟡 Neutral</option>
-          <option value="BEARISH">🔴 Bearish / Avoid</option>
-        </select>
-        <button class="chip-ctl" id="psuChip" onclick="toggleChip('psu')">🏛️ PSU Stocks</button>
-        <button class="chip-ctl" id="fnoChip" onclick="toggleChip('fno')">⚡ F&O Traded</button>
+      <input type="text" class="search-input" id="searchInput" placeholder="Search stock ticker or company name..." oninput="handleSearch(this.value)">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;">Explore Chart Patterns & Bases</span>
+          <span id="clearPatternBtn" style="font-size:11px;font-weight:700;color:var(--accent);cursor:pointer;display:none;" onclick="selectPattern('ALL')">Clear Pattern Filter</span>
+        </div>
+        <div class="pattern-pills-wrap">
+          <button class="pattern-pill active" onclick="selectPattern('ALL', this)"><span>✨</span> All Setups</button>
+          <button class="pattern-pill" onclick="selectPattern('Breakout Rally', this)"><span>🚀</span> Breakout Rally</button>
+          <button class="pattern-pill" onclick="selectPattern('Double Bottom', this)"><span>🇼</span> Double Bottom (W)</button>
+          <button class="pattern-pill" onclick="selectPattern('Horizontal Range', this)"><span>📏</span> Horizontal Base</button>
+          <button class="pattern-pill" onclick="selectPattern('Orderly Pullback', this)"><span>📉</span> 50-EMA Dip</button>
+          <button class="pattern-pill" onclick="selectPattern('Volatility Contraction', this)"><span>🌪️</span> VCP Squeeze</button>
+          <button class="pattern-pill" onclick="selectPattern('Triangle', this)"><span>📐</span> Triangle / Wedge</button>
+        </div>
       </div>
     </div>
 
@@ -307,17 +378,14 @@
   </div>
 
   <script>
-    let currentTab = 'all';
-    let onlyPsu = false;
-    let onlyFno = false;
+    let currentTab = 'near_breakout';
+    let selectedPattern = 'ALL';
     let searchVal = '';
 
     function init() {
-      // Sync theme with URL or parent
       const urlParams = new URLSearchParams(window.location.search);
       const th = urlParams.get('theme') || 'dark';
       document.documentElement.setAttribute('data-theme', th);
-
       loadSummary();
       loadAccuracy();
       loadBreakoutCounts();
@@ -327,9 +395,16 @@
     async function loadSummary() {
       try {
         const res = await fetch('/api/screener/summary');
-        const data = await res.json();
-        if (data && data.scan_date) {
-          document.getElementById('scanMeta').textContent = `1,318 Universe Equities · Updated ${data.scan_date}`;
+        const d = await res.json();
+        if (d && d.scan_date) {
+          const n = (d.total_stocks||0).toLocaleString();
+          document.getElementById('scanMeta').textContent =
+            'Scanned across ' + n + ' NSE universe equities \u00b7 Updated ' + d.scan_date;
+          document.getElementById('kpiUniverse').textContent = n;
+          const bullish = (d.stances||{}).BULLISH || 0;
+          document.getElementById('kpiBullish').textContent = bullish.toLocaleString();
+          const failed = (d.breakout_statuses||{}).FAILED || 0;
+          if (document.getElementById('countFailed')) document.getElementById('countFailed').textContent = failed;
         }
       } catch (e) {}
     }
@@ -337,11 +412,12 @@
     async function loadAccuracy() {
       try {
         const res = await fetch('/api/screener/accuracy?days=90');
-        const data = await res.json();
-        if (data && data.win_rate_pct > 0) {
+        const d = await res.json();
+        if (d && d.win_rate_pct > 0) {
           document.getElementById('accuracyBox').style.display = 'block';
-          document.getElementById('accuracyVal').textContent = data.win_rate_pct + '%';
-          document.getElementById('accuracyMeta').textContent = `${data.winners} of ${data.total_resolved_signals} signals verified`;
+          document.getElementById('accuracyVal').textContent = d.win_rate_pct + '%';
+          document.getElementById('accuracyMeta').textContent =
+            d.winners + ' of ' + d.total_resolved_signals + ' signals verified';
         }
       } catch (e) {}
     }
@@ -349,11 +425,14 @@
     async function loadBreakoutCounts() {
       try {
         const res = await fetch('/api/screener/breakouts');
-        const data = await res.json();
-        if (data) {
-          document.getElementById('countNear').textContent = (data.near_breakout || []).length;
-          document.getElementById('countSuccess').textContent = (data.success || []).length;
-          document.getElementById('countFailed').textContent = (data.failed || []).length;
+        const d = await res.json();
+        if (d) {
+          const nearLen = (d.near_breakout || []).length;
+          const successLen = (d.success || []).length;
+          document.getElementById('countNear').textContent = nearLen;
+          document.getElementById('countSuccess').textContent = successLen;
+          document.getElementById('kpiNear').textContent = nearLen;
+          document.getElementById('kpiSuccess').textContent = successLen;
         }
       } catch (e) {}
     }
@@ -365,14 +444,19 @@
       applyFilters();
     }
 
-    function toggleChip(type) {
-      if (type === 'psu') {
-        onlyPsu = !onlyPsu;
-        document.getElementById('psuChip').classList.toggle('on', onlyPsu);
-      } else if (type === 'fno') {
-        onlyFno = !onlyFno;
-        document.getElementById('fnoChip').classList.toggle('on', onlyFno);
+    function selectPattern(pat, btn) {
+      selectedPattern = pat;
+      document.querySelectorAll('.pattern-pill').forEach(b => b.classList.remove('active'));
+      if (btn) {
+        btn.classList.add('active');
+      } else {
+        const pills = document.querySelectorAll('.pattern-pill');
+        pills.forEach(p => {
+          if (p.textContent.includes('All Setups') && pat === 'ALL') p.classList.add('active');
+        });
       }
+      const clearBtn = document.getElementById('clearPatternBtn');
+      if (clearBtn) clearBtn.style.display = (pat === 'ALL') ? 'none' : 'inline';
       applyFilters();
     }
 
@@ -383,90 +467,140 @@
 
     async function applyFilters() {
       const listEl = document.getElementById('stocksList');
-      listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-dim);">Filtering screener universe...</div>';
-
+      listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim)">Filtering Institutional Screener Universe\u2026</div>';
       const params = new URLSearchParams();
+      params.set('limit', '100');
       if (currentTab === 'near_breakout') params.set('pattern_stage', 'NEAR_BREAKOUT');
       if (currentTab === 'success') params.set('breakout_status', 'SUCCESS');
       if (currentTab === 'failed') params.set('breakout_status', 'FAILED');
-
-      const mcap = document.getElementById('mcapSelect').value;
-      if (mcap) params.set('mcap_tier', mcap);
-
-      const st = document.getElementById('stanceSelect').value;
-      if (st) params.set('stance', st);
-
-      if (onlyPsu) params.set('is_psu', '1');
-      if (onlyFno) params.set('is_fno', '1');
+      if (selectedPattern !== 'ALL') params.set('pattern_type', selectedPattern);
       if (searchVal) params.set('search', searchVal);
 
       try {
-        const res = await fetch(`/api/screener?${params.toString()}`);
-        const data = await res.json();
-        renderStocks(data.rows || []);
-        if (currentTab === 'all') {
-          document.getElementById('countAll').textContent = data.total || 0;
+        const res = await fetch('/api/screener?' + params.toString());
+        const d = await res.json();
+        let rows = d.rows || [];
+
+        // Secondary strict client filter
+        if (currentTab === 'success') {
+          rows = rows.filter(s => {
+            const hasPivot = s.breakout_level && Number(s.breakout_level) > 0;
+            const diffPct = hasPivot ? Math.abs((Number(s.curr_price) - Number(s.breakout_level)) / Number(s.breakout_level) * 100) : 999;
+            const freshDays = s.days_since_breakout != null && Number(s.days_since_breakout) < 6;
+            return diffPct <= 5.0 || freshDays;
+          });
+          rows.sort((a, b) => {
+            const da = a.days_since_breakout != null ? Number(a.days_since_breakout) : 999;
+            const db = b.days_since_breakout != null ? Number(b.days_since_breakout) : 999;
+            return da - db;
+          });
+        } else if (currentTab === 'near_breakout') {
+          rows = rows.filter(s => {
+            const hasPivot = s.breakout_level && Number(s.breakout_level) > 0;
+            if (!hasPivot) return false;
+            const distPct = (Number(s.breakout_level) - Number(s.curr_price)) / Number(s.breakout_level) * 100;
+            return Number(s.curr_price) < Number(s.breakout_level) && distPct <= 5.0 && distPct >= 0;
+          });
+          rows.sort((a, b) => {
+            const distA = (Number(a.breakout_level) - Number(a.curr_price)) / Number(a.breakout_level);
+            const distB = (Number(b.breakout_level) - Number(b.curr_price)) / Number(b.breakout_level);
+            return distA - distB;
+          });
         }
+
+        renderStocks(rows);
+        if (currentTab === 'all') document.getElementById('countAll').textContent = d.total || rows.length;
       } catch (e) {
-        listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--loss);">Failed to load screener data.</div>';
+        listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--loss)">Failed to load.</div>';
       }
+    }
+
+    function fp(n) {
+      if (n == null || n === '') return '\u2014';
+      return Number(n).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
     }
 
     function renderStocks(rows) {
       const listEl = document.getElementById('stocksList');
       if (!rows.length) {
-        listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-dim);">No stocks match your filter criteria.</div>';
+        listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim)"><div style="font-size:28px;margin-bottom:8px;">🔍</div><b>No Actionable Setups Found</b><div style="font-size:12px;margin-top:4px;">Try selecting "All Setups" or clearing filters.</div></div>';
         return;
       }
+      listEl.innerHTML = rows.map(function(s) {
+        var hasPivot = s.breakout_level && Number(s.breakout_level) > 0;
+        var cmp = Number(s.curr_price || 0);
+        var brk = Number(s.breakout_level || 0);
+        var tgt = Number(s.target_1 || 0);
+        var diffPct = hasPivot ? ((cmp - brk) / brk * 100) : 0;
+        var diffAbs = Math.abs(diffPct);
+        var targetGainPct = (tgt > 0 && cmp > 0) ? ((tgt - cmp) / cmp * 100) : null;
 
-      listEl.innerHTML = rows.map(s => {
-        const isNear = s.pattern_stage === 'NEAR_BREAKOUT';
-        const isSuccess = s.breakout_status === 'SUCCESS';
-        const isFailed = s.breakout_status === 'FAILED';
-        const cardClass = isSuccess ? 'success' : (isNear ? 'near' : (isFailed ? 'failed' : ''));
-        const score = s.dna_score || 50;
-        const scoreCol = score >= 75 ? 'var(--profit)' : (score >= 50 ? 'var(--warning)' : 'var(--loss)');
+        var isNear = s.pattern_stage === 'NEAR_BREAKOUT' || (hasPivot && cmp < brk && diffAbs <= 5.0);
+        var isSuccess = s.breakout_status === 'SUCCESS';
+        var isFailed = s.breakout_status === 'FAILED';
 
-        return `
-          <div class="stock-card ${cardClass}" onclick="openDna('${s.symbol}')">
-            <div class="card-top">
-              <div>
-                <div style="display:flex; align-items:center;">
-                  <span class="sym">${s.symbol}</span>
-                  ${s.mcap_tier ? `<span class="badge-pill">${s.mcap_tier}</span>` : ''}
-                  ${s.is_psu === 1 ? `<span class="badge-pill" style="color:var(--accent); background:rgba(59,130,246,0.15)">PSU</span>` : ''}
-                  ${s.is_fno === 1 ? `<span class="badge-pill" style="color:var(--warning); background:rgba(245,158,11,0.15)">F&O</span>` : ''}
-                </div>
-                <div style="font-size:11px; color:var(--text-dim); margin-top:3px;">${s.company_name || s.sector || '—'}</div>
-              </div>
-              <div style="text-align:right;">
-                <div style="font-size:14px; font-weight:800; font-family:var(--font-mono);">₹${Number(s.curr_price || 0).toLocaleString('en-IN', {minimumFractionDigits:2})}</div>
-                <div style="font-size:10px; font-weight:700; color:${scoreCol}; margin-top:2px;">DNA Score: ${score}/100</div>
-              </div>
-            </div>
+        var isMissed = diffAbs > 5.0;
+        var isSkip = !isMissed && targetGainPct !== null && targetGainPct < 5.0;
+        var isGoodToBuy = !isMissed && !isSkip;
 
-            <div class="pattern-strip">
-              <div>📐 <b>${s.pattern_type || 'Consolidation Range'}</b></div>
-              <div>${isNear ? `<span style="color:var(--warning); font-weight:800;">🎯 Near (${s.consecutive_days_near || 1}d)</span>` : (isSuccess ? '<span style="color:var(--profit); font-weight:800;">🚀 Success</span>' : (isFailed ? '<span style="color:var(--loss); font-weight:800;">⚠️ Failed</span>' : s.pattern_stage || 'FORMING'))}</div>
-            </div>
+        var cardClass = isSuccess ? (isMissed ? 'failed' : isSkip ? 'near' : 'success') : (isNear ? 'near' : (isFailed ? 'failed' : ''));
+        var score = s.dna_score || 50;
+        var sc = score>=75?'var(--profit)':score>=50?'var(--warning)':'var(--loss)';
+        var sym = s.symbol||'';
+        var esc = sym.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        var cmpFmt = Number(s.curr_price||0).toLocaleString('en-IN',{minimumFractionDigits:2});
+        var daysSince = s.days_since_breakout != null ? Number(s.days_since_breakout) : null;
+        var daysLabel = daysSince === 0 ? '🔥 Today (Day 0)' : daysSince === 1 ? '⚡ 1d ago' : daysSince != null ? '⚡ ' + daysSince + 'd ago' : '';
 
-            <div class="metrics-row">
-              <div><span class="metric-label">Breakout: </span><span class="metric-val">${s.breakout_level ? '₹' + Number(s.breakout_level).toFixed(1) : '—'}</span></div>
-              <div><span class="metric-label">RSI: </span><span class="metric-val">${s.rsi !== null && s.rsi !== undefined ? Number(s.rsi).toFixed(1) : '—'}</span></div>
-              <div><span class="metric-label">ROCE: </span><span class="metric-val">${s.roce_pct !== null && s.roce_pct !== undefined ? Number(s.roce_pct).toFixed(1) + '%' : '—'}</span></div>
-              <div><span class="metric-label">P/E: </span><span class="metric-val">${s.pe_ratio !== null && s.pe_ratio !== undefined ? Number(s.pe_ratio).toFixed(1) : '—'}</span></div>
-            </div>
-          </div>
-        `;
+        var entryBanner = '';
+        if (isSuccess && hasPivot && isGoodToBuy) {
+          entryBanner = '<div class="radar-entry-badge success">' +
+            '<span>🟢 Good to Buy : ' + (diffPct >= 0 ? '+' : '') + diffPct.toFixed(1) + '% from Breakout (₹' + brk.toFixed(1) + ')</span>' +
+            (daysLabel ? '<span style="background:rgba(255,255,255,0.08);padding:1px 6px;border-radius:4px;">' + daysLabel + '</span>' : '') +
+            '</div>';
+        } else if (isSuccess && hasPivot && isSkip) {
+          entryBanner = '<div class="radar-entry-badge near">' +
+            '<span>⏭️ SKIPP : ' + (targetGainPct !== null ? targetGainPct.toFixed(1) : '0') + '% left in target</span>' +
+            (daysLabel ? '<span style="background:rgba(255,255,255,0.08);padding:1px 6px;border-radius:4px;">' + daysLabel + '</span>' : '') +
+            '</div>';
+        } else if (isSuccess && hasPivot && isMissed) {
+          entryBanner = '<div class="radar-entry-badge" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:var(--loss);">' +
+            '<span>🛑 MISSED : ' + (diffPct >= 0 ? '+' : '') + diffPct.toFixed(1) + '% from Breakout (₹' + brk.toFixed(1) + ')</span>' +
+            (daysLabel ? '<span style="background:rgba(255,255,255,0.08);padding:1px 6px;border-radius:4px;">' + daysLabel + '</span>' : '') +
+            '</div>';
+        } else if (isNear && hasPivot && !isSuccess) {
+          entryBanner = '<div class="radar-entry-badge" style="background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.25);color:var(--accent);">' +
+            '<span>🎯 Ready to Buy at ₹' + brk.toFixed(1) + '</span>' +
+            '<span style="background:rgba(255,255,255,0.06);color:var(--text-dim);padding:1px 6px;border-radius:4px;">(just ' + diffAbs.toFixed(2) + '% left for confirmation)</span>' +
+            '</div>';
+        }
+
+        return '<div class="stock-card '+cardClass+'" onclick="openDna(\''+esc+'\')">'+
+          '<div class="card-top">'+
+          '<div><div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;">'+
+          '<span class="sym">'+sym+'</span>'+
+          (s.pattern_type ? '<span class="badge-pill" style="color:var(--accent);background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);">📐 ' + s.pattern_type + '</span>' : '') +
+          (s.mcap_tier ? '<span class="badge-pill">'+s.mcap_tier+'</span>' : '') +
+          '</div><div style="font-size:11px;color:var(--text-dim);margin-top:3px">'+(s.company_name||s.sector||'\u2014')+'</div></div>'+
+          '<div style="text-align:right;">'+
+          '<div style="font-size:15px;font-weight:800;font-family:var(--font-mono);">\u20b9'+cmpFmt+'</div>'+
+          '<div style="font-size:10px;font-weight:700;color:'+sc+';margin-top:2px;">DNA Score: '+score+'/100</div>'+
+          '</div></div>'+
+          entryBanner +
+          '<div class="metrics-row">'+
+          '<div><span class="metric-label">Breakout: </span><span class="metric-val">'+(s.breakout_level?'\u20b9'+Number(s.breakout_level).toFixed(1):'\u2014')+'</span></div>'+
+          '<div><span class="metric-label">RSI (14): </span><span class="metric-val">'+(s.rsi!=null?Number(s.rsi).toFixed(1):'\u2014')+'</span></div>'+
+          '<div><span class="metric-label">ROCE: </span><span class="metric-val">'+(s.roce_pct!=null?Number(s.roce_pct).toFixed(1)+'%':'\u2014')+'</span></div>'+
+          '<div><span class="metric-label">P/E: </span><span class="metric-val">'+(s.pe_ratio!=null?Number(s.pe_ratio).toFixed(1):'\u2014')+'</span></div>'+
+          '</div></div>';
       }).join('');
     }
 
     function openDna(sym) {
       if (window.parent && window.parent !== window) {
         window.parent.postMessage({ type: 'SELECT_STOCK', symbol: sym }, '*');
-      } else {
-        window.location.href = `/dna-mobile-story.html?stock=${sym}`;
       }
+      window.location.href = '/stock-detail.html?symbol=' + encodeURIComponent(sym);
     }
 
     window.addEventListener('DOMContentLoaded', init);

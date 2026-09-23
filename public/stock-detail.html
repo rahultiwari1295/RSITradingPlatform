@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Stock Detail · QuantSync Institutional Terminal</title>
+  <meta name="description" content="QuantSync Stock Detail with TradingView Interactive Charts, Technical Analysis Gauge, Company Profile, and Quant DNA Intelligence." />
+
+  <!-- Preconnect & Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- TradingView Open-Source Lightweight Charts v4.1.3 -->
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+
+  <!-- TradingView Official Custom Elements (from Signals Page) -->
+  <script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-technical-analysis.js"></script>
+  <script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-company-profile.js"></script>
+
+  <style>
+    :root {
+      --bg: #F4F6F9;
+      --card-bg: #FFFFFF;
+      --card-border: #E8ECF2;
+      --ink-primary: #0F172A;
+      --ink-secondary: #475569;
+      --ink-muted: #94A3B8;
+      --accent: #4F46E5;
+      --accent-light: #EEF2FF;
+      --green: #10B981;
+      --green-light: #ECFDF5;
+      --red: #F43F5E;
+      --red-light: #FFF1F2;
+      --amber: #F59E0B;
+      --amber-light: #FEF3C7;
+      --blue: #3B82F6;
+      --radius-xl: 24px;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+      --shadow-lg: 0 10px 25px -3px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--ink-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      padding: 16px 12px 60px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .page-wrapper {
+      width: 100%;
+      max-width: 840px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       TOP BAR (Back to Search & Share)
+       ───────────────────────────────────────────────────────────── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 4px 2px;
+    }
+
+    .btn-nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #FFFFFF;
+      color: var(--ink-primary);
+      border: 1px solid var(--card-border);
+      padding: 8px 16px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+    .btn-nav:hover {
+      background: #F8FAFC;
+      border-color: #CBD5E1;
+      transform: translateY(-1px);
+    }
+    .btn-nav:active {
+      transform: translateY(0);
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       HERO CARD (Identity, Price, 52W Range, Arc Gauge, 3 Pillars)
+       ───────────────────────────────────────────────────────────── */
+    .card-hero {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-xl);
+      padding: 24px 22px;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .badges-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 8px;
+      letter-spacing: 0.02em;
+    }
+    .badge-symbol {
+      background: #EEF2FF;
+      color: #4F46E5;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+    }
+    .badge-gray {
+      background: #F1F5F9;
+      color: #475569;
+    }
+    .badge-pattern {
+      background: #F8FAFC;
+      color: #64748B;
+      border: 1px solid #E2E8F0;
+    }
+
+    .stock-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #0F172A;
+      line-height: 1.15;
+    }
+
+    .price-row {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .price-val {
+      font-family: 'Outfit', 'JetBrains Mono', monospace;
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      color: #0F172A;
+    }
+    .price-change-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: 9999px;
+      background: #FEE2E2;
+      color: #DC2626;
+      border: 1px solid rgba(220, 38, 38, 0.2);
+    }
+    .price-change-pill.up {
+      background: #DCFCE7;
+      color: #16A34A;
+      border-color: rgba(22, 163, 74, 0.2);
+    }
+
+    /* 52W Range Bar */
+    .range-52w-box {
+      background: #F8FAFC;
+      border: 1px solid #EEF2F6;
+      border-radius: var(--radius-lg);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .range-52w-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.5px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--ink-secondary);
+    }
+    .range-52w-labels strong {
+      color: var(--ink-primary);
+      font-weight: 700;
+    }
+    .range-track {
+      position: relative;
+      height: 8px;
+      background: #E2E8F0;
+      border-radius: 9999px;
+      overflow: visible;
+    }
+    .range-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #F59E0B, #10B981);
+    }
+    .range-thumb {
+      position: absolute;
+      top: 50%;
+      width: 18px;
+      height: 18px;
+      background: #FFFFFF;
+      border: 3px solid #CBD5E1;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+      transform: translate(-50%, -50%);
+      transition: left 0.4s ease-out;
+    }
+
+    .divider-line {
+      height: 1px;
+      background: #F1F5F9;
+      width: 100%;
+      margin: 4px 0;
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       SPEEDOMETER ARC GAUGE (180° SVG Arc with Animated Needle)
+       ───────────────────────────────────────────────────────────── */
+    .gauge-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 6px 0;
+    }
+
+    .gauge-svg-container {
+      width: 220px;
+      max-width: 100%;
+      position: relative;
+    }
+    .gauge-svg-element {
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+    .gauge-arc-track {
+      fill: none;
+      stroke-width: 12;
+      stroke-linecap: round;
+    }
+    .gauge-needle-group {
+      transform-origin: 100px 95px;
+      transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .gauge-needle-stem {
+      stroke: #1E293B;
+      stroke-width: 3.5;
+      stroke-linecap: round;
+    }
+    .gauge-needle-hub {
+      fill: #1E293B;
+    }
+    .gauge-needle-hub-inner {
+      fill: #FFFFFF;
+    }
+
+    .gauge-score-val {
+      font-family: 'Outfit', sans-serif;
+      font-size: 42px;
+      font-weight: 900;
+      color: #0F172A;
+      line-height: 1;
+      margin-top: -6px;
+    }
+    .gauge-caption {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #64748B;
+      margin-top: 4px;
+    }
+    .gauge-verdict-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      margin-top: 10px;
+      color: #0F172A;
+    }
+
+    /* 3 Quantitative Mini-Pillars */
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      width: 100%;
+      margin-top: 14px;
+    }
+    .pillar-card {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: var(--radius-md);
+      padding: 10px 8px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .pillar-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #64748B;
+    }
+    .pillar-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 800;
+      color: #0F172A;
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       DNA REPORT CTA BANNER
+       ───────────────────────────────────────────────────────────── */
+    .dna-cta-banner {
+      background: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%);
+      color: #FFFFFF;
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+    .dna-cta-text h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 2px;
+    }
+    .dna-cta-text p {
+      font-size: 12px;
+      color: #C7D2FE;
+    }
+    .btn-dna-cta {
+      background: #FFFFFF;
+      color: #312E81;
+      padding: 8px 16px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 800;
+      text-decoration: none;
+      white-space: nowrap;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: transform 0.16s ease;
+      cursor: pointer;
+    }
+    .btn-dna-cta:hover {
+      transform: scale(1.02);
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       TRADINGVIEW LIGHTWEIGHT INTERACTIVE CHART SECTION
+       ───────────────────────────────────────────────────────────── */
+    .card-chart-section {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-xl);
+      padding: 20px 22px;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .section-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: #0F172A;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .chart-level-chips {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+    .level-chip {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .level-chip.pivot {
+      background: #EFF6FF;
+      color: #1D4ED8;
+      border: 1px solid #BFDBFE;
+    }
+    .level-chip.target {
+      background: #ECFDF5;
+      color: #047857;
+      border: 1px solid #A7F3D0;
+    }
+    .level-chip.stop {
+      background: #FFF1F2;
+      color: #BE123C;
+      border: 1px solid #FECDD3;
+    }
+
+    #tv-chart-container {
+      width: 100%;
+      height: 440px;
+      position: relative;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: #FFFFFF;
+      border: 1px solid #F1F5F9;
+    }
+    .chart-legend {
+      position: absolute;
+      top: 10px;
+      left: 12px;
+      z-index: 10;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #64748B;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(4px);
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(226, 232, 240, 0.7);
+      pointer-events: none;
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       TRADINGVIEW EMBEDDED WIDGETS (COPIED FROM SIGNALS PAGE)
+       ───────────────────────────────────────────────────────────── */
+    .widget-section {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-xl);
+      padding: 20px 22px;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .widget-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #64748B;
+    }
+
+    .tv-gauge-box {
+      width: 100%;
+      max-width: 100%;
+      aspect-ratio: 370 / 340;
+      min-height: 340px;
+      border-radius: var(--radius-lg);
+      border: 1px solid #E2E8F0;
+      overflow: hidden;
+      background: #FFFFFF;
+    }
+
+    .tv-profile-box {
+      width: 100%;
+      min-height: 260px;
+      border-radius: var(--radius-lg);
+      border: 1px solid #E2E8F0;
+      overflow: hidden;
+      padding: 4px;
+      background: #FFFFFF;
+    }
+
+    .tv-financials-box {
+      width: 100%;
+      height: 480px;
+      border-radius: var(--radius-lg);
+      border: 1px solid #E2E8F0;
+      overflow: hidden;
+      background: #FFFFFF;
+    }
+
+    /* Toast */
+    #toast-msg {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #0F172A;
+      color: #FFFFFF;
+      padding: 10px 20px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: var(--shadow-lg);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 9999;
+      pointer-events: none;
+    }
+    #toast-msg.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Loading Spinner */
+    .loader-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      gap: 14px;
+    }
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid #E2E8F0;
+      border-top-color: #4F46E5;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 10px 8px 40px;
+      }
+      .card-hero {
+        padding: 18px 16px;
+      }
+      .stock-title {
+        font-size: 23px;
+      }
+      .price-val {
+        font-size: 26px;
+      }
+      .pillars-grid {
+        grid-template-columns: 1fr;
+      }
+      #tv-chart-container {
+        height: 380px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-wrapper">
+
+    <!-- 1. TOP NAV BAR -->
+    <div class="top-bar">
+      <button class="btn-nav" onclick="goBack()" title="Back to Search">
+        <span>←</span>
+        <span>Back to Search</span>
+      </button>
+
+      <button class="btn-nav" onclick="shareStock()" title="Share stock details">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+          <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/>
+        </svg>
+        <span>Share</span>
+      </button>
+    </div>
+
+    <!-- LOADING STATE -->
+    <div id="loading-view" class="card-hero loader-box">
+      <div class="spinner"></div>
+      <div style="font-size: 14px; font-weight: 600; color: #64748B;">Loading institutional stock briefing...</div>
+    </div>
+
+    <!-- MAIN STOCK CONTENT (Populated dynamically) -->
+    <div id="stock-content" style="display: none; display: flex; flex-direction: column; gap: 16px;">
+
+      <!-- 2. HERO CITADEL CARD -->
+      <section class="card-hero">
+        <!-- Badges Row -->
+        <div class="badges-row" id="badges-container">
+          <span class="badge-pill badge-symbol" id="badge-symbol">TCS</span>
+          <span class="badge-pill badge-gray" id="badge-tier">Large-Cap</span>
+          <span class="badge-pill badge-gray" id="badge-sector">IT Services</span>
+          <span class="badge-pill badge-pattern" id="badge-pattern">Bluechip Compounder</span>
+        </div>
+
+        <!-- Headline Stock Name -->
+        <h1 class="stock-title" id="stock-headline">Tata Consultancy Services</h1>
+
+        <!-- Price Stack -->
+        <div class="price-row">
+          <span class="price-val" id="price-display">₹2,089.6</span>
+          <span class="price-change-pill" id="price-change-display">0.0%</span>
+        </div>
+
+        <!-- 52-Week Range Bar -->
+        <div class="range-52w-box">
+          <div class="range-52w-labels">
+            <span>52W Low: <strong id="val-52low">₹1,976.8</strong></span>
+            <span>52W High: <strong id="val-52high">₹3,350.0</strong></span>
+          </div>
+          <div class="range-track">
+            <div class="range-fill" id="bar-52range" style="width: 25%;"></div>
+            <div class="range-thumb" id="thumb-52range" style="left: 25%;"></div>
+          </div>
+        </div>
+
+        <div class="divider-line"></div>
+
+        <!-- 180° Speedometer SVG Arc Gauge -->
+        <div class="gauge-wrapper">
+          <div class="gauge-svg-container">
+            <svg class="gauge-svg-element" viewBox="0 0 200 120">
+              <!-- Arc Zones sweep from 180° to 360° -->
+              <path class="gauge-arc-track" d="M 20 100 A 80 80 0 0 1 35.3 53" stroke="#F43F5E" />
+              <path class="gauge-arc-track" d="M 35.3 53 A 80 80 0 0 1 75.3 23.8" stroke="#FB923C" />
+              <path class="gauge-arc-track" d="M 75.3 23.8 A 80 80 0 0 1 124.7 23.8" stroke="#F59E0B" />
+              <path class="gauge-arc-track" d="M 124.7 23.8 A 80 80 0 0 1 164.7 53" stroke="#38BDF8" />
+              <path class="gauge-arc-track" d="M 164.7 53 A 80 80 0 0 1 180 100" stroke="#10B981" />
+
+              <!-- Animated Needle Pointer -->
+              <g class="gauge-needle-group" id="gauge-needle" style="transform: rotate(0deg);">
+                <line class="gauge-needle-stem" x1="100" y1="95" x2="100" y2="28" />
+                <circle class="gauge-needle-hub" cx="100" cy="95" r="7" />
+                <circle class="gauge-needle-hub-inner" cx="100" cy="95" r="3" />
+              </g>
+            </svg>
+          </div>
+
+          <div class="gauge-score-val" id="gauge-score">23</div>
+          <div class="gauge-caption">QUANT DNA SCORE / 100</div>
+
+          <div class="gauge-verdict-title" id="gauge-verdict">STAY AWAY (FALLING TREND)</div>
+
+          <!-- 3 Quantitative Mini-Pillars -->
+          <div class="pillars-grid">
+            <div class="pillar-card">
+              <span class="pillar-label">Speed / RSI</span>
+              <span class="pillar-val" id="pill-rsi">RSI 18.4</span>
+            </div>
+            <div class="pillar-card">
+              <span class="pillar-label">200 EMA</span>
+              <span class="pillar-val" id="pill-ema200">Below 200 EMA</span>
+            </div>
+            <div class="pillar-card">
+              <span class="pillar-label">Solvency</span>
+              <span class="pillar-val" id="pill-solvency" style="color: #10B981;">Grade A</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. OPTION TO VIEW FULL DNA REPORT BANNER -->
+      <div class="dna-cta-banner">
+        <div class="dna-cta-text">
+          <h4>🧬 Institutional DNA Deep Dive</h4>
+          <p>Read all 7 fundamental & catalyst questions (Smart Money, Timing, Risk, Solvency)</p>
+        </div>
+        <a id="btn-dna-link" href="#" class="btn-dna-cta">View DNA Story →</a>
+      </div>
+
+      <!-- 4. TRADINGVIEW FREE-SOURCE INTERACTIVE CHART BUILDER (LIGHTWEIGHT CHARTS) -->
+      <section class="card-chart-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span>📈 Institutional Structure & Key Levels</span>
+          </div>
+          <div class="chart-level-chips" id="chart-chips">
+            <!-- Populated dynamically: Pivot, Target, Stop Loss -->
+          </div>
+        </div>
+
+        <div id="tv-chart-container">
+          <div class="chart-legend" id="chart-legend-box">Loading candles...</div>
+        </div>
+      </section>
+
+      <!-- 5. TRADINGVIEW SIGNALS PAGE WIDGETS -->
+      <!-- Widget 1: Technical Analysis Gauge -->
+      <section class="widget-section">
+        <div class="widget-title">TradingView Technical Analysis</div>
+        <div class="tv-gauge-box" id="tv-ta-wrapper">
+          <!-- <tv-technical-analysis> will be inserted here -->
+        </div>
+      </section>
+
+      <!-- Widget 2: Company Profile -->
+      <section class="widget-section">
+        <div class="widget-title">TradingView Company Profile</div>
+        <div class="tv-profile-box" id="tv-profile-wrapper">
+          <!-- <tv-company-profile> will be inserted here -->
+        </div>
+      </section>
+
+      <!-- Widget 3: Fundamental Data (Financials Overview) -->
+      <section class="widget-section">
+        <div class="widget-title">TradingView Fundamental Data</div>
+        <div class="tv-financials-box" id="tv-financials-container"></div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- Toast Element -->
+  <div id="toast-msg">Link copied to clipboard!</div>
+
+  <script>
+    // Extract stock symbol from query parameter or path
+    const urlParams = new URLSearchParams(window.location.search);
+    let stockSymbol = (urlParams.get("symbol") || urlParams.get("stock") || "").trim().toUpperCase();
+    if (!stockSymbol) {
+      const parts = window.location.pathname.split("/").filter(Boolean);
+      if (parts.length > 0 && parts[0] === "stock" && parts[1]) {
+        stockSymbol = parts[1].toUpperCase();
+      }
+    }
+    if (!stockSymbol) {
+      stockSymbol = "TCS";
+    }
+
+    function goBack() {
+      if (window.history.length > 1 && document.referrer && document.referrer.includes(window.location.host)) {
+        window.history.back();
+      } else {
+        window.location.href = "/screener.html";
+      }
+    }
+
+    function shareStock() {
+      const shareUrl = window.location.href;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          showToast("Stock link copied to clipboard!");
+        });
+      } else {
+        showToast("Stock link: " + shareUrl);
+      }
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast-msg");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    function formatINR(val) {
+      if (val === null || val === undefined || isNaN(val)) return "—";
+      return "₹" + Number(val).toLocaleString("en-IN", {
+        maximumFractionDigits: 2,
+        minimumFractionDigits: val % 1 === 0 ? 0 : 2
+      });
+    }
+
+    function toBseSymbol(sym) {
+      if (!sym) return "BSE:TCS";
+      const clean = String(sym).replace(/^(BSE:|NSE:)/i, "").replace(/\.(NS|BO)$/i, "").trim().toUpperCase();
+      return `BSE:${clean}`;
+    }
+
+    // Main Init
+    async function loadStockDetails() {
+      try {
+        // 1. Fetch Consolidated Stock Details
+        const res = await fetch(`/api/stock/detail/${stockSymbol}`);
+        if (!res.ok) throw new Error("Stock not found");
+        const data = await res.json();
+
+        // 2. Fetch Historical Candles & Chart Geometry
+        const chartRes = await fetch(`/api/chart/${stockSymbol}?limit=250`);
+        const chartData = chartRes.ok ? await chartRes.json() : null;
+
+        // Populate View
+        renderStockHero(data);
+        renderTradingViewChart(chartData, data);
+        renderTradingViewWidgets(stockSymbol);
+
+        document.getElementById("loading-view").style.display = "none";
+        document.getElementById("stock-content").style.display = "flex";
+      } catch (err) {
+        console.error("Error loading stock:", err);
+        document.getElementById("loading-view").innerHTML = `
+          <div style="color:#EF4444; font-weight:700; font-size:16px;">Unable to load data for ${stockSymbol}</div>
+          <button class="btn-nav" onclick="goBack()" style="margin-top:10px;">Return to Screener</button>
+        `;
+      }
+    }
+
+    function renderStockHero(data) {
+      const sym = data.symbol || stockSymbol;
+      const bse = toBseSymbol(sym).replace("BSE:", "");
+      const name = data.company_name || sym;
+      const price = data.curr_price || (data.current_metrics && data.current_metrics.price) || 0;
+      const w52High = data.w52_high || price * 1.25;
+      const w52Low = data.w52_low || price * 0.75;
+
+      // Badges
+      document.getElementById("badge-symbol").textContent = sym;
+      document.getElementById("badge-tier").textContent = data.mcap_tier || "Listed Equity";
+      document.getElementById("badge-sector").textContent = data.sector || data.industry || "Equities";
+      
+      const patTag = data.pattern_type || (data.is_nifty50 ? "Bluechip Compounder" : "Stage 2 Setup");
+      document.getElementById("badge-pattern").textContent = patTag;
+
+      // Title & Price
+      document.getElementById("stock-headline").textContent = name;
+      document.getElementById("price-display").textContent = formatINR(price);
+
+      // Price Change
+      let chgVal = data.dist_from_52w_high_pct || 0;
+      const chgPill = document.getElementById("price-change-display");
+      if (data.price_change_pct !== undefined) {
+        const pChg = Number(data.price_change_pct);
+        chgPill.textContent = (pChg >= 0 ? "+" : "") + pChg.toFixed(1) + "%";
+        chgPill.className = "price-change-pill " + (pChg >= 0 ? "up" : "down");
+      } else {
+        chgPill.textContent = "0.0%";
+        chgPill.className = "price-change-pill";
+      }
+
+      // 52W Range Bar
+      document.getElementById("val-52low").textContent = formatINR(w52Low);
+      document.getElementById("val-52high").textContent = formatINR(w52High);
+      let rangePct = 50;
+      if (w52High > w52Low) {
+        rangePct = Math.max(2, Math.min(98, ((price - w52Low) / (w52High - w52Low)) * 100));
+      }
+      document.getElementById("bar-52range").style.width = rangePct + "%";
+      document.getElementById("thumb-52range").style.left = rangePct + "%";
+
+      // Quant DNA Score
+      const score = data.dna_score !== undefined && data.dna_score !== null 
+        ? data.dna_score 
+        : (data.dna_health_score !== undefined ? data.dna_health_score : 50);
+      document.getElementById("gauge-score").textContent = score;
+
+      // Rotate needle: score 0 -> -90deg, 50 -> 0deg, 100 -> +90deg
+      const angle = -90 + (score / 100) * 180;
+      document.getElementById("gauge-needle").style.transform = `rotate(${angle}deg)`;
+
+      // Verdict title
+      const verdict = data.action_title || data.stance || (score >= 75 ? "ELITE COMPOUNDER" : score <= 35 ? "STAY AWAY (FALLING TREND)" : "NEUTRAL RANGE");
+      document.getElementById("gauge-verdict").textContent = verdict.toUpperCase();
+
+      // 3 Mini-Pillars
+      const rsi = data.rsi !== undefined ? Number(data.rsi).toFixed(1) : "50.0";
+      document.getElementById("pill-rsi").textContent = `RSI ${rsi}`;
+
+      const ema200 = data.ema200;
+      const pillEma = document.getElementById("pill-ema200");
+      if (ema200 && price) {
+        if (price >= ema200) {
+          pillEma.textContent = "Above 200 EMA";
+          pillEma.style.color = "#10B981";
+        } else {
+          pillEma.textContent = "Below 200 EMA";
+          pillEma.style.color = "#F43F5E";
+        }
+      } else {
+        pillEma.textContent = "200 EMA In Line";
+      }
+
+      const solv = data.solvency_grade || (data.solvency_detail && data.solvency_detail.grade) || "Grade A";
+      const pillSolv = document.getElementById("pill-solvency");
+      pillSolv.textContent = solv.replace(" · Rock Solid", "");
+
+      // DNA Link
+      document.getElementById("btn-dna-link").href = `/dna-mobile-story.html?stock=${sym}`;
+    }
+
+    function renderTradingViewChart(chartData, stockData) {
+      const container = document.getElementById("tv-chart-container");
+      if (!chartData || !chartData.candles || chartData.candles.length === 0) {
+        container.innerHTML = `<div style="padding:40px; text-align:center; color:#94A3B8;">Historical chart data unavailable for ${stockSymbol}</div>`;
+        return;
+      }
+
+      // Populate Level Chips
+      const chipsBox = document.getElementById("chart-chips");
+      chipsBox.innerHTML = "";
+
+      const brk = stockData.breakout_level;
+      if (brk) {
+        chipsBox.innerHTML += `<span class="level-chip pivot">🎯 Pivot: ${formatINR(brk)}</span>`;
+      }
+      const tgt = stockData.target_1;
+      if (tgt) {
+        chipsBox.innerHTML += `<span class="level-chip target">🚀 Target: ${formatINR(tgt)}</span>`;
+      }
+      const sl = stockData.stop_loss;
+      if (sl) {
+        chipsBox.innerHTML += `<span class="level-chip stop">🛑 SL: ${formatINR(sl)}</span>`;
+      }
+
+      // Initialize Lightweight Chart
+      const chart = LightweightCharts.createChart(container, {
+        width: container.clientWidth,
+        height: container.clientHeight,
+        layout: {
+          background: { type: 'solid', color: '#FFFFFF' },
+          textColor: '#64748B',
+          fontFamily: "'JetBrains Mono', 'Inter', monospace",
+          fontSize: 11,
+        },
+        grid: {
+          vertLines: { color: 'rgba(241, 245, 249, 0.9)' },
+          horzLines: { color: 'rgba(241, 245, 249, 0.9)' },
+        },
+        crosshair: {
+          mode: LightweightCharts.CrosshairMode.Normal,
+          vertLine: {
+            color: 'rgba(100, 116, 139, 0.4)',
+            width: 1,
+            style: LightweightCharts.LineStyle.Dashed,
+          },
+          horzLine: {
+            color: 'rgba(100, 116, 139, 0.4)',
+            width: 1,
+            style: LightweightCharts.LineStyle.Dashed,
+          },
+        },
+        rightPriceScale: {
+          borderColor: '#E2E8F0',
+          autoScale: true,
+        },
+        timeScale: {
+          borderColor: '#E2E8F0',
+          timeVisible: false,
+          secondsVisible: false,
+        },
+      });
+
+      // 1. Candlestick Series
+      const candleSeries = chart.addCandlestickSeries({
+        upColor: '#10B981',
+        downColor: '#EF4444',
+        borderUpColor: '#10B981',
+        borderDownColor: '#EF4444',
+        wickUpColor: '#10B981',
+        wickDownColor: '#EF4444',
+      });
+
+      // Filter and sort candles
+      const validCandles = chartData.candles
+        .filter(c => c && c.time && c.open && c.high && c.low && c.close)
+        .sort((a, b) => a.time.localeCompare(b.time));
+
+      candleSeries.setData(validCandles);
+
+      // 2. Volume Series at bottom
+      const volumeSeries = chart.addHistogramSeries({
+        color: '#CBD5E1',
+        priceFormat: { type: 'volume' },
+        priceScaleId: '', // overlay
+        scaleMargins: {
+          top: 0.82,
+          bottom: 0,
+        },
+      });
+
+      const volumeData = validCandles.map(c => ({
+        time: c.time,
+        value: c.volume || 0,
+        color: c.close >= c.open ? 'rgba(16, 185, 129, 0.22)' : 'rgba(239, 68, 68, 0.22)'
+      }));
+      volumeSeries.setData(volumeData);
+
+      // 3. Draw Key Horizontal Price Lines
+      if (brk) {
+        candleSeries.createPriceLine({
+          price: Number(brk),
+          color: '#3B82F6',
+          lineWidth: 2,
+          lineStyle: LightweightCharts.LineStyle.Solid,
+          axisLabelVisible: true,
+          title: 'PIVOT',
+        });
+      }
+      if (tgt) {
+        candleSeries.createPriceLine({
+          price: Number(tgt),
+          color: '#10B981',
+          lineWidth: 2,
+          lineStyle: LightweightCharts.LineStyle.Solid,
+          axisLabelVisible: true,
+          title: 'TARGET 1',
+        });
+      }
+      if (sl) {
+        candleSeries.createPriceLine({
+          price: Number(sl),
+          color: '#EF4444',
+          lineWidth: 2,
+          lineStyle: LightweightCharts.LineStyle.Solid,
+          axisLabelVisible: true,
+          title: 'STOP LOSS',
+        });
+      }
+      if (stockData.ema200) {
+        candleSeries.createPriceLine({
+          price: Number(stockData.ema200),
+          color: '#8B5CF6',
+          lineWidth: 1,
+          lineStyle: LightweightCharts.LineStyle.Dashed,
+          axisLabelVisible: false,
+          title: '200 EMA',
+        });
+      }
+
+      // 4. Draw Exact Geometric Trendlines (from chart_directives)
+      const directives = stockData.chart_directives || chartData.geometry || {};
+      const trendlines = directives.trendlines || [];
+      trendlines.forEach(tl => {
+        if (tl && tl.p1 && tl.p2 && tl.p1.date && tl.p2.date) {
+          const tlSeries = chart.addLineSeries({
+            color: tl.color || '#3B82F6',
+            lineWidth: 2,
+            lineStyle: tl.type === 'support' ? LightweightCharts.LineStyle.Solid : LightweightCharts.LineStyle.Dashed,
+            crosshairMarkerVisible: false,
+            priceLineVisible: false,
+          });
+          const points = [
+            { time: tl.p1.date.slice(0, 10), value: Number(tl.p1.price) },
+            { time: tl.p2.date.slice(0, 10), value: Number(tl.p2.price) }
+          ].sort((a, b) => a.time.localeCompare(b.time));
+          tlSeries.setData(points);
+        }
+      });
+
+      // Legend update on Crosshair Move
+      const legendBox = document.getElementById("chart-legend-box");
+      const lastCandle = validCandles[validCandles.length - 1];
+      if (lastCandle) {
+        legendBox.textContent = `${lastCandle.time} | O: ${formatINR(lastCandle.open)} H: ${formatINR(lastCandle.high)} L: ${formatINR(lastCandle.low)} C: ${formatINR(lastCandle.close)}`;
+      }
+
+      chart.subscribeCrosshairMove(param => {
+        if (!param || !param.time || !param.seriesPrices) {
+          if (lastCandle) {
+            legendBox.textContent = `${lastCandle.time} | O: ${formatINR(lastCandle.open)} H: ${formatINR(lastCandle.high)} L: ${formatINR(lastCandle.low)} C: ${formatINR(lastCandle.close)}`;
+          }
+          return;
+        }
+        const dataPoint = param.seriesPrices.get(candleSeries);
+        if (dataPoint) {
+          legendBox.textContent = `${param.time} | O: ${formatINR(dataPoint.open)} H: ${formatINR(dataPoint.high)} L: ${formatINR(dataPoint.low)} C: ${formatINR(dataPoint.close)}`;
+        }
+      });
+
+      // Responsive Resize
+      window.addEventListener("resize", () => {
+        if (chart && container) {
+          chart.applyOptions({
+            width: container.clientWidth,
+            height: container.clientHeight
+          });
+        }
+      });
+    }
+
+    function renderTradingViewWidgets(sym) {
+      const bse = toBseSymbol(sym);
+
+      // 1. Technical Analysis Custom Element
+      const taBox = document.getElementById("tv-ta-wrapper");
+      taBox.innerHTML = `
+        <tv-technical-analysis
+          symbol="${bse}"
+          hide-logo-and-name="true"
+          ratings-display-mode="gauge-and-breakdown"
+          color-theme="light"
+          style="width: 100%; height: 100%; display: block;"
+        ></tv-technical-analysis>
+      `;
+
+      // 2. Company Profile Custom Element
+      const profBox = document.getElementById("tv-profile-wrapper");
+      profBox.innerHTML = `
+        <tv-company-profile
+          symbol="${bse}"
+          color-theme="light"
+          style="width: 100%; display: block;"
+        ></tv-company-profile>
+      `;
+
+      // 3. Fundamental Data Embed Widget
+      const finBox = document.getElementById("tv-financials-container");
+      finBox.innerHTML = "";
+
+      const widgetDiv = document.createElement("div");
+      widgetDiv.className = "tradingview-widget-container__widget";
+      widgetDiv.style.height = "calc(100% - 32px)";
+      widgetDiv.style.width = "100%";
+      finBox.appendChild(widgetDiv);
+
+      const script = document.createElement("script");
+      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-financials.js";
+      script.type = "text/javascript";
+      script.async = true;
+      script.innerHTML = JSON.stringify({
+        symbol: bse,
+        colorTheme: "light",
+        displayMode: "regular",
+        isTransparent: false,
+        locale: "en",
+        width: "100%",
+        height: "100%"
+      });
+      finBox.appendChild(script);
+    }
+
+    // Run on load
+    window.addEventListener("DOMContentLoaded", loadStockDetails);
+  </script>
+
+</body>
+</html>

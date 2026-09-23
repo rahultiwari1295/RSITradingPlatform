@@ -1178,6 +1178,15 @@ async function startServer() {
     return res.redirect("/?tab=screener");
   });
 
+  // Serve dedicated stock detail HTML directly at /stock-detail and /stock-detail.html
+  app.get(["/stock-detail", "/stock-detail.html", "/stock/:symbol"], (req, res) => {
+    const detailPath = path.resolve(process.cwd(), "public", "stock-detail.html");
+    if (fs.existsSync(detailPath)) {
+      return res.sendFile(detailPath);
+    }
+    return res.redirect("/screener.html");
+  });
+
   // Feeds: Sector & Industry Analysis endpoint (Cached & anti-blocked)
   app.get("/api/feeds/sectors", async (req, res) => {
     try {
