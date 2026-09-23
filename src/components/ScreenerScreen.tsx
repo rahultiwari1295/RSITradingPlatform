@@ -423,7 +423,8 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
             const diffAbs = Math.abs(diffPct);
             const targetGainPct = (tgt > 0 && cmp > 0) ? ((tgt - cmp) / cmp * 100) : null;
 
-            const isNear = s.pattern_stage === "NEAR_BREAKOUT" || (hasPivot && cmp < brk && diffAbs <= 5.0);
+            const isBearishOrAvoid = s.stance === "BEARISH" || (s.action && s.action.includes("AVOID")) || (s.dna_score !== undefined && s.dna_score !== null && s.dna_score < 50);
+            const isNear = !isBearishOrAvoid && (s.pattern_stage === "NEAR_BREAKOUT" || (hasPivot && cmp < brk && diffAbs <= 5.0));
             const isSuccess = s.breakout_status === "SUCCESS";
             const isFailed = s.breakout_status === "FAILED";
             const score = s.dna_score || 50;
@@ -604,6 +605,29 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
                     </span>
                     <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--ink2)", background: "rgba(255,255,255,0.06)", padding: "1px 6px", borderRadius: 4 }}>
                       (just {diffAbs.toFixed(2)}% left for confirmation)
+                    </span>
+                  </div>
+                )}
+
+                {/* Bearish or Avoid Warning Banner */}
+                {isBearishOrAvoid && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: 6,
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      background: "rgba(239,68,68,0.08)",
+                      border: "1px solid rgba(239,68,68,0.2)",
+                      marginTop: 10
+                    }}
+                  >
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--loss)", display: "flex", alignItems: "center", gap: 5 }}>
+                      <span>⚠️</span>
+                      <span>Downtrend / Avoid Setup · Capital Protection Active</span>
                     </span>
                   </div>
                 )}

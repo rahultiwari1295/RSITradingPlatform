@@ -962,19 +962,40 @@
         return;
       }
 
-      // Populate Level Chips
+      // Populate Level Chips & Targets
       const chipsBox = document.getElementById("chart-chips");
       chipsBox.innerHTML = "";
 
-      const brk = stockData.breakout_level;
+      const brk = Number(stockData.breakout_level) || 0;
+      let tgt = Number(stockData.target_1) || 0;
+      const tgt2 = Number(stockData.target_2) || 0;
+      const cur = Number(stockData.curr_price) || 0;
+      let sl = Number(stockData.stop_loss) || 0;
+
+      // Ensure Target 1 is strictly above Pivot and Current Price
+      if (brk > 0) {
+        if (!tgt || tgt <= brk || tgt <= cur) {
+          if (tgt2 > brk && tgt2 > cur) {
+            tgt = tgt2;
+          } else {
+            const atr = Number(stockData.atr) || (brk * 0.04);
+            tgt = Math.round((Math.max(brk, cur) + Math.max(1.5 * atr, brk * 0.08)) * 100) / 100;
+          }
+        }
+      }
+
+      // Ensure Stop Loss is strictly below Current Price and Pivot
+      if (cur > 0 && (!sl || sl >= cur)) {
+        const atr = Number(stockData.atr) || (cur * 0.04);
+        sl = Math.round((cur - Math.max(2.0 * atr, cur * 0.07)) * 100) / 100;
+      }
+
       if (brk) {
         chipsBox.innerHTML += `<span class="level-chip pivot">🎯 Pivot: ${formatINR(brk)}</span>`;
       }
-      const tgt = stockData.target_1;
       if (tgt) {
         chipsBox.innerHTML += `<span class="level-chip target">🚀 Target: ${formatINR(tgt)}</span>`;
       }
-      const sl = stockData.stop_loss;
       if (sl) {
         chipsBox.innerHTML += `<span class="level-chip stop">🛑 SL: ${formatINR(sl)}</span>`;
       }
