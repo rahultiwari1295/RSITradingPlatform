@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 
-const VPS_HOST = 'https://quantsync-api.duckdns.org:8000';
+const VPS_HOST = 'https://quantsync-api.duckdns.org:8443';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {

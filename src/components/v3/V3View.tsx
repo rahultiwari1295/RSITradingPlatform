@@ -122,7 +122,7 @@ export default function V3View({ onOpenChart, isSyncing, onRequestSync }: V3View
       const urls = [
         "/api/v3/terminalData",
         "/api/terminal-data?version=v3",
-        "https://quantsync-api.duckdns.org:8000/api/v3/terminalData",
+        "https://quantsync-api.duckdns.org:8443/api/v3/terminalData",
       ];
       let data: V3TerminalData | null = null;
       for (const url of urls) {

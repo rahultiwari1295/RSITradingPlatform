@@ -16,7 +16,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const timeframe = (req.query.timeframe as "day" | "week") || "day";
   const period = timeframe === "week" ? "week" : "day";
-  const VPS_API_BASE = process.env.VPS_API_URL || "https://quantsync-api.duckdns.org:8000";
+  const VPS_API_BASE = process.env.VPS_API_URL || "https://quantsync-api.duckdns.org:8443";
 
   // 1. Attempt live query from QuantSync VPS SQLite DB
   try {

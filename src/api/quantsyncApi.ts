@@ -3,7 +3,7 @@
  * Connects the frontend directly to the Python FastAPI VPS engine.
  */
 
-const VPS_DEFAULT_BASE = "https://quantsync-api.duckdns.org:8000";
+const VPS_DEFAULT_BASE = "https://quantsync-api.duckdns.org:8443";
 
 function getBaseUrl(): string {
   if (typeof window !== "undefined") {

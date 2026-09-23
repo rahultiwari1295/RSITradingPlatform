@@ -38,7 +38,7 @@
     },
     {
       "source": "/api/:match*",
-      "destination": "https://quantsync-api.duckdns.org:8000/api/:match*"
+      "destination": "https://quantsync-api.duckdns.org:8443/api/:match*"
     },
     {
       "source": "/dna-mobile-story.html",

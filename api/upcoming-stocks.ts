@@ -5,7 +5,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const vpsUrl = "https://quantsync-api.duckdns.org:8000/api/upcoming-stocks";
+  const vpsUrl = "https://quantsync-api.duckdns.org:8443/api/upcoming-stocks";
   const wixUrl = "https://rahultiwari1295.wixstudio.com/angelportfolio/_functions/upcomingStock";
 
   try {

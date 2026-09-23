@@ -507,7 +507,7 @@ class FeedsEngine {
     } else {
       // Attempt upstream fetch: 1st priority is QuantSync VPS SQLite DB API (live & SSL)
       try {
-        const vpsUrl = `https://quantsync-api.duckdns.org:8000/api/intel/sectors?period=${timeframe}`;
+        const vpsUrl = `https://quantsync-api.duckdns.org:8443/api/intel/sectors?period=${timeframe}`;
         const vpsRes = await fetch(vpsUrl, {
           method: "GET",
           headers: { "Accept": "application/json" },
@@ -604,7 +604,7 @@ class FeedsEngine {
     } else {
       // 1. Attempt fetch from QuantSync VPS SQLite DB API (live & SSL)
       try {
-        const vpsNewsUrl = "https://quantsync-api.duckdns.org:8000/api/intel/news?limit=60";
+        const vpsNewsUrl = "https://quantsync-api.duckdns.org:8443/api/intel/news?limit=60";
         const vpsRes = await fetch(vpsNewsUrl, {
           method: "GET",
           headers: { "Accept": "application/json" },

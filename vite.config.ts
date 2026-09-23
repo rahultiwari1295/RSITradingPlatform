@@ -14,7 +14,7 @@ export default defineConfig({
     hmr: process.env.DISABLE_HMR !== 'true',
     proxy: {
       '/api': {
-        target: process.env.VITE_VPS_API_URL || 'https://quantsync-api.duckdns.org:8000',
+        target: process.env.VITE_VPS_API_URL || 'https://quantsync-api.duckdns.org:8443',
         changeOrigin: true,
         secure: false,
       },

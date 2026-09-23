@@ -1,10 +1,10 @@
 /**
  * QuantSync Production API & VPS Endpoints
- * All endpoints use the permanent HTTPS domain: https://quantsync-api.duckdns.org:8000
+ * All endpoints use the permanent HTTPS domain: https://quantsync-api.duckdns.org:8443
  * Or relative Vercel proxy routes in production.
  */
 
-export const VPS_BASE_URL = "https://quantsync-api.duckdns.org:8000";
+export const VPS_BASE_URL = "https://quantsync-api.duckdns.org:8443";
 
 export const API_ENDPOINTS = {
   // Candlestick Chart API

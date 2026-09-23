@@ -14,7 +14,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const limit = parseInt((req.query.limit as string) || '250', 10);
 
   try {
-    const vpsUrl = `https://quantsync-api.duckdns.org:8000/api/chart/${symbol}?limit=${limit}`;
+    const vpsUrl = `https://quantsync-api.duckdns.org:8443/api/chart/${symbol}?limit=${limit}`;
     const response = await fetch(vpsUrl, {
       method: 'GET',
       headers: {

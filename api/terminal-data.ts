@@ -6,7 +6,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const requestedVersion = req.query.version === 'v3' ? 'v3' : 'v2';
-  const vpsEndpoint = `https://quantsync-api.duckdns.org:8000/api/terminalData?version=${requestedVersion}`;
+  const vpsEndpoint = `https://quantsync-api.duckdns.org:8443/api/terminalData?version=${requestedVersion}`;
   const wixEndpoint = requestedVersion === 'v3'
     ? "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalDataV3"
     : "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData";

@@ -135,7 +135,7 @@ async function startServer() {
   // Express API Proxy — strictly fetching from raw Wix Studio endpoint
   app.get("/api/terminal-data", async (req, res) => {
     try {
-      const vpsEndpoint = "https://quantsync-api.duckdns.org:8000/api/terminalData";
+      const vpsEndpoint = "https://quantsync-api.duckdns.org:8443/api/terminalData";
       const wixEndpoint = "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData";
 
       let response = await fetch(vpsEndpoint, {
@@ -253,7 +253,7 @@ async function startServer() {
   // Proxy route for upcoming/bounce setup stock API
   app.get("/api/upcoming-stocks", async (req, res) => {
     try {
-      const vpsEndpoint = "https://quantsync-api.duckdns.org:8000/api/upcoming-stocks";
+      const vpsEndpoint = "https://quantsync-api.duckdns.org:8443/api/upcoming-stocks";
       const wixEndpoint = "https://rahultiwari1295.wixstudio.com/angelportfolio/_functions/upcomingStock";
 
       let response = await fetch(vpsEndpoint, {
@@ -312,7 +312,7 @@ async function startServer() {
     const limit = parseInt((req.query.limit as string) || '250', 10);
 
     try {
-      const vpsUrl = `https://quantsync-api.duckdns.org:8000/api/chart/${symbol}?limit=${limit}`;
+      const vpsUrl = `https://quantsync-api.duckdns.org:8443/api/chart/${symbol}?limit=${limit}`;
       const response = await fetch(vpsUrl, {
         method: "GET",
         headers: { "Accept": "application/json" },
@@ -354,7 +354,7 @@ async function startServer() {
       }).catch(() => null);
 
       if (!vpsRes || !vpsRes.ok) {
-        vpsUrl = `https://quantsync-api.duckdns.org:8000${reqPath}${queryStr}`;
+        vpsUrl = `https://quantsync-api.duckdns.org:8443${reqPath}${queryStr}`;
         vpsRes = await fetch(vpsUrl, {
           method: req.method,
           headers: { "Accept": "application/json" },
@@ -422,7 +422,7 @@ async function startServer() {
 
     try {
       const queryStr = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
-      const vpsUrl = `https://quantsync-api.duckdns.org:8000/api/terminalData${queryStr}`;
+      const vpsUrl = `https://quantsync-api.duckdns.org:8443/api/terminalData${queryStr}`;
       const vpsRes = await fetch(vpsUrl, {
         method: "GET",
         headers: { "Accept": "application/json" },
@@ -1068,7 +1068,7 @@ async function startServer() {
     // Forward to VPS backend
     try {
       const queryStr = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
-      const vpsUrl = `https://quantsync-api.duckdns.org:8000/api/dna/chart/${symbol}${queryStr}`;
+      const vpsUrl = `https://quantsync-api.duckdns.org:8443/api/dna/chart/${symbol}${queryStr}`;
       const vpsRes = await fetch(vpsUrl, {
         method: "GET",
         headers: { "Accept": "image/png,image/*,*/*" },
@@ -1108,7 +1108,7 @@ async function startServer() {
     }
 
     try {
-      const vpsUrl = `https://quantsync-api.duckdns.org:8000${targetPath}`;
+      const vpsUrl = `https://quantsync-api.duckdns.org:8443${targetPath}`;
       const response = await fetch(vpsUrl, {
         method: "GET",
         headers: { "Accept": "application/json" },
@@ -1152,7 +1152,7 @@ async function startServer() {
         }
       } catch (e) {
         // Fallback to VPS endpoint
-        backendUrl = `https://quantsync-api.duckdns.org:8000/api/screener${pathPart}${queryStr}`;
+        backendUrl = `https://quantsync-api.duckdns.org:8443/api/screener${pathPart}${queryStr}`;
         const vpsRes = await fetch(backendUrl, {
           method: req.method,
           headers: { Accept: "application/json" },
