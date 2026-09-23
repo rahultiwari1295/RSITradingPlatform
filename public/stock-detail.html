@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Stock Detail · QuantSync Institutional Terminal</title>
-  <meta name="description" content="QuantSync Stock Detail with TradingView Interactive Charts, Technical Analysis Gauge, Company Profile, and Quant DNA Intelligence." />
+  <meta name="description" content="QuantSync Stock Detail with TradingView Interactive Charts, Technical Analysis, Company Profile, and Institutional Intelligence." />
 
   <!-- Preconnect & Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -106,7 +106,159 @@
     }
 
     /* ─────────────────────────────────────────────────────────────
-       HERO CARD (Identity, Price, 52W Range, Arc Gauge, 3 Pillars)
+       ENGAGING CHART-BUILDING RADAR LOADING SCREEN
+       ───────────────────────────────────────────────────────────── */
+    .chart-loading-container {
+      width: 100%;
+      max-width: 680px;
+      margin: 16px auto 40px auto;
+      padding: 0 4px;
+      transition: opacity 0.3s ease;
+    }
+    .chart-loading-card {
+      background: #FFFFFF;
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-xl);
+      padding: 36px 24px;
+      text-align: center;
+      box-shadow: var(--shadow-md);
+      position: relative;
+      overflow: hidden;
+    }
+    .chart-radar-pulse-ring {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 16px auto;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: #EEF2FF;
+      border: 2px solid #4F46E5;
+      box-shadow: 0 0 24px rgba(79, 70, 229, 0.25);
+    }
+    .radar-scan-sweep {
+      position: absolute;
+      inset: -5px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: #4F46E5;
+      animation: radarSpin 0.9s linear infinite;
+    }
+    .radar-center-icon {
+      font-size: 26px;
+      animation: iconPulse 1s ease-in-out infinite alternate;
+    }
+    @keyframes radarSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes iconPulse {
+      from { transform: scale(0.92); opacity: 0.85; }
+      to { transform: scale(1.12); opacity: 1; }
+    }
+    .chart-loading-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: #0F172A;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+    .loading-highlight-sym {
+      color: #4F46E5;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 900;
+      background: #EEF2FF;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .chart-loading-subtitle {
+      font-size: 13px;
+      color: #64748B;
+      line-height: 1.5;
+      max-width: 480px;
+      margin: 0 auto 18px auto;
+    }
+    .chart-progress-track {
+      height: 6px;
+      background: #F1F5F9;
+      border-radius: 9999px;
+      overflow: hidden;
+      margin-bottom: 22px;
+    }
+    .chart-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4F46E5, #38BDF8);
+      border-radius: 9999px;
+      transition: width 0.35s ease;
+    }
+    .chart-scan-steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-align: left;
+      margin-top: 10px;
+    }
+    .chart-step-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      background: #F8FAFC;
+      border: 1px solid #F1F5F9;
+      transition: all 0.25s ease;
+    }
+    .chart-step-item.active {
+      background: #EEF2FF;
+      border-color: #C7D2FE;
+    }
+    .chart-step-item.done {
+      background: #F0FDF4;
+      border-color: #BBF7D0;
+    }
+    .step-icon-badge {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #E2E8F0;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .chart-step-item.active .step-icon-badge {
+      background: #4F46E5;
+      color: #FFFFFF;
+      box-shadow: 0 0 10px rgba(79, 70, 229, 0.4);
+    }
+    .chart-step-item.done .step-icon-badge {
+      background: #10B981;
+      color: #FFFFFF;
+    }
+    .step-content-wrap {
+      flex: 1;
+      min-width: 0;
+    }
+    .step-label {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #0F172A;
+    }
+    .step-desc {
+      font-size: 11px;
+      color: #64748B;
+      margin-top: 1px;
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       HERO CARD (Identity, Price, 52W Range — GAUGE & PILLARS REMOVED)
        ───────────────────────────────────────────────────────────── */
     .card-hero {
       background: var(--card-bg);
@@ -116,7 +268,7 @@
       box-shadow: var(--shadow-md);
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 16px;
     }
 
     .badges-row {
@@ -233,113 +385,6 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.25);
       transform: translate(-50%, -50%);
       transition: left 0.4s ease-out;
-    }
-
-    .divider-line {
-      height: 1px;
-      background: #F1F5F9;
-      width: 100%;
-      margin: 4px 0;
-    }
-
-    /* ─────────────────────────────────────────────────────────────
-       SPEEDOMETER ARC GAUGE (180° SVG Arc with Animated Needle)
-       ───────────────────────────────────────────────────────────── */
-    .gauge-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      padding: 6px 0;
-    }
-
-    .gauge-svg-container {
-      width: 220px;
-      max-width: 100%;
-      position: relative;
-    }
-    .gauge-svg-element {
-      width: 100%;
-      height: auto;
-      overflow: visible;
-    }
-    .gauge-arc-track {
-      fill: none;
-      stroke-width: 12;
-      stroke-linecap: round;
-    }
-    .gauge-needle-group {
-      transform-origin: 100px 95px;
-      transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    .gauge-needle-stem {
-      stroke: #1E293B;
-      stroke-width: 3.5;
-      stroke-linecap: round;
-    }
-    .gauge-needle-hub {
-      fill: #1E293B;
-    }
-    .gauge-needle-hub-inner {
-      fill: #FFFFFF;
-    }
-
-    .gauge-score-val {
-      font-family: 'Outfit', sans-serif;
-      font-size: 42px;
-      font-weight: 900;
-      color: #0F172A;
-      line-height: 1;
-      margin-top: -6px;
-    }
-    .gauge-caption {
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #64748B;
-      margin-top: 4px;
-    }
-    .gauge-verdict-title {
-      font-family: 'Outfit', sans-serif;
-      font-size: 15px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.02em;
-      margin-top: 10px;
-      color: #0F172A;
-    }
-
-    /* 3 Quantitative Mini-Pillars */
-    .pillars-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      width: 100%;
-      margin-top: 14px;
-    }
-    .pillar-card {
-      background: #F8FAFC;
-      border: 1px solid #E2E8F0;
-      border-radius: var(--radius-md);
-      padding: 10px 8px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-    .pillar-label {
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: #64748B;
-    }
-    .pillar-val {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      font-weight: 800;
-      color: #0F172A;
     }
 
     /* ─────────────────────────────────────────────────────────────
@@ -544,27 +589,6 @@
       transform: translateX(-50%) translateY(0);
     }
 
-    /* Loading Spinner */
-    .loader-box {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 60px 20px;
-      gap: 14px;
-    }
-    .spinner {
-      width: 36px;
-      height: 36px;
-      border: 3px solid #E2E8F0;
-      border-top-color: #4F46E5;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
     @media (max-width: 600px) {
       body {
         padding: 10px 8px 40px;
@@ -577,9 +601,6 @@
       }
       .price-val {
         font-size: 26px;
-      }
-      .pillars-grid {
-        grid-template-columns: 1fr;
       }
       #tv-chart-container {
         height: 380px;
@@ -606,101 +627,73 @@
       </button>
     </div>
 
-    <!-- LOADING STATE -->
-    <div id="loading-view" class="card-hero loader-box">
-      <div class="spinner"></div>
-      <div style="font-size: 14px; font-weight: 600; color: #64748B;">Loading institutional stock briefing...</div>
+    <!-- 2. ENGAGING CHART-BUILDING RADAR LOADING SCREEN -->
+    <div id="chart-loading-view" class="chart-loading-container">
+      <div class="chart-loading-card">
+        <div class="chart-radar-pulse-ring">
+          <div class="radar-scan-sweep"></div>
+          <div class="radar-center-icon">📈</div>
+        </div>
+        <h3 class="chart-loading-title">
+          Building Institutional Chart for <span id="loading-stock-symbol" class="loading-highlight-sym">—</span>
+        </h3>
+        <p class="chart-loading-subtitle">
+          Streaming daily OHLCV candlesticks, detecting multi-timeframe swing geometry & calculating institutional levels...
+        </p>
+        <div class="chart-progress-track">
+          <div class="chart-progress-fill" id="loading-progress-bar" style="width: 15%;"></div>
+        </div>
+        <div class="chart-scan-steps-list" id="loading-steps-list">
+          <!-- 5 Dynamic interactive steps populated by JS -->
+        </div>
+      </div>
     </div>
 
-    <!-- MAIN STOCK CONTENT (Populated dynamically) -->
-    <div id="stock-content" style="display: none; display: flex; flex-direction: column; gap: 16px;">
+    <!-- 3. MAIN STOCK CONTENT (Revealed ONLY after full data arrival - Zero Hardcoding) -->
+    <div id="stock-content" style="display: none; flex-direction: column; gap: 16px;">
 
-      <!-- 2. HERO CITADEL CARD -->
+      <!-- HERO IDENTITY & PRICE CARD (GAUGE & PILLARS COMPLETELY REMOVED) -->
       <section class="card-hero">
         <!-- Badges Row -->
         <div class="badges-row" id="badges-container">
-          <span class="badge-pill badge-symbol" id="badge-symbol">TCS</span>
-          <span class="badge-pill badge-gray" id="badge-tier">Large-Cap</span>
-          <span class="badge-pill badge-gray" id="badge-sector">IT Services</span>
-          <span class="badge-pill badge-pattern" id="badge-pattern">Bluechip Compounder</span>
+          <span class="badge-pill badge-symbol" id="badge-symbol"></span>
+          <span class="badge-pill badge-gray" id="badge-tier"></span>
+          <span class="badge-pill badge-gray" id="badge-sector"></span>
+          <span class="badge-pill badge-pattern" id="badge-pattern"></span>
         </div>
 
         <!-- Headline Stock Name -->
-        <h1 class="stock-title" id="stock-headline">Tata Consultancy Services</h1>
+        <h1 class="stock-title" id="stock-headline"></h1>
 
         <!-- Price Stack -->
         <div class="price-row">
-          <span class="price-val" id="price-display">₹2,089.6</span>
-          <span class="price-change-pill" id="price-change-display">0.0%</span>
+          <span class="price-val" id="price-display"></span>
+          <span class="price-change-pill" id="price-change-display" style="display:none;"></span>
         </div>
 
         <!-- 52-Week Range Bar -->
-        <div class="range-52w-box">
+        <div class="range-52w-box" id="range-box">
           <div class="range-52w-labels">
-            <span>52W Low: <strong id="val-52low">₹1,976.8</strong></span>
-            <span>52W High: <strong id="val-52high">₹3,350.0</strong></span>
+            <span>52W Low: <strong id="val-52low"></strong></span>
+            <span>52W High: <strong id="val-52high"></strong></span>
           </div>
           <div class="range-track">
-            <div class="range-fill" id="bar-52range" style="width: 25%;"></div>
-            <div class="range-thumb" id="thumb-52range" style="left: 25%;"></div>
-          </div>
-        </div>
-
-        <div class="divider-line"></div>
-
-        <!-- 180° Speedometer SVG Arc Gauge -->
-        <div class="gauge-wrapper">
-          <div class="gauge-svg-container">
-            <svg class="gauge-svg-element" viewBox="0 0 200 120">
-              <!-- Arc Zones sweep from 180° to 360° -->
-              <path class="gauge-arc-track" d="M 20 100 A 80 80 0 0 1 35.3 53" stroke="#F43F5E" />
-              <path class="gauge-arc-track" d="M 35.3 53 A 80 80 0 0 1 75.3 23.8" stroke="#FB923C" />
-              <path class="gauge-arc-track" d="M 75.3 23.8 A 80 80 0 0 1 124.7 23.8" stroke="#F59E0B" />
-              <path class="gauge-arc-track" d="M 124.7 23.8 A 80 80 0 0 1 164.7 53" stroke="#38BDF8" />
-              <path class="gauge-arc-track" d="M 164.7 53 A 80 80 0 0 1 180 100" stroke="#10B981" />
-
-              <!-- Animated Needle Pointer -->
-              <g class="gauge-needle-group" id="gauge-needle" style="transform: rotate(0deg);">
-                <line class="gauge-needle-stem" x1="100" y1="95" x2="100" y2="28" />
-                <circle class="gauge-needle-hub" cx="100" cy="95" r="7" />
-                <circle class="gauge-needle-hub-inner" cx="100" cy="95" r="3" />
-              </g>
-            </svg>
-          </div>
-
-          <div class="gauge-score-val" id="gauge-score">23</div>
-          <div class="gauge-caption">QUANT DNA SCORE / 100</div>
-
-          <div class="gauge-verdict-title" id="gauge-verdict">STAY AWAY (FALLING TREND)</div>
-
-          <!-- 3 Quantitative Mini-Pillars -->
-          <div class="pillars-grid">
-            <div class="pillar-card">
-              <span class="pillar-label">Speed / RSI</span>
-              <span class="pillar-val" id="pill-rsi">RSI 18.4</span>
-            </div>
-            <div class="pillar-card">
-              <span class="pillar-label">200 EMA</span>
-              <span class="pillar-val" id="pill-ema200">Below 200 EMA</span>
-            </div>
-            <div class="pillar-card">
-              <span class="pillar-label">Solvency</span>
-              <span class="pillar-val" id="pill-solvency" style="color: #10B981;">Grade A</span>
-            </div>
+            <div class="range-fill" id="bar-52range" style="width: 0%;"></div>
+            <div class="range-thumb" id="thumb-52range" style="left: 0%;"></div>
           </div>
         </div>
       </section>
 
-      <!-- 3. OPTION TO VIEW FULL DNA REPORT BANNER -->
+      <!-- OPTION TO VIEW FULL DNA REPORT BANNER -->
       <div class="dna-cta-banner">
         <div class="dna-cta-text">
           <h4>🧬 Institutional DNA Deep Dive</h4>
           <p>Read all 7 fundamental & catalyst questions (Smart Money, Timing, Risk, Solvency)</p>
         </div>
-        <a id="btn-dna-link" href="#" onclick="openFullDna(stockSymbol); return false;" class="btn-dna-cta">View DNA Story →</a>
+        <a id="btn-dna-link" href="#" onclick="openFullDna(); return false;" class="btn-dna-cta">View DNA Story →</a>
       </div>
 
-      <!-- 4. TRADINGVIEW FREE-SOURCE INTERACTIVE CHART BUILDER (LIGHTWEIGHT CHARTS) -->
+      <!-- TRADINGVIEW FREE-SOURCE INTERACTIVE CHART BUILDER (LIGHTWEIGHT CHARTS) -->
       <section class="card-chart-section">
         <div class="section-header">
           <div class="section-title">
@@ -712,11 +705,11 @@
         </div>
 
         <div id="tv-chart-container">
-          <div class="chart-legend" id="chart-legend-box">Loading candles...</div>
+          <div class="chart-legend" id="chart-legend-box">Drawing candles & trendlines...</div>
         </div>
       </section>
 
-      <!-- 5. TRADINGVIEW SIGNALS PAGE WIDGETS -->
+      <!-- TRADINGVIEW SIGNALS PAGE WIDGETS -->
       <!-- Widget 1: Technical Analysis Gauge -->
       <section class="widget-section">
         <div class="widget-title">TradingView Technical Analysis</div>
@@ -746,7 +739,16 @@
   <div id="toast-msg">Link copied to clipboard!</div>
 
   <script>
-    // Extract stock symbol from query parameter or path
+    // 5 Engaging Chart-Building Radar Steps
+    const CHART_STEPS = [
+      { title: "Streaming Historical Candlesticks", desc: "Extracting 250 daily OHLCV bars & volume profile from database..." },
+      { title: "Analyzing Swing Structure & Pivots", desc: "Detecting weekly swing extrema & identifying consolidation base..." },
+      { title: "Drawing Geometric Trendlines", desc: "Constructing structural trendlines, ascending support & resistance..." },
+      { title: "Calculating Target & Stop Loss Levels", desc: "Setting 1.5x/2.0x target projection, stop loss floor & 200 EMA..." },
+      { title: "Rendering TradingView Canvas", desc: "Initializing multi-timeframe interactive chart & technical breakdown..." }
+    ];
+
+    // Extract stock symbol from URL query parameter or path immediately
     const urlParams = new URLSearchParams(window.location.search);
     let stockSymbol = (urlParams.get("symbol") || urlParams.get("stock") || "").trim().toUpperCase();
     if (!stockSymbol) {
@@ -756,7 +758,40 @@
       }
     }
     if (!stockSymbol) {
-      stockSymbol = "TCS";
+      stockSymbol = "RELIANCE";
+    }
+
+    // Set the symbol in the loading title immediately
+    const symEl = document.getElementById("loading-stock-symbol");
+    if (symEl) symEl.textContent = stockSymbol;
+
+    function renderScanSteps(activeStep) {
+      const listEl = document.getElementById("loading-steps-list");
+      if (!listEl) return;
+      listEl.innerHTML = CHART_STEPS.map((step, idx) => {
+        let stateClass = "pending";
+        let icon = (idx + 1);
+        if (idx < activeStep) {
+          stateClass = "done";
+          icon = "✓";
+        } else if (idx === activeStep) {
+          stateClass = "active";
+          icon = "⚡";
+        }
+        return `
+          <div class="chart-step-item ${stateClass}">
+            <div class="step-icon-badge">${icon}</div>
+            <div class="step-content-wrap">
+              <div class="step-label">${step.title}</div>
+              <div class="step-desc">${step.desc}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      const prog = Math.min(100, Math.round(((activeStep + 1) / CHART_STEPS.length) * 100));
+      const bar = document.getElementById("loading-progress-bar");
+      if (bar) bar.style.width = prog + "%";
     }
 
     function goBack() {
@@ -771,12 +806,11 @@
       }
     }
 
-    function openFullDna(sym) {
-      const s = sym || stockSymbol;
+    function openFullDna() {
       if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type: 'OPEN_DNA', symbol: s }, '*');
+        window.parent.postMessage({ type: 'OPEN_DNA', symbol: stockSymbol }, '*');
       }
-      window.location.href = `/dna-mobile-story.html?stock=${encodeURIComponent(s)}`;
+      window.location.href = `/dna-mobile-story.html?stock=${encodeURIComponent(stockSymbol)}`;
     }
 
     function shareStock() {
@@ -806,42 +840,75 @@
     }
 
     function toBseSymbol(sym) {
-      if (!sym) return "BSE:TCS";
+      if (!sym) return "BSE:RELIANCE";
       const clean = String(sym).replace(/^(BSE:|NSE:)/i, "").replace(/\.(NS|BO)$/i, "").trim().toUpperCase();
       return `BSE:${clean}`;
     }
 
     // Main Init
     async function loadStockDetails() {
-      try {
-        // 1. Fetch Consolidated Stock Details
-        const res = await fetch(`/api/stock/detail/${stockSymbol}`);
-        if (!res.ok) throw new Error("Stock not found");
-        const data = await res.json();
+      renderScanSteps(0);
 
-        // 2. Fetch Historical Candles & Chart Geometry
-        const chartRes = await fetch(`/api/chart/${stockSymbol}?limit=250`);
+      // Start sequential progress tick
+      let step = 0;
+      const stepTimer = setInterval(() => {
+        if (step < 3) {
+          step++;
+          renderScanSteps(step);
+        }
+      }, 350);
+
+      try {
+        // Parallel fetch: Details + Historical Candles
+        const [detailRes, chartRes] = await Promise.all([
+          fetch(`/api/stock/detail/${stockSymbol}`),
+          fetch(`/api/chart/${stockSymbol}?limit=250`)
+        ]);
+
+        clearInterval(stepTimer);
+
+        if (!detailRes.ok) throw new Error("Stock details not found");
+        const data = await detailRes.json();
         const chartData = chartRes.ok ? await chartRes.json() : null;
 
-        // Populate View
+        // Advance to final steps
+        renderScanSteps(4);
+        const bar = document.getElementById("loading-progress-bar");
+        if (bar) bar.style.width = "100%";
+
+        // Brief delay to let user see 100% completion before smooth reveal
+        await new Promise(r => setTimeout(r, 260));
+
+        // Render Views
         renderStockHero(data);
         renderTradingViewChart(chartData, data);
         renderTradingViewWidgets(stockSymbol);
 
-        document.getElementById("loading-view").style.display = "none";
-        document.getElementById("stock-content").style.display = "flex";
+        // Hide loading view and display clean content
+        const loader = document.getElementById("chart-loading-view");
+        loader.style.opacity = "0";
+        setTimeout(() => {
+          loader.style.display = "none";
+          const content = document.getElementById("stock-content");
+          content.style.display = "flex";
+        }, 220);
+
       } catch (err) {
+        clearInterval(stepTimer);
         console.error("Error loading stock:", err);
-        document.getElementById("loading-view").innerHTML = `
-          <div style="color:#EF4444; font-weight:700; font-size:16px;">Unable to load data for ${stockSymbol}</div>
-          <button class="btn-nav" onclick="goBack()" style="margin-top:10px;">Return to Screener</button>
+        document.getElementById("chart-loading-view").innerHTML = `
+          <div class="chart-loading-card">
+            <div style="font-size:32px; margin-bottom:12px;">⚠️</div>
+            <div style="color:#EF4444; font-weight:800; font-size:18px;">Unable to load data for ${stockSymbol}</div>
+            <p style="color:#64748B; font-size:13px; margin:8px 0 18px;">Please verify the ticker symbol or return to the screener.</p>
+            <button class="btn-nav" onclick="goBack()">← Return to Screener</button>
+          </div>
         `;
       }
     }
 
     function renderStockHero(data) {
       const sym = data.symbol || stockSymbol;
-      const bse = toBseSymbol(sym).replace("BSE:", "");
       const name = data.company_name || sym;
       const price = data.curr_price || (data.current_metrics && data.current_metrics.price) || 0;
       const w52High = data.w52_high || price * 1.25;
@@ -860,15 +927,16 @@
       document.getElementById("price-display").textContent = formatINR(price);
 
       // Price Change
-      let chgVal = data.dist_from_52w_high_pct || 0;
       const chgPill = document.getElementById("price-change-display");
-      if (data.price_change_pct !== undefined) {
+      if (data.price_change_pct !== undefined && data.price_change_pct !== null) {
         const pChg = Number(data.price_change_pct);
         chgPill.textContent = (pChg >= 0 ? "+" : "") + pChg.toFixed(1) + "%";
         chgPill.className = "price-change-pill " + (pChg >= 0 ? "up" : "down");
+        chgPill.style.display = "inline-block";
       } else {
         chgPill.textContent = "0.0%";
         chgPill.className = "price-change-pill";
+        chgPill.style.display = "inline-block";
       }
 
       // 52W Range Bar
@@ -880,45 +948,7 @@
       }
       document.getElementById("bar-52range").style.width = rangePct + "%";
       document.getElementById("thumb-52range").style.left = rangePct + "%";
-
-      // Quant DNA Score
-      const score = data.dna_score !== undefined && data.dna_score !== null 
-        ? data.dna_score 
-        : (data.dna_health_score !== undefined ? data.dna_health_score : 50);
-      document.getElementById("gauge-score").textContent = score;
-
-      // Rotate needle: score 0 -> -90deg, 50 -> 0deg, 100 -> +90deg
-      const angle = -90 + (score / 100) * 180;
-      document.getElementById("gauge-needle").style.transform = `rotate(${angle}deg)`;
-
-      // Verdict title
-      const verdict = data.action_title || data.stance || (score >= 75 ? "ELITE COMPOUNDER" : score <= 35 ? "STAY AWAY (FALLING TREND)" : "NEUTRAL RANGE");
-      document.getElementById("gauge-verdict").textContent = verdict.toUpperCase();
-
-      // 3 Mini-Pillars
-      const rsi = data.rsi !== undefined ? Number(data.rsi).toFixed(1) : "50.0";
-      document.getElementById("pill-rsi").textContent = `RSI ${rsi}`;
-
-      const ema200 = data.ema200;
-      const pillEma = document.getElementById("pill-ema200");
-      if (ema200 && price) {
-        if (price >= ema200) {
-          pillEma.textContent = "Above 200 EMA";
-          pillEma.style.color = "#10B981";
-        } else {
-          pillEma.textContent = "Below 200 EMA";
-          pillEma.style.color = "#F43F5E";
-        }
-      } else {
-        pillEma.textContent = "200 EMA In Line";
-      }
-
-      const solv = data.solvency_grade || (data.solvency_detail && data.solvency_detail.grade) || "Grade A";
-      const pillSolv = document.getElementById("pill-solvency");
-      pillSolv.textContent = solv.replace(" · Rock Solid", "");
-
-      // DNA Link
-      document.getElementById("btn-dna-link").href = `/dna-mobile-story.html?stock=${sym}`;
+      document.getElementById("range-box").style.display = "flex";
     }
 
     function renderTradingViewChart(chartData, stockData) {

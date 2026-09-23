@@ -1779,6 +1779,8 @@ export default function App() {
     const handleMsg = (e: MessageEvent) => {
       if (e.data?.type === "CLOSE_STOCK_DETAIL" || e.data?.type === "BACK_TO_SEARCH") {
         setSheetOpen(false);
+      } else if (e.data?.type === "SELECT_STOCK" && e.data?.symbol) {
+        openSheet("screener_detail", { symbol: e.data.symbol, sym: e.data.symbol });
       } else if (e.data?.type === "OPEN_DNA" && e.data?.symbol) {
         setSheetOpen(false);
         setSelectedDnaStock(e.data.symbol);
@@ -4197,7 +4199,7 @@ export default function App() {
             const kind = sheetPayload.kind;
 
             if (kind === "screener_detail") {
-              const sym = t?.symbol || t?.sym || "TCS";
+              const sym = t?.symbol || t?.sym || "";
               return (
                 <div style={{ width: "100%", height: "100%", minHeight: "82vh", display: "flex", flexDirection: "column" }}>
                   <iframe
