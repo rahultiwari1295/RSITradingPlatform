@@ -386,6 +386,27 @@
       const urlParams = new URLSearchParams(window.location.search);
       const th = urlParams.get('theme') || 'dark';
       document.documentElement.setAttribute('data-theme', th);
+
+      const tabParam = urlParams.get('tab');
+      if (tabParam) {
+        currentTab = tabParam;
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          const oc = b.getAttribute('onclick') || '';
+          if (oc.includes(tabParam)) {
+            b.classList.add('active');
+          } else {
+            b.classList.remove('active');
+          }
+        });
+      }
+
+      const searchParam = urlParams.get('search') || urlParams.get('symbol');
+      if (searchParam) {
+        searchVal = searchParam.trim();
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) searchInput.value = searchVal;
+      }
+
       loadSummary();
       loadAccuracy();
       loadBreakoutCounts();
@@ -484,15 +505,22 @@
         // Secondary strict client filter
         if (currentTab === 'success') {
           rows = rows.filter(s => {
-            const hasPivot = s.breakout_level && Number(s.breakout_level) > 0;
-            const diffPct = hasPivot ? Math.abs((Number(s.curr_price) - Number(s.breakout_level)) / Number(s.breakout_level) * 100) : 999;
-            const freshDays = s.days_since_breakout != null && Number(s.days_since_breakout) < 6;
-            return diffPct <= 5.0 || freshDays;
+            return s.breakout_level && Number(s.breakout_level) > 0;
           });
           rows.sort((a, b) => {
-            const da = a.days_since_breakout != null ? Number(a.days_since_breakout) : 999;
-            const db = b.days_since_breakout != null ? Number(b.days_since_breakout) : 999;
-            return da - db;
+            const cmpA = Number(a.curr_price || 0), brkA = Number(a.breakout_level || 1);
+            const cmpB = Number(b.curr_price || 0), brkB = Number(b.breakout_level || 1);
+            const diffPctA = (cmpA - brkA) / brkA * 100;
+            const diffPctB = (cmpB - brkB) / brkB * 100;
+            const isMissedA = Math.abs(diffPctA) > 5.0;
+            const isMissedB = Math.abs(diffPctB) > 5.0;
+
+            // 1. Good To Buy first (<= 5%), then Missed (> 5%)
+            if (isMissedA !== isMissedB) {
+              return isMissedA ? 1 : -1;
+            }
+            // 2. From less percent to more percent
+            return diffPctA - diffPctB;
           });
         } else if (currentTab === 'near_breakout') {
           rows = rows.filter(s => {

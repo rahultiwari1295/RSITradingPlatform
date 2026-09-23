@@ -84,16 +84,38 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
         // Secondary client-side guard for strict actionable entry rules
         if (activeTab === "success") {
           rows = rows.filter((s: any) => {
-            const hasPivot = s.breakout_level && Number(s.breakout_level) > 0;
-            const diffPct = hasPivot ? Math.abs((Number(s.curr_price) - Number(s.breakout_level)) / Number(s.breakout_level) * 100) : 999;
-            const freshDays = s.days_since_breakout !== null && s.days_since_breakout !== undefined && Number(s.days_since_breakout) < 6;
-            return diffPct <= 5.0 || freshDays;
+            return s.breakout_level && Number(s.breakout_level) > 0;
           });
-          // Sort latest to oldest breakout (0 days first)
+          // Sort: 1) Good To Buy first (<= 5% and target upside >= 5%)
+          //       2) SKIPP second (<= 5% but upside < 5%)
+          //       3) MISSED third (> 5% extended)
+          // Within each group, sort from less percent to more percent
           rows.sort((a: any, b: any) => {
-            const da = a.days_since_breakout !== null && a.days_since_breakout !== undefined ? Number(a.days_since_breakout) : 999;
-            const db = b.days_since_breakout !== null && b.days_since_breakout !== undefined ? Number(b.days_since_breakout) : 999;
-            return da - db;
+            const cmpA = Number(a.curr_price || 0), brkA = Number(a.breakout_level || 1);
+            const cmpB = Number(b.curr_price || 0), brkB = Number(b.breakout_level || 1);
+            const tgtA = Number(a.target_1 || 0), tgtB = Number(b.target_1 || 0);
+
+            const diffPctA = (cmpA - brkA) / brkA * 100;
+            const diffPctB = (cmpB - brkB) / brkB * 100;
+            const diffAbsA = Math.abs(diffPctA);
+            const diffAbsB = Math.abs(diffPctB);
+
+            const targetGainA = (tgtA > 0 && cmpA > 0) ? ((tgtA - cmpA) / cmpA * 100) : null;
+            const targetGainB = (tgtB > 0 && cmpB > 0) ? ((tgtB - cmpB) / cmpB * 100) : null;
+
+            const isMissedA = diffAbsA > 5.0;
+            const isMissedB = diffAbsB > 5.0;
+
+            const isSkipA = !isMissedA && targetGainA !== null && targetGainA < 5.0;
+            const isSkipB = !isMissedB && targetGainB !== null && targetGainB < 5.0;
+
+            const tierA = isMissedA ? 2 : isSkipA ? 1 : 0;
+            const tierB = isMissedB ? 2 : isSkipB ? 1 : 0;
+
+            if (tierA !== tierB) {
+              return tierA - tierB;
+            }
+            return diffPctA - diffPctB;
           });
         } else if (activeTab === "near_breakout") {
           rows = rows.filter((s: any) => {
