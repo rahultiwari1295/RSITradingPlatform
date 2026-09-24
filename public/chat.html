@@ -2128,6 +2128,10 @@
         localStorage.setItem('quantsync_user', JSON.stringify(currentUser));
         updateUserProfileUI();
       }
+      if (e.data && e.data.type === 'THEME_CHANGE' && e.data.theme) {
+        document.documentElement.setAttribute('data-theme', e.data.theme);
+        localStorage.setItem('quantsync_theme', e.data.theme);
+      }
     });
 
     function loadUserFromStorage() {
@@ -2205,6 +2209,9 @@
       const next = current === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', next);
       localStorage.setItem('quantsync_theme', next);
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'THEME_SYNC', theme: next }, '*');
+      }
     }
 
     function showToast(text) {

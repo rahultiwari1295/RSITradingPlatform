@@ -1198,6 +1198,18 @@ export default function App() {
       }, "*");
     }
   }, [theme]);
+
+  useEffect(() => {
+    const handleMsg = (e: MessageEvent) => {
+      if (e.data?.type === "THEME_SYNC" && e.data.theme) {
+        if (e.data.theme !== theme) {
+          setTheme(e.data.theme);
+        }
+      }
+    };
+    window.addEventListener("message", handleMsg);
+    return () => window.removeEventListener("message", handleMsg);
+  }, [theme]);
   const [chartSub, setChartSub] = useState<"live" | "scanner" | "portal">("live");
   const [range, setRange] = useState<number>(90);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -2468,39 +2480,41 @@ export default function App() {
       <div className="ambient ambient-v3" />
 
       {/* ============ TOP BAR ============ */}
-      <header className="topbar">
-        <div className="brand">
-          <span className="brand-mark">QuantSync</span>
-          <span className="pulse-dot" id="mktDot" />
-        </div>
-        <div className="topbar-right">
-          <button className="theme-btn" id="themeBtn" onClick={toggleTheme} aria-label="Toggle theme">
-            <svg className="i-sun" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="4.2" />
-              <path d="M12 2v2.4M12 19.6V22M22 12h-2.4M4.4 12H2M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7M19.1 19.1l-1.7-1.7M6.6 6.6 4.9 4.9" />
-            </svg>
-            <svg className="i-moon" viewBox="0 0 24 24">
-              <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" />
-            </svg>
-          </button>
-          <button
-            className={`theme-btn ${isMoreOpen || activeTab === "more" ? "active" : ""}`}
-            id="userMoreBtn"
-            onClick={() => setIsMoreOpen(true)}
-            aria-label="User profile and settings"
-            title="Account, Settings & Platform Diagnostics"
-            style={{
-              background: isMoreOpen ? "var(--s3)" : undefined,
-              borderColor: isMoreOpen ? "var(--accent)" : undefined
-            }}
-          >
-            <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, stroke: "currentColor", fill: "none", strokeWidth: 1.8 }}>
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </button>
-        </div>
-      </header>
+      {activeTab !== "lounge" && (
+        <header className="topbar">
+          <div className="brand">
+            <span className="brand-mark">QuantSync</span>
+            <span className="pulse-dot" id="mktDot" />
+          </div>
+          <div className="topbar-right">
+            <button className="theme-btn" id="themeBtn" onClick={toggleTheme} aria-label="Toggle theme">
+              <svg className="i-sun" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="4.2" />
+                <path d="M12 2v2.4M12 19.6V22M22 12h-2.4M4.4 12H2M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7M19.1 19.1l-1.7-1.7M6.6 6.6 4.9 4.9" />
+              </svg>
+              <svg className="i-moon" viewBox="0 0 24 24">
+                <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" />
+              </svg>
+            </button>
+            <button
+              className={`theme-btn ${isMoreOpen || activeTab === "more" ? "active" : ""}`}
+              id="userMoreBtn"
+              onClick={() => setIsMoreOpen(true)}
+              aria-label="User profile and settings"
+              title="Account, Settings & Platform Diagnostics"
+              style={{
+                background: isMoreOpen ? "var(--s3)" : undefined,
+                borderColor: isMoreOpen ? "var(--accent)" : undefined
+              }}
+            >
+              <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, stroke: "currentColor", fill: "none", strokeWidth: 1.8 }}>
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </button>
+          </div>
+        </header>
+      )}
 
       {/* ============ SCREENS ============ */}
       <main className="screens" id="screens">
