@@ -43,7 +43,7 @@ function formatSignalDate(dateStr?: string): string {
   try {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
-    return d.toISOString().split("T")[0];
+    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
   } catch {
     return dateStr;
   }
@@ -187,75 +187,71 @@ export default function PortfolioView({
   };
 
   return (
-    <div style={{ paddingBottom: 20 }}>
-      {/* 1. HERO BANNER: System-wide Glassmorphic Look */}
-      <div className="hero" style={{ marginBottom: 14 }}>
-        <div className="row between" style={{ marginBottom: 12 }}>
-          <div className="row gap8">
-            <span className="pill green" style={{ fontSize: 9.5, padding: "3px 8px" }}>
-              <span
-                style={{
-                  display: "inline-block",
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: "currentColor",
-                  marginRight: 5,
-                  boxShadow: "0 0 6px currentColor"
-                }}
-              />
-              Cloud Synced
+    <div style={{ paddingBottom: 24 }}>
+      {/* 1. REFINED FINTECH HERO BANNER */}
+      <div className="pf-hero">
+        {/* Top Header: Cloud sync status & CTA */}
+        <div className="pf-hero-head">
+          <div className="pf-hero-status">
+            <span className="pf-live-badge">
+              <span className="pf-live-dot" />
+              Live Ledger
             </span>
-            <span className="micro dim">Live Paper Ledger</span>
+            <span className="pf-sync-tag">Cloud Synced</span>
           </div>
 
-          <button
-            onClick={handleAddClick}
-            className="btn-add-paper"
-            style={{ padding: "4px 12px", fontSize: 11, fontWeight: 700 }}
-          >
-            + Add Position
+          <button onClick={handleAddClick} className="pf-hero-add-btn">
+            <Plus style={{ width: 12, height: 12, strokeWidth: 2.8 }} />
+            <span>Add Position</span>
           </button>
         </div>
 
-        <div className="hero-grid">
-          <div>
-            <div className="micro">Portfolio Value</div>
-            <div className="val num" style={{ fontSize: 21, fontWeight: 800 }}>
+        {/* Centerpiece: Full-width Portfolio Value & ROI pill */}
+        <div className="pf-hero-body">
+          <div className="pf-hero-lbl">Total Portfolio Value</div>
+          <div className="pf-hero-primary-row">
+            <div className="pf-hero-main-val">
               {formatINR(totalCurrentValue)}
             </div>
-            <div className="sub dim" style={{ fontSize: 10, marginTop: 4 }}>
-              Invested: {formatINR(totalInvested)}
-            </div>
-          </div>
-
-          <div>
-            <div className="micro">Unrealized P&L</div>
-            <div
-              className={`val num ${totalUnrealizedPnL >= 0 ? "up" : "down"}`}
-              style={{ fontSize: 21, fontWeight: 800 }}
-            >
-              {totalUnrealizedPnL >= 0 ? "+" : "−"}{formatINR(Math.abs(totalUnrealizedPnL))}
-            </div>
-            <div className={`sub ${totalUnrealizedPnL >= 0 ? "up" : "down"}`}>
-              {totalUnrealizedPnL >= 0 ? "+" : ""}{returnPct.toFixed(2)}%
-            </div>
-          </div>
-
-          <div>
-            <div className="micro">Win Rate & Closed</div>
-            <div className="val num" style={{ fontSize: 21, fontWeight: 800 }}>
-              {historyList.length > 0 ? `${winRate}%` : "100%"}
-            </div>
-            <div className="sub dim" style={{ fontSize: 10, marginTop: 4 }}>
-              {winCount}W · {lossCount}L ({historyList.length} closed)
+            <div className={`pf-pnl-pill ${totalUnrealizedPnL >= 0 ? "up" : "down"}`}>
+              <span className="pf-pnl-arrow">{totalUnrealizedPnL >= 0 ? "▲" : "▼"}</span>
+              <span className="pf-pnl-num">
+                {totalUnrealizedPnL >= 0 ? "+" : "−"}{formatINR(Math.abs(totalUnrealizedPnL))}
+              </span>
+              <span className="pf-pnl-pct">
+                ({totalUnrealizedPnL >= 0 ? "+" : ""}{returnPct.toFixed(2)}%)
+              </span>
             </div>
           </div>
         </div>
 
-        <div className="hero-note" style={{ marginTop: 12 }}>
-          <span className="hn-ico">💼</span>
-          <span>
+        {/* 3-Column Micro Metrics Strip */}
+        <div className="pf-metric-strip">
+          <div className="pf-strip-item">
+            <div className="pf-strip-label">Invested</div>
+            <div className="pf-strip-value">{formatINR(totalInvested)}</div>
+          </div>
+          <div className="pf-strip-sep" />
+          <div className="pf-strip-item">
+            <div className="pf-strip-label">Unrealized P&L</div>
+            <div className={`pf-strip-value ${totalUnrealizedPnL >= 0 ? "up" : "down"}`}>
+              {totalUnrealizedPnL >= 0 ? "+" : "−"}{formatINR(Math.abs(totalUnrealizedPnL))}
+            </div>
+          </div>
+          <div className="pf-strip-sep" />
+          <div className="pf-strip-item">
+            <div className="pf-strip-label">Win Rate</div>
+            <div className="pf-strip-value">
+              {historyList.length > 0 ? `${winRate}%` : "100%"}
+              <span className="pf-strip-sub"> ({winCount}W·{lossCount}L)</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Footnote */}
+        <div className="pf-hero-foot">
+          <span className="pf-foot-ico">⚡</span>
+          <span className="pf-foot-txt">
             {activeHoldings.length > 0
               ? `Tracking ${activeHoldings.length} open position${activeHoldings.length === 1 ? "" : "s"} with live price sync & trailing stops.`
               : "Virtual paper ledger initialized. Log setups to simulate execution risk-free."}
@@ -264,7 +260,7 @@ export default function PortfolioView({
       </div>
 
       {/* 2. SUBTABS SWITCHER */}
-      <div className="subtabs" style={{ marginBottom: 14 }}>
+      <div className="subtabs" style={{ marginBottom: 12 }}>
         <button
           className={`subtab ${activeTab === "active" ? "on" : ""}`}
           onClick={() => setActiveTab("active")}
@@ -282,7 +278,7 @@ export default function PortfolioView({
       {/* 3. ACTIVE POSITIONS VIEW */}
       {activeTab === "active" ? (
         <div>
-          <div className="sec-head" style={{ marginBottom: 12 }}>
+          <div className="sec-head" style={{ marginBottom: 10 }}>
             <span className="micro">Open Holdings ({activeHoldings.length})</span>
             <span
               className="micro"
@@ -363,142 +359,103 @@ export default function PortfolioView({
                 return (
                   <div
                     key={holding.tradeId || holding.id || idx}
-                    className="trade-h"
-                    style={{ animationDelay: `${idx * 60}ms` }}
+                    className="pf-card"
+                    style={{ animationDelay: `${idx * 45}ms` }}
                     onClick={() => handleCardClick(holding)}
                   >
-                    {/* Top Row: Monogram, Symbol, Stars, QTY, Engine, Status Pill, ROI */}
-                    <div className="row between" style={{ alignItems: "flex-start" }}>
-                      <div className="row gap12" style={{ alignItems: "flex-start" }}>
+                    {/* Header Row: Monogram, Symbol, Badges & Live P&L */}
+                    <div className="pf-card-head">
+                      <div className="pf-card-left">
                         <div
-                          className="av"
+                          className="pf-avatar"
                           style={{
-                            background: avatarGradients[idx % avatarGradients.length],
-                            boxShadow: "0 4px 14px rgba(99, 102, 241, 0.25)"
+                            background: avatarGradients[idx % avatarGradients.length]
                           }}
                         >
                           {sym.slice(0, 2) || "ST"}
                         </div>
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                            <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: "-.02em" }}>
-                              {sym}
-                            </span>
-                            <span className="stars" style={{ verticalAlign: "middle" }}>
-                              ★★★★★
-                              <i style={{ width: "90%" }}>★★★★★</i>
-                            </span>
-                            <span className="pill" style={{ fontSize: 9.5, padding: "2px 7px" }}>
-                              {qty} QTY
-                            </span>
+                        <div className="pf-card-id-block">
+                          <div className="pf-sym-line">
+                            <span className="pf-card-sym">{sym}</span>
+                            <span className="pf-tag qty">{qty} QTY</span>
                             {!isManual && (
                               <span
-                                className={`pill ${holdingEngine === "v2" ? "blue" : "purple"}`}
-                                style={{ fontSize: 9, padding: "2px 6.5px", fontWeight: 700 }}
+                                className={`pf-tag ${holdingEngine === "v2" ? "blue" : "purple"}`}
                               >
-                                {holdingEngine === "v2" ? "V2 PRO AI" : "V3 PATTERN AI"}
+                                {holdingEngine === "v2" ? "V2 AI" : "V3 AI"}
                               </span>
                             )}
                             {isManual ? (
-                              <span className="pill" style={{ fontSize: 9.5, padding: "2px 7px", background: "rgba(255,255,255,0.07)", color: "var(--ink2)", fontWeight: 700 }}>
-                                ✍️ MANUAL
-                              </span>
+                              <span className="pf-tag manual">MANUAL</span>
                             ) : isSignalActive ? (
-                              <span className="pill green" style={{ fontSize: 9.5, padding: "2px 7px" }}>
-                                <span
-                                  style={{
-                                    width: 5,
-                                    height: 5,
-                                    borderRadius: "50%",
-                                    background: "currentColor",
-                                    marginRight: 4,
-                                    display: "inline-block"
-                                  }}
-                                />
-                                ACTIVE
+                              <span className="pf-tag active">
+                                <span className="pf-tag-dot" /> ACTIVE
                               </span>
                             ) : (
-                              <span className="pill red" style={{ fontSize: 9.5, padding: "2px 7px" }}>
-                                STRATEGY CLOSED
-                              </span>
+                              <span className="pf-tag closed">EXITED</span>
                             )}
                           </div>
-                          <div style={{ fontSize: 11, color: "var(--ink3)", marginTop: 3 }}>
-                            {stratName} · Bought on {formatSignalDate(holding.date || holding.buyDate)}
+                          <div className="pf-card-meta">
+                            {stratName} • {formatSignalDate(holding.date || holding.buyDate)}
                           </div>
                         </div>
                       </div>
 
-                      {/* Right side: Floating P&L and % */}
-                      <div style={{ textAlign: "right", flexShrink: 0 }}>
-                        <div className={`num ${isUp ? "up" : "down"}`} style={{ fontSize: 15, fontWeight: 800 }}>
+                      {/* Right side: Real-time P&L & % */}
+                      <div className="pf-card-right">
+                        <div className={`pf-card-pnl ${isUp ? "up" : "down"}`}>
                           {isUp ? "+" : ""}{formatINR(pnl)}
                         </div>
-                        <div
-                          className={`num ${isUp ? "up" : "down"}`}
-                          style={{ fontSize: 11.5, fontWeight: 700, marginTop: 2 }}
-                        >
+                        <div className={`pf-card-roi ${isUp ? "up" : "down"}`}>
                           {isUp ? "+" : ""}{roi.toFixed(2)}%
                         </div>
                       </div>
                     </div>
 
-                    {/* 4-Column Financial Metric Grid */}
-                    <div className="pf-grid">
-                      <div className="pf-col">
-                        <div className="pf-lbl">Bought Price</div>
-                        <div className="pf-val">{formatINR(buy)}</div>
+                    {/* Compact 4-Column Data Strip */}
+                    <div className="pf-data-row">
+                      <div className="pf-data-cell">
+                        <span className="pf-data-k">Avg Buy</span>
+                        <span className="pf-data-v">{formatINR(buy)}</span>
                       </div>
-                      <div className="pf-col">
-                        <div className="pf-lbl" style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                          <span>Live LTP</span>
-                          {(isSignalActive || isManual) && (
-                            <span
-                              style={{
-                                width: 5,
-                                height: 5,
-                                borderRadius: "50%",
-                                background: "var(--profit)",
-                                display: "inline-block"
-                              }}
-                            />
-                          )}
-                        </div>
-                        <div className="pf-val">{cur ? formatINR(cur) : "—"}</div>
+                      <div className="pf-data-cell">
+                        <span className="pf-data-k">
+                          Live LTP
+                          {(isSignalActive || isManual) && <span className="pf-live-tick" />}
+                        </span>
+                        <span className="pf-data-v">{cur ? formatINR(cur) : "—"}</span>
                       </div>
-                      <div className="pf-col">
-                        <div className="pf-lbl">Invested</div>
-                        <div className="pf-val">{formatINR(invested)}</div>
+                      <div className="pf-data-cell">
+                        <span className="pf-data-k">Invested</span>
+                        <span className="pf-data-v">{formatINR(invested)}</span>
                       </div>
-                      <div className="pf-col">
-                        <div className="pf-lbl">Current Value</div>
-                        <div className="pf-val">{currentVal ? formatINR(currentVal) : "—"}</div>
+                      <div className="pf-data-cell">
+                        <span className="pf-data-k">Cur Value</span>
+                        <span className="pf-data-v">{currentVal ? formatINR(currentVal) : "—"}</span>
                       </div>
                     </div>
 
-                    {/* Inactive Strategy Warning Banner (Only for algorithmic strategy setups, not for Manual) */}
+                    {/* Inactive Strategy Warning (if applicable) */}
                     {!isSignalActive && !isManual && (
-                      <div className="pf-alert">
-                        <AlertTriangle style={{ width: 15, height: 15, flexShrink: 0, marginTop: 1 }} />
-                        <div>
-                          <b>Setup exited in Strategy:</b> This position is no longer an active signal in the engine.
-                          Review the chart or log an exit to lock in performance.
-                        </div>
+                      <div className="pf-compact-alert">
+                        <AlertTriangle style={{ width: 12, height: 12, flexShrink: 0 }} />
+                        <span>Setup exited in strategy engine. Consider reviewing chart or taking exit.</span>
                       </div>
                     )}
 
-                    {/* Actions Row */}
-                    <div className="pf-actions" onClick={(e) => e.stopPropagation()}>
+                    {/* Compact Action Toolbar */}
+                    <div className="pf-card-actions" onClick={(e) => e.stopPropagation()}>
                       <button
-                        className="pf-btn outline"
+                        className="pf-action-btn chart"
                         onClick={() => onOpenChart(holding.symbol)}
                         title="Open TradingView Chart"
                       >
-                        <LineChart style={{ width: 14, height: 14, color: "var(--accent)" }} />
+                        <LineChart style={{ width: 13, height: 13 }} />
                         <span>Chart</span>
                       </button>
+
                       <button
-                        className="pf-btn exit"
+                        className="pf-action-btn exit"
                         onClick={() =>
                           onOpenSellModal({
                             ...holding,
@@ -509,12 +466,13 @@ export default function PortfolioView({
                           })
                         }
                       >
-                        <ArrowUpRight style={{ width: 14, height: 14 }} />
+                        <ArrowUpRight style={{ width: 13, height: 13 }} />
                         <span>Log Exit / Sell</span>
                       </button>
+
                       {onDeleteTrade && (
                         <button
-                          className="pf-btn del"
+                          className="pf-action-btn del"
                           onClick={() => {
                             if (window.confirm(`Remove ${sym} from your paper portfolio?`)) {
                               onDeleteTrade(holding.tradeId || holding.id || sym);
@@ -522,7 +480,7 @@ export default function PortfolioView({
                           }}
                           title="Delete holding"
                         >
-                          <Trash2 style={{ width: 14, height: 14 }} />
+                          <Trash2 style={{ width: 13, height: 13 }} />
                         </button>
                       )}
                     </div>

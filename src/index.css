@@ -1624,7 +1624,520 @@ body::before{
 }
 
 /* ============================================================
-   PORTFOLIO DESK & MODAL STYLES
+   REFINED PORTFOLIO SCREEN (INSTITUTIONAL FINTECH DESIGN)
+   ============================================================ */
+
+/* 1. HERO BANNER */
+.pf-hero {
+  background:
+    radial-gradient(130% 120% at 10% -20%, var(--accent-soft), transparent 60%),
+    radial-gradient(120% 100% at 90% 120%, color-mix(in srgb, var(--profit) 12%, transparent), transparent 60%),
+    linear-gradient(180deg, var(--card-top), var(--card-bottom)),
+    var(--s1);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 16px 16px 14px;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 4px 18px rgba(0, 0, 0, 0.16),
+    0 0 36px var(--glow);
+}
+.pf-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.02) 40%, transparent);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.pf-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Hero Top Bar */
+.pf-hero-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.pf-hero-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pf-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: color-mix(in srgb, var(--profit) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--profit) 30%, transparent);
+  color: var(--profit);
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+.pf-live-dot {
+  width: 5.5px;
+  height: 5.5px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+  animation: pfPulse 2s infinite ease-in-out;
+}
+@keyframes pfPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.85); }
+}
+.pf-sync-tag {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink3);
+  letter-spacing: 0.02em;
+}
+.pf-hero-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--accent);
+  color: #fff;
+  border: 1px solid transparent;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 10px var(--glow-strong);
+  flex-shrink: 0;
+}
+.pf-hero-add-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+  box-shadow: 0 4px 14px var(--glow-strong);
+}
+.pf-hero-add-btn:active {
+  transform: translateY(0);
+}
+
+/* Hero Centerpiece: Total Portfolio Value */
+.pf-hero-body {
+  margin-bottom: 12px;
+}
+.pf-hero-lbl {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink3);
+  margin-bottom: 4px;
+}
+.pf-hero-primary-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pf-hero-main-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  font-size: clamp(22px, 6vw, 30px);
+  letter-spacing: -0.03em;
+  color: var(--ink1);
+  line-height: 1.15;
+  white-space: nowrap;
+}
+.pf-pnl-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.pf-pnl-pill.up {
+  background: color-mix(in srgb, var(--profit) 13%, transparent);
+  color: var(--profit);
+  border: 1px solid color-mix(in srgb, var(--profit) 28%, transparent);
+}
+.pf-pnl-pill.down {
+  background: color-mix(in srgb, var(--loss) 13%, transparent);
+  color: var(--loss);
+  border: 1px solid color-mix(in srgb, var(--loss) 28%, transparent);
+}
+.pf-pnl-arrow {
+  font-size: 9px;
+}
+.pf-pnl-num {
+  font-weight: 800;
+}
+.pf-pnl-pct {
+  font-size: 10.5px;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+/* Hero Metric Strip (Invested, P&L, Win Rate) */
+.pf-metric-strip {
+  display: flex;
+  align-items: center;
+  background: var(--s2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 12px;
+}
+.pf-strip-item {
+  flex: 1;
+  min-width: 0;
+}
+.pf-strip-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink3);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pf-strip-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pf-strip-value.up {
+  color: var(--profit);
+}
+.pf-strip-value.down {
+  color: var(--loss);
+}
+.pf-strip-sub {
+  font-size: 9px;
+  color: var(--ink3);
+  font-weight: 500;
+}
+.pf-strip-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--line);
+  margin: 0 8px;
+  flex-shrink: 0;
+}
+
+/* Hero Footnote */
+.pf-hero-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 9.5px;
+  font-weight: 500;
+  color: var(--ink3);
+  line-height: 1.4;
+}
+.pf-foot-ico {
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.pf-foot-txt {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============================================================
+   COMPACT HOLDINGS CARDS
+   ============================================================ */
+.pf-card {
+  background:
+    radial-gradient(120% 80% at 20% -20%, var(--accent-soft), transparent 70%),
+    linear-gradient(180deg, var(--card-top), var(--card-bottom)),
+    var(--s1);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 11px 12px 10px;
+  margin-bottom: 9px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s, box-shadow 0.2s ease;
+  animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 2px 8px rgba(0, 0, 0, 0.10);
+}
+.pf-card:hover {
+  transform: translateY(-1.5px);
+  border-color: var(--line-2);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 4px 14px rgba(0, 0, 0, 0.16),
+    0 0 24px var(--glow);
+}
+.pf-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Card Header */
+.pf-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pf-card-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+.pf-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 10.5px;
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.pf-card-id-block {
+  min-width: 0;
+  flex: 1;
+}
+.pf-sym-line {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.pf-card-sym {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink1);
+}
+.pf-tag {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1.5px 5.5px;
+  border-radius: 5px;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+}
+.pf-tag.qty {
+  background: var(--s3);
+  color: var(--ink2);
+  border: 1px solid var(--line);
+}
+.pf-tag.blue {
+  background: color-mix(in srgb, var(--indigo) 16%, transparent);
+  color: var(--indigo);
+  border: 1px solid color-mix(in srgb, var(--indigo) 30%, transparent);
+}
+.pf-tag.purple {
+  background: color-mix(in srgb, var(--violet) 16%, transparent);
+  color: var(--violet);
+  border: 1px solid color-mix(in srgb, var(--violet) 30%, transparent);
+}
+.pf-tag.manual {
+  background: var(--s2);
+  color: var(--ink3);
+  border: 1px solid var(--line);
+}
+.pf-tag.active {
+  background: color-mix(in srgb, var(--profit) 14%, transparent);
+  color: var(--profit);
+  border: 1px solid color-mix(in srgb, var(--profit) 28%, transparent);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.pf-tag-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.pf-tag.closed {
+  background: color-mix(in srgb, var(--loss) 14%, transparent);
+  color: var(--loss);
+  border: 1px solid color-mix(in srgb, var(--loss) 28%, transparent);
+}
+.pf-card-meta {
+  font-size: 9.5px;
+  color: var(--ink3);
+  margin-top: 1.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Card Right: P&L & ROI */
+.pf-card-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+.pf-card-pnl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13.5px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.pf-card-pnl.up { color: var(--profit); }
+.pf-card-pnl.down { color: var(--loss); }
+.pf-card-roi {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  margin-top: 1px;
+}
+.pf-card-roi.up { color: var(--profit); }
+.pf-card-roi.down { color: var(--loss); }
+
+/* Card Metrics Grid (Compact 4-column) */
+.pf-data-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  background: var(--s2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 6px 9px;
+  margin: 7px 0 7px;
+}
+.pf-data-cell {
+  display: flex;
+  flex-direction: column;
+}
+.pf-data-k {
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink3);
+  margin-bottom: 1.5px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+.pf-live-tick {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--profit);
+  display: inline-block;
+  box-shadow: 0 0 4px var(--profit);
+}
+.pf-data-v {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Card Action Bar (Slim) */
+.pf-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pf-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4.5px;
+  padding: 0 10px;
+  border-radius: 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.18s ease;
+  height: 26px;
+}
+.pf-action-btn.chart {
+  flex: 1;
+  background: var(--s2);
+  border-color: var(--line);
+  color: var(--ink1);
+}
+.pf-action-btn.chart:hover {
+  background: var(--s3);
+  color: var(--accent);
+  border-color: var(--line-2);
+}
+.pf-action-btn.exit {
+  flex: 1.3;
+  background: color-mix(in srgb, var(--loss) 12%, transparent);
+  border-color: color-mix(in srgb, var(--loss) 30%, transparent);
+  color: var(--loss);
+}
+.pf-action-btn.exit:hover {
+  background: var(--loss);
+  color: #fff;
+}
+.pf-action-btn.del {
+  flex: 0 0 26px;
+  width: 26px;
+  padding: 0;
+  background: var(--s2);
+  border-color: var(--line);
+  color: var(--ink3);
+}
+.pf-action-btn.del:hover {
+  background: color-mix(in srgb, var(--loss) 14%, transparent);
+  border-color: color-mix(in srgb, var(--loss) 30%, transparent);
+  color: var(--loss);
+}
+.pf-compact-alert {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 7px;
+  padding: 4px 7px;
+  margin-bottom: 6px;
+  font-size: 9px;
+  color: var(--gold);
+  line-height: 1.35;
+}
+
+/* ============================================================
+   PORTFOLIO DESK & MODAL STYLES (LEGACY & MODALS)
    ============================================================ */
 .pf-grid {
   display: grid;
