@@ -2,15 +2,19 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>QuantSync Lounge · Traders Community</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="theme-color" content="#111b21" id="metaThemeColor">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>QuantSync Lounge · WhatsApp Community</title>
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
   
   <style>
     /* ==========================================================================
-       WHATSAPP WEB EXACT DESIGN SYSTEM (DARK & LIGHT THEMES)
+       WHATSAPP WEB & MOBILE ULTIMATE HYBRID DESIGN SYSTEM
        ========================================================================== */
     :root {
       /* WhatsApp Dark Palette (Default) */
@@ -78,16 +82,22 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    body {
-      font-family: var(--wa-font);
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
       background-color: var(--wa-app-bg);
       color: var(--wa-text-primary);
-      height: 100vh;
-      height: 100dvh;
-      overflow: hidden;
+      font-family: var(--wa-font);
+      user-select: none;
+    }
+
+    body {
       display: flex;
       justify-content: center;
       align-items: center;
+      height: 100vh;
+      height: 100dvh;
     }
 
     /* WhatsApp Web Container Window */
@@ -112,10 +122,10 @@
       border-right: 1px solid var(--wa-border);
       background: var(--wa-sidebar-bg);
       z-index: 10;
-      transition: transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1);
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    /* Header */
+    /* Desktop Sidebar Header */
     .sidebar-header {
       height: 60px;
       background: var(--wa-header-bg);
@@ -175,7 +185,7 @@
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 10px;
       color: var(--wa-text-secondary);
     }
 
@@ -188,10 +198,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
-      transition: background 0.15s, color 0.15s;
+      transition: background 0.15s, color 0.15s, transform 0.1s;
     }
 
     .icon-btn:hover {
@@ -199,22 +209,97 @@
       color: var(--wa-text-primary);
     }
 
+    .icon-btn:active {
+      transform: scale(0.92);
+    }
+
     /* Screener Navigation Back Link */
     .screener-back-pill {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 12px;
       border-radius: 14px;
-      background: rgba(0, 168, 132, 0.15);
+      background: rgba(0, 168, 132, 0.16);
       color: var(--wa-green);
       text-decoration: none;
       display: flex;
       align-items: center;
       gap: 5px;
-      transition: background 0.15s;
+      transition: background 0.15s, transform 0.1s;
     }
     .screener-back-pill:hover {
       background: rgba(0, 168, 132, 0.28);
+    }
+    .screener-back-pill:active {
+      transform: scale(0.96);
+    }
+
+    /* ── MOBILE-SPECIFIC WHATSAPP TOP BAR ─────────────────────────────────────── */
+    .mobile-wa-brand-bar {
+      display: none;
+      height: 56px;
+      background: var(--wa-header-bg);
+      padding: 0 16px;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--wa-border-subtle);
+      flex-shrink: 0;
+    }
+
+    .mobile-wa-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--wa-green);
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mobile-wa-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Mobile WhatsApp Top Navigation Tabs */
+    .mobile-wa-tabs-bar {
+      display: none;
+      background: var(--wa-header-bg);
+      height: 44px;
+      border-bottom: 1px solid var(--wa-border);
+      flex-shrink: 0;
+    }
+
+    .wa-tab-item {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--wa-text-secondary);
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .wa-tab-item.active {
+      color: var(--wa-green);
+      border-bottom-color: var(--wa-green);
+    }
+
+    .wa-tab-badge {
+      background: var(--wa-badge-green);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 10px;
     }
 
     /* Search Bar in Sidebar */
@@ -233,7 +318,7 @@
       border-radius: 8px;
       display: flex;
       align-items: center;
-      padding: 6px 12px;
+      padding: 7px 12px;
       gap: 10px;
     }
 
@@ -242,7 +327,7 @@
       background: transparent;
       outline: none;
       font-family: var(--wa-font);
-      font-size: 13.5px;
+      font-size: 14px;
       color: var(--wa-text-primary);
       width: 100%;
     }
@@ -256,6 +341,7 @@
       flex: 1;
       overflow-y: auto;
       overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
     }
 
     .channel-item {
@@ -266,10 +352,15 @@
       border-bottom: 1px solid var(--wa-border-subtle);
       transition: background 0.12s ease;
       position: relative;
+      height: 72px;
     }
 
     .channel-item:hover {
       background: var(--wa-panel-hover);
+    }
+
+    .channel-item:active {
+      background: var(--wa-active-item);
     }
 
     .channel-item.active {
@@ -285,9 +376,10 @@
       align-items: center;
       justify-content: center;
       font-size: 22px;
-      margin-right: 15px;
+      margin-right: 14px;
       flex-shrink: 0;
       position: relative;
+      border: 1px solid var(--wa-border);
     }
 
     .channel-item.active .channel-avatar {
@@ -307,7 +399,7 @@
     }
 
     .channel-title {
-      font-size: 15px;
+      font-size: 15.5px;
       font-weight: 600;
       color: var(--wa-text-primary);
       white-space: nowrap;
@@ -373,6 +465,30 @@
       flex-shrink: 0;
     }
 
+    /* Floating Action Button (FAB) on Mobile */
+    .mobile-fab-btn {
+      display: none;
+      position: fixed;
+      bottom: max(20px, env(safe-area-inset-bottom));
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--wa-green);
+      border: none;
+      color: #ffffff;
+      font-size: 24px;
+      box-shadow: 0 6px 18px rgba(0, 168, 132, 0.45);
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      z-index: 25;
+      transition: transform 0.15s, background 0.15s;
+    }
+    .mobile-fab-btn:active {
+      transform: scale(0.92);
+    }
+
     /* ── RIGHT CHAT PANE ───────────────────────────────────────────────────────── */
     .chat-pane {
       flex: 1;
@@ -381,34 +497,45 @@
       flex-direction: column;
       position: relative;
       background: var(--wa-chat-bg);
+      z-index: 15;
     }
 
     /* Chat Pane Header */
     .chat-header {
       height: 60px;
       background: var(--wa-header-bg);
-      padding: 10px 16px;
+      padding: 8px 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid var(--wa-border-subtle);
       z-index: 5;
+      flex-shrink: 0;
     }
 
-    .chat-header-info {
+    .chat-header-interactive-cluster {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 8px;
+      transition: background 0.15s;
+      min-width: 0;
+    }
+    .chat-header-interactive-cluster:active {
+      background: rgba(255, 255, 255, 0.06);
     }
 
     .mobile-back-btn {
       display: none;
       background: transparent;
       border: none;
-      color: var(--wa-text-secondary);
-      font-size: 22px;
+      color: var(--wa-text-primary);
+      font-size: 24px;
       cursor: pointer;
-      margin-right: -4px;
+      padding: 4px 6px 4px 0;
+      line-height: 1;
     }
 
     .chat-header-avatar {
@@ -420,38 +547,65 @@
       align-items: center;
       justify-content: center;
       font-size: 20px;
+      border: 1px solid var(--wa-border);
+      flex-shrink: 0;
     }
 
     .chat-header-titles {
       display: flex;
       flex-direction: column;
+      justify-content: center;
+      min-width: 0;
     }
 
     .chat-header-name {
-      font-size: 15px;
+      font-size: 15.5px;
       font-weight: 600;
       color: var(--wa-text-primary);
       display: flex;
       align-items: center;
       gap: 6px;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .chat-header-sub {
       font-size: 11.5px;
       color: var(--wa-text-secondary);
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .chat-header-actions {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    /* In-Chat Search Bar Drawer */
+    .in-chat-search-bar {
+      display: none;
+      padding: 8px 14px;
+      background: var(--wa-sidebar-bg);
+      border-bottom: 1px solid var(--wa-border-subtle);
+      align-items: center;
+      gap: 8px;
+    }
+    .in-chat-search-bar.open {
+      display: flex;
     }
 
     /* Authentic WhatsApp Doodle Background */
     .chat-messages-container {
       flex: 1;
       overflow-y: auto;
-      padding: 18px 5% 14px 5%;
+      overflow-x: hidden;
+      padding: 16px 5% 14px 5%;
       display: flex;
       flex-direction: column;
       gap: 6px;
@@ -460,6 +614,8 @@
       background-image: radial-gradient(rgba(134, 150, 160, 0.08) 1.5px, transparent 1.5px);
       background-size: 24px 24px;
       scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      user-select: text;
     }
 
     /* Date Separator Pill */
@@ -486,6 +642,7 @@
       display: flex;
       width: 100%;
       margin-bottom: 3px;
+      position: relative;
     }
 
     .message-row.incoming {
@@ -497,7 +654,7 @@
     }
 
     .message-bubble {
-      max-width: 72%;
+      max-width: 76%;
       min-width: 120px;
       padding: 6px 9px 8px 9px;
       border-radius: 8px;
@@ -505,9 +662,10 @@
       box-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.25);
       border: 1px solid var(--wa-bubble-border);
       word-break: break-word;
-      font-size: 14.2px;
+      font-size: 14.5px;
       line-height: 1.38;
       animation: fadeIn 0.15s ease-out;
+      cursor: pointer;
     }
 
     @keyframes fadeIn {
@@ -525,29 +683,6 @@
       background: var(--wa-outgoing-bubble);
       color: #ffffff;
       border-top-right-radius: 2px;
-    }
-
-    /* Bubble Tail Effect */
-    .message-row.incoming.first-of-group .message-bubble::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: -8px;
-      width: 0;
-      height: 0;
-      border-top: 10px solid var(--wa-incoming-bubble);
-      border-left: 10px solid transparent;
-    }
-
-    .message-row.outgoing.first-of-group .message-bubble::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      right: -8px;
-      width: 0;
-      height: 0;
-      border-top: 10px solid var(--wa-outgoing-bubble);
-      border-right: 10px solid transparent;
     }
 
     /* Sender Name in Group Chat */
@@ -597,13 +732,14 @@
       gap: 3px;
       background: rgba(0, 168, 132, 0.22);
       color: var(--wa-green);
-      padding: 1px 7px;
+      padding: 2px 8px;
       border-radius: 6px;
       font-weight: 700;
       font-family: var(--wa-font-mono);
       text-decoration: none;
       cursor: pointer;
       transition: background 0.15s, transform 0.1s;
+      min-height: 26px;
     }
 
     .stock-chip:hover {
@@ -656,8 +792,8 @@
       background: var(--wa-header-bg);
       border: 1px solid var(--wa-border-subtle);
       border-radius: 12px;
-      padding: 1px 6px;
-      font-size: 11.5px;
+      padding: 2px 7px;
+      font-size: 12px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
@@ -665,42 +801,114 @@
       transition: transform 0.1s;
     }
     .reaction-pill:hover { transform: scale(1.1); }
+    .reaction-pill:active { transform: scale(0.9); }
     .reaction-pill.reacted {
       border-color: var(--wa-green);
       background: rgba(0, 168, 132, 0.2);
     }
 
-    /* Hover Menu Trigger on Message Bubble */
-    .msg-action-trigger {
-      display: none;
+    /* Floating WhatsApp Reaction Popup (Mobile & Desktop) */
+    .reaction-popup-drawer {
       position: absolute;
-      top: 6px;
-      right: 8px;
-      background: rgba(32, 44, 51, 0.85);
-      border-radius: 50%;
-      width: 22px;
-      height: 22px;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      color: var(--wa-text-secondary);
-      cursor: pointer;
-    }
-    .message-bubble:hover .msg-action-trigger {
+      bottom: calc(100% + 4px);
+      background: var(--wa-header-bg);
+      border: 1px solid var(--wa-border);
+      border-radius: 24px;
+      padding: 4px 8px;
       display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+      z-index: 50;
+      animation: popIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.85); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .popup-emoji-btn {
+      font-size: 20px;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      padding: 4px;
+      transition: transform 0.12s;
+      border-radius: 50%;
+    }
+    .popup-emoji-btn:hover {
+      transform: scale(1.25);
+    }
+    .popup-emoji-btn:active {
+      transform: scale(0.9);
+    }
+
+    .popup-action-btn {
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--wa-active-item);
+      color: var(--wa-text-primary);
+      border: none;
+      padding: 4px 8px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    /* ── QUICK MOMENTUM TICKER TRAY (Directly above input) ────────────────────── */
+    .quick-ticker-tray {
+      background: var(--wa-sidebar-bg);
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      white-space: nowrap;
+      border-top: 1px solid var(--wa-border-subtle);
+      -webkit-overflow-scrolling: touch;
+      flex-shrink: 0;
+    }
+    .quick-ticker-tray::-webkit-scrollbar {
+      display: none;
+    }
+
+    .ticker-pill-btn {
+      background: var(--wa-header-bg);
+      border: 1px solid var(--wa-border);
+      color: var(--wa-green);
+      font-family: var(--wa-font-mono);
+      font-size: 12.5px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.12s, transform 0.1s;
+      flex-shrink: 0;
+    }
+    .ticker-pill-btn:active {
+      transform: scale(0.92);
+      background: var(--wa-green);
+      color: #ffffff;
     }
 
     /* ── BOTTOM INPUT BAR ──────────────────────────────────────────────────────── */
     .chat-input-bar {
-      min-height: 62px;
+      min-height: 60px;
       background: var(--wa-header-bg);
-      padding: 8px 16px;
+      padding: 8px 12px max(8px, env(safe-area-inset-bottom)) 12px;
       display: flex;
       align-items: flex-end;
-      gap: 12px;
+      gap: 8px;
       border-top: 1px solid var(--wa-border-subtle);
       z-index: 5;
       position: relative;
+      flex-shrink: 0;
     }
 
     /* Reply draft banner */
@@ -714,63 +922,86 @@
       border-top: 1px solid var(--wa-border);
       border-left: 4px solid var(--wa-green);
       padding: 8px 16px;
-      display: flex;
       justify-content: space-between;
       align-items: center;
       font-size: 12px;
       box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
+      z-index: 6;
     }
 
     .reply-draft-close {
       cursor: pointer;
-      font-size: 16px;
+      font-size: 18px;
       color: var(--wa-text-secondary);
+      padding: 4px;
     }
 
-    .chat-textarea-wrap {
+    /* WhatsApp Mobile Input Pill Container */
+    .chat-input-pill {
       flex: 1;
       background: var(--wa-input-bg);
-      border-radius: 8px;
-      padding: 9px 14px;
+      border-radius: 24px;
+      padding: 6px 12px;
       display: flex;
       align-items: center;
+      gap: 8px;
+      min-height: 46px;
     }
 
     .chat-textarea {
-      width: 100%;
+      flex: 1;
       max-height: 120px;
       border: none;
       background: transparent;
       outline: none;
       font-family: var(--wa-font);
-      font-size: 14.5px;
+      font-size: 16px; /* 16px strictly prevents iOS Safari auto-zoom */
       color: var(--wa-text-primary);
       resize: none;
       line-height: 1.35;
+      padding: 4px 0;
     }
 
     .chat-textarea::placeholder {
       color: var(--wa-input-placeholder);
     }
 
-    .send-circle-btn {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: var(--wa-green);
+    .pill-icon-btn {
+      background: transparent;
       border: none;
-      color: #ffffff;
-      font-size: 18px;
+      color: var(--wa-text-secondary);
+      font-size: 20px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.15s, transform 0.1s;
-      flex-shrink: 0;
+      padding: 4px;
+      transition: color 0.15s, transform 0.1s;
     }
-    .send-circle-btn:hover {
+    .pill-icon-btn:active {
+      transform: scale(0.9);
+    }
+
+    /* WhatsApp Mobile Floating Circular Send/Mic Button */
+    .send-circle-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--wa-green);
+      border: none;
+      color: #ffffff;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, transform 0.15s;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+    .send-circle-btn:active {
+      transform: scale(0.9);
       background: var(--wa-green-hover);
-      transform: scale(1.05);
     }
 
     /* ── AUTH / GMAIL LOGIN MODAL ──────────────────────────────────────────────── */
@@ -790,14 +1021,14 @@
     .modal-card {
       background: var(--wa-sidebar-bg);
       border: 1px solid var(--wa-border);
-      border-radius: 14px;
+      border-radius: 16px;
       width: 100%;
       max-width: 440px;
-      padding: 32px 28px;
+      padding: 32px 24px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
       text-align: center;
       position: relative;
-      animation: modalPop 0.2s cubic-bezier(0.1, 0.9, 0.2, 1);
+      animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     @keyframes modalPop {
@@ -843,9 +1074,9 @@
       background: var(--wa-header-bg);
       border: 1px solid var(--wa-border);
       border-radius: 8px;
-      padding: 12px 14px;
+      padding: 13px 14px;
       font-family: var(--wa-font);
-      font-size: 14.5px;
+      font-size: 16px; /* Prevents iOS auto-zoom */
       color: var(--wa-text-primary);
       outline: none;
       transition: border-color 0.15s;
@@ -860,9 +1091,9 @@
       background: var(--wa-green);
       border: none;
       border-radius: 8px;
-      padding: 13px;
+      padding: 14px;
       font-family: var(--wa-font);
-      font-size: 15px;
+      font-size: 15.5px;
       font-weight: 700;
       color: #ffffff;
       cursor: pointer;
@@ -877,15 +1108,130 @@
     .primary-submit-btn:hover {
       background: var(--wa-green-hover);
     }
+    .primary-submit-btn:active {
+      transform: scale(0.98);
+    }
 
     .guest-btn {
       margin-top: 14px;
       background: transparent;
       border: none;
       color: var(--wa-text-muted);
-      font-size: 12.5px;
+      font-size: 13px;
       cursor: pointer;
       text-decoration: underline;
+      padding: 6px;
+    }
+
+    /* ── CHANNEL INFO BOTTOM SHEET (Mobile & Desktop) ─────────────────────────── */
+    .sheet-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      z-index: 1200;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .sheet-content {
+      background: var(--wa-sidebar-bg);
+      width: 100%;
+      max-width: 500px;
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      padding: 20px 20px max(24px, env(safe-area-inset-bottom)) 20px;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+      animation: slideUpSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideUpSheet {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .sheet-handle {
+      width: 40px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--wa-text-muted);
+      margin: 0 auto 16px auto;
+    }
+
+    .sheet-header-center {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .sheet-avatar {
+      font-size: 42px;
+      margin-bottom: 8px;
+      display: inline-block;
+    }
+
+    .sheet-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--wa-text-primary);
+    }
+
+    .sheet-desc {
+      font-size: 13px;
+      color: var(--wa-text-secondary);
+      margin-top: 4px;
+    }
+
+    .sheet-rule-card {
+      background: var(--wa-header-bg);
+      border: 1px solid var(--wa-border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--wa-text-primary);
+    }
+
+    .sheet-btn {
+      width: 100%;
+      background: var(--wa-active-item);
+      color: var(--wa-text-primary);
+      border: 1px solid var(--wa-border);
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+
+    /* ── TOAST NOTIFICATIONS ─────────────────────────────────────────────────── */
+    .wa-toast {
+      position: fixed;
+      bottom: 84px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(32, 44, 51, 0.94);
+      color: #ffffff;
+      padding: 10px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 3000;
+      white-space: nowrap;
+    }
+    .wa-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
 
     /* Lightbox for Images */
@@ -893,56 +1239,129 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.92);
+      background: rgba(0, 0, 0, 0.94);
       z-index: 2000;
       align-items: center;
       justify-content: center;
       padding: 20px;
     }
     .lightbox-modal img {
-      max-width: 90vw;
+      max-width: 95vw;
       max-height: 85vh;
       border-radius: 8px;
       box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+      object-fit: contain;
     }
 
-    /* ── MOBILE RESPONSIVE ADAPTATION ─────────────────────────────────────────── */
+    /* ── MOBILE PHONE HIGH-PRECISION ADAPTATION ──────────────────────────────── */
     @media (max-width: 768px) {
+      body {
+        padding: 0;
+        height: 100vh;
+        height: 100dvh;
+        background: var(--wa-sidebar-bg);
+      }
+
       .whatsapp-container {
         border-radius: 0;
+        box-shadow: none;
+        max-width: 100%;
       }
+
+      /* Desktop Sidebar Header is hidden; Native Mobile WhatsApp Top App Bar is shown */
+      .sidebar-header {
+        display: none;
+      }
+      .mobile-wa-brand-bar {
+        display: flex;
+        padding-top: env(safe-area-inset-top);
+        height: calc(56px + env(safe-area-inset-top));
+      }
+      .mobile-wa-tabs-bar {
+        display: flex;
+      }
+
+      /* Sidebar takes 100% width on mobile */
       .sidebar {
         width: 100%;
+        min-width: 100%;
         position: absolute;
         inset: 0;
+        border-right: none;
       }
+
+      .mobile-fab-btn {
+        display: flex;
+      }
+
+      /* Chat Pane slides in and out smoothly */
       .chat-pane {
         width: 100%;
+        min-width: 100%;
         position: absolute;
         inset: 0;
         transform: translateX(100%);
-        transition: transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1);
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.4);
       }
+
       body.in-chat .chat-pane {
         transform: translateX(0);
       }
       body.in-chat .sidebar {
-        transform: translateX(-30%);
+        transform: translateX(-25%);
       }
+      body.in-chat .mobile-fab-btn {
+        display: none;
+      }
+
+      /* Chat Header on Phone */
+      .chat-header {
+        padding-top: env(safe-area-inset-top);
+        height: calc(60px + env(safe-area-inset-top));
+        padding-left: 6px;
+        padding-right: 10px;
+      }
+
       .mobile-back-btn {
         display: block;
+      }
+
+      .chat-messages-container {
+        padding: 12px 10px 10px 10px;
+      }
+
+      .message-bubble {
+        max-width: 86%;
+        font-size: 15px;
+      }
+
+      .chat-input-bar {
+        padding: 8px 8px max(10px, env(safe-area-inset-bottom)) 8px;
+        gap: 6px;
+      }
+
+      .chat-input-pill {
+        padding: 4px 10px;
+        min-height: 44px;
+      }
+
+      .send-circle-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
       }
     }
   </style>
 </head>
 <body>
 
-  <div class="whatsapp-container">
+  <div class="whatsapp-container" id="appContainer">
     
     <!-- ── LEFT SIDEBAR: CHANNELS & PROFILES ─────────────────────────────────── -->
     <aside class="sidebar" id="sidebar">
       
-      <!-- Sidebar Header -->
+      <!-- 1. Desktop Sidebar Header -->
       <div class="sidebar-header">
         <div class="user-profile-badge" onclick="openProfileModal()" title="Click to view/edit profile">
           <img src="https://api.dicebear.com/7.x/initials/svg?seed=Trader&backgroundColor=00a884" alt="Avatar" class="user-avatar-img" id="myAvatarImg">
@@ -960,43 +1379,88 @@
         </div>
       </div>
 
-      <!-- Search in Channels -->
-      <div class="sidebar-search-box">
-        <div class="search-input-wrap">
-          <span style="color: var(--wa-text-secondary); font-size: 15px;">🔍</span>
-          <input type="text" id="channelSearchInput" placeholder="Search or filter channels..." oninput="filterChannels(this.value)">
+      <!-- 2. Mobile-Specific WhatsApp Brand Bar (Shows on phone) -->
+      <div class="mobile-wa-brand-bar">
+        <div class="mobile-wa-title">
+          <span>QuantSync</span>
+        </div>
+        <div class="mobile-wa-actions">
+          <a href="/screener.html" class="icon-btn" title="Open Screener" style="text-decoration:none;">🎯</a>
+          <button class="icon-btn" onclick="toggleTheme()" title="Toggle Theme">🌓</button>
+          <button class="icon-btn" onclick="openProfileModal()" title="Profile">
+            <img src="https://api.dicebear.com/7.x/initials/svg?seed=Trader&backgroundColor=00a884" id="myMobileAvatarImg" style="width:28px; height:28px; border-radius:50%;" alt="User">
+          </button>
         </div>
       </div>
 
-      <!-- Channels List -->
+      <!-- 3. Mobile WhatsApp Top Tabs Bar -->
+      <nav class="mobile-wa-tabs-bar">
+        <div class="wa-tab-item active" id="tab-all" onclick="filterByTab('all', this)">
+          <span>Chats</span>
+          <span class="wa-tab-badge" id="tabBadgeCount">5</span>
+        </div>
+        <div class="wa-tab-item" id="tab-signals" onclick="filterByTab('signals', this)">
+          <span>Radar</span>
+        </div>
+        <div class="wa-tab-item" id="tab-alerts" onclick="filterByTab('alerts', this)">
+          <span>Alerts</span>
+        </div>
+        <div class="wa-tab-item" id="tab-fno" onclick="filterByTab('fno', this)">
+          <span>F&O</span>
+        </div>
+      </nav>
+
+      <!-- 4. Search in Channels -->
+      <div class="sidebar-search-box">
+        <div class="search-input-wrap">
+          <span style="color: var(--wa-text-secondary); font-size: 15px;">🔍</span>
+          <input type="text" id="channelSearchInput" placeholder="Search channels or tickers..." oninput="filterChannels(this.value)">
+        </div>
+      </div>
+
+      <!-- 5. Channels List -->
       <div class="channels-list" id="channelsList">
         <!-- Rendered via JS -->
       </div>
+
+      <!-- 6. Mobile Floating Action Button (FAB) -->
+      <button class="mobile-fab-btn" onclick="handleFabClick()" title="Start Chatting / Signals">
+        💬
+      </button>
     </aside>
 
     <!-- ── RIGHT MAIN CHAT CONVERSATION PANE ──────────────────────────────────── -->
     <main class="chat-pane" id="chatPane">
       
-      <!-- Chat Header -->
+      <!-- Native Chat Header -->
       <header class="chat-header">
-        <div class="chat-header-info">
-          <button class="mobile-back-btn" onclick="exitChatToSidebar()" title="Back to Channels">←</button>
+        <div class="chat-header-interactive-cluster" onclick="handleHeaderClusterClick()" title="Tap to view channel details">
+          <button class="mobile-back-btn" onclick="event.stopPropagation(); handleBackNavigation();" title="Back to Channels">←</button>
           <div class="chat-header-avatar" id="currentChannelIcon">🚀</div>
           <div class="chat-header-titles">
             <div class="chat-header-name">
               <span id="currentChannelTitle">Breakout Radar</span>
               <span class="announcement-tag" id="currentChannelBadge" style="display:none;">Alerts</span>
             </div>
-            <div class="chat-header-sub" id="currentChannelSub">Live Institutional Setup Discussion · 24 traders online</div>
+            <div class="chat-header-sub" id="currentChannelSub">online · 24 traders active</div>
           </div>
         </div>
 
         <div class="chat-header-actions">
-          <a href="/screener.html" class="screener-back-pill" style="font-size: 11px;">
-            📊 Live Setups
+          <button class="icon-btn" onclick="toggleInChatSearch()" title="Search messages in this channel">🔍</button>
+          <a href="/screener.html" class="screener-back-pill" title="View Live Breakout Screener">
+            📊 <span style="display:inline-block;">Screener</span>
           </a>
+          <button class="icon-btn" onclick="openChannelSheet()" title="Channel Info & Rules">⋮</button>
         </div>
       </header>
+
+      <!-- In-Chat Search Bar Drawer -->
+      <div class="in-chat-search-bar" id="inChatSearchBar">
+        <span style="color: var(--wa-text-secondary); font-size: 15px;">🔍</span>
+        <input type="text" id="inChatSearchInput" placeholder="Find in this chat (e.g. NOCIL, DNA, target)..." oninput="filterInChatMessages(this.value)" style="flex:1; background:transparent; border:none; outline:none; font-family:var(--wa-font); font-size:14px; color:var(--wa-text-primary);">
+        <button class="icon-btn" onclick="toggleInChatSearch()" style="width:28px; height:28px; font-size:14px;">✕</button>
+      </div>
 
       <!-- Message Bubbles Scroll Area -->
       <div class="chat-messages-container" id="messagesContainer">
@@ -1004,37 +1468,57 @@
       </div>
 
       <!-- Reply Draft Banner (Appears when user clicks reply) -->
-      <div class="reply-draft-banner" id="replyDraftBanner" style="display:none;">
-        <div>
-          <div style="font-weight:700; color:var(--wa-green);" id="replySenderName">Replying to User</div>
-          <div style="color:var(--wa-text-secondary); font-size:11.5px;" id="replyTextSnippet">Snippet of quoted message...</div>
+      <div class="reply-draft-banner" id="replyDraftBanner">
+        <div style="min-width:0; flex:1;">
+          <div style="font-weight:700; color:var(--wa-green); font-size:12px;" id="replySenderName">Replying to User</div>
+          <div style="color:var(--wa-text-secondary); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" id="replyTextSnippet">Snippet of quoted message...</div>
         </div>
         <span class="reply-draft-close" onclick="cancelReply()">✕</span>
       </div>
 
-      <!-- Bottom Chat Input Bar -->
-      <footer class="chat-input-bar">
-        <!-- Attachment Clip -->
-        <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="handleFileUpload(this)">
-        <button class="icon-btn" onclick="document.getElementById('fileInput').click()" title="Attach Chart Screenshot / Image">📎</button>
-        
-        <!-- Emoji Quick Toggle -->
-        <button class="icon-btn" onclick="insertEmoji('🚀')" title="Quick Reaction">🚀</button>
+      <!-- Quick Momentum Ticker Tray (Tap to insert ticker symbol directly) -->
+      <div class="quick-ticker-tray" id="quickTickerTray">
+        <span style="font-size:11px; font-weight:700; color:var(--wa-text-muted); text-transform:uppercase; letter-spacing:0.04em;">RADAR:</span>
+        <button class="ticker-pill-btn" onclick="insertTickerSymbol('NOCIL')">📈 $NOCIL</button>
+        <button class="ticker-pill-btn" onclick="insertTickerSymbol('RELIANCE')">📈 $RELIANCE</button>
+        <button class="ticker-pill-btn" onclick="insertTickerSymbol('TCS')">📈 $TCS</button>
+        <button class="ticker-pill-btn" onclick="insertTickerSymbol('HDFCBANK')">📈 $HDFCBANK</button>
+        <button class="ticker-pill-btn" onclick="insertTickerSymbol('DIXON')">📈 $DIXON</button>
+        <button class="ticker-pill-btn" onclick="insertTickerSymbol('TATASTEEL')">📈 $TATASTEEL</button>
+        <button class="ticker-pill-btn" onclick="insertTickerSymbol('IRFC')">📈 $IRFC</button>
+        <button class="ticker-pill-btn" onclick="insertTickerSymbol('KALYANKJIL')">📈 $KALYANKJIL</button>
+        <button class="ticker-pill-btn" onclick="insertTickerSymbol('BSE')">📈 $BSE</button>
+      </div>
 
-        <!-- Auto-expanding Textarea -->
-        <div class="chat-textarea-wrap">
+      <!-- Bottom Chat Input Bar (Native WhatsApp Mobile & Web Architecture) -->
+      <footer class="chat-input-bar">
+        
+        <!-- WhatsApp Input Pill -->
+        <div class="chat-input-pill">
+          <!-- Emoji Button -->
+          <button class="pill-icon-btn" onclick="insertEmoji('🚀')" title="Quick Reaction">😊</button>
+
+          <!-- Auto-expanding Textarea -->
           <textarea 
             id="messageInput" 
             class="chat-textarea" 
             rows="1" 
-            placeholder="Type a message or paste a chart screenshot (Ctrl+V)..."
+            placeholder="Message"
+            enterkeyhint="send"
             onkeydown="handleInputKeydown(event)"
-            oninput="autoResizeTextarea(this)"></textarea>
+            oninput="handleInputTyping(this)"></textarea>
+
+          <!-- Quick Stock Ticker $ Button -->
+          <button class="pill-icon-btn" onclick="insertEmoji('$')" title="Insert Stock Ticker symbol">$</button>
+
+          <!-- Attachment Clip -->
+          <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="handleFileUpload(this)">
+          <button class="pill-icon-btn" onclick="document.getElementById('fileInput').click()" title="Attach Chart Screenshot / Image">📎</button>
         </div>
 
-        <!-- WhatsApp Send Circle Button -->
-        <button class="send-circle-btn" id="sendBtn" onclick="sendMessage()" title="Send Message">
-          ➤
+        <!-- Floating WhatsApp Circular Send/Mic Button -->
+        <button class="send-circle-btn" id="sendBtn" onclick="handleSendCircleClick()" title="Send Message">
+          <span id="sendBtnIcon">🎤</span>
         </button>
       </footer>
 
@@ -1042,12 +1526,49 @@
 
   </div>
 
+  <!-- ── FLOATING REACTION POPUP DRAWER (Appears on message tap) ───────────────── -->
+  <div class="reaction-popup-drawer" id="reactionPopup" style="display:none;">
+    <button class="popup-emoji-btn" onclick="submitActiveReaction('👍')">👍</button>
+    <button class="popup-emoji-btn" onclick="submitActiveReaction('❤️')">❤️</button>
+    <button class="popup-emoji-btn" onclick="submitActiveReaction('🔥')">🔥</button>
+    <button class="popup-emoji-btn" onclick="submitActiveReaction('🚀')">🚀</button>
+    <button class="popup-emoji-btn" onclick="submitActiveReaction('🎯')">🎯</button>
+    <button class="popup-emoji-btn" onclick="submitActiveReaction('😂')">😂</button>
+    <button class="popup-emoji-btn" onclick="submitActiveReaction('😮')">😮</button>
+    <button class="popup-action-btn" onclick="replyToActiveMessage()">↩ Reply</button>
+    <button class="popup-action-btn" onclick="copyActiveMessage()">📋 Copy</button>
+  </div>
+
+  <!-- ── CHANNEL INFO BOTTOM SHEET ───────────────────────────────────────────── -->
+  <div class="sheet-overlay" id="channelSheet" onclick="closeChannelSheet(event)">
+    <div class="sheet-content" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header-center">
+        <div class="sheet-avatar" id="sheetIcon">🚀</div>
+        <h3 class="sheet-title" id="sheetTitle">Breakout Radar</h3>
+        <p class="sheet-desc" id="sheetDesc">Live algorithmic momentum and technical DNA trade setups.</p>
+      </div>
+
+      <div class="sheet-rule-card">
+        <div style="font-weight:700; color:var(--wa-green); margin-bottom:6px;">📌 Pinned Guidelines:</div>
+        <div>1. Always specify <strong>Entry</strong>, <strong>Target</strong> and <strong>Stop-loss</strong>.</div>
+        <div style="margin-top:4px;">2. Minimum <strong>DNA Score >= 75</strong> for high-conviction breakout setups.</div>
+        <div style="margin-top:4px;">3. Strictly institutional setups. Zero spam or pump-and-dump.</div>
+      </div>
+
+      <a href="/screener.html" class="sheet-btn" style="margin-bottom:10px;">
+        🎯 Open Live Breakout Screener
+      </a>
+      <button class="sheet-btn" onclick="closeChannelSheet()">Close</button>
+    </div>
+  </div>
+
   <!-- ── GMAIL REGISTRATION / LOGIN MODAL ────────────────────────────────────── -->
   <div class="modal-overlay" id="authModal" style="display:none;">
     <div class="modal-card">
       <div class="modal-logo">💬</div>
       <h2 class="modal-title">QuantSync Traders Lounge</h2>
-      <p class="modal-desc">Join 2,400+ verified swing traders. Register with your Gmail to discuss live breakout setups and algorithmic DNA scores.</p>
+      <p class="modal-desc">Join verified Indian swing traders. Register with your Gmail ID to discuss live breakout setups and algorithmic DNA scores.</p>
 
       <form onsubmit="handleAuthSubmit(event)">
         <div class="form-group">
@@ -1057,7 +1578,7 @@
 
         <div class="form-group">
           <label class="form-label">Trader Name / Handle</label>
-          <input type="text" class="form-input" id="authName" placeholder="e.g. Rahul Sharma" autocomplete="name">
+          <input type="text" class="form-input" id="authName" placeholder="e.g. Rahul Tiwari" autocomplete="name">
         </div>
 
         <button type="submit" class="primary-submit-btn">
@@ -1074,7 +1595,10 @@
     <img id="lightboxImg" src="" alt="Enlarged Chart">
   </div>
 
-  <!-- ── AUDIO ASSETS (SYNTHESIZED WEB AUDIO API) ────────────────────────────── -->
+  <!-- ── TOAST NOTIFICATION ──────────────────────────────────────────────────── -->
+  <div class="wa-toast" id="waToast">Voice notes launching in v2.0!</div>
+
+  <!-- ── AUDIO & ENGINE LOGIC ────────────────────────────────────────────────── -->
   <script>
     // Audio synthesizer for authentic WhatsApp pops
     const AudioEngine = {
@@ -1092,8 +1616,8 @@
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(880, this.ctx.currentTime); // A5
-          osc.frequency.exponentialRampToValueAtTime(1320, this.ctx.currentTime + 0.08); // E6
+          osc.frequency.setValueAtTime(880, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(1320, this.ctx.currentTime + 0.08);
           gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
           gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.1);
           osc.connect(gain);
@@ -1130,6 +1654,9 @@
     let replyTarget = null;
     let pendingAttachment = null;
     let pollInterval = null;
+    let activeTabFilter = 'all';
+    let activePopupMessage = null;
+    let lastTapTime = 0;
 
     // Distinct Sender Colors for Group Chats (Exact WhatsApp Style)
     const USER_COLORS = [
@@ -1151,10 +1678,22 @@
       loadUserFromStorage();
       await fetchChannels();
 
-      // Default to breakout-radar or first channel
-      const defaultChannel = channels.find(c => c.id === 'breakout-radar') || channels[0];
-      if (defaultChannel) {
-        selectChannel(defaultChannel.id);
+      // Check URL hash for direct channel link: e.g. #breakout-radar
+      const hashChannel = window.location.hash ? window.location.hash.replace('#', '').replace('chat=', '') : null;
+      let targetChannel = channels.find(c => c.id === hashChannel);
+      if (!targetChannel) {
+        targetChannel = channels.find(c => c.id === 'breakout-radar') || channels[0];
+      }
+
+      const isMobile = window.innerWidth <= 768;
+      if (!isMobile) {
+        if (targetChannel) selectChannel(targetChannel.id, false);
+      } else {
+        if (hashChannel && targetChannel) {
+          selectChannel(targetChannel.id, false);
+        } else {
+          currentChannel = targetChannel;
+        }
       }
 
       // Check if user is not registered, prompt modal after 800ms
@@ -1166,18 +1705,112 @@
 
       // Clipboard Paste Support (Traders can paste chart screenshots directly!)
       document.addEventListener('paste', handleClipboardPaste);
+
+      // Mobile Hardware/Browser Back Button Navigation
+      window.addEventListener('popstate', handlePopState);
+
+      // Mobile Touch Gesture Support (Edge Swipe to go back)
+      initTouchGestures();
+
+      // Virtual Keyboard Viewport Handler
+      initViewportResizing();
+
+      // Close popup on outside click
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.message-bubble') && !e.target.closest('#reactionPopup')) {
+          closeReactionPopup();
+        }
+      });
     });
+
+    // ── NATIVE PHONE BACK-BUTTON & HISTORY SUPPORT ─────────────────────────────
+    function handlePopState(e) {
+      if (document.body.classList.contains('in-chat')) {
+        exitChatToSidebar(false);
+      }
+    }
+
+    function handleBackNavigation() {
+      if (window.history.state && window.history.state.inChat) {
+        window.history.back();
+      } else {
+        exitChatToSidebar(true);
+      }
+    }
+
+    // ── MOBILE TOUCH GESTURES (SWIPE-BACK LIKE NATIVE APP) ────────────────────
+    function initTouchGestures() {
+      let touchStartX = 0;
+      let touchStartY = 0;
+
+      document.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+        }
+      }, { passive: true });
+
+      document.addEventListener('touchend', (e) => {
+        if (e.changedTouches.length === 1) {
+          const deltaX = e.changedTouches[0].clientX - touchStartX;
+          const deltaY = e.changedTouches[0].clientY - touchStartY;
+          // If swiped right from left edge (< 45px) by > 70px with minimal vertical drag
+          if (touchStartX < 45 && deltaX > 70 && Math.abs(deltaY) < 55) {
+            if (document.body.classList.contains('in-chat')) {
+              handleBackNavigation();
+            }
+          }
+        }
+      }, { passive: true });
+    }
+
+    // ── VIRTUAL KEYBOARD & SAFE AREA MANAGEMENT ───────────────────────────────
+    function initViewportResizing() {
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+          if (document.body.classList.contains('in-chat')) {
+            scrollToBottom();
+          }
+        });
+      }
+
+      const input = document.getElementById('messageInput');
+      input.addEventListener('focus', () => {
+        setTimeout(scrollToBottom, 200);
+      });
+    }
+
+    // ── TOAST NOTIFICATIONS ───────────────────────────────────────────────────
+    function showToast(text) {
+      const toast = document.getElementById('waToast');
+      toast.textContent = text;
+      toast.classList.add('show');
+      if (navigator.vibrate) navigator.vibrate(10);
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
 
     // ── THEME MANAGEMENT ──────────────────────────────────────────────────────
     function loadTheme() {
       const saved = localStorage.getItem('quantsync_theme') || 'dark';
       document.documentElement.setAttribute('data-theme', saved);
+      updateThemeColorMeta(saved);
     }
+
     function toggleTheme() {
       const cur = document.documentElement.getAttribute('data-theme') || 'dark';
       const next = cur === 'dark' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', next);
       localStorage.setItem('quantsync_theme', next);
+      updateThemeColorMeta(next);
+    }
+
+    function updateThemeColorMeta(theme) {
+      const meta = document.getElementById('metaThemeColor');
+      if (meta) {
+        meta.setAttribute('content', theme === 'dark' ? '#111b21' : '#008069');
+      }
     }
 
     // ── USER AUTHENTICATION ───────────────────────────────────────────────────
@@ -1197,11 +1830,15 @@
         document.getElementById('myStatusText').textContent = 'Online';
         if (currentUser.avatar_url) {
           document.getElementById('myAvatarImg').src = currentUser.avatar_url;
+          const mobImg = document.getElementById('myMobileAvatarImg');
+          if (mobImg) mobImg.src = currentUser.avatar_url;
         }
       } else {
         document.getElementById('myDisplayName').textContent = 'Join Lounge';
         document.getElementById('myStatusText').textContent = 'Sign In with Gmail';
         document.getElementById('myAvatarImg').src = 'https://api.dicebear.com/7.x/initials/svg?seed=Trader&backgroundColor=00a884';
+        const mobImg = document.getElementById('myMobileAvatarImg');
+        if (mobImg) mobImg.src = 'https://api.dicebear.com/7.x/initials/svg?seed=Trader&backgroundColor=00a884';
       }
     }
 
@@ -1244,17 +1881,17 @@
           localStorage.setItem('quantsync_chat_user', JSON.stringify(currentUser));
           updateUserProfileUI();
           closeAuthModal();
-          // Reconnect WS with new credentials
+          showToast(`Welcome, ${currentUser.name}! 🚀`);
           if (currentChannel) {
             connectWebSocket(currentChannel.id);
           }
         }
       } catch (err) {
-        alert('Error connecting. Please try again.');
+        alert('Could not complete registration. Check network connection.');
       }
     }
 
-    // ── CHANNELS LIST ─────────────────────────────────────────────────────────
+    // ── CHANNELS RETRIEVAL & RENDERING ────────────────────────────────────────
     async function fetchChannels() {
       try {
         const res = await fetch('/api/chat/channels');
@@ -1262,22 +1899,27 @@
         channels = d.channels || [];
         renderChannels(channels);
       } catch (e) {
-        console.error('Error fetching channels:', e);
+        console.error('Failed to load channels:', e);
       }
     }
 
-    function renderChannels(channelList) {
+    function renderChannels(list) {
       const container = document.getElementById('channelsList');
-      container.innerHTML = channelList.map(ch => {
+      if (!list || list.length === 0) {
+        container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--wa-text-secondary);">No channels found.</div>';
+        return;
+      }
+
+      container.innerHTML = list.map(ch => {
         const isActive = currentChannel && currentChannel.id === ch.id;
-        const lastMsg = ch.last_message;
-        const timeStr = lastMsg ? formatMessageTime(lastMsg.created_at) : '';
-        const snippet = lastMsg 
-          ? `<strong>${escapeHtml(lastMsg.user_name)}:</strong> ${escapeHtml(lastMsg.text || 'Photo')}`
-          : escapeHtml(ch.description);
+        const timeStr = formatMessageTime(ch.last_message_at) || '14:20';
+        let snippet = ch.description || 'Welcome to the lounge';
+        if (ch.last_message) {
+          snippet = `<strong>${escapeHtml(ch.last_message.user_name)}:</strong> ${escapeHtml(ch.last_message.text || 'Shared a chart')}`;
+        }
 
         return `
-          <div class="channel-item ${isActive ? 'active' : ''}" onclick="selectChannel('${ch.id}')" id="channel-row-${ch.id}">
+          <div class="channel-item ${isActive ? 'active' : ''}" id="channel-row-${ch.id}" onclick="selectChannel('${ch.id}', true)">
             <div class="channel-avatar">
               ${ch.icon || '💬'}
             </div>
@@ -1291,6 +1933,7 @@
               </div>
               <div class="channel-snippet-row">
                 <div class="channel-last-msg">${snippet}</div>
+                ${ch.id === 'breakout-radar' ? '<span class="unread-pill">LIVE</span>' : ''}
               </div>
             </div>
           </div>
@@ -1301,7 +1944,7 @@
     function filterChannels(query) {
       const q = (query || '').toLowerCase().trim();
       if (!q) {
-        renderChannels(channels);
+        applyActiveTabFilter();
         return;
       }
       const filtered = channels.filter(c => 
@@ -1311,8 +1954,32 @@
       renderChannels(filtered);
     }
 
+    function filterByTab(tab, el) {
+      activeTabFilter = tab;
+      document.querySelectorAll('.wa-tab-item').forEach(t => t.classList.remove('active'));
+      if (el) el.classList.add('active');
+      applyActiveTabFilter();
+    }
+
+    function applyActiveTabFilter() {
+      let filtered = channels;
+      if (activeTabFilter === 'signals') {
+        filtered = channels.filter(c => c.id.includes('breakout') || c.id.includes('radar'));
+      } else if (activeTabFilter === 'alerts') {
+        filtered = channels.filter(c => c.is_announcement || c.id.includes('announcement'));
+      } else if (activeTabFilter === 'fno') {
+        filtered = channels.filter(c => c.id.includes('nifty') || c.id.includes('fno'));
+      }
+      renderChannels(filtered);
+    }
+
+    function handleFabClick() {
+      const target = channels.find(c => c.id === 'breakout-radar') || channels[0];
+      if (target) selectChannel(target.id, true);
+    }
+
     // ── SELECT CHANNEL ────────────────────────────────────────────────────────
-    async function selectChannel(channelId) {
+    async function selectChannel(channelId, pushToHistory = true) {
       const ch = channels.find(c => c.id === channelId);
       if (!ch) return;
       currentChannel = ch;
@@ -1326,10 +1993,20 @@
       document.getElementById('currentChannelIcon').textContent = ch.icon || '💬';
       document.getElementById('currentChannelTitle').textContent = ch.name;
       document.getElementById('currentChannelBadge').style.display = ch.is_announcement ? 'inline-block' : 'none';
-      document.getElementById('currentChannelSub').textContent = `${ch.description} · ${ch.online_count || 18} traders active`;
+      document.getElementById('currentChannelSub').textContent = `online · ${ch.online_count || 24} traders active`;
 
-      // Mobile slide into view
+      // Update Channel Sheet Data
+      document.getElementById('sheetIcon').textContent = ch.icon || '💬';
+      document.getElementById('sheetTitle').textContent = ch.name;
+      document.getElementById('sheetDesc').textContent = ch.description;
+
+      // Mobile slide into conversation view
       document.body.classList.add('in-chat');
+
+      // Push history state so phone back button exits chat instead of leaving page
+      if (pushToHistory && window.innerWidth <= 768) {
+        window.history.pushState({ inChat: true, channelId: ch.id }, '', `#${ch.id}`);
+      }
 
       // Connect WebSocket & load messages
       connectWebSocket(ch.id);
@@ -1340,8 +2017,48 @@
       pollInterval = setInterval(() => pollLatestMessages(ch.id), 3000);
     }
 
-    function exitChatToSidebar() {
+    function exitChatToSidebar(updateHistory = true) {
       document.body.classList.remove('in-chat');
+      closeReactionPopup();
+      if (updateHistory && window.location.hash) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    }
+
+    function handleHeaderClusterClick() {
+      // In mobile view, clicking header cluster opens group info
+      openChannelSheet();
+    }
+
+    // ── CHANNEL INFO SHEET ────────────────────────────────────────────────────
+    function openChannelSheet() {
+      document.getElementById('channelSheet').style.display = 'flex';
+    }
+    function closeChannelSheet(e) {
+      if (e && e.target !== document.getElementById('channelSheet')) return;
+      document.getElementById('channelSheet').style.display = 'none';
+    }
+
+    // ── IN-CHAT SEARCH ────────────────────────────────────────────────────────
+    function toggleInChatSearch() {
+      const bar = document.getElementById('inChatSearchBar');
+      bar.classList.toggle('open');
+      if (bar.classList.contains('open')) {
+        document.getElementById('inChatSearchInput').focus();
+      } else {
+        document.getElementById('inChatSearchInput').value = '';
+        renderAllMessages(messages);
+      }
+    }
+
+    function filterInChatMessages(query) {
+      const q = (query || '').toLowerCase().trim();
+      if (!q) {
+        renderAllMessages(messages);
+        return;
+      }
+      const filtered = messages.filter(m => (m.text || '').toLowerCase().includes(q) || (m.user_name || '').toLowerCase().includes(q));
+      renderAllMessages(filtered);
     }
 
     // ── WEBSOCKET CONNECTION ──────────────────────────────────────────────────
@@ -1354,6 +2071,7 @@
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const email = currentUser ? encodeURIComponent(currentUser.email) : 'guest@quantsync.ai';
       const name = currentUser ? encodeURIComponent(currentUser.name) : 'Guest Trader';
+      
       let wsHost = window.location.host;
       if (window.location.hostname.includes('vercel.app')) {
         wsHost = 'quantsync-api.duckdns.org:8443';
@@ -1391,13 +2109,11 @@
 
       if (payload.type === 'new_message' && payload.channel_id === currentChannel?.id) {
         const msg = payload.message;
-        // Avoid duplicate append if already added via optimistic send
         if (!messages.some(m => m.id === msg.id)) {
           messages.push(msg);
           appendMessageBubble(msg);
           scrollToBottom();
 
-          // Play sound if incoming from someone else
           if (!currentUser || msg.user_email !== currentUser.email) {
             AudioEngine.playReceived();
           }
@@ -1406,7 +2122,7 @@
         updateMessageReactions(payload.message_id, payload.reactions);
       } else if (payload.type === 'online_count' && payload.channel_id === currentChannel?.id) {
         document.getElementById('currentChannelSub').textContent = 
-          `${currentChannel.description} · ${payload.count} traders active`;
+          `online · ${payload.count} traders active`;
       }
     }
 
@@ -1457,7 +2173,7 @@
         container.innerHTML = `
           <div class="date-separator"><span class="date-pill">TODAY</span></div>
           <div style="text-align:center; padding:40px; color:var(--wa-text-secondary); font-size:13.5px;">
-            🔒 Messages in this channel are verified and monitored.<br>Type below to begin discussing setups.
+            🔒 Messages in this channel are verified and monitored.<br>Type below or select a ticker chip to post.
           </div>
         `;
         return;
@@ -1486,10 +2202,8 @@
       const senderColor = getUserColor(msg.user_name || msg.user_email);
       const timeStr = formatMessageTime(msg.created_at);
 
-      // Format text with stock ticker pills and bold/italics
       const formattedText = formatMessageContent(msg.text);
 
-      // Quoted Reply Preview
       let replyHtml = '';
       if (msg.reply_preview) {
         replyHtml = `
@@ -1500,15 +2214,13 @@
         `;
       }
 
-      // Attachment Image
       let attachmentHtml = '';
       if (msg.attachment_url) {
         attachmentHtml = `
-          <img src="${msg.attachment_url}" class="bubble-attachment-img" onclick="openLightbox('${msg.attachment_url}')" alt="Attachment">
+          <img src="${msg.attachment_url}" class="bubble-attachment-img" onclick="event.stopPropagation(); openLightbox('${msg.attachment_url}')" alt="Attachment">
         `;
       }
 
-      // Sender Title (Only on incoming group chats)
       let senderHeader = '';
       if (!isOutgoing && isFirstOfGroup) {
         let badgeHtml = '';
@@ -1524,18 +2236,14 @@
         `;
       }
 
-      // Reactions list
       let reactionsHtml = buildReactionsHtml(msg.id, msg.reactions, msg.my_reactions);
 
       return `
         <div class="message-row ${rowClass} ${groupClass}" id="msg-row-${msg.id}">
-          <div class="message-bubble">
+          <div class="message-bubble" 
+               onclick="handleBubbleClick(event, ${msg.id})" 
+               oncontextmenu="handleBubbleContextMenu(event, ${msg.id})">
             
-            <!-- Hover Action Trigger -->
-            <div class="msg-action-trigger" onclick="openMessageActions(${msg.id}, '${escapeHtml(msg.user_name)}', '${escapeHtml(msg.text)}')" title="Reply or React">
-              ▼
-            </div>
-
             ${senderHeader}
             ${replyHtml}
             ${attachmentHtml}
@@ -1561,7 +2269,7 @@
       return Object.entries(reactions).map(([emoji, count]) => {
         const hasReacted = myReactList.includes(emoji);
         return `
-          <span class="reaction-pill ${hasReacted ? 'reacted' : ''}" onclick="toggleReaction(${msgId}, '${emoji}')">
+          <span class="reaction-pill ${hasReacted ? 'reacted' : ''}" onclick="event.stopPropagation(); toggleReaction(${msgId}, '${emoji}')">
             ${emoji} ${count}
           </span>
         `;
@@ -1582,15 +2290,11 @@
       if (!text) return '';
       let clean = escapeHtml(text);
 
-      // Auto-link stock symbols like $NOCIL or NOCIL
-      // Matches word characters starting with $ or capital NSE symbols (e.g. $RELIANCE, $NOCIL, TCS, INFY)
       clean = clean.replace(/\$([A-Z0-9_\-]+)/g, (match, sym) => {
-        return `<a href="/stock-detail.html?symbol=${sym}" target="_blank" class="stock-chip">📈 $${sym}</a>`;
+        return `<a href="/stock-detail.html?symbol=${sym}" target="_blank" class="stock-chip" onclick="event.stopPropagation();">📈 $${sym}</a>`;
       });
 
-      // Line breaks to <br>
       clean = clean.replace(/\n/g, '<br>');
-
       return clean;
     }
 
@@ -1636,13 +2340,14 @@
       const tempAttachment = pendingAttachment;
       const replyToId = replyTarget ? replyTarget.id : null;
 
-      // Clear input & reply draft immediately
       input.value = '';
       autoResizeTextarea(input);
+      handleInputTyping(input);
       cancelReply();
       pendingAttachment = null;
 
       AudioEngine.playSent();
+      if (navigator.vibrate) navigator.vibrate(15);
 
       try {
         const res = await fetch(`/api/chat/messages/${currentChannel.id}`, {
@@ -1658,7 +2363,6 @@
 
         const d = await res.json();
         if (d.message) {
-          // If WS didn't already append it:
           if (!messages.some(m => m.id === d.message.id)) {
             messages.push(d.message);
             appendMessageBubble(d.message);
@@ -1670,10 +2374,29 @@
       }
     }
 
+    function handleSendCircleClick() {
+      const input = document.getElementById('messageInput');
+      if (input.value.trim().length > 0 || pendingAttachment) {
+        sendMessage();
+      } else {
+        showToast('🎙️ Voice notes launching in v2.0! Type or select a ticker chip.');
+      }
+    }
+
     function handleInputKeydown(e) {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
+      }
+    }
+
+    function handleInputTyping(el) {
+      autoResizeTextarea(el);
+      const sendIcon = document.getElementById('sendBtnIcon');
+      if (el.value.trim().length > 0 || pendingAttachment) {
+        sendIcon.textContent = '➤';
+      } else {
+        sendIcon.textContent = '🎤';
       }
     }
 
@@ -1685,15 +2408,79 @@
     function insertEmoji(char) {
       const input = document.getElementById('messageInput');
       input.value += char;
+      handleInputTyping(input);
       input.focus();
     }
 
-    // ── REPLY TO MESSAGE ──────────────────────────────────────────────────────
-    function openMessageActions(msgId, userName, text) {
-      // Toggle reply
+    function insertTickerSymbol(sym) {
+      const input = document.getElementById('messageInput');
+      const val = input.value.trim();
+      input.value = val ? `${val} $${sym} ` : `$${sym} `;
+      handleInputTyping(input);
+      input.focus();
+      if (navigator.vibrate) navigator.vibrate(10);
+    }
+
+    // ── MOBILE FLOATING REACTION POPUP ON BUBBLE TAP ──────────────────────────
+    function handleBubbleClick(e, msgId) {
+      const now = Date.now();
+      // Double tap detector
+      if (now - lastTapTime < 300) {
+        toggleReaction(msgId, '❤️');
+        showToast('❤️ Reacted!');
+        closeReactionPopup();
+        return;
+      }
+      lastTapTime = now;
+
+      openReactionPopup(e.currentTarget, msgId);
+    }
+
+    function handleBubbleContextMenu(e, msgId) {
+      e.preventDefault();
+      openReactionPopup(e.currentTarget, msgId);
+    }
+
+    function openReactionPopup(bubbleEl, msgId) {
+      const msg = messages.find(m => m.id === msgId);
+      if (!msg) return;
+      activePopupMessage = msg;
+
+      const popup = document.getElementById('reactionPopup');
+      popup.style.display = 'flex';
+      bubbleEl.appendChild(popup);
+      if (navigator.vibrate) navigator.vibrate(10);
+    }
+
+    function closeReactionPopup() {
+      const popup = document.getElementById('reactionPopup');
+      popup.style.display = 'none';
+      activePopupMessage = null;
+    }
+
+    function submitActiveReaction(emoji) {
+      if (!activePopupMessage) return;
+      toggleReaction(activePopupMessage.id, emoji);
+      closeReactionPopup();
+    }
+
+    function replyToActiveMessage() {
+      if (!activePopupMessage) return;
+      openReplyBar(activePopupMessage.id, activePopupMessage.user_name, activePopupMessage.text);
+      closeReactionPopup();
+    }
+
+    function copyActiveMessage() {
+      if (!activePopupMessage) return;
+      navigator.clipboard.writeText(activePopupMessage.text || '');
+      showToast('📋 Message copied to clipboard!');
+      closeReactionPopup();
+    }
+
+    function openReplyBar(msgId, userName, text) {
       replyTarget = { id: msgId, userName, text };
       document.getElementById('replySenderName').textContent = `Replying to ${userName}`;
-      document.getElementById('replyTextSnippet').textContent = text.slice(0, 80);
+      document.getElementById('replyTextSnippet').textContent = (text || '').slice(0, 80);
       document.getElementById('replyDraftBanner').style.display = 'flex';
       document.getElementById('messageInput').focus();
     }
@@ -1709,6 +2496,8 @@
         document.getElementById('authModal').style.display = 'flex';
         return;
       }
+
+      if (navigator.vibrate) navigator.vibrate(15);
 
       try {
         await fetch(`/api/chat/messages/${msgId}/react`, {
@@ -1746,6 +2535,8 @@
         document.getElementById('authModal').style.display = 'flex';
         return;
       }
+
+      showToast('Uploading chart screenshot...');
 
       const reader = new FileReader();
       reader.onload = async () => {
