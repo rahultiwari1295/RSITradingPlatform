@@ -4175,27 +4175,6 @@ export default function App() {
             borderRadius: "50%",
             background: "#10B981",
             boxShadow: "0 0 6px #10B981"
-          }} />
-        </button>
-        <button
-          className="tab"
-          onClick={() => window.location.href = "/chat.html"}
-          data-tab="chat"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-          Chat
-          <span style={{
-            position: "absolute",
-            top: 5,
-            right: "calc(50% - 15px)",
-            width: 5,
-            height: 5,
-            borderRadius: "50%",
-            background: "#25D366",
-            boxShadow: "0 0 6px #25D366"
-          }} />
         </button>
       </nav>
 
