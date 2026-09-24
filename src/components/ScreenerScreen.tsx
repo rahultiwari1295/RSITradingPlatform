@@ -204,12 +204,32 @@ export function getBreakoutClassification(s: any) {
   };
 }
 
+// Market Cap Filter Options
+const MCAP_OPTIONS = [
+  { id: "ALL", label: "All Caps" },
+  { id: "Large-Cap", label: "Large Cap" },
+  { id: "Mid-Cap", label: "Mid Cap" },
+  { id: "Small-Cap", label: "Small Cap" },
+  { id: "Micro-Cap", label: "Micro Cap" },
+];
+
+function matchesMcap(s: any, filter: string) {
+  if (filter === "ALL") return true;
+  const raw = (s.mcap_tier || "").toLowerCase();
+  if (filter === "Large-Cap") return raw.includes("large");
+  if (filter === "Mid-Cap") return raw.includes("mid");
+  if (filter === "Small-Cap") return raw.includes("small");
+  if (filter === "Micro-Cap") return raw.includes("micro");
+  return true;
+}
+
 export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenProps) {
   // 1. Two-way primary switch: "near_breakout" vs "success" (Confirmed Breakout)
   const [activeTab, setActiveTab] = useState<"near_breakout" | "success">("near_breakout");
   const [selectedPattern, setSelectedPattern] = useState<string>("ALL");
-  const [actionFilter, setActionFilter] = useState<"ALL" | "BUY" | "MISSED" | "SKIP">("ALL");
+  const [actionFilter, setActionFilter] = useState<"ALL" | "BUY" | "MISSED" | "SKIP">("BUY");
   const [nearFilter, setNearFilter] = useState<"ALL" | "HOT" | "MID" | "FAR">("ALL");
+  const [mcapFilter, setMcapFilter] = useState<string>("ALL");
   const [expandedOlder, setExpandedOlder] = useState<boolean>(false);
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -333,6 +353,48 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
     return { buyCount: b, missedCount: m, skipCount: sk };
   }, [patternFilteredStocks, activeTab]);
 
+  // Dynamic Market Cap counts across filtered set
+  const mcapCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      ALL: 0,
+      "Large-Cap": 0,
+      "Mid-Cap": 0,
+      "Small-Cap": 0,
+      "Micro-Cap": 0
+    };
+
+    let baseList = patternFilteredStocks;
+    if (activeTab === "success") {
+      if (actionFilter !== "ALL") {
+        baseList = baseList.filter((s) => getBreakoutClassification(s).status === actionFilter);
+      }
+    } else {
+      if (nearFilter === "HOT") {
+        baseList = baseList.filter((s) => ((Number(s.breakout_level) - Number(s.curr_price)) / Number(s.breakout_level) * 100) < 1.0);
+      } else if (nearFilter === "MID") {
+        baseList = baseList.filter((s) => {
+          const d = (Number(s.breakout_level) - Number(s.curr_price)) / Number(s.breakout_level) * 100;
+          return d >= 1.0 && d < 3.0;
+        });
+      } else if (nearFilter === "FAR") {
+        baseList = baseList.filter((s) => {
+          const d = (Number(s.breakout_level) - Number(s.curr_price)) / Number(s.breakout_level) * 100;
+          return d >= 3.0 && d <= 5.0;
+        });
+      }
+    }
+
+    counts.ALL = baseList.length;
+    baseList.forEach((s) => {
+      const raw = (s.mcap_tier || "").toLowerCase();
+      if (raw.includes("large")) counts["Large-Cap"]++;
+      else if (raw.includes("mid")) counts["Mid-Cap"]++;
+      else if (raw.includes("small")) counts["Small-Cap"]++;
+      else if (raw.includes("micro")) counts["Micro-Cap"]++;
+    });
+    return counts;
+  }, [patternFilteredStocks, activeTab, actionFilter, nearFilter]);
+
   // Timeline grouping for Confirmed Breakout: Latest Day -> Oldest Day within 1 week, and collapsed older section
   const { timelineGroups, olderSetups } = useMemo(() => {
     if (activeTab !== "success") {
@@ -342,6 +404,9 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
     let list = [...patternFilteredStocks];
     if (actionFilter !== "ALL") {
       list = list.filter((s) => getBreakoutClassification(s).status === actionFilter);
+    }
+    if (mcapFilter !== "ALL") {
+      list = list.filter((s) => matchesMcap(s, mcapFilter));
     }
 
     const base = scanDate ? new Date(scanDate) : new Date();
@@ -395,7 +460,7 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
     older.sort(sortFn);
 
     return { timelineGroups, olderSetups: older };
-  }, [patternFilteredStocks, activeTab, actionFilter, scanDate]);
+  }, [patternFilteredStocks, activeTab, actionFilter, scanDate, mcapFilter]);
 
   // Near Breakout Filtered List
   const nearBreakoutFiltered = useMemo(() => {
@@ -416,6 +481,10 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
       });
     }
 
+    if (mcapFilter !== "ALL") {
+      list = list.filter((s) => matchesMcap(s, mcapFilter));
+    }
+
     // Sort closest to pivot trigger first
     list.sort((a: any, b: any) => {
       const distA = (Number(a.breakout_level) - Number(a.curr_price)) / Number(a.breakout_level);
@@ -424,7 +493,7 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
     });
 
     return list;
-  }, [patternFilteredStocks, activeTab, nearFilter]);
+  }, [patternFilteredStocks, activeTab, nearFilter, mcapFilter]);
 
   const handleStockClick = (s: any) => {
     const sym = typeof s === "string" ? s : (s?.symbol || "");
@@ -486,27 +555,50 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
           </div>
         </div>
 
-        {/* Action Strip Banner */}
+        {/* Precision Action Strip Banner */}
         {activeTab === "success" && cls.hasPivot && (
           <>
             {cls.isGoodToBuy && (
               <div className="sc-action-banner buy">
-                <span>🟢 Good to Buy: {cls.diffPct >= 0 ? `+${cls.diffPct.toFixed(1)}%` : `${cls.diffPct.toFixed(1)}%`} from Breakout (₹{cls.brk.toFixed(1)})</span>
+                <div className="sc-banner-left">
+                  <span className="sc-banner-tag buy">🟢 BUY ZONE</span>
+                  <span className="sc-banner-desc">
+                    <b className="num">{cls.diffPct >= 0 ? `+${cls.diffPct.toFixed(1)}%` : `${cls.diffPct.toFixed(1)}%`}</b> from Breakout (<b className="num">₹{cls.brk.toFixed(1)}</b>)
+                  </span>
+                </div>
                 {cls.targetGainPct !== null && (
-                  <span style={{ opacity: 0.9 }}>Target ₹{cls.tgt.toFixed(0)} (+{cls.targetGainPct.toFixed(1)}%)</span>
+                  <div className="sc-banner-right">
+                    <span className="sc-target-badge">
+                      Target <b className="num">₹{cls.tgt.toFixed(0)}</b> (<b className="num">+{cls.targetGainPct.toFixed(1)}%</b>)
+                    </span>
+                  </div>
                 )}
               </div>
             )}
             {cls.isMissed && (
               <div className="sc-action-banner missed">
-                <span>🛑 Missed: +{cls.diffAbs.toFixed(1)}% extended past Breakout (₹{cls.brk.toFixed(1)})</span>
-                <span style={{ opacity: 0.85 }}>High Chase Risk</span>
+                <div className="sc-banner-left">
+                  <span className="sc-banner-tag missed">🛑 EXTENDED</span>
+                  <span className="sc-banner-desc">
+                    <b className="num">+{cls.diffAbs.toFixed(1)}%</b> past Breakout (<b className="num">₹{cls.brk.toFixed(1)}</b>)
+                  </span>
+                </div>
+                <div className="sc-banner-right">
+                  <span className="sc-dist-badge">High Chase Risk</span>
+                </div>
               </div>
             )}
             {cls.isSkip && (
               <div className="sc-action-banner skip">
-                <span>⏭️ Skip: Low upside left ({cls.targetGainPct !== null ? `+${cls.targetGainPct.toFixed(1)}%` : "0%"} to Target)</span>
-                <span style={{ opacity: 0.85 }}>Poor R:R</span>
+                <div className="sc-banner-left">
+                  <span className="sc-banner-tag skip">⏭️ SKIP</span>
+                  <span className="sc-banner-desc">
+                    Low upside left (<b className="num">{cls.targetGainPct !== null ? `+${cls.targetGainPct.toFixed(1)}%` : "0%"}</b> to Target)
+                  </span>
+                </div>
+                <div className="sc-banner-right">
+                  <span className="sc-dist-badge">Poor R:R</span>
+                </div>
               </div>
             )}
           </>
@@ -514,28 +606,37 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
 
         {activeTab === "near_breakout" && cls.hasPivot && (
           <div className="sc-action-banner near">
-            <span>🎯 Ready to Buy at ₹{cls.brk.toFixed(1)}</span>
-            <span>(just {cls.diffAbs.toFixed(2)}% left for confirmation)</span>
+            <div className="sc-banner-left">
+              <span className="sc-banner-tag near">⚡ PIVOT</span>
+              <span className="sc-banner-desc">
+                Trigger: <b className="num">₹{cls.brk.toFixed(1)}</b>
+              </span>
+            </div>
+            <div className="sc-banner-right">
+              <span className={`sc-dist-badge ${cls.diffAbs < 1.0 ? "hot" : ""}`}>
+                {cls.diffAbs < 1.0 ? "🔥" : "⏳"} <b className="num">{cls.diffAbs.toFixed(2)}%</b> to Trigger
+              </span>
+            </div>
           </div>
         )}
 
-        {/* 4-Column Key Metrics Row */}
-        <div className="sc-metrics-row">
-          <div className="sc-m-col">
+        {/* 4-Column Key Metrics Grid */}
+        <div className="sc-metrics-grid">
+          <div className="sc-m-cell">
             <span className="sc-m-lbl">Breakout</span>
             <span className="sc-m-val">{s.breakout_level ? `₹${Number(s.breakout_level).toFixed(1)}` : "—"}</span>
           </div>
-          <div className="sc-m-col">
+          <div className="sc-m-cell">
             <span className="sc-m-lbl">RSI (14)</span>
             <span className="sc-m-val" style={{ color: s.rsi > 70 ? "var(--loss)" : s.rsi < 35 ? "var(--profit)" : "var(--ink1)" }}>
               {s.rsi !== null && s.rsi !== undefined ? Number(s.rsi).toFixed(1) : "—"}
             </span>
           </div>
-          <div className="sc-m-col">
+          <div className="sc-m-cell">
             <span className="sc-m-lbl">ROCE</span>
             <span className="sc-m-val">{s.roce_pct !== null && s.roce_pct !== undefined ? `${Number(s.roce_pct).toFixed(1)}%` : "—"}</span>
           </div>
-          <div className="sc-m-col">
+          <div className="sc-m-cell">
             <span className="sc-m-lbl">P/E</span>
             <span className="sc-m-val">{s.pe_ratio !== null && s.pe_ratio !== undefined ? Number(s.pe_ratio).toFixed(1) : "—"}</span>
           </div>
@@ -566,6 +667,7 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
           onClick={() => {
             setActiveTab("near_breakout");
             setSelectedPattern("ALL");
+            setMcapFilter("ALL");
           }}
           className={`sc-segment-btn ${activeTab === "near_breakout" ? "active near" : ""}`}
         >
@@ -580,6 +682,8 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
           onClick={() => {
             setActiveTab("success");
             setSelectedPattern("ALL");
+            setActionFilter("BUY");
+            setMcapFilter("ALL");
           }}
           className={`sc-segment-btn ${activeTab === "success" ? "active success" : ""}`}
         >
@@ -646,16 +750,16 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
       {activeTab === "success" && (
         <div className="sc-action-filter-bar">
           <button
-            onClick={() => setActionFilter("ALL")}
-            className={`sc-filter-chip all ${actionFilter === "ALL" ? "active" : ""}`}
-          >
-            All Breakouts ({patternFilteredStocks.length})
-          </button>
-          <button
             onClick={() => setActionFilter("BUY")}
             className={`sc-filter-chip buy ${actionFilter === "BUY" ? "active" : ""}`}
           >
             🟢 Good to Buy ({buyCount})
+          </button>
+          <button
+            onClick={() => setActionFilter("ALL")}
+            className={`sc-filter-chip all ${actionFilter === "ALL" ? "active" : ""}`}
+          >
+            All Breakouts ({patternFilteredStocks.length})
           </button>
           <button
             onClick={() => setActionFilter("MISSED")}
@@ -701,6 +805,26 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
           </button>
         </div>
       )}
+
+      {/* ─── 4B. MARKET CAP FILTER BAR (Large-Cap, Mid-Cap, Small-Cap, Micro-Cap) ─── */}
+      <div className="sc-mcap-filter-bar">
+        <span className="sc-mcap-label">CAP:</span>
+        {MCAP_OPTIONS.map((opt) => {
+          const count = mcapCounts[opt.id] ?? 0;
+          if (opt.id !== "ALL" && count === 0) return null;
+          const isActive = mcapFilter === opt.id;
+          return (
+            <button
+              key={opt.id}
+              onClick={() => setMcapFilter(opt.id)}
+              className={`sc-mcap-chip ${isActive ? "active" : ""}`}
+            >
+              <span>{opt.label}</span>
+              <span className="sc-mcap-count">{count}</span>
+            </button>
+          );
+        })}
+      </div>
 
       {/* ─── 5. TIMELINE STOCK LIST ─── */}
       {loading ? (
