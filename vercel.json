@@ -65,6 +65,18 @@
       "destination": "/stock-detail.html?symbol=:symbol"
     },
     {
+      "source": "/chat",
+      "destination": "/chat.html"
+    },
+    {
+      "source": "/chat.html",
+      "destination": "/chat.html"
+    },
+    {
+      "source": "/uploads/:match*",
+      "destination": "https://quantsync-api.duckdns.org:8443/uploads/:match*"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }

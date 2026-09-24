@@ -605,6 +605,25 @@
       border-color: rgba(245, 158, 11, 0.3);
     }
 
+    .badge-pill.fresh-badge {
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--profit);
+      border-color: rgba(16, 185, 129, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .badge-pill.stale-badge {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--caution);
+      border-color: rgba(245, 158, 11, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+
     .stock-headline-name {
       font-family: var(--font-display);
       font-size: 26px;
@@ -3146,63 +3165,7 @@
         </div>
       </div>
 
-      <!-- Screener Quick Launch Banner -->
-      <div 
-        style="
-          margin: 18px 0 14px;
-          padding: 16px 18px;
-          border-radius: var(--r-lg);
-          background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(59, 130, 246, 0.08));
-          border: 1px solid rgba(16, 185, 129, 0.35);
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          cursor: pointer;
-          transition: var(--ease-spring);
-          box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-        "
-        onclick="navigateToScreener()"
-      >
-        <div style="display:flex; align-items:center; gap:12px;">
-          <div style="
-            width: 42px;
-            height: 42px;
-            border-radius: 12px;
-            background: rgba(16, 185, 129, 0.2);
-            border: 1px solid rgba(16, 185, 129, 0.4);
-            display: grid;
-            place-items: center;
-            font-size: 20px;
-          ">
-            ⚡
-          </div>
-          <div>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:14px; font-weight:800; color:var(--text-main); font-family:var(--font-display);">Pattern Screener Radar</span>
-              <span style="font-size:9px; font-weight:800; padding:2px 7px; border-radius:999px; background:#10B981; color:#fff; letter-spacing:0.04em;">NEW</span>
-            </div>
-            <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
-              Scan Ascending Triangles, Near-Breakouts, and Success/Failed Patterns across 1,318 equities
-            </div>
-          </div>
-        </div>
-        <div style="
-          padding: 8px 14px;
-          border-radius: 999px;
-          background: #10B981;
-          color: #fff;
-          font-weight: 700;
-          font-size: 11.5px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          flex-shrink: 0;
-        ">
-          <span>Open Radar</span>
-          <span>➔</span>
-        </div>
-      </div>
-
+      <!-- Thematic Discovery Radars -->
       <div class="discovery-section-header">
         <div class="discovery-section-title">
           <span>⚡</span>
@@ -3354,6 +3317,7 @@
             <span class="badge-pill" id="hero-tier">Large-Cap</span>
             <span class="badge-pill" id="hero-sector">IT Services</span>
             <span class="badge-pill" id="hero-group">Tata Group</span>
+            <span class="badge-pill fresh-badge" id="hero-freshness" style="display:none;">Live</span>
           </div>
           
           <h2 class="stock-headline-name" id="hero-name">Tata Consultancy Services</h2>
@@ -4448,6 +4412,8 @@
         rsi: 'RSI ' + rsiVal.toFixed(1),
         ema200Status: priceVal >= (m.ema200 || 0) ? 'Above 200 EMA' : 'Below 200 EMA',
         solvencyStatus: solv.grade ? solv.grade.split('·')[0].trim() : 'Fortress',
+        is_fresh: rep.is_fresh !== undefined ? rep.is_fresh : true,
+        cache_updated_at: rep.cache_updated_at || '',
         q1, q2, q3, q4, q5, q6, q7
       };
     }
@@ -4640,6 +4606,26 @@
       if (grpEl) {
         grpEl.textContent = data.group || 'Market Compounder';
         grpEl.className = data.is_psu ? "badge-pill psu-badge" : "badge-pill";
+      }
+
+      const freshEl = document.getElementById('hero-freshness');
+      if (freshEl) {
+        if (data.is_fresh === false) {
+          freshEl.style.display = 'inline-flex';
+          freshEl.className = 'badge-pill stale-badge';
+          const dtStr = data.cache_updated_at ? data.cache_updated_at.split(' ')[0] : 'Prior Session';
+          freshEl.textContent = `⚠️ Stale · ${dtStr}`;
+          freshEl.title = 'Computed prior to latest market close. Click to recalculate.';
+          freshEl.onclick = () => selectStock(data.symbol, false, true);
+        } else if (data.cache_updated_at) {
+          freshEl.style.display = 'inline-flex';
+          freshEl.className = 'badge-pill fresh-badge';
+          freshEl.textContent = `⚡ Verified · ${data.cache_updated_at.split(' ')[0]}`;
+          freshEl.title = 'Fresh institutional DNA calculation verified.';
+          freshEl.onclick = null;
+        } else {
+          freshEl.style.display = 'none';
+        }
       }
 
       setTxt('hero-name', data.name);
@@ -5434,17 +5420,6 @@
       toastTimer = setTimeout(() => {
         toast.classList.remove('active');
       }, 3000);
-    }
-
-    // Navigate to Screener Radar (works inside parent React platform or standalone window)
-    function navigateToScreener() {
-      if (window.parent && window.parent !== window) {
-        try {
-          window.parent.postMessage({ type: 'SWITCH_TAB', tab: 'screener' }, '*');
-          return;
-        } catch (e) {}
-      }
-      window.location.href = '/screener.html';
     }
 
     // Handle browser back/forward buttons
