@@ -856,6 +856,7 @@
     function openFullDna() {
       if (window.parent && window.parent !== window) {
         window.parent.postMessage({ type: 'OPEN_DNA', symbol: stockSymbol }, '*');
+        return;
       }
       window.location.href = `/dna-mobile-story.html?stock=${encodeURIComponent(stockSymbol)}`;
     }
@@ -1154,20 +1155,18 @@
       const cur = Number(stockData.curr_price) || 0;
       let sl = Number(stockData.stop_loss) || 0;
 
-      // Ensure Target 1 is strictly above Pivot and Current Price
-      if (brk > 0) {
-        if (!tgt || tgt <= brk || tgt <= cur) {
-          if (tgt2 > brk && tgt2 > cur) {
-            tgt = tgt2;
-          } else {
-            const atr = Number(stockData.atr) || (brk * 0.04);
-            tgt = Math.round((Math.max(brk, cur) + Math.max(1.5 * atr, brk * 0.08)) * 100) / 100;
-          }
+      // Only compute fallback Target 1 if not provided by server
+      if (brk > 0 && (!tgt || tgt <= 0)) {
+        if (tgt2 > brk && tgt2 > cur) {
+          tgt = tgt2;
+        } else {
+          const atr = Number(stockData.atr) || (brk * 0.04);
+          tgt = Math.round((Math.max(brk, cur) + Math.max(1.5 * atr, brk * 0.08)) * 100) / 100;
         }
       }
 
-      // Ensure Stop Loss is strictly below Current Price and Pivot
-      if (cur > 0 && (!sl || sl >= cur)) {
+      // Only compute fallback Stop Loss if not provided by server
+      if (cur > 0 && (!sl || sl <= 0)) {
         const atr = Number(stockData.atr) || (cur * 0.04);
         sl = Math.round((cur - Math.max(2.0 * atr, cur * 0.07)) * 100) / 100;
       }

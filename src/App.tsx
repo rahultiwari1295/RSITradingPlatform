@@ -3989,9 +3989,9 @@ export default function App() {
         <section className={`screen ${activeTab === "screener" ? "active" : ""}`} id="screen-screener">
           <ScreenerScreen
             theme={theme}
-            onSelectStock={(sym) => {
-              // Open dedicated Stock Detail view like Signals page (NOT DNA page)
-              openSheet("screener_detail", { symbol: sym, sym });
+            onSelectStock={(sym, fullData) => {
+              // Open dedicated Stock Detail view with full audited screener row metrics
+              openSheet("screener_detail", fullData || { symbol: sym, sym });
             }}
           />
         </section>
@@ -4203,6 +4203,7 @@ export default function App() {
               return (
                 <div style={{ width: "100%", height: "100%", minHeight: "82vh", display: "flex", flexDirection: "column" }}>
                   <iframe
+                    key={sym}
                     src={`/stock-detail.html?symbol=${encodeURIComponent(sym)}`}
                     style={{ width: "100%", height: "100%", flex: 1, minHeight: "82vh", border: "none", borderRadius: 16 }}
                     title={`Stock Detail - ${sym}`}

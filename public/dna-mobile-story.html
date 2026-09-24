@@ -3160,7 +3160,7 @@
           <button class="home-stock-chip" onclick="selectStock('HDFCBANK')">HDFCBANK</button>
           <button class="home-stock-chip" onclick="selectStock('POLYCAB')">POLYCAB</button>
           <button class="home-stock-chip" onclick="selectStock('BAJAJST')">BAJAJST</button>
-          <button class="home-stock-chip" onclick="selectStock('ACGL')">ACGL</button>
+          <button class="home-stock-chip" onclick="selectStock('TATAMOTORS')">TATAMOTORS</button>
           <button class="home-stock-chip" onclick="selectStock('INFY')">INFY</button>
         </div>
       </div>
@@ -5432,6 +5432,13 @@
         resetToHome();
       }
     });
+
+    // Signal parent container that DNA DOM is initialized
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'DNA_READY' }, '*');
+      }
+    } catch (e) {}
 
     // Initial load: Only load report if stock is explicitly in query params, otherwise stay on DNA Home Screen!
     const urlParams = new URLSearchParams(window.location.search);

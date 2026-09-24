@@ -23,6 +23,46 @@ export default function StockDNAScreen({ theme, resetTrigger, selectedStock, onS
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  // Determine current active theme
+  const activeTheme = theme || (typeof window !== "undefined" && (document.documentElement.dataset.theme as "dark" | "light")) || "light";
+
+  // Build target iframe URL preserving stock query param and syncing theme
+  const buildSrc = (stockSym?: string, t?: string) => {
+    const s = (stockSym || "").trim().toUpperCase();
+    const th = t || activeTheme;
+    const params = new URLSearchParams();
+    if (s) params.set("stock", s);
+    params.set("theme", th);
+    return `/dna-mobile-story.html?${params.toString()}`;
+  };
+
+  const [targetSrc, setTargetSrc] = useState(() => {
+    let initialStock = selectedStock || "";
+    if (!initialStock && typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      initialStock = searchParams.get("stock") || searchParams.get("sym") || searchParams.get("symbol") || "";
+    }
+    return buildSrc(initialStock, activeTheme);
+  });
+
+  // Failsafe: Ensure skeleton is hidden after 800ms even if iframe onLoad doesn't fire (e.g. cached/hidden tab)
+  useEffect(() => {
+    const checkReady = () => {
+      if (iframeRef.current) {
+        try {
+          if (iframeRef.current.contentDocument?.readyState === "complete") {
+            setIframeLoaded(true);
+            return;
+          }
+        } catch (_) {}
+      }
+      setIframeLoaded(true);
+    };
+
+    const timer = setTimeout(checkReady, 800);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Listen for messages from inside iframe (e.g. user clicked Screener button inside DNA)
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
@@ -30,32 +70,19 @@ export default function StockDNAScreen({ theme, resetTrigger, selectedStock, onS
         if (onSwitchTab) {
           onSwitchTab(e.data.tab);
         }
+      } else if (e.data?.type === "DNA_READY") {
+        setIframeLoaded(true);
       }
     };
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [onSwitchTab]);
 
-  // Determine current active theme
-  const activeTheme = theme || (typeof window !== "undefined" && (document.documentElement.dataset.theme as "dark" | "light")) || "light";
-
-  // Build target iframe URL preserving stock query param and syncing theme
-  const [targetSrc, setTargetSrc] = useState(() => {
-    let initialStock = selectedStock || "";
-    if (!initialStock && typeof window !== "undefined") {
-      const searchParams = new URLSearchParams(window.location.search);
-      initialStock = searchParams.get("stock") || searchParams.get("sym") || searchParams.get("symbol") || "";
-    }
-    const params = new URLSearchParams();
-    if (initialStock) params.set("stock", initialStock.toUpperCase());
-    params.set("theme", activeTheme);
-    return `/dna-mobile-story.html?${params.toString()}`;
-  });
-
-  // When selectedStock changes dynamically (e.g. user clicked a stock in Screener), notify iframe
+  // When selectedStock changes dynamically (e.g. user clicked a stock in Screener or Home)
   useEffect(() => {
     if (selectedStock && selectedStock.trim()) {
       const s = selectedStock.trim().toUpperCase();
+      setTargetSrc(buildSrc(s, activeTheme));
       if (iframeRef.current?.contentWindow) {
         try {
           iframeRef.current.contentWindow.postMessage({
@@ -67,7 +94,7 @@ export default function StockDNAScreen({ theme, resetTrigger, selectedStock, onS
         }
       }
     }
-  }, [selectedStock, iframeLoaded]);
+  }, [selectedStock]);
 
   // Whenever theme changes in parent app, notify the iframe via postMessage
   useEffect(() => {

@@ -3,7 +3,7 @@ import { quantsyncApi } from "../api/quantsyncApi";
 
 interface ScreenerScreenProps {
   theme?: "dark" | "light";
-  onSelectStock?: (symbol: string) => void;
+  onSelectStock?: (symbol: string, stockData?: any) => void;
 }
 
 const PATTERN_CATEGORIES = [
@@ -17,7 +17,7 @@ const PATTERN_CATEGORIES = [
 ];
 
 export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenProps) {
-  const [activeTab, setActiveTab] = useState<"near_breakout" | "success" | "failed">("near_breakout");
+  const [activeTab, setActiveTab] = useState<"near_breakout" | "success" | "retest" | "failed">("near_breakout");
   const [selectedPattern, setSelectedPattern] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -26,9 +26,10 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
   const [totalCount, setTotalCount] = useState<number>(0);
   const [scanDate, setScanDate] = useState<string>("");
 
-  const [breakouts, setBreakouts] = useState<{ success: any[]; near_breakout: any[]; failed: any[] }>({
+  const [breakouts, setBreakouts] = useState<{ success: any[]; near_breakout: any[]; retest?: any[]; failed?: any[] }>({
     success: [],
     near_breakout: [],
+    retest: [],
     failed: []
   });
   const [summary, setSummary] = useState<any>(null);
@@ -66,6 +67,8 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
       params.pattern_stage = "NEAR_BREAKOUT";
     } else if (activeTab === "success") {
       params.breakout_status = "SUCCESS";
+    } else if (activeTab === "retest") {
+      params.setup = "breakout_retest";
     } else if (activeTab === "failed") {
       params.breakout_status = "FAILED";
     }
@@ -147,9 +150,10 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
     fetchStocks();
   }, [fetchStocks]);
 
-  const handleStockClick = (sym: string) => {
+  const handleStockClick = (s: any) => {
+    const sym = typeof s === "string" ? s : (s?.symbol || "");
     if (onSelectStock) {
-      onSelectStock(sym);
+      onSelectStock(sym, typeof s === "object" ? s : undefined);
     } else if (typeof window !== "undefined") {
       window.location.href = `/stock-detail.html?symbol=${encodeURIComponent(sym)}`;
     }
@@ -269,6 +273,30 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
         </button>
 
         <button
+          onClick={() => setActiveTab("retest")}
+          style={{
+            padding: "8px 14px",
+            borderRadius: 10,
+            border: "1px solid",
+            borderColor: activeTab === "retest" ? "#06B6D4" : "var(--line-2)",
+            background: activeTab === "retest" ? "rgba(6,182,212,0.18)" : "var(--s2)",
+            color: activeTab === "retest" ? "#06B6D4" : "var(--ink3)",
+            fontWeight: 700,
+            fontSize: 12,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            whiteSpace: "nowrap"
+          }}
+        >
+          <span>🔄 Pivot Retest</span>
+          <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 10, background: "rgba(6,182,212,0.2)" }}>
+            {(breakouts.retest || []).length}
+          </span>
+        </button>
+
+        <button
           onClick={() => setActiveTab("failed")}
           style={{
             padding: "8px 14px",
@@ -286,9 +314,9 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
             whiteSpace: "nowrap"
           }}
         >
-          <span>⚠️ Failed Breakout</span>
+          <span>⚠️ At Risk</span>
           <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 10, background: "rgba(239,68,68,0.2)" }}>
-            {breakouts.failed.length}
+            {(breakouts.failed || []).length || (summary?.breakout_statuses?.FAILED || 0)}
           </span>
         </button>
       </div>
@@ -462,7 +490,7 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
             return (
               <div
                 key={s.symbol || idx}
-                onClick={() => handleStockClick(s.symbol)}
+                onClick={() => handleStockClick(s)}
                 className="card"
                 style={{
                   padding: "14px 16px",
