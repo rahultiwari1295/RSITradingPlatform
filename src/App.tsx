@@ -4026,7 +4026,7 @@ export default function App() {
           <iframe
             ref={loungeIframeRef}
             src="/chat.html"
-            style={{ width: "100%", height: "100%", minHeight: "85vh", border: "none", display: "block" }}
+            style={{ width: "100%", height: "100%", border: "none", display: "block" }}
             title="QuantSync Lounge & AI Community"
             onLoad={() => {
               if (user && loungeIframeRef.current?.contentWindow) {

@@ -47,30 +47,30 @@
     }
 
     [data-theme="light"] {
-      --wa-app-bg: #eae6df;
+      --wa-app-bg: #f8fafc;
       --wa-sidebar-bg: #ffffff;
-      --wa-header-bg: #f0f2f5;
-      --wa-border: #e9edef;
-      --wa-border-subtle: rgba(11, 20, 26, 0.08);
-      --wa-panel-hover: #f5f6f6;
-      --wa-active-item: #f0f2f5;
+      --wa-header-bg: #ffffff;
+      --wa-border: #e2e8f0;
+      --wa-border-subtle: rgba(15, 23, 42, 0.08);
+      --wa-panel-hover: #f1f5f9;
+      --wa-active-item: #f1f5f9;
       
-      --wa-chat-bg: #efeae2;
+      --wa-chat-bg: #f1f5f9;
       --wa-incoming-bubble: #ffffff;
-      --wa-outgoing-bubble: #d9fdd3;
-      --wa-bubble-border: rgba(0, 0, 0, 0.04);
+      --wa-outgoing-bubble: #dcfce7;
+      --wa-bubble-border: rgba(15, 23, 42, 0.08);
       
       --wa-input-bg: #ffffff;
-      --wa-input-placeholder: #667781;
-      --wa-text-primary: #111b21;
-      --wa-text-secondary: #667781;
-      --wa-text-muted: #8696a0;
+      --wa-input-placeholder: #94a3b8;
+      --wa-text-primary: #0f172a;
+      --wa-text-secondary: #334155;
+      --wa-text-muted: #64748b;
       
-      --wa-green: #008069;
-      --wa-green-hover: #017560;
-      --wa-badge-green: #25d366;
-      --wa-blue-tick: #53bdeb;
-      --wa-gray-tick: #8696a0;
+      --wa-green: #047857;
+      --wa-green-hover: #065f46;
+      --wa-badge-green: #059669;
+      --wa-blue-tick: #0284c7;
+      --wa-gray-tick: #94a3b8;
     }
 
     * {
@@ -494,16 +494,25 @@
     .mobile-back-btn {
       display: none;
       background: transparent;
-      border: none;
+      border: 1px solid var(--wa-border);
       color: var(--wa-text-primary);
-      font-size: 22px;
       cursor: pointer;
-      padding: 4px 6px 4px 0;
-      line-height: 1;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-right: 6px;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .mobile-back-btn:active {
+      transform: scale(0.92);
+      background: var(--wa-panel-hover);
     }
 
     @media (max-width: 768px) {
-      .mobile-back-btn { display: inline-block; }
+      .mobile-back-btn { display: inline-flex; }
     }
 
     .chat-header-avatar {
@@ -1270,6 +1279,266 @@
       z-index: 2000;
       display: none;
     }
+
+    /* ==========================================================================
+       EXCLUSIVE DAY MODE (LIGHT THEME) WORLD-CLASS TYPOGRAPHY & VISIBILITY
+       ========================================================================== */
+    [data-theme="light"] .message-row.outgoing .message-bubble {
+      color: #0f172a !important;
+      background: #dcfce7 !important;
+      border: 1px solid #bbf7d0 !important;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+    }
+    [data-theme="light"] .message-row.incoming .message-bubble {
+      color: #0f172a !important;
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+    }
+    [data-theme="light"] .message-body-text {
+      color: #0f172a !important;
+    }
+
+    /* Stock Ticker Chips in Messages */
+    [data-theme="light"] .stock-chip {
+      background: #ecfdf5 !important;
+      color: #047857 !important;
+      border: 1px solid #a7f3d0 !important;
+      font-weight: 800 !important;
+    }
+
+    /* Interactive Stock Analysis Card */
+    [data-theme="light"] .bot-stock-card {
+      background: #ffffff !important;
+      border: 1.5px solid #cbd5e1 !important;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.07) !important;
+    }
+    [data-theme="light"] .bot-stock-sym {
+      color: #047857 !important;
+      font-weight: 800 !important;
+      letter-spacing: -0.01em !important;
+    }
+    [data-theme="light"] .bot-stock-name {
+      color: #0f172a !important;
+      font-weight: 700 !important;
+    }
+    [data-theme="light"] .bot-stock-sector {
+      color: #475569 !important;
+      font-weight: 600 !important;
+    }
+    [data-theme="light"] .bot-stock-score-badge {
+      background: #ecfdf5 !important;
+      color: #047857 !important;
+      border: 1.5px solid #10b981 !important;
+    }
+    [data-theme="light"] .bot-stock-metrics-grid {
+      background: #f8fafc !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+    [data-theme="light"] .bot-metric-lbl {
+      color: #475569 !important;
+      font-weight: 700 !important;
+    }
+    [data-theme="light"] .bot-metric-val {
+      color: #0f172a !important;
+      font-weight: 800 !important;
+    }
+    [data-theme="light"] .bot-metric-val.green {
+      color: #047857 !important;
+    }
+    [data-theme="light"] .bot-metric-val.red {
+      color: #b91c1c !important;
+    }
+    [data-theme="light"] .bot-metric-val.accent {
+      color: #0369a1 !important;
+    }
+    [data-theme="light"] .pill-tag {
+      background: #f1f5f9 !important;
+      color: #334155 !important;
+      border: 1px solid #cbd5e1 !important;
+    }
+    [data-theme="light"] .pill-tag.stance {
+      background: #ecfdf5 !important;
+      color: #047857 !important;
+      border-color: #a7f3d0 !important;
+    }
+    [data-theme="light"] .pill-tag.link {
+      background: #e0f2fe !important;
+      color: #0284c7 !important;
+      border: 1px solid #bae6fd !important;
+    }
+    [data-theme="light"] .action-card-btn {
+      background: #f8fafc !important;
+      color: #0f172a !important;
+      border: 1.5px solid #cbd5e1 !important;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+    }
+    [data-theme="light"] .action-card-btn:hover {
+      background: #047857 !important;
+      color: #ffffff !important;
+      border-color: #047857 !important;
+    }
+
+    /* Trading Poll Card in Light Mode */
+    [data-theme="light"] .bot-poll-card {
+      background: #ffffff !important;
+      border: 1.5px solid #cbd5e1 !important;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.07) !important;
+    }
+    [data-theme="light"] .poll-badge {
+      color: #0284c7 !important;
+    }
+    [data-theme="light"] .bot-poll-question {
+      color: #0f172a !important;
+      font-weight: 700 !important;
+    }
+    [data-theme="light"] .poll-option-row {
+      background: #f8fafc !important;
+      border: 1px solid #cbd5e1 !important;
+    }
+    [data-theme="light"] .poll-option-row:hover:not(.locked) {
+      border-color: #0284c7 !important;
+    }
+    [data-theme="light"] .poll-option-row.selected {
+      border-color: #0284c7 !important;
+      background: #f0f9ff !important;
+    }
+    [data-theme="light"] .poll-option-row.winner {
+      border-color: #059669 !important;
+      background: #ecfdf5 !important;
+    }
+    [data-theme="light"] .poll-option-bar {
+      background: rgba(2, 132, 199, 0.16) !important;
+    }
+    [data-theme="light"] .poll-option-row.winner .poll-option-bar {
+      background: rgba(16, 185, 129, 0.22) !important;
+    }
+    [data-theme="light"] .poll-option-text {
+      color: #0f172a !important;
+    }
+    [data-theme="light"] .poll-option-stat {
+      color: #334155 !important;
+    }
+    [data-theme="light"] .poll-pct {
+      color: #0f172a !important;
+    }
+
+    /* Autocomplete Popover in Light Mode */
+    [data-theme="light"] .popover-container {
+      background: #ffffff !important;
+      border: 1.5px solid #cbd5e1 !important;
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.15) !important;
+    }
+    [data-theme="light"] .popover-item:hover {
+      background: #f1f5f9 !important;
+    }
+    [data-theme="light"] .popover-sym {
+      color: #047857 !important;
+      font-weight: 800 !important;
+    }
+    [data-theme="light"] .popover-price {
+      color: #0f172a !important;
+      font-weight: 700 !important;
+    }
+    [data-theme="light"] .popover-name {
+      color: #334155 !important;
+      font-weight: 600 !important;
+    }
+    [data-theme="light"] .popover-sector {
+      color: #64748b !important;
+    }
+    [data-theme="light"] .cmd-name {
+      color: #0284c7 !important;
+      font-weight: 800 !important;
+    }
+    [data-theme="light"] .cmd-desc {
+      color: #475569 !important;
+    }
+
+    /* Quick Momentum Ticker Tray in Light Mode */
+    [data-theme="light"] .quick-ticker-tray {
+      background: #ffffff !important;
+      border-top: 1px solid #e2e8f0 !important;
+    }
+    [data-theme="light"] .ticker-pill-btn {
+      background: #f8fafc !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #047857 !important;
+      font-weight: 700 !important;
+    }
+    [data-theme="light"] .ticker-pill-btn:hover {
+      background: #ecfdf5 !important;
+      border-color: #047857 !important;
+    }
+
+    /* Headers & Navigation in Light Mode */
+    [data-theme="light"] .sidebar-header {
+      background: #ffffff !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+    }
+    [data-theme="light"] .chat-header {
+      background: #ffffff !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+    }
+    [data-theme="light"] .chat-header-name {
+      color: #0f172a !important;
+      font-weight: 700 !important;
+    }
+    [data-theme="light"] .chat-header-sub {
+      color: #64748b !important;
+    }
+    [data-theme="light"] .channel-item-name {
+      color: #0f172a !important;
+      font-weight: 700 !important;
+    }
+    [data-theme="light"] .channel-item-last {
+      color: #475569 !important;
+    }
+    [data-theme="light"] .channel-section-header {
+      color: #475569 !important;
+      font-weight: 800 !important;
+    }
+    [data-theme="light"] .section-count-pill {
+      background: #f1f5f9 !important;
+      color: #334155 !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+    [data-theme="light"] .filter-tab-pill {
+      background: #f8fafc !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #475569 !important;
+    }
+    [data-theme="light"] .filter-tab-pill.active {
+      background: #ecfdf5 !important;
+      border-color: #047857 !important;
+      color: #047857 !important;
+    }
+    [data-theme="light"] .search-input-wrap {
+      background: #f8fafc !important;
+      border: 1.5px solid #cbd5e1 !important;
+    }
+    [data-theme="light"] .search-input-wrap input {
+      color: #0f172a !important;
+    }
+    [data-theme="light"] .chat-input-bar {
+      background: #f8fafc !important;
+      border-top: 1px solid #e2e8f0 !important;
+    }
+    [data-theme="light"] .chat-input-pill {
+      background: #ffffff !important;
+      border: 1.5px solid #cbd5e1 !important;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05) !important;
+    }
+    [data-theme="light"] .chat-textarea {
+      color: #0f172a !important;
+    }
+    [data-theme="light"] .pill-icon-btn {
+      color: #475569 !important;
+    }
+    [data-theme="light"] .sender-name-bar {
+      color: #047857 !important;
+    }
   </style>
 </head>
 <body>
@@ -1339,7 +1608,11 @@
       <!-- Native Chat Header -->
       <header class="chat-header">
         <div class="chat-header-interactive-cluster" onclick="handleHeaderClusterClick()" title="View Channel Details">
-          <button class="mobile-back-btn" onclick="event.stopPropagation(); exitChatToSidebar();">←</button>
+          <button class="mobile-back-btn" onclick="event.stopPropagation(); exitChatToSidebar(event);" aria-label="Back to channels" title="Back to channels">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+          </button>
           <div class="chat-header-avatar" id="currentChannelIcon">💬</div>
           <div class="chat-header-titles">
             <div class="chat-header-name">
@@ -1835,7 +2108,8 @@
       pollInterval = setInterval(() => pollLatestMessages(ch.id), 3500);
     }
 
-    function exitChatToSidebar() {
+    function exitChatToSidebar(e) {
+      if (e && e.stopPropagation) e.stopPropagation();
       document.body.classList.remove('in-chat');
     }
 
