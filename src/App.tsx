@@ -1157,10 +1157,10 @@ export default function App() {
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     return (localStorage.getItem("theme") as "dark" | "light") || "light";
   });
-  const [activeTab, setActiveTab] = useState<"home" | "signals" | "portfolio" | "dna" | "charts" | "intel" | "screener" | "more">(() => {
+  const [activeTab, setActiveTab] = useState<"home" | "signals" | "portfolio" | "dna" | "charts" | "intel" | "screener" | "lounge" | "more">(() => {
     if (typeof window !== "undefined") {
       const p = new URLSearchParams(window.location.search).get("tab");
-      if (p && ["home", "signals", "portfolio", "dna", "charts", "intel", "screener", "more"].includes(p)) {
+      if (p && ["home", "signals", "portfolio", "dna", "charts", "intel", "screener", "lounge", "more"].includes(p)) {
         return p as any;
       }
       // If direct deep link contains ?stock= or ?sym=, automatically open the DNA screen!
@@ -1173,6 +1173,31 @@ export default function App() {
   });
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [sigSub, setSigSub] = useState<"active" | "closed">("active");
+
+  const loungeIframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Sync auth and theme with Lounge chat iframe
+  useEffect(() => {
+    if (user && loungeIframeRef.current?.contentWindow) {
+      loungeIframeRef.current.contentWindow.postMessage({
+        type: "AUTH_SYNC",
+        user: {
+          email: user.email,
+          displayName: user.displayName || user.email?.split("@")[0],
+          photoURL: user.photoURL
+        }
+      }, "*");
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (loungeIframeRef.current?.contentWindow) {
+      loungeIframeRef.current.contentWindow.postMessage({
+        type: "THEME_CHANGE",
+        theme
+      }, "*");
+    }
+  }, [theme]);
   const [chartSub, setChartSub] = useState<"live" | "scanner" | "portal">("live");
   const [range, setRange] = useState<number>(90);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -3996,6 +4021,28 @@ export default function App() {
           />
         </section>
 
+        {/* ===== LOUNGE SCREEN (INSTITUTIONAL CHAT & AI CO-PILOT) ===== */}
+        <section className={`screen ${activeTab === "lounge" ? "active" : ""}`} id="screen-lounge" style={{ padding: 0 }}>
+          <iframe
+            ref={loungeIframeRef}
+            src="/chat.html"
+            style={{ width: "100%", height: "100%", minHeight: "85vh", border: "none", display: "block" }}
+            title="QuantSync Lounge & AI Community"
+            onLoad={() => {
+              if (user && loungeIframeRef.current?.contentWindow) {
+                loungeIframeRef.current.contentWindow.postMessage({
+                  type: "AUTH_SYNC",
+                  user: {
+                    email: user.email,
+                    displayName: user.displayName || user.email?.split("@")[0],
+                    photoURL: user.photoURL
+                  }
+                }, "*");
+              }
+            }}
+          />
+        </section>
+
         {/* ===== MORE SCREEN ===== */}
         <section className={`screen ${activeTab === "more" ? "active" : ""}`} id="screen-more">
           <div className="card" style={{ textAlign: "center", padding: "24px 16px" }}>
@@ -4176,6 +4223,35 @@ export default function App() {
             background: "#10B981",
             boxShadow: "0 0 6px #10B981"
           }} />
+        </button>
+        <button
+          className={`tab ${activeTab === "lounge" ? "active" : ""}`}
+          onClick={() => setActiveTab("lounge")}
+          data-tab="lounge"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          Lounge
+          <span style={{
+            position: "absolute",
+            top: 5,
+            right: "calc(50% - 17px)",
+            background: "#00A884",
+            color: "#fff",
+            fontSize: 8.5,
+            fontWeight: 800,
+            padding: "0 3.5px",
+            borderRadius: 6,
+            minWidth: 12,
+            height: 12,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            lineHeight: 1
+          }}>
+            AI
+          </span>
         </button>
       </nav>
 

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#111b21" id="metaThemeColor">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>QuantSync Lounge · WhatsApp Community</title>
+  <title>QuantSync Lounge · Institutional Trading Community</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,7 +17,6 @@
        WHATSAPP WEB & MOBILE ULTIMATE HYBRID DESIGN SYSTEM
        ========================================================================== */
     :root {
-      /* WhatsApp Dark Palette (Default) */
       --wa-app-bg: #0c1317;
       --wa-sidebar-bg: #111b21;
       --wa-header-bg: #202c33;
@@ -100,32 +99,52 @@
       height: 100dvh;
     }
 
-    /* WhatsApp Web Container Window */
-    .whatsapp-container {
+    /* Outer Wrapper */
+    .wa-app-wrapper {
       width: 100%;
       height: 100%;
-      max-width: 1680px;
       display: flex;
       background: var(--wa-sidebar-bg);
       position: relative;
       overflow: hidden;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
     }
 
-    /* ── LEFT SIDEBAR (CHATS / CHANNELS) ────────────────────────────────────────── */
-    .sidebar {
+    @media (min-width: 1400px) {
+      body { padding: 16px 24px; }
+      .wa-app-wrapper {
+        border-radius: 12px;
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+        border: 1px solid var(--wa-border);
+      }
+    }
+
+    /* ── LEFT SIDEBAR ─────────────────────────────────────────────────────────── */
+    .sidebar-pane {
       width: 420px;
-      min-width: 320px;
       height: 100%;
       display: flex;
       flex-direction: column;
-      border-right: 1px solid var(--wa-border);
       background: var(--wa-sidebar-bg);
+      border-right: 1px solid var(--wa-border);
+      flex-shrink: 0;
       z-index: 10;
-      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
     }
 
-    /* Desktop Sidebar Header */
+    @media (max-width: 768px) {
+      .sidebar-pane {
+        width: 100%;
+        position: absolute;
+        inset: 0;
+        transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 20;
+      }
+      body.in-chat .sidebar-pane {
+        transform: translateX(-100%);
+      }
+    }
+
+    /* Sidebar Top Header */
     .sidebar-header {
       height: 60px;
       background: var(--wa-header-bg);
@@ -137,35 +156,35 @@
       flex-shrink: 0;
     }
 
-    .user-profile-badge {
+    .user-profile-cluster {
       display: flex;
       align-items: center;
       gap: 12px;
       cursor: pointer;
     }
 
-    .user-avatar-img {
+    .user-avatar-wrap {
+      position: relative;
       width: 40px;
       height: 40px;
-      border-radius: 50%;
-      object-fit: cover;
-      background: #2a3942;
-      border: 2px solid var(--wa-green);
     }
 
-    .user-info-text {
-      display: flex;
-      flex-direction: column;
+    .user-avatar-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--wa-border);
     }
 
     .user-name-title {
-      font-size: 14.5px;
+      font-size: 15px;
       font-weight: 600;
       color: var(--wa-text-primary);
       line-height: 1.2;
     }
 
-    .user-status-sub {
+    .user-status-text {
       font-size: 11.5px;
       color: var(--wa-green);
       font-weight: 500;
@@ -185,7 +204,7 @@
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 6px;
       color: var(--wa-text-secondary);
     }
 
@@ -193,13 +212,13 @@
       background: transparent;
       border: none;
       color: var(--wa-text-secondary);
-      font-size: 19px;
+      font-size: 18px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 38px;
-      height: 38px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
       transition: background 0.15s, color 0.15s, transform 0.1s;
     }
@@ -213,154 +232,127 @@
       transform: scale(0.92);
     }
 
-    /* Screener Navigation Back Link */
-    .screener-back-pill {
+    /* Segmented Filter Tabs */
+    .filter-tabs-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px 6px 16px;
+      background: var(--wa-sidebar-bg);
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+
+    .filter-tab-pill {
+      background: var(--wa-header-bg);
+      border: 1px solid var(--wa-border);
+      color: var(--wa-text-secondary);
       font-size: 12px;
-      font-weight: 700;
-      padding: 6px 12px;
-      border-radius: 14px;
-      background: rgba(0, 168, 132, 0.16);
-      color: var(--wa-green);
-      text-decoration: none;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 16px;
+      cursor: pointer;
       display: flex;
       align-items: center;
       gap: 5px;
-      transition: background 0.15s, transform 0.1s;
-    }
-    .screener-back-pill:hover {
-      background: rgba(0, 168, 132, 0.28);
-    }
-    .screener-back-pill:active {
-      transform: scale(0.96);
+      white-space: nowrap;
+      transition: all 0.15s;
     }
 
-    /* ── MOBILE-SPECIFIC WHATSAPP TOP BAR ─────────────────────────────────────── */
-    .mobile-wa-brand-bar {
-      display: none;
-      height: 56px;
-      background: var(--wa-header-bg);
-      padding: 0 16px;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--wa-border-subtle);
-      flex-shrink: 0;
-    }
-
-    .mobile-wa-title {
-      font-size: 20px;
-      font-weight: 700;
+    .filter-tab-pill.active {
+      background: rgba(0, 168, 132, 0.18);
+      border-color: var(--wa-green);
       color: var(--wa-green);
-      letter-spacing: -0.01em;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .mobile-wa-actions {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    /* Mobile WhatsApp Top Navigation Tabs */
-    .mobile-wa-tabs-bar {
-      display: none;
-      background: var(--wa-header-bg);
-      height: 44px;
-      border-bottom: 1px solid var(--wa-border);
-      flex-shrink: 0;
-    }
-
-    .wa-tab-item {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      font-size: 13px;
       font-weight: 700;
-      color: var(--wa-text-secondary);
-      border-bottom: 3px solid transparent;
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      transition: all 0.15s ease;
-      position: relative;
     }
 
-    .wa-tab-item.active {
-      color: var(--wa-green);
-      border-bottom-color: var(--wa-green);
-    }
-
-    .wa-tab-badge {
-      background: var(--wa-badge-green);
-      color: #fff;
+    .tab-badge {
       font-size: 10px;
-      font-weight: 800;
       padding: 1px 6px;
       border-radius: 10px;
+      background: rgba(134, 150, 160, 0.2);
     }
 
-    /* Search Bar in Sidebar */
+    .filter-tab-pill.active .tab-badge {
+      background: var(--wa-green);
+      color: #fff;
+    }
+
+    /* Search Box */
     .sidebar-search-box {
-      padding: 8px 12px;
+      padding: 6px 16px 10px 16px;
       background: var(--wa-sidebar-bg);
-      border-bottom: 1px solid var(--wa-border-subtle);
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      flex-shrink: 0;
     }
 
     .search-input-wrap {
-      flex: 1;
-      background: var(--wa-header-bg);
-      border-radius: 8px;
       display: flex;
       align-items: center;
-      padding: 7px 12px;
       gap: 10px;
+      background: var(--wa-header-bg);
+      border-radius: 8px;
+      padding: 7px 12px;
+      border: 1px solid var(--wa-border);
     }
 
     .search-input-wrap input {
-      border: none;
+      flex: 1;
       background: transparent;
+      border: none;
       outline: none;
       font-family: var(--wa-font);
-      font-size: 14px;
+      font-size: 13.5px;
       color: var(--wa-text-primary);
-      width: 100%;
     }
 
     .search-input-wrap input::placeholder {
-      color: var(--wa-input-placeholder);
+      color: var(--wa-text-muted);
     }
 
-    /* Channels / Chats List */
+    /* Channels List Scroll Area */
     .channels-list {
       flex: 1;
       overflow-y: auto;
       overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
+      padding-bottom: 24px;
     }
 
+    /* Section Category Header */
+    .channel-section-header {
+      padding: 12px 16px 6px 16px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: var(--wa-text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-transform: uppercase;
+    }
+
+    .section-count-pill {
+      font-size: 10px;
+      font-family: var(--wa-font-mono);
+      background: var(--wa-active-item);
+      padding: 1px 6px;
+      border-radius: 10px;
+      color: var(--wa-text-primary);
+    }
+
+    /* Channel Row Item */
     .channel-item {
       display: flex;
       align-items: center;
-      padding: 12px 16px;
+      gap: 12px;
+      padding: 11px 16px;
       cursor: pointer;
       border-bottom: 1px solid var(--wa-border-subtle);
-      transition: background 0.12s ease;
+      transition: background 0.12s;
       position: relative;
-      height: 72px;
     }
 
     .channel-item:hover {
       background: var(--wa-panel-hover);
-    }
-
-    .channel-item:active {
-      background: var(--wa-active-item);
     }
 
     .channel-item.active {
@@ -368,69 +360,55 @@
     }
 
     .channel-avatar {
-      width: 48px;
-      height: 48px;
+      width: 46px;
+      height: 46px;
       border-radius: 50%;
-      background: #202c33;
+      background: #2a3942;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 22px;
-      margin-right: 14px;
       flex-shrink: 0;
-      position: relative;
       border: 1px solid var(--wa-border);
-    }
-
-    .channel-item.active .channel-avatar {
-      box-shadow: 0 0 0 2px var(--wa-green);
     }
 
     .channel-content {
       flex: 1;
       min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
     }
 
     .channel-header-row {
       display: flex;
+      align-items: center;
       justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 4px;
     }
 
     .channel-title {
-      font-size: 15.5px;
+      font-size: 15px;
       font-weight: 600;
       color: var(--wa-text-primary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
       display: flex;
       align-items: center;
       gap: 6px;
-    }
-
-    .announcement-tag {
-      font-size: 10px;
-      padding: 1px 5px;
-      border-radius: 4px;
-      background: rgba(0, 168, 132, 0.2);
-      color: var(--wa-green);
-      font-weight: 700;
-      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .channel-time {
       font-size: 11.5px;
       color: var(--wa-text-muted);
-      white-space: nowrap;
-      margin-left: 8px;
+      flex-shrink: 0;
+      font-family: var(--wa-font-mono);
     }
 
     .channel-snippet-row {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
       gap: 8px;
     }
 
@@ -440,67 +418,57 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      display: flex;
-      align-items: center;
-      gap: 4px;
+      flex: 1;
     }
 
-    .channel-last-msg strong {
-      color: var(--wa-text-primary);
-      font-weight: 500;
-    }
-
-    .unread-pill {
-      background: var(--wa-badge-green);
-      color: #ffffff;
-      font-size: 11px;
-      font-weight: 700;
-      min-width: 19px;
-      height: 19px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 5px;
+    .channel-badge-pill {
+      font-size: 9.5px;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 8px;
+      text-transform: uppercase;
       flex-shrink: 0;
+      letter-spacing: 0.04em;
     }
 
-    /* Floating Action Button (FAB) on Mobile */
-    .mobile-fab-btn {
-      display: none;
-      position: fixed;
-      bottom: max(20px, env(safe-area-inset-bottom));
-      right: 20px;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: var(--wa-green);
-      border: none;
-      color: #ffffff;
-      font-size: 24px;
-      box-shadow: 0 6px 18px rgba(0, 168, 132, 0.45);
-      cursor: pointer;
-      align-items: center;
-      justify-content: center;
-      z-index: 25;
-      transition: transform 0.15s, background 0.15s;
-    }
-    .mobile-fab-btn:active {
-      transform: scale(0.92);
+    .channel-badge-pill.bot {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.4);
     }
 
-    /* ── RIGHT CHAT PANE ───────────────────────────────────────────────────────── */
+    .channel-badge-pill.ai {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    /* ── RIGHT MAIN CHAT CONVERSATION PANE ──────────────────────────────────── */
     .chat-pane {
       flex: 1;
       height: 100%;
       display: flex;
       flex-direction: column;
-      position: relative;
       background: var(--wa-chat-bg);
-      z-index: 15;
+      position: relative;
+      min-width: 0;
     }
 
-    /* Chat Pane Header */
+    @media (max-width: 768px) {
+      .chat-pane {
+        width: 100%;
+        position: absolute;
+        inset: 0;
+        transform: translateX(100%);
+        transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 30;
+      }
+      body.in-chat .chat-pane {
+        transform: translateX(0%);
+      }
+    }
+
+    /* Chat Header */
     .chat-header {
       height: 60px;
       background: var(--wa-header-bg);
@@ -520,11 +488,7 @@
       cursor: pointer;
       padding: 4px 8px;
       border-radius: 8px;
-      transition: background 0.15s;
       min-width: 0;
-    }
-    .chat-header-interactive-cluster:active {
-      background: rgba(255, 255, 255, 0.06);
     }
 
     .mobile-back-btn {
@@ -532,10 +496,14 @@
       background: transparent;
       border: none;
       color: var(--wa-text-primary);
-      font-size: 24px;
+      font-size: 22px;
       cursor: pointer;
       padding: 4px 6px 4px 0;
       line-height: 1;
+    }
+
+    @media (max-width: 768px) {
+      .mobile-back-btn { display: inline-block; }
     }
 
     .chat-header-avatar {
@@ -580,27 +548,7 @@
       text-overflow: ellipsis;
     }
 
-    .chat-header-actions {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      flex-shrink: 0;
-    }
-
-    /* In-Chat Search Bar Drawer */
-    .in-chat-search-bar {
-      display: none;
-      padding: 8px 14px;
-      background: var(--wa-sidebar-bg);
-      border-bottom: 1px solid var(--wa-border-subtle);
-      align-items: center;
-      gap: 8px;
-    }
-    .in-chat-search-bar.open {
-      display: flex;
-    }
-
-    /* Authentic WhatsApp Doodle Background */
+    /* Doodle Background Messages Container */
     .chat-messages-container {
       flex: 1;
       overflow-y: auto;
@@ -618,54 +566,32 @@
       user-select: text;
     }
 
-    /* Date Separator Pill */
-    .date-separator {
-      display: flex;
-      justify-content: center;
-      margin: 10px 0;
-    }
-
-    .date-pill {
-      background: var(--wa-header-bg);
-      color: var(--wa-text-secondary);
-      font-size: 11px;
-      font-weight: 600;
-      padding: 5px 12px;
-      border-radius: 8px;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-    }
-
-    /* ── MESSAGE BUBBLES ───────────────────────────────────────────────────────── */
+    /* Message Rows & Bubbles */
     .message-row {
       display: flex;
       width: 100%;
-      margin-bottom: 3px;
+      margin-bottom: 4px;
       position: relative;
     }
 
-    .message-row.incoming {
-      justify-content: flex-start;
-    }
-
-    .message-row.outgoing {
-      justify-content: flex-end;
-    }
+    .message-row.incoming { justify-content: flex-start; }
+    .message-row.outgoing { justify-content: flex-end; }
 
     .message-bubble {
-      max-width: 76%;
-      min-width: 120px;
-      padding: 6px 9px 8px 9px;
+      max-width: 82%;
+      min-width: 140px;
+      padding: 7px 10px 8px 10px;
       border-radius: 8px;
       position: relative;
       box-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.25);
       border: 1px solid var(--wa-bubble-border);
       word-break: break-word;
-      font-size: 14.5px;
-      line-height: 1.38;
+      font-size: 14px;
+      line-height: 1.4;
       animation: fadeIn 0.15s ease-out;
       cursor: pointer;
+      touch-action: pan-y;
+      transition: transform 0.1s ease;
     }
 
     @keyframes fadeIn {
@@ -685,9 +611,8 @@
       border-top-right-radius: 2px;
     }
 
-    /* Sender Name in Group Chat */
     .sender-name-bar {
-      font-size: 12.5px;
+      font-size: 12px;
       font-weight: 700;
       margin-bottom: 3px;
       display: flex;
@@ -696,7 +621,7 @@
     }
 
     .role-badge {
-      font-size: 9.5px;
+      font-size: 9px;
       padding: 1px 5px;
       border-radius: 4px;
       text-transform: uppercase;
@@ -705,25 +630,19 @@
     }
     .role-bot { background: #3b82f6; color: #ffffff; }
     .role-admin { background: #8b5cf6; color: #ffffff; }
-    .role-pro { background: #10b981; color: #ffffff; }
 
-    /* Reply preview card inside bubble */
-    .quoted-reply-box {
-      background: rgba(0, 0, 0, 0.18);
-      border-left: 4px solid var(--wa-green);
-      padding: 5px 8px;
-      border-radius: 4px;
-      margin-bottom: 6px;
-      font-size: 12px;
-      color: var(--wa-text-secondary);
-      cursor: pointer;
+    .message-meta {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--wa-text-muted);
+      margin-top: 4px;
+      font-family: var(--wa-font-mono);
     }
 
-    .quoted-sender {
-      font-weight: 700;
-      color: var(--wa-green);
-      margin-bottom: 2px;
-    }
+    .ticks-icon.blue { color: var(--wa-blue-tick); }
 
     /* Stock Ticker Highlighting Chip */
     .stock-chip {
@@ -732,172 +651,401 @@
       gap: 3px;
       background: rgba(0, 168, 132, 0.22);
       color: var(--wa-green);
-      padding: 2px 8px;
+      padding: 2px 7px;
       border-radius: 6px;
       font-weight: 700;
       font-family: var(--wa-font-mono);
       text-decoration: none;
       cursor: pointer;
-      transition: background 0.15s, transform 0.1s;
-      min-height: 26px;
     }
 
-    .stock-chip:hover {
-      background: rgba(0, 168, 132, 0.4);
-      transform: translateY(-1px);
-    }
-
-    /* Attachment Image in Bubble */
-    .bubble-attachment-img {
-      max-width: 100%;
-      max-height: 320px;
-      border-radius: 6px;
-      margin: 4px 0 6px 0;
-      cursor: pointer;
-      display: block;
-      object-fit: cover;
-    }
-
-    /* Message Meta: Time + Ticks */
-    .message-meta {
-      float: right;
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      margin-left: 9px;
-      margin-top: 4px;
-      font-size: 11px;
-      color: var(--wa-text-secondary);
-      user-select: none;
-      white-space: nowrap;
-    }
-
-    .ticks-icon {
-      font-size: 14px;
-      line-height: 1;
-      display: inline-block;
-    }
-    .ticks-icon.blue { color: var(--wa-blue-tick); }
-    .ticks-icon.gray { color: var(--wa-gray-tick); }
-
-    /* Reactions strip on bubble */
-    .reactions-bar {
+    /* ── INTERACTIVE BOT STOCK ANALYSIS CARD ─────────────────────────────────── */
+    .bot-stock-card {
+      background: rgba(11, 20, 26, 0.4);
+      border: 1px solid rgba(0, 168, 132, 0.3);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-top: 6px;
       display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-top: 5px;
+      flex-direction: column;
+      gap: 8px;
     }
 
-    .reaction-pill {
-      background: var(--wa-header-bg);
-      border: 1px solid var(--wa-border-subtle);
-      border-radius: 12px;
-      padding: 2px 7px;
-      font-size: 12px;
-      cursor: pointer;
-      display: inline-flex;
+    .bot-stock-header {
+      display: flex;
       align-items: center;
-      gap: 3px;
-      transition: transform 0.1s;
-    }
-    .reaction-pill:hover { transform: scale(1.1); }
-    .reaction-pill:active { transform: scale(0.9); }
-    .reaction-pill.reacted {
-      border-color: var(--wa-green);
-      background: rgba(0, 168, 132, 0.2);
+      justify-content: space-between;
     }
 
-    /* Floating WhatsApp Reaction Popup (Mobile & Desktop) */
-    .reaction-popup-drawer {
-      position: absolute;
-      bottom: calc(100% + 4px);
-      background: var(--wa-header-bg);
-      border: 1px solid var(--wa-border);
-      border-radius: 24px;
-      padding: 4px 8px;
+    .bot-stock-title {
       display: flex;
       align-items: center;
       gap: 6px;
-      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
-      z-index: 50;
-      animation: popIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    @keyframes popIn {
-      from { transform: scale(0.85); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
+    .bot-stock-sym {
+      font-size: 15px;
+      font-weight: 800;
+      color: #34d399;
+      font-family: var(--wa-font-mono);
     }
 
-    .popup-emoji-btn {
-      font-size: 20px;
-      cursor: pointer;
-      background: transparent;
-      border: none;
-      padding: 4px;
-      transition: transform 0.12s;
-      border-radius: 50%;
-    }
-    .popup-emoji-btn:hover {
-      transform: scale(1.25);
-    }
-    .popup-emoji-btn:active {
-      transform: scale(0.9);
+    .bot-stock-sector {
+      font-size: 11px;
+      color: var(--wa-text-muted);
     }
 
-    .popup-action-btn {
+    .bot-stock-name {
       font-size: 12px;
-      font-weight: 600;
-      background: var(--wa-active-item);
-      color: var(--wa-text-primary);
-      border: none;
-      padding: 4px 8px;
+      color: var(--wa-text-secondary);
+    }
+
+    .bot-stock-score-badge {
+      font-size: 11.5px;
+      font-weight: 800;
+      padding: 3px 8px;
       border-radius: 12px;
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      font-family: var(--wa-font-mono);
+    }
+
+    .bot-stock-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    .bot-metric-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .bot-metric-lbl {
+      font-size: 9.5px;
+      color: var(--wa-text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .bot-metric-val {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--wa-text-primary);
+      font-family: var(--wa-font-mono);
+    }
+    .bot-metric-val.green { color: #10b981; }
+    .bot-metric-val.red { color: #ef4444; }
+    .bot-metric-val.accent { color: #38bdf8; }
+
+    .bot-stock-stage-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .pill-tag {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: var(--wa-active-item);
+      color: var(--wa-text-secondary);
+    }
+    .pill-tag.stance {
+      background: rgba(0, 168, 132, 0.18);
+      color: var(--wa-green);
+    }
+    .pill-tag.link {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      text-decoration: none;
+    }
+
+    /* 4 Action Buttons Grid */
+    .interactive-action-buttons-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .action-card-btn {
+      flex: 1;
+      min-width: calc(50% - 4px);
+      background: var(--wa-active-item);
+      border: 1px solid var(--wa-border);
+      color: var(--wa-text-primary);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      font-weight: 700;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 3px;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.15s;
     }
 
-    /* ── QUICK MOMENTUM TICKER TRAY (Directly above input) ────────────────────── */
-    .quick-ticker-tray {
-      background: var(--wa-sidebar-bg);
-      padding: 6px 12px;
+    .action-card-btn:hover {
+      background: var(--wa-green);
+      color: #fff;
+      border-color: var(--wa-green);
+    }
+
+    .action-card-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* ── INTERACTIVE TRADING POLL CARD ───────────────────────────────────────── */
+    .bot-poll-card {
+      background: rgba(11, 20, 26, 0.4);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .bot-poll-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .poll-badge {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #06b6d4;
+      letter-spacing: 0.04em;
+    }
+
+    .poll-timer-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-family: var(--wa-font-mono);
+    }
+    .poll-timer-badge.active {
+      background: rgba(6, 182, 212, 0.18);
+      color: #06b6d4;
+    }
+    .poll-timer-badge.ended {
+      background: rgba(239, 68, 68, 0.18);
+      color: #f87171;
+    }
+
+    .bot-poll-question {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--wa-text-primary);
+      line-height: 1.3;
+    }
+
+    .bot-poll-options {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .poll-option-row {
+      position: relative;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--wa-border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: all 0.15s;
+    }
+
+    .poll-option-row:hover:not(.locked) {
+      border-color: #06b6d4;
+    }
+
+    .poll-option-row.selected {
+      border-color: #06b6d4;
+      background: rgba(6, 182, 212, 0.12);
+    }
+
+    .poll-option-row.winner {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.15);
+    }
+
+    .poll-option-bar {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      background: rgba(6, 182, 212, 0.22);
+      transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1;
+    }
+
+    .poll-option-row.winner .poll-option-bar {
+      background: rgba(16, 185, 129, 0.3);
+    }
+
+    .poll-option-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .poll-option-text {
       display: flex;
       align-items: center;
       gap: 8px;
-      overflow-x: auto;
-      white-space: nowrap;
-      border-top: 1px solid var(--wa-border-subtle);
-      -webkit-overflow-scrolling: touch;
-      flex-shrink: 0;
-    }
-    .quick-ticker-tray::-webkit-scrollbar {
-      display: none;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--wa-text-primary);
     }
 
-    .ticker-pill-btn {
-      background: var(--wa-header-bg);
-      border: 1px solid var(--wa-border);
-      color: var(--wa-green);
+    .poll-check-icon {
+      color: #06b6d4;
+      font-weight: 800;
+    }
+
+    .poll-radio-circle {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1.5px solid var(--wa-text-muted);
+      display: inline-block;
+    }
+
+    .poll-option-stat {
       font-family: var(--wa-font-mono);
-      font-size: 12.5px;
+      font-size: 12px;
       font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 14px;
-      cursor: pointer;
-      display: inline-flex;
+      color: var(--wa-text-secondary);
+      display: flex;
       align-items: center;
       gap: 4px;
-      transition: background 0.12s, transform 0.1s;
-      flex-shrink: 0;
-    }
-    .ticker-pill-btn:active {
-      transform: scale(0.92);
-      background: var(--wa-green);
-      color: #ffffff;
     }
 
-    /* ── BOTTOM INPUT BAR ──────────────────────────────────────────────────────── */
+    .poll-pct { color: var(--wa-text-primary); }
+
+    .bot-poll-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--wa-text-muted);
+      margin-top: 2px;
+    }
+
+    .poll-winner-label {
+      color: #10b981;
+      font-weight: 700;
+    }
+
+    /* ── FLOATING AUTOCOMPLETE & SLASH COMMAND POPOVERS ─────────────────────── */
+    .popover-container {
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 12px;
+      right: 12px;
+      background: var(--wa-sidebar-bg);
+      border: 1px solid var(--wa-border);
+      border-radius: 12px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+      z-index: 100;
+      max-height: 240px;
+      overflow-y: auto;
+      padding: 6px;
+      animation: popIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .popover-header {
+      font-size: 10.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--wa-text-muted);
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--wa-border-subtle);
+    }
+
+    .popover-item {
+      display: flex;
+      flex-direction: column;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+
+    .popover-item:hover {
+      background: var(--wa-panel-hover);
+    }
+
+    .popover-sym-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .popover-sym {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #34d399;
+      font-family: var(--wa-font-mono);
+    }
+
+    .popover-price {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--wa-text-primary);
+      font-family: var(--wa-font-mono);
+    }
+
+    .popover-name-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--wa-text-secondary);
+      margin-top: 2px;
+    }
+
+    .popover-item.cmd-item {
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .cmd-icon { font-size: 18px; }
+    .cmd-name { font-size: 13.5px; font-weight: 700; color: #38bdf8; font-family: var(--wa-font-mono); }
+    .cmd-desc { font-size: 11.5px; color: var(--wa-text-secondary); }
+
+    /* ── READ-ONLY CHANNEL NOTICE BANNER ─────────────────────────────────────── */
+    .read-only-banner {
+      display: none;
+      padding: 14px 16px;
+      background: var(--wa-header-bg);
+      border-top: 1px solid var(--wa-border);
+      align-items: center;
+      gap: 12px;
+      z-index: 5;
+    }
+
+    /* ── BOTTOM CHAT COMPOSER BAR ────────────────────────────────────────────── */
     .chat-input-bar {
       min-height: 60px;
       background: var(--wa-header-bg);
@@ -911,32 +1059,6 @@
       flex-shrink: 0;
     }
 
-    /* Reply draft banner */
-    .reply-draft-banner {
-      display: none;
-      position: absolute;
-      bottom: 100%;
-      left: 0;
-      right: 0;
-      background: var(--wa-header-bg);
-      border-top: 1px solid var(--wa-border);
-      border-left: 4px solid var(--wa-green);
-      padding: 8px 16px;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
-      z-index: 6;
-    }
-
-    .reply-draft-close {
-      cursor: pointer;
-      font-size: 18px;
-      color: var(--wa-text-secondary);
-      padding: 4px;
-    }
-
-    /* WhatsApp Mobile Input Pill Container */
     .chat-input-pill {
       flex: 1;
       background: var(--wa-input-bg);
@@ -955,7 +1077,7 @@
       background: transparent;
       outline: none;
       font-family: var(--wa-font);
-      font-size: 16px; /* 16px strictly prevents iOS Safari auto-zoom */
+      font-size: 15px;
       color: var(--wa-text-primary);
       resize: none;
       line-height: 1.35;
@@ -978,11 +1100,8 @@
       padding: 4px;
       transition: color 0.15s, transform 0.1s;
     }
-    .pill-icon-btn:active {
-      transform: scale(0.9);
-    }
+    .pill-icon-btn:active { transform: scale(0.9); }
 
-    /* WhatsApp Mobile Floating Circular Send/Mic Button */
     .send-circle-btn {
       width: 48px;
       height: 48px;
@@ -1004,7 +1123,37 @@
       background: var(--wa-green-hover);
     }
 
-    /* ── AUTH / GMAIL LOGIN MODAL ──────────────────────────────────────────────── */
+    /* Quick Momentum Ticker Tray */
+    .quick-ticker-tray {
+      background: var(--wa-sidebar-bg);
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      white-space: nowrap;
+      border-top: 1px solid var(--wa-border-subtle);
+      flex-shrink: 0;
+    }
+    .quick-ticker-tray::-webkit-scrollbar { display: none; }
+
+    .ticker-pill-btn {
+      background: var(--wa-header-bg);
+      border: 1px solid var(--wa-border);
+      color: var(--wa-green);
+      font-family: var(--wa-font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    /* ── POLL MODAL ──────────────────────────────────────────────────────────── */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -1015,7 +1164,6 @@
       justify-content: center;
       z-index: 1000;
       padding: 16px;
-      transition: opacity 0.2s ease;
     }
 
     .modal-card {
@@ -1024,409 +1172,165 @@
       border-radius: 16px;
       width: 100%;
       max-width: 440px;
-      padding: 32px 24px;
+      padding: 24px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      text-align: center;
       position: relative;
-      animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    @keyframes modalPop {
-      from { transform: scale(0.92); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-
-    .modal-logo {
-      font-size: 42px;
-      margin-bottom: 12px;
-      display: inline-block;
-    }
-
-    .modal-title {
-      font-size: 21px;
-      font-weight: 700;
-      color: var(--wa-text-primary);
-      margin-bottom: 8px;
-    }
-
-    .modal-desc {
-      font-size: 13.5px;
-      color: var(--wa-text-secondary);
-      line-height: 1.45;
-      margin-bottom: 24px;
-    }
-
-    .form-group {
-      text-align: left;
-      margin-bottom: 16px;
-    }
-
-    .form-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--wa-text-secondary);
-      margin-bottom: 6px;
-      display: block;
-    }
-
-    .form-input {
-      width: 100%;
-      background: var(--wa-header-bg);
-      border: 1px solid var(--wa-border);
-      border-radius: 8px;
-      padding: 13px 14px;
-      font-family: var(--wa-font);
-      font-size: 16px; /* Prevents iOS auto-zoom */
-      color: var(--wa-text-primary);
-      outline: none;
-      transition: border-color 0.15s;
-    }
-
-    .form-input:focus {
-      border-color: var(--wa-green);
-    }
-
-    .primary-submit-btn {
-      width: 100%;
-      background: var(--wa-green);
-      border: none;
-      border-radius: 8px;
-      padding: 14px;
-      font-family: var(--wa-font);
-      font-size: 15.5px;
-      font-weight: 700;
-      color: #ffffff;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .poll-presets-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
       gap: 8px;
-      transition: background 0.15s;
       margin-top: 8px;
     }
 
-    .primary-submit-btn:hover {
-      background: var(--wa-green-hover);
-    }
-    .primary-submit-btn:active {
-      transform: scale(0.98);
-    }
-
-    .guest-btn {
-      margin-top: 14px;
-      background: transparent;
-      border: none;
-      color: var(--wa-text-muted);
-      font-size: 13px;
-      cursor: pointer;
-      text-decoration: underline;
-      padding: 6px;
-    }
-
-    /* ── CHANNEL INFO BOTTOM SHEET (Mobile & Desktop) ─────────────────────────── */
-    .sheet-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.65);
-      backdrop-filter: blur(4px);
-      z-index: 1200;
-      display: none;
-      align-items: flex-end;
-      justify-content: center;
-    }
-
-    .sheet-content {
-      background: var(--wa-sidebar-bg);
-      width: 100%;
-      max-width: 500px;
-      border-top-left-radius: 20px;
-      border-top-right-radius: 20px;
-      padding: 20px 20px max(24px, env(safe-area-inset-bottom)) 20px;
-      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
-      animation: slideUpSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes slideUpSheet {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
-    }
-
-    .sheet-handle {
-      width: 40px;
-      height: 4px;
-      border-radius: 2px;
-      background: var(--wa-text-muted);
-      margin: 0 auto 16px auto;
-    }
-
-    .sheet-header-center {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .sheet-avatar {
-      font-size: 42px;
-      margin-bottom: 8px;
-      display: inline-block;
-    }
-
-    .sheet-title {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--wa-text-primary);
-    }
-
-    .sheet-desc {
-      font-size: 13px;
-      color: var(--wa-text-secondary);
-      margin-top: 4px;
-    }
-
-    .sheet-rule-card {
+    .poll-preset-btn {
       background: var(--wa-header-bg);
       border: 1px solid var(--wa-border);
-      border-radius: 12px;
-      padding: 14px;
-      margin-bottom: 16px;
-      font-size: 13px;
-      line-height: 1.45;
-      color: var(--wa-text-primary);
-    }
-
-    .sheet-btn {
-      width: 100%;
-      background: var(--wa-active-item);
-      color: var(--wa-text-primary);
-      border: 1px solid var(--wa-border);
       border-radius: 10px;
-      padding: 12px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
+      padding: 8px 10px;
       display: flex;
-      align-items: center;
-      justify-content: center;
+      flex-direction: column;
+      align-items: flex-start;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .poll-preset-btn.active {
+      border-color: #06b6d4;
+      background: rgba(6, 182, 212, 0.15);
+    }
+
+    .preset-icon { font-size: 16px; }
+    .preset-title { font-size: 12.5px; font-weight: 700; color: var(--wa-text-primary); margin-top: 2px; }
+    .preset-sub { font-size: 10px; color: var(--wa-text-muted); }
+
+    .poll-timer-pills {
+      display: flex;
       gap: 6px;
-      text-decoration: none;
+      flex-wrap: wrap;
     }
 
-    /* ── TOAST NOTIFICATIONS ─────────────────────────────────────────────────── */
-    .wa-toast {
-      position: fixed;
-      bottom: 84px;
-      left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      background: rgba(32, 44, 51, 0.94);
-      color: #ffffff;
-      padding: 10px 18px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 500;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-      opacity: 0;
-      pointer-events: none;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 3000;
-      white-space: nowrap;
-    }
-    .wa-toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
+    .timer-pill {
+      background: var(--wa-header-bg);
+      border: 1px solid var(--wa-border);
+      color: var(--wa-text-secondary);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 12px;
+      cursor: pointer;
     }
 
-    /* Lightbox for Images */
-    .lightbox-modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.94);
-      z-index: 2000;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
+    .timer-pill.active {
+      background: #06b6d4;
+      color: #fff;
+      border-color: #06b6d4;
     }
-    .lightbox-modal img {
-      max-width: 95vw;
-      max-height: 85vh;
+
+    .auth-input {
+      width: 100%;
+      background: var(--wa-input-bg);
+      border: 1px solid var(--wa-border);
       border-radius: 8px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-      object-fit: contain;
+      padding: 9px 12px;
+      font-family: var(--wa-font);
+      font-size: 14px;
+      color: var(--wa-text-primary);
+      outline: none;
     }
 
-    /* ── MOBILE PHONE HIGH-PRECISION ADAPTATION ──────────────────────────────── */
-    @media (max-width: 768px) {
-      body {
-        padding: 0;
-        height: 100vh;
-        height: 100dvh;
-        background: var(--wa-sidebar-bg);
-      }
+    .auth-submit-btn {
+      width: 100%;
+      background: var(--wa-green);
+      border: none;
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 11px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .auth-submit-btn:hover { background: var(--wa-green-hover); }
 
-      .whatsapp-container {
-        border-radius: 0;
-        box-shadow: none;
-        max-width: 100%;
-      }
-
-      /* Desktop Sidebar Header is hidden; Native Mobile WhatsApp Top App Bar is shown */
-      .sidebar-header {
-        display: none;
-      }
-      .mobile-wa-brand-bar {
-        display: flex;
-        padding-top: env(safe-area-inset-top);
-        height: calc(56px + env(safe-area-inset-top));
-      }
-      .mobile-wa-tabs-bar {
-        display: flex;
-      }
-
-      /* Sidebar takes 100% width on mobile */
-      .sidebar {
-        width: 100%;
-        min-width: 100%;
-        position: absolute;
-        inset: 0;
-        border-right: none;
-      }
-
-      .mobile-fab-btn {
-        display: flex;
-      }
-
-      /* Chat Pane slides in and out smoothly */
-      .chat-pane {
-        width: 100%;
-        min-width: 100%;
-        position: absolute;
-        inset: 0;
-        transform: translateX(100%);
-        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.4);
-      }
-
-      body.in-chat .chat-pane {
-        transform: translateX(0);
-      }
-      body.in-chat .sidebar {
-        transform: translateX(-25%);
-      }
-      body.in-chat .mobile-fab-btn {
-        display: none;
-      }
-
-      /* Chat Header on Phone */
-      .chat-header {
-        padding-top: env(safe-area-inset-top);
-        height: calc(60px + env(safe-area-inset-top));
-        padding-left: 6px;
-        padding-right: 10px;
-      }
-
-      .mobile-back-btn {
-        display: block;
-      }
-
-      .chat-messages-container {
-        padding: 12px 10px 10px 10px;
-      }
-
-      .message-bubble {
-        max-width: 86%;
-        font-size: 15px;
-      }
-
-      .chat-input-bar {
-        padding: 8px 8px max(10px, env(safe-area-inset-bottom)) 8px;
-        gap: 6px;
-      }
-
-      .chat-input-pill {
-        padding: 4px 10px;
-        min-height: 44px;
-      }
-
-      .send-circle-btn {
-        width: 44px;
-        height: 44px;
-        font-size: 18px;
-      }
+    .toast-pill {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--wa-header-bg);
+      border: 1px solid var(--wa-border);
+      color: var(--wa-text-primary);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12.5px;
+      font-weight: 600;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      z-index: 2000;
+      display: none;
     }
   </style>
 </head>
 <body>
 
-  <div class="whatsapp-container" id="appContainer">
-    
-    <!-- ── LEFT SIDEBAR: CHANNELS & PROFILES ─────────────────────────────────── -->
-    <aside class="sidebar" id="sidebar">
+  <!-- Toast Notification -->
+  <div class="toast-pill" id="toastPill"></div>
+
+  <div class="wa-app-wrapper">
+
+    <!-- ── LEFT SIDEBAR ───────────────────────────────────────────────────────── -->
+    <aside class="sidebar-pane" id="sidebarPane">
       
-      <!-- 1. Desktop Sidebar Header -->
-      <div class="sidebar-header">
-        <div class="user-profile-badge" onclick="openProfileModal()" title="Click to view/edit profile">
-          <img src="https://api.dicebear.com/7.x/initials/svg?seed=Trader&backgroundColor=00a884" alt="Avatar" class="user-avatar-img" id="myAvatarImg">
-          <div class="user-info-text">
-            <span class="user-name-title" id="myDisplayName">Join Lounge</span>
-            <span class="user-status-sub"><span class="online-dot"></span> <span id="myStatusText">Sign In with Gmail</span></span>
+      <!-- 1. Header with Profile and Actions -->
+      <header class="sidebar-header">
+        <div class="user-profile-cluster" onclick="openProfileModal()" title="View / Edit Profile">
+          <div class="user-avatar-wrap">
+            <img src="https://api.dicebear.com/7.x/initials/svg?seed=Trader&backgroundColor=00a884" id="myAvatarImg" class="user-avatar-img" alt="Trader Avatar">
+          </div>
+          <div>
+            <div class="user-name-title" id="myDisplayName">Trader</div>
+            <div class="user-status-text">
+              <span class="online-dot"></span>
+              <span id="myStatusLabel">Online · QuantSync</span>
+            </div>
           </div>
         </div>
 
         <div class="header-actions">
-          <a href="/screener.html" class="screener-back-pill" title="Return to Screener">
-            🎯 <span>Screener</span>
-          </a>
           <button class="icon-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">🌓</button>
+          <button class="icon-btn" onclick="openProfileModal()" title="Settings / Profile">⚙️</button>
         </div>
-      </div>
+      </header>
 
-      <!-- 2. Mobile-Specific WhatsApp Brand Bar (Shows on phone) -->
-      <div class="mobile-wa-brand-bar">
-        <div class="mobile-wa-title">
-          <span>QuantSync</span>
+      <!-- 2. Segmented Filter Tabs -->
+      <nav class="filter-tabs-bar">
+        <div class="filter-tab-pill active" id="tab-all" onclick="filterByTab('all', this)">
+          <span>All</span>
+          <span class="tab-badge" id="tabBadgeAll">6</span>
         </div>
-        <div class="mobile-wa-actions">
-          <a href="/screener.html" class="icon-btn" title="Open Screener" style="text-decoration:none;">🎯</a>
-          <button class="icon-btn" onclick="toggleTheme()" title="Toggle Theme">🌓</button>
-          <button class="icon-btn" onclick="openProfileModal()" title="Profile">
-            <img src="https://api.dicebear.com/7.x/initials/svg?seed=Trader&backgroundColor=00a884" id="myMobileAvatarImg" style="width:28px; height:28px; border-radius:50%;" alt="User">
-          </button>
+        <div class="filter-tab-pill" id="tab-groups" onclick="filterByTab('groups', this)">
+          <span>👥 Groups</span>
+          <span class="tab-badge" id="tabBadgeGroups">3</span>
         </div>
-      </div>
-
-      <!-- 3. Mobile WhatsApp Top Tabs Bar -->
-      <nav class="mobile-wa-tabs-bar">
-        <div class="wa-tab-item active" id="tab-all" onclick="filterByTab('all', this)">
-          <span>Chats</span>
-          <span class="wa-tab-badge" id="tabBadgeCount">5</span>
-        </div>
-        <div class="wa-tab-item" id="tab-signals" onclick="filterByTab('signals', this)">
-          <span>Radar</span>
-        </div>
-        <div class="wa-tab-item" id="tab-alerts" onclick="filterByTab('alerts', this)">
-          <span>Alerts</span>
-        </div>
-        <div class="wa-tab-item" id="tab-fno" onclick="filterByTab('fno', this)">
-          <span>F&O</span>
+        <div class="filter-tab-pill" id="tab-personal" onclick="filterByTab('personal', this)">
+          <span>🤖 Personal</span>
+          <span class="tab-badge" id="tabBadgePersonal">3</span>
         </div>
       </nav>
 
-      <!-- 4. Search in Channels -->
+      <!-- 3. Search Box -->
       <div class="sidebar-search-box">
         <div class="search-input-wrap">
-          <span style="color: var(--wa-text-secondary); font-size: 15px;">🔍</span>
+          <span>🔍</span>
           <input type="text" id="channelSearchInput" placeholder="Search channels or tickers..." oninput="filterChannels(this.value)">
         </div>
       </div>
 
-      <!-- 5. Channels List -->
+      <!-- 4. Channels List -->
       <div class="channels-list" id="channelsList">
         <!-- Rendered via JS -->
       </div>
-
-      <!-- 6. Mobile Floating Action Button (FAB) -->
-      <button class="mobile-fab-btn" onclick="handleFabClick()" title="Start Chatting / Signals">
-        💬
-      </button>
     </aside>
 
     <!-- ── RIGHT MAIN CHAT CONVERSATION PANE ──────────────────────────────────── -->
@@ -1434,90 +1338,79 @@
       
       <!-- Native Chat Header -->
       <header class="chat-header">
-        <div class="chat-header-interactive-cluster" onclick="handleHeaderClusterClick()" title="Tap to view channel details">
-          <button class="mobile-back-btn" onclick="event.stopPropagation(); handleBackNavigation();" title="Back to Channels">←</button>
-          <div class="chat-header-avatar" id="currentChannelIcon">🚀</div>
+        <div class="chat-header-interactive-cluster" onclick="handleHeaderClusterClick()" title="View Channel Details">
+          <button class="mobile-back-btn" onclick="event.stopPropagation(); exitChatToSidebar();">←</button>
+          <div class="chat-header-avatar" id="currentChannelIcon">💬</div>
           <div class="chat-header-titles">
             <div class="chat-header-name">
-              <span id="currentChannelTitle">Breakout Radar</span>
-              <span class="announcement-tag" id="currentChannelBadge" style="display:none;">Alerts</span>
+              <span id="currentChannelTitle">Traders Lounge</span>
+              <span class="channel-badge-pill bot" id="currentChannelBadge" style="display:none;">Alerts</span>
             </div>
             <div class="chat-header-sub" id="currentChannelSub">online · 24 traders active</div>
           </div>
         </div>
 
-        <div class="chat-header-actions">
-          <button class="icon-btn" onclick="toggleInChatSearch()" title="Search messages in this channel">🔍</button>
-          <a href="/screener.html" class="screener-back-pill" title="View Live Breakout Screener">
-            📊 <span style="display:inline-block;">Screener</span>
-          </a>
-          <button class="icon-btn" onclick="openChannelSheet()" title="Channel Info & Rules">⋮</button>
+        <div class="header-actions">
+          <button class="icon-btn" onclick="openPollModal()" title="Launch Trading Poll">📊</button>
+          <a href="/screener.html" target="_blank" class="icon-btn" title="Open Screener" style="text-decoration:none;">📈</a>
         </div>
       </header>
-
-      <!-- In-Chat Search Bar Drawer -->
-      <div class="in-chat-search-bar" id="inChatSearchBar">
-        <span style="color: var(--wa-text-secondary); font-size: 15px;">🔍</span>
-        <input type="text" id="inChatSearchInput" placeholder="Find in this chat (e.g. NOCIL, DNA, target)..." oninput="filterInChatMessages(this.value)" style="flex:1; background:transparent; border:none; outline:none; font-family:var(--wa-font); font-size:14px; color:var(--wa-text-primary);">
-        <button class="icon-btn" onclick="toggleInChatSearch()" style="width:28px; height:28px; font-size:14px;">✕</button>
-      </div>
 
       <!-- Message Bubbles Scroll Area -->
       <div class="chat-messages-container" id="messagesContainer">
         <!-- Messages rendered via JS -->
       </div>
 
-      <!-- Reply Draft Banner (Appears when user clicks reply) -->
-      <div class="reply-draft-banner" id="replyDraftBanner">
-        <div style="min-width:0; flex:1;">
-          <div style="font-weight:700; color:var(--wa-green); font-size:12px;" id="replySenderName">Replying to User</div>
-          <div style="color:var(--wa-text-secondary); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" id="replyTextSnippet">Snippet of quoted message...</div>
+      <!-- Read-Only Channel Notice Bar -->
+      <div class="read-only-banner" id="readOnlyBanner">
+        <span style="font-size: 20px;">🔒</span>
+        <div>
+          <div style="font-weight: 700; font-size: 13px; color: var(--wa-text-primary);">Verified Institutional Feed</div>
+          <div style="font-size: 11.5px; color: var(--wa-text-secondary);">This is an official automated channel. Algorithmic trade updates and breakouts are delivered in real-time.</div>
         </div>
-        <span class="reply-draft-close" onclick="cancelReply()">✕</span>
       </div>
 
-      <!-- Quick Momentum Ticker Tray (Tap to insert ticker symbol directly) -->
+      <!-- Quick Momentum Ticker Tray -->
       <div class="quick-ticker-tray" id="quickTickerTray">
-        <span style="font-size:11px; font-weight:700; color:var(--wa-text-muted); text-transform:uppercase; letter-spacing:0.04em;">RADAR:</span>
-        <button class="ticker-pill-btn" onclick="insertTickerSymbol('NOCIL')">📈 $NOCIL</button>
-        <button class="ticker-pill-btn" onclick="insertTickerSymbol('RELIANCE')">📈 $RELIANCE</button>
-        <button class="ticker-pill-btn" onclick="insertTickerSymbol('TCS')">📈 $TCS</button>
-        <button class="ticker-pill-btn" onclick="insertTickerSymbol('HDFCBANK')">📈 $HDFCBANK</button>
-        <button class="ticker-pill-btn" onclick="insertTickerSymbol('DIXON')">📈 $DIXON</button>
-        <button class="ticker-pill-btn" onclick="insertTickerSymbol('TATASTEEL')">📈 $TATASTEEL</button>
-        <button class="ticker-pill-btn" onclick="insertTickerSymbol('IRFC')">📈 $IRFC</button>
-        <button class="ticker-pill-btn" onclick="insertTickerSymbol('KALYANKJIL')">📈 $KALYANKJIL</button>
-        <button class="ticker-pill-btn" onclick="insertTickerSymbol('BSE')">📈 $BSE</button>
+        <span style="font-size: 11px; font-weight: 700; color: var(--wa-text-muted); text-transform: uppercase;">RADAR:</span>
+        <button class="ticker-pill-btn" onclick="handleQuickTickerClick('TATAMOTORS')">📈 $TATAMOTORS</button>
+        <button class="ticker-pill-btn" onclick="handleQuickTickerClick('RELIANCE')">📈 $RELIANCE</button>
+        <button class="ticker-pill-btn" onclick="handleQuickTickerClick('INFY')">📈 $INFY</button>
+        <button class="ticker-pill-btn" onclick="handleQuickTickerClick('TCS')">📈 $TCS</button>
+        <button class="ticker-pill-btn" onclick="handleQuickTickerClick('POLYCAB')">📈 $POLYCAB</button>
+        <button class="ticker-pill-btn" onclick="handleQuickTickerClick('HDFCBANK')">📈 $HDFCBANK</button>
       </div>
 
-      <!-- Bottom Chat Input Bar (Native WhatsApp Mobile & Web Architecture) -->
-      <footer class="chat-input-bar">
+      <!-- Bottom Chat Input Bar -->
+      <footer class="chat-input-bar" id="chatInputBar">
         
+        <!-- Floating Autocomplete Dropdown Popover -->
+        <div class="popover-container" id="stockAutocompletePopover" style="display: none;"></div>
+
+        <!-- Floating Slash Commands Menu Popover -->
+        <div class="popover-container" id="slashCommandsPopover" style="display: none;"></div>
+
         <!-- WhatsApp Input Pill -->
         <div class="chat-input-pill">
-          <!-- Emoji Button -->
-          <button class="pill-icon-btn" onclick="insertEmoji('🚀')" title="Quick Reaction">😊</button>
+          <button class="pill-icon-btn" onclick="insertEmoji('🚀')" title="Insert Emoji">😊</button>
 
-          <!-- Auto-expanding Textarea -->
           <textarea 
             id="messageInput" 
             class="chat-textarea" 
             rows="1" 
-            placeholder="Message"
+            placeholder="Type stock name or /chart /dna or message..."
             enterkeyhint="send"
             onkeydown="handleInputKeydown(event)"
             oninput="handleInputTyping(this)"></textarea>
 
-          <!-- Quick Stock Ticker $ Button -->
-          <button class="pill-icon-btn" onclick="insertEmoji('$')" title="Insert Stock Ticker symbol">$</button>
-
-          <!-- Attachment Clip -->
+          <button class="pill-icon-btn" onclick="insertEmoji('$')" title="Insert Stock Ticker">$</button>
+          <button class="pill-icon-btn" onclick="openPollModal()" title="Launch Trading Poll" style="color:#06b6d4;">📊</button>
+          
           <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="handleFileUpload(this)">
-          <button class="pill-icon-btn" onclick="document.getElementById('fileInput').click()" title="Attach Chart Screenshot / Image">📎</button>
+          <button class="pill-icon-btn" onclick="document.getElementById('fileInput').click()" title="Attach Screenshot">📎</button>
         </div>
 
-        <!-- Floating WhatsApp Circular Send/Mic Button -->
-        <button class="send-circle-btn" id="sendBtn" onclick="handleSendCircleClick()" title="Send Message">
+        <button class="send-circle-btn" id="sendBtn" onclick="handleSendCircleClick()" title="Send">
           <span id="sendBtnIcon">🎤</span>
         </button>
       </footer>
@@ -1526,81 +1419,93 @@
 
   </div>
 
-  <!-- ── FLOATING REACTION POPUP DRAWER (Appears on message tap) ───────────────── -->
-  <div class="reaction-popup-drawer" id="reactionPopup" style="display:none;">
-    <button class="popup-emoji-btn" onclick="submitActiveReaction('👍')">👍</button>
-    <button class="popup-emoji-btn" onclick="submitActiveReaction('❤️')">❤️</button>
-    <button class="popup-emoji-btn" onclick="submitActiveReaction('🔥')">🔥</button>
-    <button class="popup-emoji-btn" onclick="submitActiveReaction('🚀')">🚀</button>
-    <button class="popup-emoji-btn" onclick="submitActiveReaction('🎯')">🎯</button>
-    <button class="popup-emoji-btn" onclick="submitActiveReaction('😂')">😂</button>
-    <button class="popup-emoji-btn" onclick="submitActiveReaction('😮')">😮</button>
-    <button class="popup-action-btn" onclick="replyToActiveMessage()">↩ Reply</button>
-    <button class="popup-action-btn" onclick="copyActiveMessage()">📋 Copy</button>
-  </div>
-
-  <!-- ── CHANNEL INFO BOTTOM SHEET ───────────────────────────────────────────── -->
-  <div class="sheet-overlay" id="channelSheet" onclick="closeChannelSheet(event)">
-    <div class="sheet-content" onclick="event.stopPropagation()">
-      <div class="sheet-handle"></div>
-      <div class="sheet-header-center">
-        <div class="sheet-avatar" id="sheetIcon">🚀</div>
-        <h3 class="sheet-title" id="sheetTitle">Breakout Radar</h3>
-        <p class="sheet-desc" id="sheetDesc">Live algorithmic momentum and technical DNA trade setups.</p>
+  <!-- ── TRADING POLL CREATOR MODAL ───────────────────────────────────────────── -->
+  <div class="modal-overlay" id="pollModalOverlay" style="display:none;" onclick="closePollModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 24px;">📊</span>
+          <h3 style="font-size: 18px; font-weight: 700; color: var(--wa-text-primary);">Create Trading Poll</h3>
+        </div>
+        <button class="icon-btn" onclick="closePollModal()">✕</button>
       </div>
 
-      <div class="sheet-rule-card">
-        <div style="font-weight:700; color:var(--wa-green); margin-bottom:6px;">📌 Pinned Guidelines:</div>
-        <div>1. Always specify <strong>Entry</strong>, <strong>Target</strong> and <strong>Stop-loss</strong>.</div>
-        <div style="margin-top:4px;">2. Minimum <strong>DNA Score >= 75</strong> for high-conviction breakout setups.</div>
-        <div style="margin-top:4px;">3. Strictly institutional setups. Zero spam or pump-and-dump.</div>
+      <div style="font-size: 12px; color: var(--wa-text-secondary); margin-bottom: 12px;">
+        Select a preset trading scenario or customize your poll:
       </div>
 
-      <a href="/screener.html" class="sheet-btn" style="margin-bottom:10px;">
-        🎯 Open Live Breakout Screener
-      </a>
-      <button class="sheet-btn" onclick="closeChannelSheet()">Close</button>
+      <div class="poll-presets-grid">
+        <button class="poll-preset-btn active" id="preset-buysell" onclick="selectPollPreset('buysell')">
+          <span class="preset-icon">🟢🔴</span>
+          <span class="preset-title">Buy / Sell</span>
+          <span class="preset-sub">Stock decision</span>
+        </button>
+        <button class="poll-preset-btn" id="preset-nifty" onclick="selectPollPreset('nifty')">
+          <span class="preset-icon">📈📉</span>
+          <span class="preset-title">Nifty UP / Down</span>
+          <span class="preset-sub">Expiry direction</span>
+        </button>
+        <button class="poll-preset-btn" id="preset-buyignore" onclick="selectPollPreset('buyignore')">
+          <span class="preset-icon">🎯⏳</span>
+          <span class="preset-title">Buy / Ignore</span>
+          <span class="preset-sub">Breakout setup</span>
+        </button>
+        <button class="poll-preset-btn" id="preset-custom" onclick="selectPollPreset('custom')">
+          <span class="preset-icon">✍️</span>
+          <span class="preset-title">Custom Poll</span>
+          <span class="preset-sub">Freeform question</span>
+        </button>
+      </div>
+
+      <div style="margin-top: 14px;">
+        <label style="font-size: 11px; font-weight: 700; color: var(--wa-text-muted); text-transform: uppercase;">Stock Symbol (Optional)</label>
+        <input type="text" id="pollTickerInput" class="auth-input" placeholder="e.g. TATAMOTORS, RELIANCE..." oninput="updatePollQuestionPreview()" style="margin-top: 4px;">
+      </div>
+
+      <div style="margin-top: 12px;">
+        <label style="font-size: 11px; font-weight: 700; color: var(--wa-text-muted); text-transform: uppercase;">Poll Question</label>
+        <input type="text" id="pollQuestionInput" class="auth-input" placeholder="Enter poll question..." style="margin-top: 4px;">
+      </div>
+
+      <div style="margin-top: 12px;">
+        <label style="font-size: 11px; font-weight: 700; color: var(--wa-text-muted); text-transform: uppercase;">Voting Options</label>
+        <div id="pollOptionsList" style="margin-top: 4px; display: flex; flex-direction: column; gap: 6px;"></div>
+      </div>
+
+      <div style="margin-top: 14px;">
+        <label style="font-size: 11px; font-weight: 700; color: var(--wa-text-muted); text-transform: uppercase;">Poll Duration (Max 4h)</label>
+        <div class="poll-timer-pills" style="margin-top: 6px;">
+          <button class="timer-pill" data-mins="15" onclick="selectPollTimer(15, this)">15m</button>
+          <button class="timer-pill" data-mins="30" onclick="selectPollTimer(30, this)">30m</button>
+          <button class="timer-pill active" data-mins="60" onclick="selectPollTimer(60, this)">1 hour</button>
+          <button class="timer-pill" data-mins="120" onclick="selectPollTimer(120, this)">2 hours</button>
+          <button class="timer-pill" data-mins="240" onclick="selectPollTimer(240, this)">4 hours</button>
+        </div>
+      </div>
+
+      <button class="auth-submit-btn" onclick="submitPollCreation()" style="margin-top: 18px;">
+        🚀 Launch Trading Poll
+      </button>
     </div>
   </div>
 
-  <!-- ── GMAIL REGISTRATION / LOGIN MODAL ────────────────────────────────────── -->
-  <div class="modal-overlay" id="authModal" style="display:none;">
-    <div class="modal-card">
-      <div class="modal-logo">💬</div>
-      <h2 class="modal-title">QuantSync Traders Lounge</h2>
-      <p class="modal-desc">Join verified Indian swing traders. Register with your Gmail ID to discuss live breakout setups and algorithmic DNA scores.</p>
+  <!-- ── AUTH / PROFILE MODAL ────────────────────────────────────────────────── -->
+  <div class="modal-overlay" id="authModal" style="display:none;" onclick="closeAuthModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div style="font-size: 38px; margin-bottom: 8px;">🔐</div>
+      <h3 style="font-size: 20px; font-weight: 700; color: var(--wa-text-primary); margin-bottom: 6px;">QuantSync Trader Profile</h3>
+      <p style="font-size: 13px; color: var(--wa-text-secondary); margin-bottom: 18px;">Sign in to join the conversation, cast poll votes, and query the AI Bot.</p>
 
       <form onsubmit="handleAuthSubmit(event)">
-        <div class="form-group">
-          <label class="form-label">Gmail / Email Address</label>
-          <input type="email" class="form-input" id="authEmail" placeholder="your.name@gmail.com" required autocomplete="email">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Trader Name / Handle</label>
-          <input type="text" class="form-input" id="authName" placeholder="e.g. Rahul Tiwari" autocomplete="name">
-        </div>
-
-        <button type="submit" class="primary-submit-btn">
-          <span>Join Traders Lounge</span> ➔
-        </button>
+        <input type="email" id="authEmailInput" class="auth-input" placeholder="Enter your email address" required style="margin-bottom: 10px;">
+        <input type="text" id="authNameInput" class="auth-input" placeholder="Display name (e.g. Rahul Tiwari)" style="margin-bottom: 16px;">
+        <button type="submit" class="auth-submit-btn">Continue to Lounge</button>
       </form>
-
-      <button class="guest-btn" onclick="closeAuthModal()">Browse in Guest Mode</button>
     </div>
   </div>
 
-  <!-- ── IMAGE LIGHTBOX MODAL ────────────────────────────────────────────────── -->
-  <div class="lightbox-modal" id="lightboxModal" onclick="closeLightbox()">
-    <img id="lightboxImg" src="" alt="Enlarged Chart">
-  </div>
-
-  <!-- ── TOAST NOTIFICATION ──────────────────────────────────────────────────── -->
-  <div class="wa-toast" id="waToast">Voice notes launching in v2.0!</div>
-
-  <!-- ── AUDIO & ENGINE LOGIC ────────────────────────────────────────────────── -->
+  <!-- Audio Engine for Crisp Feedback -->
   <script>
-    // Audio synthesizer for authentic WhatsApp pops
     const AudioEngine = {
       ctx: null,
       init() {
@@ -1616,61 +1521,49 @@
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(880, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(1320, this.ctx.currentTime + 0.08);
-          gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
-          gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.1);
+          osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(950, this.ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start();
-          osc.stop(this.ctx.currentTime + 0.1);
-        } catch (e) {}
+          osc.stop(this.ctx.currentTime + 0.08);
+        } catch(e) {}
       },
-      playReceived() {
+      playReaction() {
         try {
           this.init();
           if (!this.ctx) return;
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(600, this.ctx.currentTime);
-          osc.frequency.setValueAtTime(900, this.ctx.currentTime + 0.04);
-          gain.gain.setValueAtTime(0.07, this.ctx.currentTime);
-          gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.12);
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(450, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(700, this.ctx.currentTime + 0.06);
+          gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.06);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
           osc.start();
-          osc.stop(this.ctx.currentTime + 0.12);
-        } catch (e) {}
+          osc.stop(this.ctx.currentTime + 0.06);
+        } catch(e) {}
       }
     };
+  </script>
 
-    // ── APPLICATION STATE ─────────────────────────────────────────────────────
+  <!-- Main Application Script -->
+  <script>
     let currentUser = null;
-    let currentChannel = null;
     let channels = [];
+    let currentChannel = null;
     let messages = [];
-    let ws = null;
-    let replyTarget = null;
-    let pendingAttachment = null;
-    let pollInterval = null;
     let activeTabFilter = 'all';
-    let activePopupMessage = null;
-    let lastTapTime = 0;
-
-    // Distinct Sender Colors for Group Chats (Exact WhatsApp Style)
-    const USER_COLORS = [
-      '#e542a3', '#02904b', '#1f7aec', '#d35400',
-      '#8e44ad', '#16a085', '#d81b60', '#3949ab',
-      '#00897b', '#f39c12', '#00acc1', '#fb8c00'
-    ];
-    function getUserColor(str) {
-      let hash = 0;
-      for (let i = 0; i < (str || '').length; i++) {
-        hash = str.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      return USER_COLORS[Math.abs(hash) % USER_COLORS.length];
-    }
+    let socket = null;
+    let pollInterval = null;
+    let selectedPollPreset = 'buysell';
+    let selectedPollDuration = 60;
+    let autocompleteDebounce = null;
+    let pendingAttachment = null;
 
     // ── INITIALIZATION ────────────────────────────────────────────────────────
     window.addEventListener('DOMContentLoaded', async () => {
@@ -1678,196 +1571,73 @@
       loadUserFromStorage();
       await fetchChannels();
 
-      // Check URL hash for direct channel link: e.g. #breakout-radar
-      const hashChannel = window.location.hash ? window.location.hash.replace('#', '').replace('chat=', '') : null;
-      let targetChannel = channels.find(c => c.id === hashChannel);
-      if (!targetChannel) {
-        targetChannel = channels.find(c => c.id === 'breakout-radar') || channels[0];
+      // Default select first channel
+      if (channels.length > 0) {
+        selectChannel(channels[0].id, false);
       }
 
-      const isMobile = window.innerWidth <= 768;
-      if (!isMobile) {
-        if (targetChannel) selectChannel(targetChannel.id, false);
-      } else {
-        if (hashChannel && targetChannel) {
-          selectChannel(targetChannel.id, false);
-        } else {
-          currentChannel = targetChannel;
-        }
-      }
-
-      // Check if user is not registered, prompt modal after 800ms
-      if (!currentUser) {
-        setTimeout(() => {
-          document.getElementById('authModal').style.display = 'flex';
-        }, 800);
-      }
-
-      // Clipboard Paste Support (Traders can paste chart screenshots directly!)
-      document.addEventListener('paste', handleClipboardPaste);
-
-      // Mobile Hardware/Browser Back Button Navigation
-      window.addEventListener('popstate', handlePopState);
-
-      // Mobile Touch Gesture Support (Edge Swipe to go back)
       initTouchGestures();
-
-      // Virtual Keyboard Viewport Handler
-      initViewportResizing();
-
-      // Close popup on outside click
-      document.addEventListener('click', (e) => {
-        if (!e.target.closest('.message-bubble') && !e.target.closest('#reactionPopup')) {
-          closeReactionPopup();
-        }
-      });
     });
 
-    // ── NATIVE PHONE BACK-BUTTON & HISTORY SUPPORT ─────────────────────────────
-    function handlePopState(e) {
-      if (document.body.classList.contains('in-chat')) {
-        exitChatToSidebar(false);
+    // ── FIREBASE & PARENT AUTH SYNCHRONIZATION ────────────────────────────────
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'AUTH_SYNC' && e.data.user) {
+        const u = e.data.user;
+        currentUser = {
+          email: u.email,
+          name: u.displayName || u.name || u.email.split('@')[0],
+          avatar_url: u.photoURL || u.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.email)}&backgroundColor=00a884`,
+          role: 'trader'
+        };
+        localStorage.setItem('quantsync_user', JSON.stringify(currentUser));
+        updateUserProfileUI();
       }
-    }
+    });
 
-    function handleBackNavigation() {
-      if (window.history.state && window.history.state.inChat) {
-        window.history.back();
-      } else {
-        exitChatToSidebar(true);
-      }
-    }
-
-    // ── MOBILE TOUCH GESTURES (SWIPE-BACK LIKE NATIVE APP) ────────────────────
-    function initTouchGestures() {
-      let touchStartX = 0;
-      let touchStartY = 0;
-
-      document.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) {
-          touchStartX = e.touches[0].clientX;
-          touchStartY = e.touches[0].clientY;
-        }
-      }, { passive: true });
-
-      document.addEventListener('touchend', (e) => {
-        if (e.changedTouches.length === 1) {
-          const deltaX = e.changedTouches[0].clientX - touchStartX;
-          const deltaY = e.changedTouches[0].clientY - touchStartY;
-          // If swiped right from left edge (< 45px) by > 70px with minimal vertical drag
-          if (touchStartX < 45 && deltaX > 70 && Math.abs(deltaY) < 55) {
-            if (document.body.classList.contains('in-chat')) {
-              handleBackNavigation();
-            }
-          }
-        }
-      }, { passive: true });
-    }
-
-    // ── VIRTUAL KEYBOARD & SAFE AREA MANAGEMENT ───────────────────────────────
-    function initViewportResizing() {
-      if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', () => {
-          if (document.body.classList.contains('in-chat')) {
-            scrollToBottom();
-          }
-        });
-      }
-
-      const input = document.getElementById('messageInput');
-      input.addEventListener('focus', () => {
-        setTimeout(scrollToBottom, 200);
-      });
-    }
-
-    // ── TOAST NOTIFICATIONS ───────────────────────────────────────────────────
-    function showToast(text) {
-      const toast = document.getElementById('waToast');
-      toast.textContent = text;
-      toast.classList.add('show');
-      if (navigator.vibrate) navigator.vibrate(10);
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 2500);
-    }
-
-    // ── THEME MANAGEMENT ──────────────────────────────────────────────────────
-    function loadTheme() {
-      const saved = localStorage.getItem('quantsync_theme') || 'dark';
-      document.documentElement.setAttribute('data-theme', saved);
-      updateThemeColorMeta(saved);
-    }
-
-    function toggleTheme() {
-      const cur = document.documentElement.getAttribute('data-theme') || 'dark';
-      const next = cur === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', next);
-      localStorage.setItem('quantsync_theme', next);
-      updateThemeColorMeta(next);
-    }
-
-    function updateThemeColorMeta(theme) {
-      const meta = document.getElementById('metaThemeColor');
-      if (meta) {
-        meta.setAttribute('content', theme === 'dark' ? '#111b21' : '#008069');
-      }
-    }
-
-    // ── USER AUTHENTICATION ───────────────────────────────────────────────────
     function loadUserFromStorage() {
       try {
-        const stored = localStorage.getItem('quantsync_chat_user');
-        if (stored) {
-          currentUser = JSON.parse(stored);
+        const raw = localStorage.getItem('quantsync_user');
+        if (raw) {
+          currentUser = JSON.parse(raw);
+          updateUserProfileUI();
+        } else {
+          currentUser = {
+            email: 'trader@quantsync.ai',
+            name: 'Quant Trader',
+            avatar_url: 'https://api.dicebear.com/7.x/initials/svg?seed=Trader&backgroundColor=00a884',
+            role: 'trader'
+          };
           updateUserProfileUI();
         }
       } catch (e) {}
     }
 
     function updateUserProfileUI() {
-      if (currentUser) {
-        document.getElementById('myDisplayName').textContent = currentUser.name || currentUser.email;
-        document.getElementById('myStatusText').textContent = 'Online';
-        if (currentUser.avatar_url) {
-          document.getElementById('myAvatarImg').src = currentUser.avatar_url;
-          const mobImg = document.getElementById('myMobileAvatarImg');
-          if (mobImg) mobImg.src = currentUser.avatar_url;
-        }
-      } else {
-        document.getElementById('myDisplayName').textContent = 'Join Lounge';
-        document.getElementById('myStatusText').textContent = 'Sign In with Gmail';
-        document.getElementById('myAvatarImg').src = 'https://api.dicebear.com/7.x/initials/svg?seed=Trader&backgroundColor=00a884';
-        const mobImg = document.getElementById('myMobileAvatarImg');
-        if (mobImg) mobImg.src = 'https://api.dicebear.com/7.x/initials/svg?seed=Trader&backgroundColor=00a884';
+      if (!currentUser) return;
+      document.getElementById('myDisplayName').textContent = currentUser.name || 'Trader';
+      if (currentUser.avatar_url) {
+        document.getElementById('myAvatarImg').src = currentUser.avatar_url;
       }
     }
 
     function openProfileModal() {
+      document.getElementById('authModal').style.display = 'flex';
       if (currentUser) {
-        if (confirm(`Logged in as: ${currentUser.name} (${currentUser.email})\n\nDo you want to sign out?`)) {
-          localStorage.removeItem('quantsync_chat_user');
-          currentUser = null;
-          updateUserProfileUI();
-          document.getElementById('authModal').style.display = 'flex';
-        }
-      } else {
-        document.getElementById('authModal').style.display = 'flex';
+        document.getElementById('authEmailInput').value = currentUser.email || '';
+        document.getElementById('authNameInput').value = currentUser.name || '';
       }
     }
 
-    function closeAuthModal() {
+    function closeAuthModal(e) {
+      if (e && e.target !== document.getElementById('authModal')) return;
       document.getElementById('authModal').style.display = 'none';
     }
 
     async function handleAuthSubmit(e) {
       e.preventDefault();
-      const email = document.getElementById('authEmail').value.trim();
-      const name = document.getElementById('authName').value.trim();
-
-      if (!email || !email.includes('@')) {
-        alert('Please enter a valid Gmail or email address.');
-        return;
-      }
+      const email = document.getElementById('authEmailInput').value.trim();
+      const name = document.getElementById('authNameInput').value.trim();
+      if (!email) return;
 
       try {
         const res = await fetch('/api/chat/register', {
@@ -1878,20 +1648,37 @@
         const d = await res.json();
         if (d.user) {
           currentUser = d.user;
-          localStorage.setItem('quantsync_chat_user', JSON.stringify(currentUser));
+          localStorage.setItem('quantsync_user', JSON.stringify(currentUser));
           updateUserProfileUI();
-          closeAuthModal();
+          document.getElementById('authModal').style.display = 'none';
           showToast(`Welcome, ${currentUser.name}! 🚀`);
-          if (currentChannel) {
-            connectWebSocket(currentChannel.id);
-          }
         }
       } catch (err) {
-        alert('Could not complete registration. Check network connection.');
+        showToast('Login failed. Please try again.');
       }
     }
 
-    // ── CHANNELS RETRIEVAL & RENDERING ────────────────────────────────────────
+    // ── THEME SWITCHER ────────────────────────────────────────────────────────
+    function loadTheme() {
+      const saved = localStorage.getItem('quantsync_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', saved);
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('quantsync_theme', next);
+    }
+
+    function showToast(text) {
+      const pill = document.getElementById('toastPill');
+      pill.textContent = text;
+      pill.style.display = 'block';
+      setTimeout(() => { pill.style.display = 'none'; }, 2600);
+    }
+
+    // ── CHANNELS FETCHING & RENDERING ─────────────────────────────────────────
     async function fetchChannels() {
       try {
         const res = await fetch('/api/chat/channels');
@@ -1910,35 +1697,89 @@
         return;
       }
 
-      container.innerHTML = list.map(ch => {
-        const isActive = currentChannel && currentChannel.id === ch.id;
-        const timeStr = formatMessageTime(ch.last_message_at) || '14:20';
-        let snippet = ch.description || 'Welcome to the lounge';
-        if (ch.last_message) {
-          snippet = `<strong>${escapeHtml(ch.last_message.user_name)}:</strong> ${escapeHtml(ch.last_message.text || 'Shared a chart')}`;
-        }
+      const groups = list.filter(c => (c.section || 'group') === 'group');
+      const personal = list.filter(c => (c.section || 'group') === 'personal');
 
-        return `
-          <div class="channel-item ${isActive ? 'active' : ''}" id="channel-row-${ch.id}" onclick="selectChannel('${ch.id}', true)">
-            <div class="channel-avatar">
-              ${ch.icon || '💬'}
+      let html = '';
+
+      if (activeTabFilter === 'all' || activeTabFilter === 'groups') {
+        if (groups.length > 0) {
+          html += `
+            <div class="channel-section-header">
+              <span>👥 GROUPS</span>
+              <span class="section-count-pill">${groups.length}</span>
             </div>
-            <div class="channel-content">
-              <div class="channel-header-row">
-                <div class="channel-title">
-                  <span>${escapeHtml(ch.name)}</span>
-                  ${ch.is_announcement ? '<span class="announcement-tag">Alerts</span>' : ''}
-                </div>
-                <div class="channel-time">${timeStr}</div>
+            ${groups.map(ch => renderChannelRowHtml(ch)).join('')}
+          `;
+        }
+      }
+
+      if (activeTabFilter === 'all' || activeTabFilter === 'personal') {
+        if (personal.length > 0) {
+          html += `
+            <div class="channel-section-header" style="margin-top: 14px;">
+              <span>🤖 PERSONAL & AI FEEDS</span>
+              <span class="section-count-pill">${personal.length}</span>
+            </div>
+            ${personal.map(ch => renderChannelRowHtml(ch)).join('')}
+          `;
+        }
+      }
+
+      container.innerHTML = html;
+    }
+
+    function renderChannelRowHtml(ch) {
+      const isActive = currentChannel && currentChannel.id === ch.id;
+      const timeStr = formatMessageTime(ch.last_message ? ch.last_message.created_at : ch.created_at) || '14:20';
+      let snippet = ch.description || 'Welcome to the lounge';
+      if (ch.last_message) {
+        snippet = `<strong>${escapeHtml(ch.last_message.user_name)}:</strong> ${escapeHtml(ch.last_message.text || 'Shared update')}`;
+      }
+
+      let badgeHtml = '';
+      if (ch.id === 'breakout-alert' || ch.id === 'ai-alerts') {
+        badgeHtml = '<span class="channel-badge-pill bot">BOT</span>';
+      } else if (ch.id === 'stock-analysis') {
+        badgeHtml = '<span class="channel-badge-pill ai">AI COPILOT</span>';
+      }
+
+      return `
+        <div class="channel-item ${isActive ? 'active' : ''}" id="channel-row-${ch.id}" onclick="selectChannel('${ch.id}', true)">
+          <div class="channel-avatar">
+            ${ch.icon || '💬'}
+          </div>
+          <div class="channel-content">
+            <div class="channel-header-row">
+              <div class="channel-title">
+                <span>${escapeHtml(ch.name)}</span>
               </div>
-              <div class="channel-snippet-row">
-                <div class="channel-last-msg">${snippet}</div>
-                ${ch.id === 'breakout-radar' ? '<span class="unread-pill">LIVE</span>' : ''}
-              </div>
+              <div class="channel-time">${timeStr}</div>
+            </div>
+            <div class="channel-snippet-row">
+              <div class="channel-last-msg">${snippet}</div>
+              ${badgeHtml}
             </div>
           </div>
-        `;
-      }).join('');
+        </div>
+      `;
+    }
+
+    function filterByTab(tab, el) {
+      activeTabFilter = tab;
+      document.querySelectorAll('.filter-tab-pill').forEach(t => t.classList.remove('active'));
+      if (el) el.classList.add('active');
+      applyActiveTabFilter();
+    }
+
+    function applyActiveTabFilter() {
+      let filtered = channels;
+      if (activeTabFilter === 'groups') {
+        filtered = channels.filter(c => (c.section || 'group') === 'group');
+      } else if (activeTabFilter === 'personal') {
+        filtered = channels.filter(c => (c.section || 'group') === 'personal');
+      }
+      renderChannels(filtered);
     }
 
     function filterChannels(query) {
@@ -1954,237 +1795,151 @@
       renderChannels(filtered);
     }
 
-    function filterByTab(tab, el) {
-      activeTabFilter = tab;
-      document.querySelectorAll('.wa-tab-item').forEach(t => t.classList.remove('active'));
-      if (el) el.classList.add('active');
-      applyActiveTabFilter();
-    }
-
-    function applyActiveTabFilter() {
-      let filtered = channels;
-      if (activeTabFilter === 'signals') {
-        filtered = channels.filter(c => c.id.includes('breakout') || c.id.includes('radar'));
-      } else if (activeTabFilter === 'alerts') {
-        filtered = channels.filter(c => c.is_announcement || c.id.includes('announcement'));
-      } else if (activeTabFilter === 'fno') {
-        filtered = channels.filter(c => c.id.includes('nifty') || c.id.includes('fno'));
-      }
-      renderChannels(filtered);
-    }
-
-    function handleFabClick() {
-      const target = channels.find(c => c.id === 'breakout-radar') || channels[0];
-      if (target) selectChannel(target.id, true);
-    }
-
     // ── SELECT CHANNEL ────────────────────────────────────────────────────────
     async function selectChannel(channelId, pushToHistory = true) {
       const ch = channels.find(c => c.id === channelId);
       if (!ch) return;
       currentChannel = ch;
 
-      // Update Active Highlight
       document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
       const activeEl = document.getElementById(`channel-row-${ch.id}`);
       if (activeEl) activeEl.classList.add('active');
 
-      // Update Chat Header
       document.getElementById('currentChannelIcon').textContent = ch.icon || '💬';
       document.getElementById('currentChannelTitle').textContent = ch.name;
-      document.getElementById('currentChannelBadge').style.display = ch.is_announcement ? 'inline-block' : 'none';
-      document.getElementById('currentChannelSub').textContent = `online · ${ch.online_count || 24} traders active`;
+      document.getElementById('currentChannelSub').textContent = ch.channel_type === 'analysis_bot' 
+        ? '⚡ QuantSync AI Co-Pilot · Type any stock name or /command'
+        : `online · ${ch.online_count || 24} traders active`;
 
-      // Update Channel Sheet Data
-      document.getElementById('sheetIcon').textContent = ch.icon || '💬';
-      document.getElementById('sheetTitle').textContent = ch.name;
-      document.getElementById('sheetDesc').textContent = ch.description;
+      // Read-Only Enforcement
+      const readOnlyBar = document.getElementById('readOnlyBanner');
+      const inputBar = document.getElementById('chatInputBar');
+      const tickerTray = document.getElementById('quickTickerTray');
 
-      // Mobile slide into conversation view
-      document.body.classList.add('in-chat');
-
-      // Push history state so phone back button exits chat instead of leaving page
-      if (pushToHistory && window.innerWidth <= 768) {
-        window.history.pushState({ inChat: true, channelId: ch.id }, '', `#${ch.id}`);
+      if (ch.is_read_only) {
+        readOnlyBar.style.display = 'flex';
+        inputBar.style.display = 'none';
+        tickerTray.style.display = 'none';
+      } else {
+        readOnlyBar.style.display = 'none';
+        inputBar.style.display = 'flex';
+        tickerTray.style.display = 'flex';
       }
 
-      // Connect WebSocket & load messages
+      document.body.classList.add('in-chat');
+
       connectWebSocket(ch.id);
       await loadMessages(ch.id);
 
-      // Start fallback poll for high reliability
       if (pollInterval) clearInterval(pollInterval);
-      pollInterval = setInterval(() => pollLatestMessages(ch.id), 3000);
+      pollInterval = setInterval(() => pollLatestMessages(ch.id), 3500);
     }
 
-    function exitChatToSidebar(updateHistory = true) {
+    function exitChatToSidebar() {
       document.body.classList.remove('in-chat');
-      closeReactionPopup();
-      if (updateHistory && window.location.hash) {
-        window.history.replaceState(null, '', window.location.pathname);
-      }
     }
 
     function handleHeaderClusterClick() {
-      // In mobile view, clicking header cluster opens group info
-      openChannelSheet();
-    }
-
-    // ── CHANNEL INFO SHEET ────────────────────────────────────────────────────
-    function openChannelSheet() {
-      document.getElementById('channelSheet').style.display = 'flex';
-    }
-    function closeChannelSheet(e) {
-      if (e && e.target !== document.getElementById('channelSheet')) return;
-      document.getElementById('channelSheet').style.display = 'none';
-    }
-
-    // ── IN-CHAT SEARCH ────────────────────────────────────────────────────────
-    function toggleInChatSearch() {
-      const bar = document.getElementById('inChatSearchBar');
-      bar.classList.toggle('open');
-      if (bar.classList.contains('open')) {
-        document.getElementById('inChatSearchInput').focus();
-      } else {
-        document.getElementById('inChatSearchInput').value = '';
-        renderAllMessages(messages);
-      }
-    }
-
-    function filterInChatMessages(query) {
-      const q = (query || '').toLowerCase().trim();
-      if (!q) {
-        renderAllMessages(messages);
-        return;
-      }
-      const filtered = messages.filter(m => (m.text || '').toLowerCase().includes(q) || (m.user_name || '').toLowerCase().includes(q));
-      renderAllMessages(filtered);
+      showToast(`${currentChannel.name}: ${currentChannel.description}`);
     }
 
     // ── WEBSOCKET CONNECTION ──────────────────────────────────────────────────
     function connectWebSocket(channelId) {
-      if (ws) {
-        ws.close();
-        ws = null;
+      if (socket) {
+        try { socket.close(); } catch(e) {}
       }
 
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const email = currentUser ? encodeURIComponent(currentUser.email) : 'guest@quantsync.ai';
-      const name = currentUser ? encodeURIComponent(currentUser.name) : 'Guest Trader';
-      
-      let wsHost = window.location.host;
-      if (window.location.hostname.includes('vercel.app')) {
-        wsHost = 'quantsync-api.duckdns.org:8443';
-      }
-      const wsUrl = `${protocol}//${wsHost}/ws/chat/${channelId}?email=${email}&name=${name}`;
+      const host = window.location.host;
+      const wsUrl = `${protocol}//${host}/ws/chat/${channelId}?email=${encodeURIComponent(currentUser ? currentUser.email : 'guest@quantsync.ai')}&name=${encodeURIComponent(currentUser ? currentUser.name : 'Trader')}`;
 
       try {
-        ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-          console.log('[WS] Connected to channel:', channelId);
-        };
-
-        ws.onmessage = (event) => {
+        socket = new WebSocket(wsUrl);
+        socket.onmessage = (e) => {
           try {
-            const data = JSON.parse(event.data);
+            const data = JSON.parse(e.data);
             handleWsMessage(data);
-          } catch (e) {}
+          } catch(err) {}
         };
-
-        ws.onclose = () => {
-          console.log('[WS] Disconnected');
-        };
-
-        ws.onerror = (e) => {
-          console.warn('[WS] Error:', e);
-        };
-      } catch (err) {
-        console.warn('[WS] Connection exception:', err);
+      } catch(e) {
+        console.warn('WebSocket connection fallback to polling.');
       }
     }
 
     function handleWsMessage(payload) {
       if (!payload) return;
-
       if (payload.type === 'new_message' && payload.channel_id === currentChannel?.id) {
-        const msg = payload.message;
-        if (!messages.some(m => m.id === msg.id)) {
-          messages.push(msg);
-          appendMessageBubble(msg);
+        const exists = messages.some(m => m.id === payload.message.id);
+        if (!exists) {
+          messages.push(payload.message);
+          appendMessageBubble(payload.message);
           scrollToBottom();
-
-          if (!currentUser || msg.user_email !== currentUser.email) {
-            AudioEngine.playReceived();
+          if (payload.message.user_email !== currentUser?.email) {
+            AudioEngine.playReaction();
+          }
+        }
+      } else if (payload.type === 'poll_update' && payload.channel_id === currentChannel?.id) {
+        const msg = messages.find(m => m.id === payload.message_id);
+        if (msg) {
+          msg.attachment_url = JSON.stringify(payload.poll);
+          const cardContainer = document.getElementById(`poll-card-${payload.message_id}`);
+          if (cardContainer) {
+            const div = document.createElement('div');
+            div.innerHTML = renderPollCardHtml(payload.message_id, payload.poll);
+            cardContainer.replaceWith(div.firstElementChild);
           }
         }
       } else if (payload.type === 'reaction_update' && payload.channel_id === currentChannel?.id) {
         updateMessageReactions(payload.message_id, payload.reactions);
-      } else if (payload.type === 'online_count' && payload.channel_id === currentChannel?.id) {
-        document.getElementById('currentChannelSub').textContent = 
-          `online · ${payload.count} traders active`;
       }
     }
 
-    // ── MESSAGES RETRIEVAL ────────────────────────────────────────────────────
+    // ── MESSAGES LOADING & RENDERING ──────────────────────────────────────────
     async function loadMessages(channelId) {
-      const container = document.getElementById('messagesContainer');
-      container.innerHTML = '<div style="text-align:center; padding:30px; color:var(--wa-text-secondary);">Loading messages...</div>';
-
       try {
-        const userEmail = currentUser ? currentUser.email : '';
-        const res = await fetch(`/api/chat/messages/${channelId}?limit=60&current_user_email=${encodeURIComponent(userEmail)}`);
+        const res = await fetch(`/api/chat/messages/${channelId}?limit=50&current_user_email=${encodeURIComponent(currentUser ? currentUser.email : '')}`);
         const d = await res.json();
         messages = d.messages || [];
         renderAllMessages(messages);
         scrollToBottom();
-      } catch (err) {
-        container.innerHTML = '<div style="text-align:center; padding:30px; color:#ef4444;">Failed to load messages.</div>';
+      } catch(e) {
+        console.error('Failed to load messages:', e);
       }
     }
 
     async function pollLatestMessages(channelId) {
-      if (!channelId || channelId !== currentChannel?.id) return;
+      if (!currentChannel || currentChannel.id !== channelId) return;
       try {
-        const userEmail = currentUser ? currentUser.email : '';
-        const res = await fetch(`/api/chat/messages/${channelId}?limit=20&current_user_email=${encodeURIComponent(userEmail)}`);
+        const res = await fetch(`/api/chat/messages/${channelId}?limit=30&current_user_email=${encodeURIComponent(currentUser ? currentUser.email : '')}`);
         const d = await res.json();
-        const latest = d.messages || [];
-        
-        let hasNew = false;
-        latest.forEach(m => {
-          if (!messages.some(existing => existing.id === m.id)) {
-            messages.push(m);
-            appendMessageBubble(m);
-            hasNew = true;
+        const latestList = d.messages || [];
+        if (latestList.length > 0 && messages.length > 0) {
+          const lastLoadedId = messages[messages.length - 1].id;
+          const newItems = latestList.filter(m => m.id > lastLoadedId);
+          if (newItems.length > 0) {
+            newItems.forEach(m => {
+              messages.push(m);
+              appendMessageBubble(m);
+            });
+            scrollToBottom();
           }
-        });
-
-        if (hasNew) {
-          scrollToBottom();
         }
-      } catch (e) {}
+      } catch(e) {}
     }
 
-    // ── RENDER MESSAGES ───────────────────────────────────────────────────────
     function renderAllMessages(msgList) {
       const container = document.getElementById('messagesContainer');
+      container.innerHTML = '';
       if (!msgList || msgList.length === 0) {
-        container.innerHTML = `
-          <div class="date-separator"><span class="date-pill">TODAY</span></div>
-          <div style="text-align:center; padding:40px; color:var(--wa-text-secondary); font-size:13.5px;">
-            🔒 Messages in this channel are verified and monitored.<br>Type below or select a ticker chip to post.
-          </div>
-        `;
+        container.innerHTML = '<div style="padding:40px 20px; text-align:center; color:var(--wa-text-muted);">No messages yet. Send a message to start!</div>';
         return;
       }
-
-      let html = '<div class="date-separator"><span class="date-pill">TODAY</span></div>';
       msgList.forEach((msg, idx) => {
-        html += buildMessageHtml(msg, idx === 0 || msgList[idx - 1].user_email !== msg.user_email);
+        const isFirstOfGroup = idx === 0 || msgList[idx - 1].user_email !== msg.user_email;
+        const div = document.createElement('div');
+        div.innerHTML = buildMessageHtml(msg, isFirstOfGroup);
+        container.appendChild(div.firstElementChild);
       });
-
-      container.innerHTML = html;
     }
 
     function appendMessageBubble(msg) {
@@ -2198,94 +1953,665 @@
     function buildMessageHtml(msg, isFirstOfGroup) {
       const isOutgoing = currentUser && msg.user_email.toLowerCase() === currentUser.email.toLowerCase();
       const rowClass = isOutgoing ? 'outgoing' : 'incoming';
-      const groupClass = isFirstOfGroup ? 'first-of-group' : '';
-      const senderColor = getUserColor(msg.user_name || msg.user_email);
       const timeStr = formatMessageTime(msg.created_at);
-
       const formattedText = formatMessageContent(msg.text);
-
-      let replyHtml = '';
-      if (msg.reply_preview) {
-        replyHtml = `
-          <div class="quoted-reply-box">
-            <div class="quoted-sender">${escapeHtml(msg.reply_preview.user_name || 'Trader')}</div>
-            <div>${escapeHtml(msg.reply_preview.text || '')}</div>
-          </div>
-        `;
-      }
-
-      let attachmentHtml = '';
-      if (msg.attachment_url) {
-        attachmentHtml = `
-          <img src="${msg.attachment_url}" class="bubble-attachment-img" onclick="event.stopPropagation(); openLightbox('${msg.attachment_url}')" alt="Attachment">
-        `;
-      }
 
       let senderHeader = '';
       if (!isOutgoing && isFirstOfGroup) {
         let badgeHtml = '';
         if (msg.user_role === 'quant_bot') badgeHtml = '<span class="role-badge role-bot">AI BOT</span>';
         else if (msg.user_role === 'admin') badgeHtml = '<span class="role-badge role-admin">ADMIN</span>';
-        else if (msg.user_role === 'pro_trader') badgeHtml = '<span class="role-badge role-pro">PRO</span>';
 
         senderHeader = `
-          <div class="sender-name-bar" style="color: ${senderColor};">
+          <div class="sender-name-bar" style="color: #38bdf8;">
             <span>${escapeHtml(msg.user_name || 'Trader')}</span>
             ${badgeHtml}
           </div>
         `;
       }
 
-      let reactionsHtml = buildReactionsHtml(msg.id, msg.reactions, msg.my_reactions);
+      let extraCardHtml = '';
+      if (msg.attachment_type === 'stock_card' && msg.attachment_url) {
+        try {
+          const cardData = JSON.parse(msg.attachment_url);
+          extraCardHtml = renderStockCardHtml(cardData);
+        } catch(e) {}
+      } else if (msg.attachment_type === 'poll' && msg.attachment_url) {
+        try {
+          const pollData = JSON.parse(msg.attachment_url);
+          extraCardHtml = renderPollCardHtml(msg.id, pollData);
+        } catch(e) {}
+      } else if (msg.attachment_url && msg.attachment_type !== 'poll') {
+        extraCardHtml = `<img src="${msg.attachment_url}" style="max-width:100%; border-radius:8px; margin-top:6px;" alt="Attachment">`;
+      }
 
       return `
-        <div class="message-row ${rowClass} ${groupClass}" id="msg-row-${msg.id}">
-          <div class="message-bubble" 
-               onclick="handleBubbleClick(event, ${msg.id})" 
-               oncontextmenu="handleBubbleContextMenu(event, ${msg.id})">
-            
+        <div class="message-row ${rowClass}" id="msg-row-${msg.id}">
+          <div class="message-bubble" id="bubble-${msg.id}">
             ${senderHeader}
-            ${replyHtml}
-            ${attachmentHtml}
-            
             <div class="message-body-text">${formattedText}</div>
-            
+            ${extraCardHtml}
             <div class="message-meta">
               <span>${timeStr}</span>
               ${isOutgoing ? '<span class="ticks-icon blue">✓✓</span>' : ''}
-            </div>
-
-            <div class="reactions-bar" id="reactions-for-${msg.id}">
-              ${reactionsHtml}
             </div>
           </div>
         </div>
       `;
     }
 
-    function buildReactionsHtml(msgId, reactions, myReactions) {
-      if (!reactions || Object.keys(reactions).length === 0) return '';
-      const myReactList = myReactions || [];
-      return Object.entries(reactions).map(([emoji, count]) => {
-        const hasReacted = myReactList.includes(emoji);
-        return `
-          <span class="reaction-pill ${hasReacted ? 'reacted' : ''}" onclick="event.stopPropagation(); toggleReaction(${msgId}, '${emoji}')">
-            ${emoji} ${count}
-          </span>
-        `;
-      }).join('');
+    // ── RENDER STOCK ANALYSIS CARD ────────────────────────────────────────────
+    function renderStockCardHtml(card) {
+      if (!card || !card.symbol) {
+        if (card && card.buttons) {
+          return `
+            <div class="interactive-action-buttons-grid">
+              ${card.buttons.map(b => `
+                <button class="action-card-btn" onclick="handleActionButtonClick('${b.id}', '${b.symbol}')">
+                  ${escapeHtml(b.label)}
+                </button>
+              `).join('')}
+            </div>
+          `;
+        }
+        return '';
+      }
+
+      const sym = escapeHtml(card.symbol);
+      const name = escapeHtml(card.name || sym);
+      const sector = escapeHtml(card.sector || 'Equity');
+      const price = Number(card.price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+      const pivot = Number(card.pivot || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+      const tgt1 = Number(card.target_1 || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+      const sl = Number(card.stop_loss || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+      const score = card.dna_score || 0;
+      const stage = escapeHtml(card.stage || 'Stage 2');
+      const stance = escapeHtml(card.stance || 'BULLISH');
+
+      const buttons = card.buttons || [
+        { id: 'technical', label: '📊 Technical', symbol: card.symbol },
+        { id: 'financial', label: '💼 Financial', symbol: card.symbol },
+        { id: 'dna', label: '🧬 DNA Report', symbol: card.symbol },
+        { id: 'new_stock', label: '🔍 New Stock', symbol: card.symbol }
+      ];
+
+      return `
+        <div class="bot-stock-card" onclick="event.stopPropagation();">
+          <div class="bot-stock-header">
+            <div>
+              <div class="bot-stock-title">
+                <span class="bot-stock-sym">${sym}</span>
+                <span class="bot-stock-sector">${sector}</span>
+              </div>
+              <div class="bot-stock-name">${name}</div>
+            </div>
+            <div class="bot-stock-score-badge">
+              🧬 ${score}/100
+            </div>
+          </div>
+
+          <div class="bot-stock-metrics-grid">
+            <div class="bot-metric-box">
+              <div class="bot-metric-lbl">LTP</div>
+              <div class="bot-metric-val">₹${price}</div>
+            </div>
+            <div class="bot-metric-box">
+              <div class="bot-metric-lbl">Pivot</div>
+              <div class="bot-metric-val accent">₹${pivot}</div>
+            </div>
+            <div class="bot-metric-box">
+              <div class="bot-metric-lbl">Target 1</div>
+              <div class="bot-metric-val green">₹${tgt1}</div>
+            </div>
+            <div class="bot-metric-box">
+              <div class="bot-metric-lbl">Stop Loss</div>
+              <div class="bot-metric-val red">₹${sl}</div>
+            </div>
+          </div>
+
+          <div class="bot-stock-stage-row">
+            <span class="pill-tag">${stage}</span>
+            <span class="pill-tag stance">${stance}</span>
+            <a href="/stock-detail.html?symbol=${sym}" target="_blank" class="pill-tag link">Full Chart ↗</a>
+          </div>
+
+          <div class="interactive-action-buttons-grid">
+            ${buttons.map(b => `
+              <button class="action-card-btn" onclick="handleActionButtonClick('${b.id}', '${b.symbol}')">
+                ${escapeHtml(b.label)}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `;
     }
 
-    function updateMessageReactions(msgId, reactions) {
-      const container = document.getElementById(`reactions-for-${msgId}`);
-      if (container) {
-        const msg = messages.find(m => m.id === msgId);
-        const myReactions = msg ? msg.my_reactions : [];
-        container.innerHTML = buildReactionsHtml(msgId, reactions, myReactions);
+    // ── RENDER POLL CARD ──────────────────────────────────────────────────────
+    function renderPollCardHtml(msgId, poll) {
+      if (!poll) return '';
+      const now = new Date();
+      const expiresAt = poll.expires_at ? new Date(poll.expires_at) : null;
+      const isEnded = poll.status === 'ended' || (expiresAt && now > expiresAt);
+      const totalVotes = poll.total_votes || 0;
+      const userEmail = (currentUser ? currentUser.email : '').toLowerCase();
+
+      let myVotedOptId = null;
+      (poll.options || []).forEach(opt => {
+        if ((opt.votes || []).includes(userEmail)) {
+          myVotedOptId = opt.id;
+        }
+      });
+
+      let maxVotes = -1;
+      let winner = null;
+      (poll.options || []).forEach(opt => {
+        const vCount = (opt.votes || []).length;
+        if (vCount > maxVotes && vCount > 0) {
+          maxVotes = vCount;
+          winner = opt;
+        }
+      });
+
+      let timerText = '⏳ Active';
+      if (isEnded) {
+        timerText = '🏁 Poll Ended';
+      } else if (expiresAt) {
+        const diffMs = expiresAt - now;
+        const mins = Math.max(0, Math.floor(diffMs / 60000));
+        const hours = Math.floor(mins / 60);
+        const remMins = mins % 60;
+        timerText = hours > 0 ? `⏳ ${hours}h ${remMins}m left` : `⏳ ${remMins}m left`;
+      }
+
+      return `
+        <div class="bot-poll-card" id="poll-card-${msgId}" onclick="event.stopPropagation();">
+          <div class="bot-poll-header">
+            <span class="poll-badge">📊 TRADING POLL</span>
+            <span class="poll-timer-badge ${isEnded ? 'ended' : 'active'}">${timerText}</span>
+          </div>
+
+          <div class="bot-poll-question">
+            ${escapeHtml(poll.question)}
+          </div>
+
+          <div class="bot-poll-options">
+            ${(poll.options || []).map(opt => {
+              const vCount = (opt.votes || []).length;
+              const pct = totalVotes > 0 ? Math.round((vCount / totalVotes) * 100) : 0;
+              const isSelected = myVotedOptId === opt.id;
+              const isWinner = isEnded && winner && winner.id === opt.id;
+
+              return `
+                <div class="poll-option-row ${isSelected ? 'selected' : ''} ${isEnded ? 'locked' : ''} ${isWinner ? 'winner' : ''}" 
+                     onclick="${isEnded ? '' : `submitPollVote(${msgId}, '${opt.id}')`}">
+                  <div class="poll-option-bar" style="width: ${pct}%;"></div>
+                  <div class="poll-option-content">
+                    <div class="poll-option-text">
+                      ${isSelected ? '<span class="poll-check-icon">✓</span>' : '<span class="poll-radio-circle"></span>'}
+                      <span>${escapeHtml(opt.text)}</span>
+                    </div>
+                    <div class="poll-option-stat">
+                      <span class="poll-pct">${pct}%</span>
+                      <span class="poll-votes">(${vCount})</span>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <div class="bot-poll-footer">
+            <span>Total: ${totalVotes} ${totalVotes === 1 ? 'vote' : 'votes'}</span>
+            ${isEnded && winner ? `<span class="poll-winner-label">🏆 Result: ${escapeHtml(winner.text)}</span>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    // ── ACTION BUTTON CLICKS ──────────────────────────────────────────────────
+    function handleActionButtonClick(actionId, symbol) {
+      if (!actionId) return;
+      if (actionId === 'new_stock') {
+        const input = document.getElementById('messageInput');
+        input.value = '';
+        input.placeholder = 'Type stock name (e.g. TATAMOTORS, INFY)...';
+        input.focus();
+        triggerAutocomplete('TATA');
+        return;
+      }
+      if (actionId === 'select_sym') {
+        const input = document.getElementById('messageInput');
+        input.value = symbol;
+        sendMessage();
+        return;
+      }
+      const input = document.getElementById('messageInput');
+      input.value = `[ACTION:${actionId}:${symbol}]`;
+      sendMessage();
+    }
+
+    async function submitPollVote(msgId, optId) {
+      if (!currentUser) {
+        openProfileModal();
+        return;
+      }
+      try {
+        AudioEngine.playReaction();
+        const res = await fetch(`/api/chat/poll/${msgId}/vote`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: currentUser.email, option_id: optId })
+        });
+        const d = await res.json();
+        if (d.status === 'ok' || d.status === 'ended') {
+          const msg = messages.find(m => m.id === msgId);
+          if (msg) {
+            msg.attachment_url = JSON.stringify(d.poll);
+            const cardContainer = document.getElementById(`poll-card-${msgId}`);
+            if (cardContainer) {
+              const div = document.createElement('div');
+              div.innerHTML = renderPollCardHtml(msgId, d.poll);
+              cardContainer.replaceWith(div.firstElementChild);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Vote failed:', e);
       }
     }
 
-    // ── MESSAGE FORMATTING & STOCK TICKER AUTO-LINKING ────────────────────────
+    // ── SENDING MESSAGES ──────────────────────────────────────────────────────
+    async function sendMessage() {
+      if (!currentUser) {
+        openProfileModal();
+        return;
+      }
+      if (!currentChannel) return;
+
+      const input = document.getElementById('messageInput');
+      const text = input.value.trim();
+      if (!text && !pendingAttachment) return;
+
+      input.value = '';
+      autoResizeTextarea(input);
+      handleInputTyping(input);
+      hideAutocomplete();
+      hideSlashCommandsMenu();
+
+      AudioEngine.playSent();
+      if (navigator.vibrate) navigator.vibrate(15);
+
+      try {
+        await fetch(`/api/chat/messages/${currentChannel.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: currentUser.email,
+            text: text,
+            attachment_url: pendingAttachment || undefined
+          })
+        });
+        pendingAttachment = null;
+      } catch (e) {
+        showToast('Failed to send message.');
+      }
+    }
+
+    function handleSendCircleClick() {
+      sendMessage();
+    }
+
+    function handleInputKeydown(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    function handleInputTyping(el) {
+      autoResizeTextarea(el);
+      const text = el.value;
+
+      const sendIcon = document.getElementById('sendBtnIcon');
+      sendIcon.textContent = text.trim() ? '➤' : '🎤';
+
+      if (text.startsWith('/') && !text.includes(' ')) {
+        showSlashCommandsMenu(text);
+        hideAutocomplete();
+        return;
+      } else {
+        hideSlashCommandsMenu();
+      }
+
+      let querySym = null;
+      if (text.startsWith('/chart ') || text.startsWith('/dna ') || text.startsWith('/finance ') || text.startsWith('/technical ')) {
+        querySym = text.split(' ')[1] || '';
+      } else if (currentChannel && currentChannel.id === 'stock-analysis') {
+        querySym = text.trim();
+      } else if (text.includes('$')) {
+        const parts = text.split('$');
+        querySym = parts[parts.length - 1];
+      }
+
+      if (querySym && querySym.length >= 2 && !querySym.includes('\n')) {
+        clearTimeout(autocompleteDebounce);
+        autocompleteDebounce = setTimeout(() => {
+          triggerAutocomplete(querySym);
+        }, 120);
+      } else {
+        hideAutocomplete();
+      }
+    }
+
+    function autoResizeTextarea(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    function insertEmoji(char) {
+      const input = document.getElementById('messageInput');
+      input.value += char;
+      input.focus();
+      handleInputTyping(input);
+    }
+
+    function handleQuickTickerClick(sym) {
+      if (currentChannel && currentChannel.id === 'stock-analysis') {
+        const input = document.getElementById('messageInput');
+        input.value = sym;
+        sendMessage();
+      } else {
+        insertEmoji(`$${sym} `);
+      }
+    }
+
+    // ── AUTOCOMPLETE & SLASH COMMANDS ─────────────────────────────────────────
+    async function triggerAutocomplete(q) {
+      try {
+        const res = await fetch(`/api/chat/autocomplete?q=${encodeURIComponent(q)}`);
+        const list = await res.json();
+        renderAutocompletePopover(list);
+      } catch (e) {}
+    }
+
+    function renderAutocompletePopover(list) {
+      const pop = document.getElementById('stockAutocompletePopover');
+      if (!list || list.length === 0) {
+        pop.style.display = 'none';
+        return;
+      }
+
+      pop.innerHTML = `
+        <div class="popover-header">Matching Stocks (Tap to Analyze)</div>
+        ${list.map(s => `
+          <div class="popover-item" onclick="selectAutocompleteItem('${escapeHtml(s.symbol)}')">
+            <div class="popover-sym-row">
+              <span class="popover-sym">${escapeHtml(s.symbol)}</span>
+              <span class="popover-price">₹${Number(s.curr_price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div class="popover-name-row">
+              <span>${escapeHtml(s.company_name || s.symbol)}</span>
+              <span>${escapeHtml(s.sector || '')}</span>
+            </div>
+          </div>
+        `).join('')}
+      `;
+      pop.style.display = 'block';
+    }
+
+    function hideAutocomplete() {
+      document.getElementById('stockAutocompletePopover').style.display = 'none';
+    }
+
+    function selectAutocompleteItem(sym) {
+      const input = document.getElementById('messageInput');
+      const cur = input.value;
+      if (cur.startsWith('/chart ')) input.value = `/chart ${sym}`;
+      else if (cur.startsWith('/dna ')) input.value = `/dna ${sym}`;
+      else if (cur.startsWith('/finance ')) input.value = `/finance ${sym}`;
+      else if (cur.startsWith('/technical ')) input.value = `/technical ${sym}`;
+      else input.value = sym;
+
+      hideAutocomplete();
+      sendMessage();
+    }
+
+    function showSlashCommandsMenu(filter) {
+      const menu = document.getElementById('slashCommandsPopover');
+      const commands = [
+        { cmd: '/chart', desc: 'Instant Candlestick Chart & Pivot Geometry', icon: '📈' },
+        { cmd: '/dna', desc: '10-D Stock DNA Radar Score & Pattern Breakdown', icon: '🧬' },
+        { cmd: '/finance', desc: 'Fundamental Valuation, P/E, ROCE & Solvency', icon: '💼' },
+        { cmd: '/technical', desc: 'EMA Stack, RSI, ATR & Support / Resistance', icon: '📊' },
+        { cmd: '/poll', desc: 'Launch a Community Trading Poll', icon: '🗳️' }
+      ];
+
+      const matched = commands.filter(c => c.cmd.startsWith(filter.toLowerCase()));
+      if (matched.length === 0) {
+        menu.style.display = 'none';
+        return;
+      }
+
+      menu.innerHTML = `
+        <div class="popover-header">QuantSync Slash Commands</div>
+        ${matched.map(c => `
+          <div class="popover-item cmd-item" onclick="selectSlashCommand('${c.cmd}')">
+            <span class="cmd-icon">${c.icon}</span>
+            <div style="flex:1;">
+              <div class="cmd-name">${c.cmd}</div>
+              <div class="cmd-desc">${c.desc}</div>
+            </div>
+          </div>
+        `).join('')}
+      `;
+      menu.style.display = 'block';
+    }
+
+    function hideSlashCommandsMenu() {
+      document.getElementById('slashCommandsPopover').style.display = 'none';
+    }
+
+    function selectSlashCommand(cmd) {
+      if (cmd === '/poll') {
+        document.getElementById('messageInput').value = '';
+        hideSlashCommandsMenu();
+        openPollModal();
+        return;
+      }
+      const input = document.getElementById('messageInput');
+      input.value = `${cmd} `;
+      hideSlashCommandsMenu();
+      input.focus();
+      triggerAutocomplete('TATA');
+    }
+
+    // ── POLL MODAL LOGIC ──────────────────────────────────────────────────────
+    function openPollModal() {
+      document.getElementById('pollModalOverlay').style.display = 'flex';
+      selectPollPreset('buysell');
+    }
+
+    function closePollModal(e) {
+      if (e && e.target !== document.getElementById('pollModalOverlay')) return;
+      document.getElementById('pollModalOverlay').style.display = 'none';
+    }
+
+    function selectPollPreset(preset) {
+      selectedPollPreset = preset;
+      document.querySelectorAll('.poll-preset-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`preset-${preset}`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const ticker = document.getElementById('pollTickerInput').value.trim() || 'TATAMOTORS';
+      const qInput = document.getElementById('pollQuestionInput');
+      const optList = document.getElementById('pollOptionsList');
+
+      if (preset === 'buysell') {
+        qInput.value = `${ticker}: Buy breakout or Sell here?`;
+        optList.innerHTML = `
+          <input type="text" class="auth-input poll-option-input" value="Buy Breakout 🟢">
+          <input type="text" class="auth-input poll-option-input" value="Sell / Wait 🔴">
+        `;
+      } else if (preset === 'nifty') {
+        qInput.value = 'Nifty Expiry Direction: Will Nifty close UP or DOWN?';
+        optList.innerHTML = `
+          <input type="text" class="auth-input poll-option-input" value="Nifty Closes UP 🚀">
+          <input type="text" class="auth-input poll-option-input" value="Nifty Closes DOWN 📉">
+        `;
+      } else if (preset === 'buyignore') {
+        qInput.value = `${ticker} Breakout Radar: Buy or Ignore setup?`;
+        optList.innerHTML = `
+          <input type="text" class="auth-input poll-option-input" value="Buy Setup 🟢">
+          <input type="text" class="auth-input poll-option-input" value="Ignore / Wait ⏳">
+        `;
+      } else if (preset === 'custom') {
+        qInput.value = '';
+        optList.innerHTML = `
+          <input type="text" class="auth-input poll-option-input" placeholder="Option 1">
+          <input type="text" class="auth-input poll-option-input" placeholder="Option 2">
+          <input type="text" class="auth-input poll-option-input" placeholder="Option 3 (Optional)">
+        `;
+      }
+    }
+
+    function updatePollQuestionPreview() {
+      if (selectedPollPreset === 'buysell' || selectedPollPreset === 'buyignore') {
+        selectPollPreset(selectedPollPreset);
+      }
+    }
+
+    function selectPollTimer(mins, el) {
+      selectedPollDuration = mins;
+      document.querySelectorAll('.timer-pill').forEach(b => b.classList.remove('active'));
+      if (el) el.classList.add('active');
+    }
+
+    async function submitPollCreation() {
+      if (!currentUser) {
+        openProfileModal();
+        return;
+      }
+      if (!currentChannel) return;
+
+      const question = document.getElementById('pollQuestionInput').value.trim();
+      if (!question) {
+        showToast('Please enter a poll question.');
+        return;
+      }
+
+      const options = [];
+      document.querySelectorAll('.poll-option-input').forEach(inp => {
+        const val = inp.value.trim();
+        if (val) options.push(val);
+      });
+
+      if (options.length < 2) {
+        showToast('At least 2 options required.');
+        return;
+      }
+
+      const ticker = document.getElementById('pollTickerInput').value.trim();
+
+      try {
+        const res = await fetch('/api/chat/poll/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            channel_id: currentChannel.id,
+            email: currentUser.email,
+            question: question,
+            options: options,
+            duration_minutes: selectedPollDuration,
+            symbol: ticker || undefined
+          })
+        });
+        const d = await res.json();
+        if (d.status === 'ok') {
+          closePollModal();
+          AudioEngine.playSent();
+          showToast('Trading Poll launched! 🚀');
+        }
+      } catch (e) {
+        showToast('Failed to create poll.');
+      }
+    }
+
+    // ── MOBILE SWIPE-TO-REPLY GESTURE ─────────────────────────────────────────
+    function initTouchGestures() {
+      const container = document.getElementById('messagesContainer');
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let activeBubble = null;
+      let activeMsgId = null;
+
+      container.addEventListener('touchstart', (e) => {
+        const bubble = e.target.closest('.message-bubble');
+        if (!bubble) return;
+        activeBubble = bubble;
+        const row = bubble.closest('.message-row');
+        activeMsgId = row ? Number(row.id.replace('msg-row-', '')) : null;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }, { passive: true });
+
+      container.addEventListener('touchmove', (e) => {
+        if (!activeBubble) return;
+        const dx = e.touches[0].clientX - touchStartX;
+        const dy = e.touches[0].clientY - touchStartY;
+        if (dx > 10 && Math.abs(dy) < 25) {
+          const moveX = Math.min(dx, 50);
+          activeBubble.style.transform = `translateX(${moveX}px)`;
+          activeBubble.style.transition = 'none';
+        }
+      }, { passive: true });
+
+      container.addEventListener('touchend', (e) => {
+        if (!activeBubble) return;
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        activeBubble.style.transition = 'transform 0.18s ease-out';
+        activeBubble.style.transform = 'translateX(0px)';
+
+        if (dx > 40 && activeMsgId) {
+          const msg = messages.find(m => m.id === activeMsgId);
+          if (msg) {
+            const input = document.getElementById('messageInput');
+            input.value = `@${msg.user_name} `;
+            input.focus();
+            if (navigator.vibrate) navigator.vibrate(20);
+          }
+        }
+        activeBubble = null;
+        activeMsgId = null;
+      });
+    }
+
+    // ── ATTACHMENT UPLOAD ─────────────────────────────────────────────────────
+    async function handleFileUpload(input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target.result;
+        try {
+          showToast('Uploading screenshot...');
+          const res = await fetch('/api/chat/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image_base64: base64, file_name: file.name })
+          });
+          const d = await res.json();
+          if (d.url) {
+            pendingAttachment = d.url;
+            sendMessage();
+          }
+        } catch (err) {
+          showToast('Upload failed.');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ── TEXT FORMATTING ───────────────────────────────────────────────────────
     function formatMessageContent(text) {
       if (!text) return '';
       let clean = escapeHtml(text);
@@ -2294,6 +2620,7 @@
         return `<a href="/stock-detail.html?symbol=${sym}" target="_blank" class="stock-chip" onclick="event.stopPropagation();">📈 $${sym}</a>`;
       });
 
+      clean = clean.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
       clean = clean.replace(/\n/g, '<br>');
       return clean;
     }
@@ -2321,252 +2648,7 @@
       const c = document.getElementById('messagesContainer');
       c.scrollTop = c.scrollHeight;
     }
-
-    // ── SENDING MESSAGES ──────────────────────────────────────────────────────
-    async function sendMessage() {
-      if (!currentUser) {
-        document.getElementById('authModal').style.display = 'flex';
-        return;
-      }
-
-      if (!currentChannel) return;
-
-      const input = document.getElementById('messageInput');
-      const text = input.value.trim();
-
-      if (!text && !pendingAttachment) return;
-
-      const tempText = text;
-      const tempAttachment = pendingAttachment;
-      const replyToId = replyTarget ? replyTarget.id : null;
-
-      input.value = '';
-      autoResizeTextarea(input);
-      handleInputTyping(input);
-      cancelReply();
-      pendingAttachment = null;
-
-      AudioEngine.playSent();
-      if (navigator.vibrate) navigator.vibrate(15);
-
-      try {
-        const res = await fetch(`/api/chat/messages/${currentChannel.id}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: currentUser.email,
-            text: tempText,
-            attachment_url: tempAttachment,
-            reply_to_id: replyToId
-          })
-        });
-
-        const d = await res.json();
-        if (d.message) {
-          if (!messages.some(m => m.id === d.message.id)) {
-            messages.push(d.message);
-            appendMessageBubble(d.message);
-            scrollToBottom();
-          }
-        }
-      } catch (err) {
-        alert('Failed to deliver message. Please check connection.');
-      }
-    }
-
-    function handleSendCircleClick() {
-      const input = document.getElementById('messageInput');
-      if (input.value.trim().length > 0 || pendingAttachment) {
-        sendMessage();
-      } else {
-        showToast('🎙️ Voice notes launching in v2.0! Type or select a ticker chip.');
-      }
-    }
-
-    function handleInputKeydown(e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    }
-
-    function handleInputTyping(el) {
-      autoResizeTextarea(el);
-      const sendIcon = document.getElementById('sendBtnIcon');
-      if (el.value.trim().length > 0 || pendingAttachment) {
-        sendIcon.textContent = '➤';
-      } else {
-        sendIcon.textContent = '🎤';
-      }
-    }
-
-    function autoResizeTextarea(el) {
-      el.style.height = 'auto';
-      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-    }
-
-    function insertEmoji(char) {
-      const input = document.getElementById('messageInput');
-      input.value += char;
-      handleInputTyping(input);
-      input.focus();
-    }
-
-    function insertTickerSymbol(sym) {
-      const input = document.getElementById('messageInput');
-      const val = input.value.trim();
-      input.value = val ? `${val} $${sym} ` : `$${sym} `;
-      handleInputTyping(input);
-      input.focus();
-      if (navigator.vibrate) navigator.vibrate(10);
-    }
-
-    // ── MOBILE FLOATING REACTION POPUP ON BUBBLE TAP ──────────────────────────
-    function handleBubbleClick(e, msgId) {
-      const now = Date.now();
-      // Double tap detector
-      if (now - lastTapTime < 300) {
-        toggleReaction(msgId, '❤️');
-        showToast('❤️ Reacted!');
-        closeReactionPopup();
-        return;
-      }
-      lastTapTime = now;
-
-      openReactionPopup(e.currentTarget, msgId);
-    }
-
-    function handleBubbleContextMenu(e, msgId) {
-      e.preventDefault();
-      openReactionPopup(e.currentTarget, msgId);
-    }
-
-    function openReactionPopup(bubbleEl, msgId) {
-      const msg = messages.find(m => m.id === msgId);
-      if (!msg) return;
-      activePopupMessage = msg;
-
-      const popup = document.getElementById('reactionPopup');
-      popup.style.display = 'flex';
-      bubbleEl.appendChild(popup);
-      if (navigator.vibrate) navigator.vibrate(10);
-    }
-
-    function closeReactionPopup() {
-      const popup = document.getElementById('reactionPopup');
-      popup.style.display = 'none';
-      activePopupMessage = null;
-    }
-
-    function submitActiveReaction(emoji) {
-      if (!activePopupMessage) return;
-      toggleReaction(activePopupMessage.id, emoji);
-      closeReactionPopup();
-    }
-
-    function replyToActiveMessage() {
-      if (!activePopupMessage) return;
-      openReplyBar(activePopupMessage.id, activePopupMessage.user_name, activePopupMessage.text);
-      closeReactionPopup();
-    }
-
-    function copyActiveMessage() {
-      if (!activePopupMessage) return;
-      navigator.clipboard.writeText(activePopupMessage.text || '');
-      showToast('📋 Message copied to clipboard!');
-      closeReactionPopup();
-    }
-
-    function openReplyBar(msgId, userName, text) {
-      replyTarget = { id: msgId, userName, text };
-      document.getElementById('replySenderName').textContent = `Replying to ${userName}`;
-      document.getElementById('replyTextSnippet').textContent = (text || '').slice(0, 80);
-      document.getElementById('replyDraftBanner').style.display = 'flex';
-      document.getElementById('messageInput').focus();
-    }
-
-    function cancelReply() {
-      replyTarget = null;
-      document.getElementById('replyDraftBanner').style.display = 'none';
-    }
-
-    // ── REACTIONS ─────────────────────────────────────────────────────────────
-    async function toggleReaction(msgId, emoji) {
-      if (!currentUser) {
-        document.getElementById('authModal').style.display = 'flex';
-        return;
-      }
-
-      if (navigator.vibrate) navigator.vibrate(15);
-
-      try {
-        await fetch(`/api/chat/messages/${msgId}/react`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: currentUser.email,
-            emoji: emoji
-          })
-        });
-      } catch (e) {}
-    }
-
-    // ── FILE / CLIPBOARD SCREENSHOT UPLOADS ────────────────────────────────────
-    async function handleFileUpload(input) {
-      if (!input.files || !input.files[0]) return;
-      const file = input.files[0];
-      await uploadFileToServer(file);
-    }
-
-    async function handleClipboardPaste(e) {
-      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-      for (const item of items) {
-        if (item.type.indexOf('image') === 0) {
-          e.preventDefault();
-          const blob = item.getAsFile();
-          await uploadFileToServer(blob);
-          break;
-        }
-      }
-    }
-
-    async function uploadFileToServer(blob) {
-      if (!currentUser) {
-        document.getElementById('authModal').style.display = 'flex';
-        return;
-      }
-
-      showToast('Uploading chart screenshot...');
-
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64Data = reader.result;
-        try {
-          const res = await fetch('/api/chat/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image_base64: base64Data })
-          });
-          const d = await res.json();
-          if (d.url) {
-            pendingAttachment = d.url;
-            sendMessage();
-          }
-        } catch (err) {
-          alert('Failed to upload image screenshot.');
-        }
-      };
-      reader.readAsDataURL(blob);
-    }
-
-    // ── LIGHTBOX ──────────────────────────────────────────────────────────────
-    function openLightbox(url) {
-      document.getElementById('lightboxImg').src = url;
-      document.getElementById('lightboxModal').style.display = 'flex';
-    }
-    function closeLightbox() {
-      document.getElementById('lightboxModal').style.display = 'none';
-    }
   </script>
+
 </body>
 </html>
