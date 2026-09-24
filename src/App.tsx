@@ -4175,6 +4175,7 @@ export default function App() {
             borderRadius: "50%",
             background: "#10B981",
             boxShadow: "0 0 6px #10B981"
+          }} />
         </button>
       </nav>
 
