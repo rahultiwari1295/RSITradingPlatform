@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { quantsyncApi } from "../api/quantsyncApi";
 
 interface ScreenerScreenProps {
@@ -16,10 +16,54 @@ const PATTERN_CATEGORIES = [
   { id: "Triangle", label: "Triangle / Wedge", icon: "📐" },
 ];
 
+const AVATAR_GRADS = [
+  "linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)",
+  "linear-gradient(135deg, #EC4899 0%, #DB2777 100%)",
+  "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+  "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
+  "linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)",
+  "linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)"
+];
+
+export function getBreakoutClassification(s: any) {
+  const cmp = Number(s.curr_price || 0);
+  const brk = Number(s.breakout_level || 0);
+  const tgt = Number(s.target_1 || 0);
+  const hasPivot = brk > 0;
+  const diffPct = hasPivot ? ((cmp - brk) / brk) * 100 : 0;
+  const diffAbs = Math.abs(diffPct);
+  const targetGainPct = (tgt > 0 && cmp > 0) ? ((tgt - cmp) / cmp * 100) : null;
+
+  const isMissed = diffAbs > 5.0;
+  const isSkip = !isMissed && targetGainPct !== null && targetGainPct < 5.0;
+  const isGoodToBuy = !isMissed && !isSkip;
+
+  let status: "BUY" | "MISSED" | "SKIP" = "BUY";
+  if (isMissed) status = "MISSED";
+  else if (isSkip) status = "SKIP";
+
+  return {
+    hasPivot,
+    cmp,
+    brk,
+    tgt,
+    diffPct,
+    diffAbs,
+    targetGainPct,
+    status,
+    isGoodToBuy,
+    isMissed,
+    isSkip
+  };
+}
+
 export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenProps) {
   const [activeTab, setActiveTab] = useState<"near_breakout" | "success" | "retest" | "failed">("near_breakout");
   const [selectedPattern, setSelectedPattern] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [actionFilter, setActionFilter] = useState<"ALL" | "BUY" | "MISSED" | "SKIP">("ALL");
+  const [nearFilter, setNearFilter] = useState<"ALL" | "HOT" | "MID" | "FAR">("ALL");
+  const [expandedOlder, setExpandedOlder] = useState<boolean>(false);
 
   const [loading, setLoading] = useState<boolean>(true);
   const [stocks, setStocks] = useState<any[]>([]);
@@ -32,19 +76,9 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
     retest: [],
     failed: []
   });
-  const [summary, setSummary] = useState<any>(null);
-  const [accuracy, setAccuracy] = useState<any>(null);
 
-  // Load summary and accuracy once on mount
+  // Load breakouts snapshot once on mount
   useEffect(() => {
-    quantsyncApi.getScreenerSummary()
-      .then((data) => setSummary(data))
-      .catch((e) => console.warn("Could not load screener summary", e));
-
-    quantsyncApi.getScreenerAccuracy(90)
-      .then((data) => setAccuracy(data))
-      .catch((e) => console.warn("Could not load screener accuracy", e));
-
     quantsyncApi.getScreenerBreakouts()
       .then((data) => {
         setBreakouts({
@@ -56,11 +90,11 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
       .catch((e) => console.warn("Could not load screener breakouts", e));
   }, []);
 
-  // Fetch stocks when filters change
+  // Fetch stocks when primary tab, pattern, or search changes
   const fetchStocks = useCallback(() => {
     setLoading(true);
     const params: Record<string, any> = {
-      limit: 100
+      limit: 150
     };
 
     if (activeTab === "near_breakout") {
@@ -84,42 +118,8 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
     quantsyncApi.getScreenerRows(params)
       .then((res) => {
         let rows = res.rows || [];
-        // Secondary client-side guard for strict actionable entry rules
         if (activeTab === "success") {
-          rows = rows.filter((s: any) => {
-            return s.breakout_level && Number(s.breakout_level) > 0;
-          });
-          // Sort: 1) Good To Buy first (<= 5% and target upside >= 5%)
-          //       2) SKIPP second (<= 5% but upside < 5%)
-          //       3) MISSED third (> 5% extended)
-          // Within each group, sort from less percent to more percent
-          rows.sort((a: any, b: any) => {
-            const cmpA = Number(a.curr_price || 0), brkA = Number(a.breakout_level || 1);
-            const cmpB = Number(b.curr_price || 0), brkB = Number(b.breakout_level || 1);
-            const tgtA = Number(a.target_1 || 0), tgtB = Number(b.target_1 || 0);
-
-            const diffPctA = (cmpA - brkA) / brkA * 100;
-            const diffPctB = (cmpB - brkB) / brkB * 100;
-            const diffAbsA = Math.abs(diffPctA);
-            const diffAbsB = Math.abs(diffPctB);
-
-            const targetGainA = (tgtA > 0 && cmpA > 0) ? ((tgtA - cmpA) / cmpA * 100) : null;
-            const targetGainB = (tgtB > 0 && cmpB > 0) ? ((tgtB - cmpB) / cmpB * 100) : null;
-
-            const isMissedA = diffAbsA > 5.0;
-            const isMissedB = diffAbsB > 5.0;
-
-            const isSkipA = !isMissedA && targetGainA !== null && targetGainA < 5.0;
-            const isSkipB = !isMissedB && targetGainB !== null && targetGainB < 5.0;
-
-            const tierA = isMissedA ? 2 : isSkipA ? 1 : 0;
-            const tierB = isMissedB ? 2 : isSkipB ? 1 : 0;
-
-            if (tierA !== tierB) {
-              return tierA - tierB;
-            }
-            return diffPctA - diffPctB;
-          });
+          rows = rows.filter((s: any) => s.breakout_level && Number(s.breakout_level) > 0);
         } else if (activeTab === "near_breakout") {
           rows = rows.filter((s: any) => {
             const hasPivot = s.breakout_level && Number(s.breakout_level) > 0;
@@ -150,6 +150,97 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
     fetchStocks();
   }, [fetchStocks]);
 
+  // Action counts for Breakout Confirmed tab (Buy, Missed, Skip)
+  const { buyCount, missedCount, skipCount } = useMemo(() => {
+    let b = 0, m = 0, sk = 0;
+    if (activeTab === "success") {
+      stocks.forEach((s) => {
+        const cls = getBreakoutClassification(s);
+        if (cls.status === "BUY") b++;
+        else if (cls.status === "MISSED") m++;
+        else if (cls.status === "SKIP") sk++;
+      });
+    }
+    return { buyCount: b, missedCount: m, skipCount: sk };
+  }, [stocks, activeTab]);
+
+  // Timeline grouping for Breakout Confirmed tab (Latest Date to Oldest Date)
+  const { timelineGroups, olderSetups } = useMemo(() => {
+    if (activeTab !== "success") {
+      return { timelineGroups: [], olderSetups: [] };
+    }
+
+    let list = [...stocks];
+    if (actionFilter !== "ALL") {
+      list = list.filter((s) => getBreakoutClassification(s).status === actionFilter);
+    }
+
+    const base = scanDate ? new Date(scanDate) : new Date();
+    const dateMap = new Map<string, { label: string; daysAgo: number; stocks: any[] }>();
+    const older: any[] = [];
+
+    list.forEach((s) => {
+      const daysAgo = s.days_since_breakout !== null && s.days_since_breakout !== undefined
+        ? Number(s.days_since_breakout)
+        : 0;
+
+      if (daysAgo > 7) {
+        older.push(s);
+      } else {
+        const d = new Date(base);
+        d.setDate(d.getDate() - daysAgo);
+        const dateKey = d.toISOString().split("T")[0];
+
+        let label = d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+        if (daysAgo === 0) label = `Today · ${label}`;
+        else if (daysAgo === 1) label = `Yesterday · ${label}`;
+        else label = `${label} (${daysAgo}d ago)`;
+
+        if (!dateMap.has(dateKey)) {
+          dateMap.set(dateKey, { label, daysAgo, stocks: [] });
+        }
+        dateMap.get(dateKey)!.stocks.push(s);
+      }
+    });
+
+    // Sort inside each date group: BUY (tier 0) -> MISSED (tier 1) -> SKIP (tier 2), then diffPct
+    const sortFn = (a: any, b: any) => {
+      const clsA = getBreakoutClassification(a);
+      const clsB = getBreakoutClassification(b);
+      const tierA = clsA.isGoodToBuy ? 0 : clsA.isMissed ? 1 : 2;
+      const tierB = clsB.isGoodToBuy ? 0 : clsB.isMissed ? 1 : 2;
+      if (tierA !== tierB) return tierA - tierB;
+      return clsA.diffPct - clsB.diffPct;
+    };
+
+    const timelineGroups = Array.from(dateMap.entries())
+      .map(([dateKey, val]) => ({
+        dateKey,
+        label: val.label,
+        daysAgo: val.daysAgo,
+        stocks: val.stocks.sort(sortFn)
+      }))
+      .filter((g) => g.stocks.length > 0)
+      .sort((a, b) => b.dateKey.localeCompare(a.dateKey));
+
+    older.sort(sortFn);
+
+    return { timelineGroups, olderSetups: older };
+  }, [stocks, activeTab, actionFilter, scanDate]);
+
+  // Filtered list for Near Breakout
+  const nearBreakoutFiltered = useMemo(() => {
+    if (activeTab !== "near_breakout") return [];
+    if (nearFilter === "ALL") return stocks;
+    return stocks.filter((s) => {
+      const distPct = (Number(s.breakout_level) - Number(s.curr_price)) / Number(s.breakout_level) * 100;
+      if (nearFilter === "HOT") return distPct < 1.0;
+      if (nearFilter === "MID") return distPct >= 1.0 && distPct < 3.0;
+      if (nearFilter === "FAR") return distPct >= 3.0 && distPct <= 5.0;
+      return true;
+    });
+  }, [stocks, activeTab, nearFilter]);
+
   const handleStockClick = (s: any) => {
     const sym = typeof s === "string" ? s : (s?.symbol || "");
     if (onSelectStock) {
@@ -159,199 +250,283 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
     }
   };
 
-  return (
-    <div className="screener-screen-root" style={{ padding: "12px 6px 36px", width: "100%", maxWidth: "100%", margin: "0" }}>
-      {/* ─── HEADER HERO BANNER ─── */}
+  const renderStockCard = (s: any, idx: number) => {
+    const cls = getBreakoutClassification(s);
+    const score = s.dna_score || 50;
+    const scoreColor = score >= 75 ? "var(--profit)" : score >= 50 ? "#F59E0B" : "var(--loss)";
+    const avatarGrad = AVATAR_GRADS[idx % AVATAR_GRADS.length];
+    const sym = s.symbol || "";
+
+    // Card border indicator class
+    let borderCls = "";
+    if (activeTab === "success") {
+      borderCls = cls.isGoodToBuy ? "border-buy" : cls.isMissed ? "border-missed" : "border-skip";
+    } else if (activeTab === "near_breakout") {
+      borderCls = "border-near";
+    } else if (activeTab === "failed") {
+      borderCls = "border-missed";
+    }
+
+    return (
       <div
-        className="card"
-        style={{
-          padding: "18px 16px",
-          marginBottom: 14,
-          background: "linear-gradient(135deg, rgba(59,130,246,0.12), rgba(16,185,129,0.06)), var(--s1)",
-          borderColor: "color-mix(in srgb, var(--accent) 30%, transparent)",
-          position: "relative"
-        }}
+        key={sym || idx}
+        onClick={() => handleStockClick(s)}
+        className={`sc-card ${borderCls}`}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
-          <div>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", borderRadius: 999, background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.3)", marginBottom: 8 }}>
-              <span style={{ fontSize: 11 }}>⚡</span>
-              <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--accent)" }}>
-                QuantSync Institutional Screener
-              </span>
+        {/* Top Row: Monogram, Symbol, Pattern Pill, Price, DNA Score */}
+        <div className="sc-card-head">
+          <div className="sc-card-left">
+            <div className="sc-avatar" style={{ background: avatarGrad }}>
+              {sym.slice(0, 2) || "ST"}
             </div>
-            <h1 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 4px 0", letterSpacing: "-0.02em", color: "var(--ink1)" }}>
-              Pattern & Breakout Intelligence
-            </h1>
-            <p style={{ fontSize: 11.5, color: "var(--ink3)", margin: 0 }}>
-              Scanned across 1,318 NSE universe equities · Updated {scanDate || "Daily 3:00 AM"}
-            </p>
+            <div className="sc-card-id-block">
+              <div className="sc-sym-row">
+                <span className="sc-sym">{sym}</span>
+                {s.pattern_type && (
+                  <span className="sc-pill pattern">
+                    📐 {s.pattern_type}
+                  </span>
+                )}
+                {s.mcap_tier && (
+                  <span className="sc-pill mcap">{s.mcap_tier}</span>
+                )}
+              </div>
+              <div className="sc-subline">
+                {s.company_name || s.sector || "NSE Equity"}
+              </div>
+            </div>
           </div>
 
-          {/* Accuracy Proof Badge */}
-          {accuracy && accuracy.win_rate_pct > 0 && (
-            <div
-              style={{
-                padding: "8px 12px",
-                borderRadius: 14,
-                background: "linear-gradient(180deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))",
-                border: "1px solid rgba(16,185,129,0.3)",
-                textAlign: "right"
-              }}
-            >
-              <div style={{ fontSize: 9.5, fontWeight: 700, color: "var(--profit)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Audited 90D Win Rate
-              </div>
-              <div style={{ fontSize: 17, fontWeight: 800, color: "var(--profit)", fontFamily: "var(--font-mono, monospace)" }}>
-                {accuracy.win_rate_pct}%
-              </div>
-              <div style={{ fontSize: 9.5, color: "var(--ink3)" }}>
-                {accuracy.winners} of {accuracy.total_resolved_signals} signals verified
-              </div>
+          <div className="sc-card-right">
+            <div className="sc-cmp">
+              ₹{Number(s.curr_price || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
             </div>
-          )}
+            <div className="sc-dna-badge" style={{ color: scoreColor }}>
+              DNA {score}/100
+            </div>
+          </div>
+        </div>
+
+        {/* Action Strip Banner */}
+        {activeTab === "success" && cls.hasPivot && (
+          <>
+            {cls.isGoodToBuy && (
+              <div className="sc-action-banner buy">
+                <span>🟢 Good to Buy: {cls.diffPct >= 0 ? `+${cls.diffPct.toFixed(1)}%` : `${cls.diffPct.toFixed(1)}%`} from Breakout (₹{cls.brk.toFixed(1)})</span>
+                {cls.targetGainPct !== null && (
+                  <span style={{ opacity: 0.9 }}>Target ₹{cls.tgt.toFixed(0)} (+{cls.targetGainPct.toFixed(1)}%)</span>
+                )}
+              </div>
+            )}
+            {cls.isMissed && (
+              <div className="sc-action-banner missed">
+                <span>🛑 Missed: +{cls.diffAbs.toFixed(1)}% extended past Breakout (₹{cls.brk.toFixed(1)})</span>
+                <span style={{ opacity: 0.85 }}>High Chase Risk</span>
+              </div>
+            )}
+            {cls.isSkip && (
+              <div className="sc-action-banner skip">
+                <span>⏭️ Skip: Low upside left ({cls.targetGainPct !== null ? `+${cls.targetGainPct.toFixed(1)}%` : "0%"} to Target)</span>
+                <span style={{ opacity: 0.85 }}>Poor R:R</span>
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === "near_breakout" && cls.hasPivot && (
+          <div className="sc-action-banner near">
+            <span>🎯 Ready to Buy at ₹{cls.brk.toFixed(1)}</span>
+            <span>(just {cls.diffAbs.toFixed(2)}% left for confirmation)</span>
+          </div>
+        )}
+
+        {activeTab === "retest" && (
+          <div className="sc-action-banner near">
+            <span>🔄 Pivot Retest Zone: Holding breakout level at ₹{cls.brk.toFixed(1)}</span>
+          </div>
+        )}
+
+        {activeTab === "failed" && (
+          <div className="sc-action-banner missed">
+            <span>⚠️ At Risk / Breakdown: Capital Protection Advised</span>
+          </div>
+        )}
+
+        {/* 4-Column Key Metrics Row */}
+        <div className="sc-metrics-row">
+          <div className="sc-m-col">
+            <span className="sc-m-lbl">Breakout</span>
+            <span className="sc-m-val">{s.breakout_level ? `₹${Number(s.breakout_level).toFixed(1)}` : "—"}</span>
+          </div>
+          <div className="sc-m-col">
+            <span className="sc-m-lbl">RSI (14)</span>
+            <span className="sc-m-val" style={{ color: s.rsi > 70 ? "var(--loss)" : s.rsi < 35 ? "var(--profit)" : "var(--ink1)" }}>
+              {s.rsi !== null && s.rsi !== undefined ? Number(s.rsi).toFixed(1) : "—"}
+            </span>
+          </div>
+          <div className="sc-m-col">
+            <span className="sc-m-lbl">ROCE</span>
+            <span className="sc-m-val">{s.roce_pct !== null && s.roce_pct !== undefined ? `${Number(s.roce_pct).toFixed(1)}%` : "—"}</span>
+          </div>
+          <div className="sc-m-col">
+            <span className="sc-m-lbl">P/E</span>
+            <span className="sc-m-val">{s.pe_ratio !== null && s.pe_ratio !== undefined ? Number(s.pe_ratio).toFixed(1) : "—"}</span>
+          </div>
         </div>
       </div>
+    );
+  };
 
-      {/* ─── PRIMARY TABS (Near Breakout / Success / Failed) ─── */}
-      <div
-        style={{
-          display: "flex",
-          gap: 6,
-          overflowX: "auto",
-          paddingBottom: 4,
-          marginBottom: 12,
-          scrollbarWidth: "none"
-        }}
-      >
+  return (
+    <div className="screener-screen-root" style={{ padding: "8px 6px 36px", width: "100%", maxWidth: "100%", margin: "0" }}>
+      {/* ─── 1. REFINED COMPACT HERO BANNER ─── */}
+      <div className="sc-hero">
+        <div className="sc-hero-badge">
+          <span>⚡</span>
+          <span>QuantSync Screener</span>
+        </div>
+        <h1 className="sc-hero-title">
+          Pattern & Breakout Intelligence
+        </h1>
+        <p className="sc-hero-sub">
+          Institutional chart pattern setups across NSE equities · Updated {scanDate || "Daily"}
+        </p>
+      </div>
+
+      {/* ─── 2. PRIMARY SCREENER TABS ─── */}
+      <div className="sc-tabs-bar">
         <button
           onClick={() => setActiveTab("near_breakout")}
-          style={{
-            padding: "8px 14px",
-            borderRadius: 10,
-            border: "1px solid",
-            borderColor: activeTab === "near_breakout" ? "#F59E0B" : "var(--line-2)",
-            background: activeTab === "near_breakout" ? "rgba(245,158,11,0.18)" : "var(--s2)",
-            color: activeTab === "near_breakout" ? "#F59E0B" : "var(--ink3)",
-            fontWeight: 700,
-            fontSize: 12,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            whiteSpace: "nowrap"
-          }}
+          className={`sc-tab-btn near ${activeTab === "near_breakout" ? "active" : ""}`}
         >
           <span>🎯 Near Breakout</span>
-          <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 10, background: "rgba(245,158,11,0.2)" }}>
+          <span className="sc-tab-count">
             {breakouts.near_breakout.length}
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab("success")}
-          style={{
-            padding: "8px 14px",
-            borderRadius: 10,
-            border: "1px solid",
-            borderColor: activeTab === "success" ? "var(--profit)" : "var(--line-2)",
-            background: activeTab === "success" ? "rgba(16,185,129,0.18)" : "var(--s2)",
-            color: activeTab === "success" ? "var(--profit)" : "var(--ink3)",
-            fontWeight: 700,
-            fontSize: 12,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            whiteSpace: "nowrap"
-          }}
+          className={`sc-tab-btn success ${activeTab === "success" ? "active" : ""}`}
         >
           <span>🚀 Breakout Confirmed</span>
-          <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 10, background: "rgba(16,185,129,0.2)" }}>
+          <span className="sc-tab-count">
             {breakouts.success.length}
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab("retest")}
-          style={{
-            padding: "8px 14px",
-            borderRadius: 10,
-            border: "1px solid",
-            borderColor: activeTab === "retest" ? "#06B6D4" : "var(--line-2)",
-            background: activeTab === "retest" ? "rgba(6,182,212,0.18)" : "var(--s2)",
-            color: activeTab === "retest" ? "#06B6D4" : "var(--ink3)",
-            fontWeight: 700,
-            fontSize: 12,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            whiteSpace: "nowrap"
-          }}
+          className={`sc-tab-btn retest ${activeTab === "retest" ? "active" : ""}`}
         >
           <span>🔄 Pivot Retest</span>
-          <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 10, background: "rgba(6,182,212,0.2)" }}>
+          <span className="sc-tab-count">
             {(breakouts.retest || []).length}
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab("failed")}
-          style={{
-            padding: "8px 14px",
-            borderRadius: 10,
-            border: "1px solid",
-            borderColor: activeTab === "failed" ? "var(--loss)" : "var(--line-2)",
-            background: activeTab === "failed" ? "rgba(239,68,68,0.18)" : "var(--s2)",
-            color: activeTab === "failed" ? "var(--loss)" : "var(--ink3)",
-            fontWeight: 700,
-            fontSize: 12,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            whiteSpace: "nowrap"
-          }}
+          className={`sc-tab-btn failed ${activeTab === "failed" ? "active" : ""}`}
         >
           <span>⚠️ At Risk</span>
-          <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 10, background: "rgba(239,68,68,0.2)" }}>
-            {(breakouts.failed || []).length || (summary?.breakout_statuses?.FAILED || 0)}
+          <span className="sc-tab-count">
+            {(breakouts.failed || []).length}
           </span>
         </button>
       </div>
 
-      {/* ─── PATTERN EXPLORER & SEARCH BAR ─── */}
+      {/* ─── 3. ACTION STATUS FILTER BAR (BUY / MISSED / SKIP) ─── */}
+      {activeTab === "success" && (
+        <div className="sc-action-filter-bar">
+          <button
+            onClick={() => setActionFilter("ALL")}
+            className={`sc-filter-chip all ${actionFilter === "ALL" ? "active" : ""}`}
+          >
+            All Setups ({stocks.length})
+          </button>
+          <button
+            onClick={() => setActionFilter("BUY")}
+            className={`sc-filter-chip buy ${actionFilter === "BUY" ? "active" : ""}`}
+          >
+            🟢 Good to Buy ({buyCount})
+          </button>
+          <button
+            onClick={() => setActionFilter("MISSED")}
+            className={`sc-filter-chip missed ${actionFilter === "MISSED" ? "active" : ""}`}
+          >
+            🛑 Missed ({missedCount})
+          </button>
+          <button
+            onClick={() => setActionFilter("SKIP")}
+            className={`sc-filter-chip skip ${actionFilter === "SKIP" ? "active" : ""}`}
+          >
+            ⏭️ Skip ({skipCount})
+          </button>
+        </div>
+      )}
+
+      {/* Proximity Filter for Near Breakout */}
+      {activeTab === "near_breakout" && (
+        <div className="sc-action-filter-bar">
+          <button
+            onClick={() => setNearFilter("ALL")}
+            className={`sc-filter-chip all ${nearFilter === "ALL" ? "active" : ""}`}
+          >
+            All Radar ({stocks.length})
+          </button>
+          <button
+            onClick={() => setNearFilter("HOT")}
+            className={`sc-filter-chip buy ${nearFilter === "HOT" ? "active" : ""}`}
+          >
+            🎯 &lt; 1% to Trigger
+          </button>
+          <button
+            onClick={() => setNearFilter("MID")}
+            className={`sc-filter-chip skip ${nearFilter === "MID" ? "active" : ""}`}
+          >
+            ⚡ 1% – 3% Trigger
+          </button>
+          <button
+            onClick={() => setNearFilter("FAR")}
+            className={`sc-filter-chip missed ${nearFilter === "FAR" ? "active" : ""}`}
+          >
+            📏 3% – 5% Trigger
+          </button>
+        </div>
+      )}
+
+      {/* ─── 4. SEARCH & PATTERN BASE CHIPS ─── */}
       <div
         className="card"
         style={{
-          padding: "12px 14px",
-          marginBottom: 14,
+          padding: "10px 12px",
+          marginBottom: 12,
           display: "flex",
           flexDirection: "column",
-          gap: 12
+          gap: 10
         }}
       >
         {/* Search input */}
         <div style={{ position: "relative" }}>
           <input
             type="text"
-            placeholder="Search stock ticker or company name..."
+            placeholder="Search stock ticker or pattern..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
               width: "100%",
               boxSizing: "border-box",
-              padding: "9px 12px 9px 36px",
-              borderRadius: 10,
+              padding: "8px 12px 8px 34px",
+              borderRadius: 9,
               border: "1px solid var(--line-2)",
               background: "var(--s2)",
               color: "var(--ink1)",
-              fontSize: 12.5,
+              fontSize: 12,
               outline: "none"
             }}
           />
-          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", opacity: 0.5, fontSize: 14 }}>
+          <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", opacity: 0.5, fontSize: 13 }}>
             🔍
           </span>
           {searchQuery && (
@@ -365,7 +540,8 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
                 background: "transparent",
                 border: "none",
                 color: "var(--ink3)",
-                cursor: "pointer"
+                cursor: "pointer",
+                padding: "2px 6px"
               }}
             >
               ✕
@@ -373,10 +549,10 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
           )}
         </div>
 
-        {/* Pattern Name Explorer Pills */}
+        {/* Pattern Explorer Base Chips */}
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <span style={{ fontSize: 9.5, fontWeight: 700, color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
               Explore Chart Patterns & Bases
             </span>
             {selectedPattern !== "ALL" && (
@@ -386,13 +562,13 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
                   background: "transparent",
                   border: "none",
                   color: "var(--accent)",
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: 700,
                   cursor: "pointer",
                   padding: 0
                 }}
               >
-                Clear Pattern Filter
+                Clear Filter
               </button>
             )}
           </div>
@@ -400,9 +576,9 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
           <div
             style={{
               display: "flex",
-              gap: 6,
+              gap: 5,
               overflowX: "auto",
-              paddingBottom: 4,
+              paddingBottom: 2,
               scrollbarWidth: "none"
             }}
           >
@@ -413,23 +589,23 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
                   key={cat.id}
                   onClick={() => setSelectedPattern(cat.id)}
                   style={{
-                    padding: "7px 12px",
+                    padding: "5px 10px",
                     borderRadius: 999,
                     border: "1px solid",
                     borderColor: isSelected ? "var(--accent)" : "var(--line-2)",
                     background: isSelected ? "color-mix(in srgb, var(--accent) 20%, transparent)" : "var(--s2)",
                     color: isSelected ? "var(--ink1)" : "var(--ink3)",
-                    fontSize: 11.5,
+                    fontSize: 11,
                     fontWeight: isSelected ? 800 : 600,
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
-                    gap: 6,
+                    gap: 5,
                     whiteSpace: "nowrap",
                     transition: "all 0.15s ease"
                   }}
                 >
-                  <span style={{ fontSize: 13 }}>{cat.icon}</span>
+                  <span style={{ fontSize: 12 }}>{cat.icon}</span>
                   <span>{cat.label}</span>
                 </button>
               );
@@ -438,288 +614,110 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
         </div>
       </div>
 
-      {/* ─── STOCK CARDS LIST ─── */}
+      {/* ─── 5. TIMELINE STOCK LIST ─── */}
       {loading ? (
         <div style={{ textAlign: "center", padding: "40px 0", color: "var(--ink3)" }}>
           <div
             style={{
-              width: 32,
-              height: 32,
+              width: 28,
+              height: 28,
               borderRadius: "50%",
-              border: "3px solid var(--line-2)",
+              border: "2.5px solid var(--line-2)",
               borderTopColor: "var(--accent)",
               animation: "spin 0.8s linear infinite",
-              margin: "0 auto 12px"
+              margin: "0 auto 10px"
             }}
           />
-          <div style={{ fontSize: 12, fontWeight: 600 }}>Filtering Institutional Screener Universe...</div>
+          <div style={{ fontSize: 11.5, fontWeight: 600 }}>Filtering Pattern Setups...</div>
         </div>
-      ) : stocks.length === 0 ? (
-        <div className="card" style={{ textAlign: "center", padding: "36px 16px" }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink1)" }}>No Actionable Entry Setups Found</div>
-          <div style={{ fontSize: 11.5, color: "var(--ink3)", marginTop: 4 }}>
-            Try selecting "All Setups" or clearing the pattern filter to see more stocks.
-          </div>
+      ) : activeTab === "success" ? (
+        /* ─── BREAKOUT CONFIRMED TIMELINE VIEW ─── */
+        <div>
+          {timelineGroups.length === 0 && olderSetups.length === 0 ? (
+            <div className="card" style={{ textAlign: "center", padding: "36px 16px", borderRadius: 16 }}>
+              <div style={{ fontSize: 30, marginBottom: 8 }}>🔍</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink1)" }}>No Matching Breakouts Found</div>
+              <div style={{ fontSize: 11, color: "var(--ink3)", marginTop: 4 }}>
+                Try selecting "All Setups" or clearing the status filter.
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Daily Timeline Groups (within 1 week, latest day first) */}
+              {timelineGroups.map((group) => (
+                <div key={group.dateKey} style={{ marginBottom: 12 }}>
+                  <div className="sc-timeline-header">
+                    <div className="sc-timeline-title">
+                      <span className="sc-timeline-dot" />
+                      <span>{group.label}</span>
+                    </div>
+                    <span className="sc-timeline-badge">
+                      {group.stocks.length} setup{group.stocks.length === 1 ? "" : "s"}
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    {group.stocks.map((s, idx) => renderStockCard(s, idx))}
+                  </div>
+                </div>
+              ))}
+
+              {/* 1 Week Ago & Older Collapsible Section */}
+              {olderSetups.length > 0 && (
+                <div style={{ marginTop: 8 }}>
+                  <button
+                    className="sc-older-toggle"
+                    onClick={() => setExpandedOlder((prev) => !prev)}
+                  >
+                    <span>📅 1 Week Ago & Older ({olderSetups.length} Setups)</span>
+                    <span style={{ fontSize: 11, color: "var(--accent)" }}>
+                      {expandedOlder ? "Collapse ▴" : "Show All ▾"}
+                    </span>
+                  </button>
+
+                  {expandedOlder && (
+                    <div style={{ display: "flex", flexDirection: "column", marginTop: 8 }}>
+                      {olderSetups.map((s, idx) => renderStockCard(s, idx + 100))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      ) : activeTab === "near_breakout" ? (
+        /* ─── NEAR BREAKOUT PROXIMITY VIEW ─── */
+        <div>
+          {nearBreakoutFiltered.length === 0 ? (
+            <div className="card" style={{ textAlign: "center", padding: "36px 16px", borderRadius: 16 }}>
+              <div style={{ fontSize: 30, marginBottom: 8 }}>🎯</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink1)" }}>No Setups In Selected Trigger Zone</div>
+              <div style={{ fontSize: 11, color: "var(--ink3)", marginTop: 4 }}>
+                Try switching to "All Radar" to see all stocks approaching breakout.
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {nearBreakoutFiltered.map((s, idx) => renderStockCard(s, idx))}
+            </div>
+          )}
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {stocks.map((s, idx) => {
-            const hasPivot = s.breakout_level && Number(s.breakout_level) > 0;
-            const cmp = Number(s.curr_price || 0);
-            const brk = Number(s.breakout_level || 0);
-            const tgt = Number(s.target_1 || 0);
-            const diffPct = hasPivot ? ((cmp - brk) / brk * 100) : 0;
-            const diffAbs = Math.abs(diffPct);
-            const targetGainPct = (tgt > 0 && cmp > 0) ? ((tgt - cmp) / cmp * 100) : null;
-
-            const isBearishOrAvoid = s.stance === "BEARISH" || (s.action && s.action.includes("AVOID")) || (s.dna_score !== undefined && s.dna_score !== null && s.dna_score < 50);
-            const isNear = !isBearishOrAvoid && (s.pattern_stage === "NEAR_BREAKOUT" || (hasPivot && cmp < brk && diffAbs <= 5.0));
-            const isSuccess = s.breakout_status === "SUCCESS";
-            const isFailed = s.breakout_status === "FAILED";
-            const score = s.dna_score || 50;
-            const scoreColor = score >= 75 ? "var(--profit)" : score >= 50 ? "#F59E0B" : "var(--loss)";
-
-            const isMissed = diffAbs > 5.0;
-            const isSkip = !isMissed && targetGainPct !== null && targetGainPct < 5.0;
-            const isGoodToBuy = !isMissed && !isSkip;
-
-            const daysSince = s.days_since_breakout !== null && s.days_since_breakout !== undefined ? Number(s.days_since_breakout) : null;
-            const daysLabel = daysSince === 0 ? "🔥 Today (Day 0)" : daysSince === 1 ? "⚡ 1d ago" : daysSince !== null ? `⚡ ${daysSince}d ago` : "";
-
-            return (
-              <div
-                key={s.symbol || idx}
-                onClick={() => handleStockClick(s)}
-                className="card"
-                style={{
-                  padding: "14px 16px",
-                  cursor: "pointer",
-                  transition: "transform 0.18s ease, border-color 0.2s ease",
-                  borderLeft: isSuccess
-                    ? (isMissed ? "3px solid var(--loss)" : isSkip ? "3px solid #F59E0B" : "3px solid var(--profit)")
-                    : isNear
-                    ? "3px solid var(--accent)"
-                    : isFailed
-                    ? "3px solid var(--loss)"
-                    : "1px solid var(--line)"
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = "translateX(3px)")}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = "none")}
-              >
-                {/* Top Row: Symbol, Pattern Tag, Price */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 16, fontWeight: 800, fontFamily: "var(--font-mono, monospace)", color: "var(--ink1)" }}>
-                        {s.symbol}
-                      </span>
-                      {s.pattern_type && (
-                        <span
-                          style={{
-                            fontSize: 10.5,
-                            fontWeight: 700,
-                            padding: "2px 8px",
-                            borderRadius: 6,
-                            background: "color-mix(in srgb, var(--accent) 15%, transparent)",
-                            border: "1px solid color-mix(in srgb, var(--accent) 30%, transparent)",
-                            color: "var(--accent)"
-                          }}
-                        >
-                          📐 {s.pattern_type}
-                        </span>
-                      )}
-                      {s.mcap_tier && (
-                        <span style={{ fontSize: 9.5, padding: "2px 6px", borderRadius: 4, background: "var(--s2)", color: "var(--ink3)", fontWeight: 600 }}>
-                          {s.mcap_tier}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--ink3)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {s.company_name || s.sector || "—"}
-                    </div>
-                  </div>
-
-                  {/* Price & DNA Score */}
-                  <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, fontFamily: "var(--font-mono, monospace)", color: "var(--ink1)" }}>
-                      ₹{Number(s.curr_price || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                    </div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: scoreColor, marginTop: 2 }}>
-                      DNA Score: {score}/100
-                    </div>
-                  </div>
-                </div>
-
-                {/* Breakout Confirmed Banners */}
-                {isSuccess && hasPivot && isGoodToBuy && (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      flexWrap: "wrap",
-                      gap: 6,
-                      padding: "6px 10px",
-                      borderRadius: 8,
-                      background: "rgba(16,185,129,0.12)",
-                      border: "1px solid rgba(16,185,129,0.25)",
-                      marginTop: 10
-                    }}
-                  >
-                    <span style={{ fontSize: 11.5, fontWeight: 800, color: "var(--profit)", display: "flex", alignItems: "center", gap: 5 }}>
-                      <span>🟢</span>
-                      <span>Good to Buy : {diffPct >= 0 ? `+${diffPct.toFixed(1)}%` : `${diffPct.toFixed(1)}%`} from Breakout (₹{brk.toFixed(1)})</span>
-                    </span>
-                    {daysLabel && (
-                      <span style={{ fontSize: 10, fontWeight: 700, color: "var(--ink2)", background: "rgba(255,255,255,0.06)", padding: "1px 6px", borderRadius: 4 }}>
-                        {daysLabel}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {isSuccess && hasPivot && isSkip && (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      flexWrap: "wrap",
-                      gap: 6,
-                      padding: "6px 10px",
-                      borderRadius: 8,
-                      background: "rgba(245,158,11,0.12)",
-                      border: "1px solid rgba(245,158,11,0.25)",
-                      marginTop: 10
-                    }}
-                  >
-                    <span style={{ fontSize: 11.5, fontWeight: 800, color: "#F59E0B", display: "flex", alignItems: "center", gap: 5 }}>
-                      <span>⏭️</span>
-                      <span>SKIPP : {targetGainPct !== null ? `${targetGainPct.toFixed(1)}%` : "0%"} left in target</span>
-                    </span>
-                    {daysLabel && (
-                      <span style={{ fontSize: 10, fontWeight: 700, color: "var(--ink2)", background: "rgba(255,255,255,0.06)", padding: "1px 6px", borderRadius: 4 }}>
-                        {daysLabel}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {isSuccess && hasPivot && isMissed && (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      flexWrap: "wrap",
-                      gap: 6,
-                      padding: "6px 10px",
-                      borderRadius: 8,
-                      background: "rgba(239,68,68,0.12)",
-                      border: "1px solid rgba(239,68,68,0.25)",
-                      marginTop: 10
-                    }}
-                  >
-                    <span style={{ fontSize: 11.5, fontWeight: 800, color: "var(--loss)", display: "flex", alignItems: "center", gap: 5 }}>
-                      <span>🛑</span>
-                      <span>MISSED : {diffPct >= 0 ? `+${diffPct.toFixed(1)}%` : `${diffPct.toFixed(1)}%`} from Breakout (₹{brk.toFixed(1)})</span>
-                    </span>
-                    {daysLabel && (
-                      <span style={{ fontSize: 10, fontWeight: 700, color: "var(--ink2)", background: "rgba(255,255,255,0.06)", padding: "1px 6px", borderRadius: 4 }}>
-                        {daysLabel}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Near Breakout Banner */}
-                {isNear && hasPivot && !isSuccess && (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      flexWrap: "wrap",
-                      gap: 6,
-                      padding: "6px 10px",
-                      borderRadius: 8,
-                      background: "rgba(59,130,246,0.12)",
-                      border: "1px solid rgba(59,130,246,0.25)",
-                      marginTop: 10
-                    }}
-                  >
-                    <span style={{ fontSize: 11.5, fontWeight: 800, color: "var(--accent)", display: "flex", alignItems: "center", gap: 5 }}>
-                      <span>🎯</span>
-                      <span>Ready to Buy at ₹{brk.toFixed(1)}</span>
-                    </span>
-                    <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--ink2)", background: "rgba(255,255,255,0.06)", padding: "1px 6px", borderRadius: 4 }}>
-                      (just {diffAbs.toFixed(2)}% left for confirmation)
-                    </span>
-                  </div>
-                )}
-
-                {/* Bearish or Avoid Warning Banner */}
-                {isBearishOrAvoid && (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      flexWrap: "wrap",
-                      gap: 6,
-                      padding: "6px 10px",
-                      borderRadius: 8,
-                      background: "rgba(239,68,68,0.08)",
-                      border: "1px solid rgba(239,68,68,0.2)",
-                      marginTop: 10
-                    }}
-                  >
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--loss)", display: "flex", alignItems: "center", gap: 5 }}>
-                      <span>⚠️</span>
-                      <span>Downtrend / Avoid Setup · Capital Protection Active</span>
-                    </span>
-                  </div>
-                )}
-
-                {/* Bottom Row: Key Metrics Grid */}
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4, 1fr)",
-                    gap: 6,
-                    marginTop: 10,
-                    fontSize: 10
-                  }}
-                >
-                  <div>
-                    <span style={{ color: "var(--ink3)" }}>Breakout: </span>
-                    <b style={{ fontFamily: "var(--font-mono, monospace)", color: "var(--ink1)" }}>
-                      {s.breakout_level ? `₹${Number(s.breakout_level).toFixed(1)}` : "—"}
-                    </b>
-                  </div>
-                  <div>
-                    <span style={{ color: "var(--ink3)" }}>RSI (14): </span>
-                    <b style={{ fontFamily: "var(--font-mono, monospace)", color: s.rsi > 70 ? "var(--loss)" : s.rsi < 35 ? "var(--profit)" : "var(--ink1)" }}>
-                      {s.rsi !== null && s.rsi !== undefined ? Number(s.rsi).toFixed(1) : "—"}
-                    </b>
-                  </div>
-                  <div>
-                    <span style={{ color: "var(--ink3)" }}>ROCE: </span>
-                    <b style={{ fontFamily: "var(--font-mono, monospace)", color: "var(--ink1)" }}>
-                      {s.roce_pct !== null && s.roce_pct !== undefined ? `${Number(s.roce_pct).toFixed(1)}%` : "—"}
-                    </b>
-                  </div>
-                  <div>
-                    <span style={{ color: "var(--ink3)" }}>P/E: </span>
-                    <b style={{ fontFamily: "var(--font-mono, monospace)", color: "var(--ink1)" }}>
-                      {s.pe_ratio !== null && s.pe_ratio !== undefined ? Number(s.pe_ratio).toFixed(1) : "—"}
-                    </b>
-                  </div>
-                </div>
+        /* ─── OTHER TABS (RETEST, FAILED) ─── */
+        <div>
+          {stocks.length === 0 ? (
+            <div className="card" style={{ textAlign: "center", padding: "36px 16px", borderRadius: 16 }}>
+              <div style={{ fontSize: 30, marginBottom: 8 }}>🔍</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink1)" }}>No Setups Found</div>
+              <div style={{ fontSize: 11, color: "var(--ink3)", marginTop: 4 }}>
+                No active signals under this filter.
               </div>
-            );
-          })}
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {stocks.map((s, idx) => renderStockCard(s, idx))}
+            </div>
+          )}
         </div>
       )}
     </div>
