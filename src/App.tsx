@@ -24,6 +24,7 @@ import InstitutionalPatternChart from "./components/charts/InstitutionalPatternC
 import TradingViewStockDetail from "./components/TradingViewStockDetail";
 import StockDNAScreen from "./components/StockDNAScreen";
 import ScreenerScreen from "./components/ScreenerScreen";
+import { useLiveMarket } from "./services/liveMarketSocket";
 
 /* ============================================================
    FORMATTERS & HELPERS
@@ -1383,6 +1384,21 @@ export default function App() {
 
   // Live Chart state
   const [liveChartData, setLiveChartData] = useState<ChartData | null>(null);
+
+  // ── Real-Time WebSocket Market Stream (Every 1s) ──
+  const { isConnected: isWsConnected, indices: wsIndices, livePrices } = useLiveMarket();
+
+  // Keep terminalIndices (Nifty 50, Sensex, Bank Nifty) synced live every second
+  useEffect(() => {
+    if (wsIndices && wsIndices.length >= 3) {
+      setTerminalIndices((prev) => {
+        return wsIndices.map((idx, i) => ({
+          ...idx,
+          spark: (idx.spark && idx.spark.length > 0) ? idx.spark : (prev[i]?.spark || [])
+        }));
+      });
+    }
+  }, [wsIndices]);
   const [chartSymbol, setChartSymbol] = useState<string>("UNITEDPOLY");
   const [overlayToggles, setOverlayToggles] = useState<Record<string, boolean>>({
     fib: true,
@@ -1973,7 +1989,12 @@ export default function App() {
     : ((terminalData?.inTradeTrades && terminalData.inTradeTrades.length > 0)
       ? terminalData.inTradeTrades
       : DEMO_DATA[engine].active);
-  const activeTrades = rawActive.map((t: any, idx: number) => normalizeActiveTrade(t, idx, engine));
+  const activeTrades = rawActive.map((t: any, idx: number) => {
+    const sym = (t.symbol || t.title || t.sym || "").toUpperCase().trim();
+    const live = livePrices && sym ? livePrices[sym] : undefined;
+    const tradeData = live && live.price > 0 ? { ...t, currentPrice: live.price, price: live.price, ltp: live.price, now: live.price } : t;
+    return normalizeActiveTrade(tradeData, idx, engine);
+  });
 
   const rawClosed = (terminalData?.closed && terminalData.closed.length > 0)
     ? terminalData.closed
@@ -2165,6 +2186,29 @@ export default function App() {
       });
     }
   }, [allInTradeTrades]);
+
+  // Synchronize WebSocket live prices directly into manual portfolio holdings
+  useEffect(() => {
+    if (!livePrices || Object.keys(livePrices).length === 0 || portfolio.length === 0) return;
+    setPortfolio((prev) => {
+      let changed = false;
+      const updated = prev.map((p) => {
+        const sym = (p.symbol || "").toUpperCase().trim();
+        const live = livePrices[sym];
+        if (live && live.price > 0 && live.price !== p.currentPrice) {
+          changed = true;
+          const newRoi = p.buyPrice > 0 ? ((live.price - p.buyPrice) / p.buyPrice) * 100 : 0;
+          return {
+            ...p,
+            currentPrice: live.price,
+            currentROI: newRoi
+          };
+        }
+        return p;
+      });
+      return changed ? updated : prev;
+    });
+  }, [livePrices]);
 
   // Buy submission handler (Cloud synced via Firestore)
   const handleBuySubmit = (data: { symbol: string; buyPrice: number; quantity: number; strategyName?: string; currentPrice?: number }) => {
@@ -2544,6 +2588,11 @@ export default function App() {
                 </span>
                 <span className="dot" />
                 <span>Mumbai · IST</span>
+                <span className="dot" />
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: isWsConnected ? "var(--profit)" : "var(--ink3)", fontWeight: 700, fontSize: 10 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: isWsConnected ? "var(--profit)" : "var(--ink3)", boxShadow: isWsConnected ? "0 0 6px var(--profit)" : "none" }} />
+                  {isWsConnected ? "LIVE" : "SYNCING"}
+                </span>
               </div>
 
               {/* SNAPSHOT */}
@@ -4028,6 +4077,7 @@ export default function App() {
         <section className={`screen ${activeTab === "screener" ? "active" : ""}`} id="screen-screener">
           <ScreenerScreen
             theme={theme}
+            livePrices={livePrices}
             onSelectStock={(sym, fullData) => {
               // Open dedicated Stock Detail view with full audited screener row metrics
               openSheet("screener_detail", fullData || { symbol: sym, sym });

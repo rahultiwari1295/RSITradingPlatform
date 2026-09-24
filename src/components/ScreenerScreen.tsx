@@ -3,6 +3,7 @@ import { quantsyncApi } from "../api/quantsyncApi";
 
 interface ScreenerScreenProps {
   theme?: "dark" | "light";
+  livePrices?: Record<string, { price: number; change_pct?: number }>;
   onSelectStock?: (symbol: string, stockData?: any) => void;
 }
 
@@ -223,7 +224,7 @@ function matchesMcap(s: any, filter: string) {
   return true;
 }
 
-export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenProps) {
+export default function ScreenerScreen({ theme, livePrices, onSelectStock }: ScreenerScreenProps) {
   // 1. Two-way primary switch: "near_breakout" vs "success" (Confirmed Breakout)
   const [activeTab, setActiveTab] = useState<"near_breakout" | "success">("near_breakout");
   const [selectedPattern, setSelectedPattern] = useState<string>("ALL");
@@ -505,11 +506,15 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
   };
 
   const renderStockCard = (s: any, idx: number) => {
-    const cls = getBreakoutClassification(s);
+    const sym = s.symbol || "";
+    const liveItem = livePrices && sym ? livePrices[sym.toUpperCase()] : undefined;
+    const currentPrice = liveItem ? liveItem.price : Number(s.curr_price || 0);
+    const stockWithLive = liveItem ? { ...s, curr_price: currentPrice } : s;
+
+    const cls = getBreakoutClassification(stockWithLive);
     const score = s.dna_score || 50;
     const scoreColor = score >= 75 ? "var(--profit)" : score >= 50 ? "#F59E0B" : "var(--loss)";
     const avatarGrad = AVATAR_GRADS[idx % AVATAR_GRADS.length];
-    const sym = s.symbol || "";
 
     const borderCls = activeTab === "success"
       ? (cls.isGoodToBuy ? "border-buy" : cls.isMissed ? "border-missed" : "border-skip")
@@ -518,7 +523,7 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
     return (
       <div
         key={sym || idx}
-        onClick={() => handleStockClick(s)}
+        onClick={() => handleStockClick(stockWithLive)}
         className={`sc-card ${borderCls}`}
       >
         {/* Top Row: Monogram, Symbol, Pattern Pill, Price, DNA Score */}
@@ -546,8 +551,8 @@ export default function ScreenerScreen({ theme, onSelectStock }: ScreenerScreenP
           </div>
 
           <div className="sc-card-right">
-            <div className="sc-cmp">
-              ₹{Number(s.curr_price || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+            <div className={`sc-cmp ${liveItem ? "live-tick" : ""}`}>
+              ₹{Number(currentPrice || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="sc-dna-badge" style={{ color: scoreColor }}>
               DNA {score}/100
