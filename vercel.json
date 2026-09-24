@@ -53,6 +53,18 @@
       "destination": "/dna-mobile-story.html"
     },
     {
+      "source": "/screener",
+      "destination": "/screener.html"
+    },
+    {
+      "source": "/stock-detail",
+      "destination": "/stock-detail.html"
+    },
+    {
+      "source": "/stock/:symbol",
+      "destination": "/stock-detail.html?symbol=:symbol"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }

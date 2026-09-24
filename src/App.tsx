@@ -1301,7 +1301,7 @@ export default function App() {
 
   // Bottom Sheet state
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [sheetPayload, setSheetPayload] = useState<{ kind: "v2" | "v3" | "closed"; trade: any } | null>(null);
+  const [sheetPayload, setSheetPayload] = useState<{ kind: "v2" | "v3" | "closed" | "screener_detail"; trade: any } | null>(null);
 
   // Live Data States
   const [terminalData, setTerminalData] = useState<TerminalSnapshot | null>(null);
@@ -3639,7 +3639,7 @@ export default function App() {
               onOpenSellModal={(trade) => setSellModalItem(trade)}
               onOpenChart={(sym) => {
                 const cleanSym = String(sym).replace(/^(BSE:|NSE:)/i, "").trim().toUpperCase();
-                window.open(`https://www.tradingview.com/chart/qvyqZrhQ/?symbol=BSE:${cleanSym}`, "_blank");
+                window.open(`https://www.tradingview.com/chart/qvyqZrhQ/?symbol=NSE:${cleanSym}`, "_blank");
               }}
               onDeleteCompletedTrade={handleDeleteCompletedTrade}
               onDeleteTrade={(tradeId) => {

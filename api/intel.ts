@@ -21,6 +21,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     targetPath = `/api/intel/news?limit=${limit}${stock ? `&stock=${encodeURIComponent(stock)}` : ''}`;
   } else if (type === 'stats') {
     targetPath = `/api/intel/stats`;
+  } else if (type === 'movers') {
+    targetPath = `/api/intel/movers`;
+  } else if (type === 'day-reports' || type === 'day_reports') {
+    targetPath = `/api/intel/day-reports?limit=${limit}`;
+  } else if (type === 'pulse' || type === 'market-pulse') {
+    targetPath = `/api/intel/pulse`;
+  } else if (type === 'digest') {
+    const engine = (req.query.engine as string) || 'v2';
+    targetPath = `/api/intel/digest?version=${engine}`;
   }
 
   try {

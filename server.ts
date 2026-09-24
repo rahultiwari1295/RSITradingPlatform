@@ -355,13 +355,14 @@ async function startServer() {
 
       if (!vpsRes || !vpsRes.ok) {
         vpsUrl = `https://quantsync-api.duckdns.org:8443${reqPath}${queryStr}`;
+        const timeoutMs = reqPath.includes("/dna/") || reqPath.includes("/screener") || reqPath.includes("/chart") ? 15000 : 8000;
         vpsRes = await fetch(vpsUrl, {
           method: req.method,
           headers: { "Accept": "application/json" },
-          signal: AbortSignal.timeout(6000),
+          signal: AbortSignal.timeout(timeoutMs),
         }).catch(() => null);
       }
-      if (vpsRes.ok) {
+      if (vpsRes && vpsRes.ok) {
         let data = await vpsRes.json();
         if (transform) data = transform(data);
         return res.status(vpsRes.status).json(data);
@@ -372,7 +373,7 @@ async function startServer() {
         if (transform) data = transform(data);
         return res.json(data);
       }
-      return res.status(vpsRes.status).json({ error: `VPS returned ${vpsRes.status}` });
+      return res.status(vpsRes ? vpsRes.status : 502).json({ error: `VPS returned ${vpsRes ? vpsRes.status : 'timeout'}` });
     } catch (err: any) {
       console.error(`VPS forwarding error for ${reqPath}:`, err.message);
       if (fallbackData !== undefined) {
@@ -414,11 +415,6 @@ async function startServer() {
     const eng = isV3 ? "v3" : (((req.query.engine as string) || (req.query.version as string) || "v2").toLowerCase());
 
     const localData = getLocalEngineSnapshot(eng);
-
-    // If V3 is requested, immediately serve the 2026 populated local dataset for instant load
-    if (isV3 && localData) {
-      return res.json(localData);
-    }
 
     try {
       const queryStr = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
@@ -1374,6 +1370,11 @@ async function startServer() {
       portfolio: [], // Sending an empty portfolio array as a placeholder
       message: `Fetched portfolio data for ${username}`
     });
+  });
+
+  // Wildcard API Forwarder for any unhandled /api/* endpoints directly to QuantSync VPS
+  app.all("/api/*", async (req, res) => {
+    return forwardToVps(req.path, req, res);
   });
 
   // Vite integration middleware context
