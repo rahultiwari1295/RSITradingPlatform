@@ -1483,12 +1483,9 @@ export default function App() {
   const fetchAllData = useCallback(async (currentEngine: "v2" | "v3") => {
     setIsTerminalLoading(true);
     try {
-      // 1. Terminal master snapshots (fetch both V2 & V3 concurrently for seamless cross-engine active tracking)
-      const otherEngine = currentEngine === "v2" ? "v3" : "v2";
-      const [termRes, otherRes] = await Promise.all([
-        quantsyncApi.getTerminalData(currentEngine).catch(() => null),
-        quantsyncApi.getTerminalData(otherEngine).catch(() => null),
-      ]);
+      // 1. Terminal master snapshot — only await the CURRENT engine to unblock loading fast.
+      //    The other engine is fetched concurrently in the background.
+      const termRes = await quantsyncApi.getTerminalData(currentEngine).catch(() => null);
 
       if (termRes) {
         setTerminalData(termRes);
@@ -1504,11 +1501,18 @@ export default function App() {
           }
         }
       }
-      if (otherRes) {
-        if (otherEngine === "v2") setTerminalDataV2(otherRes);
-        else setTerminalDataV3(otherRes);
-      }
+
+      // Unblock the loading spinner immediately — secondary engine loads in background
       setIsTerminalLoading(false);
+
+      // Background-fetch the other engine so cross-engine active tracking stays current
+      const otherEngine = currentEngine === "v2" ? "v3" : "v2";
+      quantsyncApi.getTerminalData(otherEngine).then(otherRes => {
+        if (otherRes) {
+          if (otherEngine === "v2") setTerminalDataV2(otherRes);
+          else setTerminalDataV3(otherRes);
+        }
+      }).catch(() => {});
 
       // 2. Equity Curve
       fetchEquity(currentEngine, range);
