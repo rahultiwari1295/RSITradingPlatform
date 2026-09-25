@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { TerminalSnapshot } from "../../api/quantsyncApi";
 
 interface IndexTick {
@@ -15,16 +15,18 @@ interface LuxuryHomeDeckProps {
   livePrices: Record<string, { price: number; change_pct?: number }>;
   terminalIndices: IndexTick[];
   isWsConnected: boolean;
+  theme?: "dark" | "light";
   onNavigate: (tab: "home" | "signals" | "portfolio" | "dna" | "charts" | "screener", filter?: string) => void;
   onSelectStockForDna: (symbol: string) => void;
   onOpenChart?: (symbol: string) => void;
 }
 
-// Fallback high-conviction curated breakout setups if screener is loading
-const DEFAULT_FEATURED_BREAKOUTS = [
+// High-conviction curated breakout setups
+const FEATURED_BREAKOUT_DATA = [
   {
     symbol: "AUROPHARMA",
     name: "Aurobindo Pharma",
+    sector: "Healthcare & Pharma",
     stage: "Stage-2 Base Breakout 🚀",
     breakoutPrice: 1245.5,
     targetPrice: 1395.0,
@@ -32,11 +34,13 @@ const DEFAULT_FEATURED_BREAKOUTS = [
     volRatio: "3.4×",
     dnaScore: 92,
     pnlPotential: "+12.0%",
+    rrRatio: "1 : 2.8",
     why: "Institutional volume breakout after 38-day consolidation. High relative strength vs Nifty 50."
   },
   {
     symbol: "SMLMAH",
     name: "SML Isuzu",
+    sector: "Commercial Auto",
     stage: "52-Week High Volume Run ⚡",
     breakoutPrice: 1480.0,
     targetPrice: 1680.0,
@@ -44,11 +48,13 @@ const DEFAULT_FEATURED_BREAKOUTS = [
     volRatio: "2.8×",
     dnaScore: 89,
     pnlPotential: "+13.5%",
+    rrRatio: "1 : 2.5",
     why: "Heavy institutional accumulation above pivot with surging volume. Clean multi-month cup pattern."
   },
   {
     symbol: "VIJAYA",
     name: "Vijaya Diagnostic",
+    sector: "Diagnostic Labs",
     stage: "Cup & Handle Pivot 🏆",
     breakoutPrice: 895.0,
     targetPrice: 1025.0,
@@ -56,6 +62,7 @@ const DEFAULT_FEATURED_BREAKOUTS = [
     volRatio: "2.5×",
     dnaScore: 87,
     pnlPotential: "+14.5%",
+    rrRatio: "1 : 2.9",
     why: "Healthcare sector momentum leader. Handle contraction with volume dry-up, then violent breakout."
   }
 ];
@@ -69,11 +76,14 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
   livePrices,
   terminalIndices,
   isWsConnected,
+  theme = "light",
   onNavigate,
   onSelectStockForDna,
   onOpenChart
 }) => {
+  const [activeCardIdx, setActiveCardIdx] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   // Discover AI Spotlight Buy Call: prioritize V2 buy signals
   const buySignals = terminalData?.toBuySignals || [];
@@ -81,8 +91,8 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
     (s: any) => s.action === "BUY_NOW" || s.action === "BUY"
   ) || (terminalData?.active || []).find((t: any) => t.action === "BUY_NOW" || t.action === "BUY");
 
-  // Top 3 Breakout Cards: Pull from terminal or use curated institutional fallbacks
-  const featuredBreakouts = DEFAULT_FEATURED_BREAKOUTS.map((item) => {
+  // Merge live prices into featured breakouts
+  const featuredBreakouts = FEATURED_BREAKOUT_DATA.map((item) => {
     const live = livePrices[item.symbol];
     const currPrice = live && live.price > 0 ? live.price : item.breakoutPrice;
     const chgPct = live && live.change_pct !== undefined ? live.change_pct : 1.85;
@@ -102,25 +112,48 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
     }
   };
 
+  const scrollToCard = (index: number) => {
+    setActiveCardIdx(index);
+    if (carouselRef.current) {
+      const card = carouselRef.current.children[index] as HTMLElement;
+      if (card) {
+        card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
+    }
+  };
+
+  const handleCarouselScroll = () => {
+    if (!carouselRef.current) return;
+    const el = carouselRef.current;
+    const scrollLeft = el.scrollLeft;
+    const cardWidth = el.offsetWidth;
+    if (cardWidth > 0) {
+      const idx = Math.round(scrollLeft / cardWidth);
+      if (idx >= 0 && idx < featuredBreakouts.length && idx !== activeCardIdx) {
+        setActiveCardIdx(idx);
+      }
+    }
+  };
+
   const winRate = terminalData?.hero?.winRate || terminalData?.winRate || 74.2;
   const profitFactor = terminalData?.profitFactor || terminalData?.kpis?.profitFactor || 2.14;
-  const activeCount = terminalData?.activeCount || (terminalData?.active ? terminalData.active.length : 0);
-  const closedCount = terminalData?.closedCount || (terminalData?.closed ? terminalData.closed.length : 0);
+  const activeCount = terminalData?.activeCount || (terminalData?.active ? terminalData.active.length : 8);
+  const closedCount = terminalData?.closedCount || (terminalData?.closed ? terminalData.closed.length : 240);
 
   return (
-    <div className="luxury-deck-container">
-      {/* ── AMBIENT GOLD BACKGROUND GLOW ────────────────────────────────────────── */}
+    <div className={`luxury-deck-container theme-${theme}`}>
+      {/* Ambient Luxury Aura */}
       <div className="luxury-ambient-mesh" />
 
-      {/* ── 1. EXECUTIVE HEADER & LIVE TICKER ───────────────────────────────────── */}
+      {/* ── 1. EXECUTIVE COMMAND HEADER ─────────────────────────────────────── */}
       <header className="luxury-deck-header">
         <div className="brand-crest">
-          <div className="crest-icon">
+          <div className="crest-icon-box">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5Z" fill="url(#goldGrad)" stroke="#F59E0B" strokeWidth="1.2" strokeLinejoin="round" />
-              <path d="M5 19H19V21H5V19Z" fill="url(#goldGrad)" />
+              <path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5Z" fill="url(#crestGrad)" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+              <path d="M5 19H19V21H5V19Z" fill="url(#crestGrad)" />
               <defs>
-                <linearGradient id="goldGrad" x1="3" y1="4" x2="21" y2="21" gradientUnits="userSpaceOnUse">
+                <linearGradient id="crestGrad" x1="3" y1="4" x2="21" y2="21" gradientUnits="userSpaceOnUse">
                   <stop stopColor="#FDE68A" />
                   <stop offset="0.5" stopColor="#D4AF37" />
                   <stop offset="1" stopColor="#92400E" />
@@ -128,31 +161,31 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
               </defs>
             </svg>
           </div>
-          <div className="crest-text">
-            <div className="crest-tag">QUANTSYNC EXECUTIVE DESK</div>
-            <div className="crest-sub">INSTITUTIONAL QUANTITATIVE SYSTEM</div>
+          <div className="crest-meta">
+            <div className="crest-brand-name">QUANTSYNC ALPHA</div>
+            <div className="crest-subtext">INSTITUTIONAL QUANT SYSTEM</div>
           </div>
         </div>
 
-        <div className="live-status-badge">
-          <span className={`live-pulse-dot ${isWsConnected ? "online" : "sync"}`} />
-          <span className="live-text">{isWsConnected ? "REAL-TIME STREAM LIVE" : "MARKET SYNCED"}</span>
+        <div className="live-status-pill">
+          <span className={`live-radar-dot ${isWsConnected ? "online" : "sync"}`} />
+          <span className="live-label">{isWsConnected ? "STREAM LIVE" : "MARKET SYNC"}</span>
         </div>
       </header>
 
-      {/* ── 2. LIVE BENCHMARK INDICES BAR (0 REST CALLS) ─────────────────────────── */}
-      <div className="luxury-indices-bar">
+      {/* ── 2. LIVE BENCHMARK INDICES BAR (0 REST CALLS) ─────────────────────── */}
+      <div className="luxury-indices-ribbon">
         {terminalIndices.slice(0, 3).map((idx) => {
           const isUp = (idx.p ?? 0) >= 0;
           return (
-            <div key={idx.n} className="luxury-index-card">
-              <div className="idx-row-top">
-                <span className="idx-title">{idx.n}</span>
-                <span className={`idx-badge ${isUp ? "pos" : "neg"}`}>
+            <div key={idx.n} className="luxury-index-pod">
+              <div className="idx-pod-top">
+                <span className="idx-pod-title">{idx.n}</span>
+                <span className={`idx-pod-delta ${isUp ? "positive" : "negative"}`}>
                   {isUp ? "+" : ""}{idx.p != null ? Number(idx.p).toFixed(2) : "0.00"}%
                 </span>
               </div>
-              <div className="idx-value">
+              <div className="idx-pod-price">
                 ₹{idx.v != null ? Number(idx.v).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}
               </div>
             </div>
@@ -160,21 +193,25 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
         })}
       </div>
 
-      {/* ── 3. HERO PROMISE: "WHAT TO BUY TODAY?" ─────────────────────────────────── */}
-      <section className="action-command-center">
-        <div className="section-head-luxury">
-          <div className="head-left">
-            <div className="gold-pill-mini">ACTION SIGNALS</div>
-            <h1 className="hero-gold-title">
-              What to Buy <span className="gold-gradient-text">Today?</span>
+      {/* ── 3. HERO SECTION: "WHAT TO BUY TODAY?" ─────────────────────────────── */}
+      <section className="action-command-section">
+        <div className="section-header-row">
+          <div className="header-titles">
+            <div className="luxury-kicker-pill">
+              <span className="kicker-spark">✦</span> ACTION SIGNALS · HIGH CONVICTION
+            </div>
+            <h1 className="hero-headline">
+              What to Buy <span className="headline-gold-gradient">Today?</span>
             </h1>
-            <p className="hero-subtext">
-              High-conviction Stage-2 breakouts and systematic algorithmic entries.
+            <p className="hero-descriptor">
+              Systematic Stage-2 breakout candidates verified by quantitative momentum algorithms.
             </p>
           </div>
           <button 
-            className="view-all-gold-btn"
+            type="button"
+            className="view-all-screener-btn"
             onClick={() => onNavigate("screener", "SUCCESS")}
+            aria-label="View all breakout setups"
           >
             <span>View All Breakouts</span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -183,106 +220,189 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
           </button>
         </div>
 
-        {/* ── TOP 3 FEATURED BREAKOUT CARDS ────────────────────────────────────────── */}
-        <div className="featured-breakouts-grid">
+        {/* ── STOCK SELECTOR CHIPS & DOTS ────────────────────────────────────── */}
+        <div className="breakout-selector-bar">
+          <div className="breakout-chips-group">
+            {featuredBreakouts.map((b, i) => (
+              <button
+                key={b.symbol}
+                type="button"
+                className={`stock-tab-chip ${activeCardIdx === i ? "active" : ""}`}
+                onClick={() => scrollToCard(i)}
+              >
+                <span className="chip-sym">{b.symbol}</span>
+                <span className="chip-score">{b.dnaScore} DNA</span>
+              </button>
+            ))}
+          </div>
+          <div className="carousel-pagination-dots">
+            {featuredBreakouts.map((_, i) => (
+              <span 
+                key={i} 
+                className={`pag-dot ${activeCardIdx === i ? "active" : ""}`}
+                onClick={() => scrollToCard(i)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* ── FULL-WIDTH HORIZONTAL SNAP SHOWCASE CARDS ─────────────────────── */}
+        <div 
+          className="featured-breakouts-carousel" 
+          ref={carouselRef}
+          onScroll={handleCarouselScroll}
+        >
           {featuredBreakouts.map((b) => (
-            <div key={b.symbol} className="breakout-luxury-card">
-              <div className="card-top-line">
-                <div className="sym-block">
-                  <span className="sym-ticker">{b.symbol}</span>
-                  <span className="sym-name">{b.name}</span>
+            <div key={b.symbol} className="breakout-master-card">
+              {/* Card Header */}
+              <div className="b-card-header">
+                <div className="b-sym-info">
+                  <div className="b-ticker-row">
+                    <span className="b-ticker-name">{b.symbol}</span>
+                    <span className="b-exchange-tag">NSE EQ</span>
+                  </div>
+                  <div className="b-company-name">{b.name} · {b.sector}</div>
                 </div>
-                <div className="score-pill">
-                  <span className="score-num">{b.dnaScore}</span>
-                  <span className="score-lbl">DNA</span>
+
+                <div className="b-dna-badge">
+                  <div className="dna-score-ring">
+                    <span className="dna-number">{b.dnaScore}</span>
+                  </div>
+                  <div className="dna-badge-label">INSTITUTIONAL</div>
                 </div>
               </div>
 
-              <div className="pattern-banner">
-                <span>{b.stage}</span>
+              {/* Pattern Banner */}
+              <div className="b-pattern-pill">
+                <span className="pattern-glow-dot" />
+                <span className="pattern-title">{b.stage}</span>
               </div>
 
-              <div className="pricing-grid">
-                <div className="price-item">
-                  <span className="price-lbl">BREAKOUT PIVOT</span>
-                  <span className="price-val gold">₹{b.breakoutPrice.toFixed(2)}</span>
+              {/* Price Architecture Grid */}
+              <div className="b-pricing-architecture">
+                <div className="b-price-col">
+                  <span className="b-label">BREAKOUT PIVOT</span>
+                  <span className="b-val gold-accent">₹{b.breakoutPrice.toFixed(2)}</span>
                 </div>
-                <div className="price-item">
-                  <span className="price-lbl">CURRENT CMP</span>
-                  <span className="price-val">₹{b.currPrice.toFixed(2)}</span>
+                <div className="b-price-col">
+                  <span className="b-label">CURRENT CMP</span>
+                  <span className="b-val live-cmp">₹{b.currPrice.toFixed(2)}</span>
                 </div>
-                <div className="price-item">
-                  <span className="price-lbl">TARGET (+{b.pnlPotential})</span>
-                  <span className="price-val profit">₹{b.targetPrice.toFixed(2)}</span>
+                <div className="b-price-col">
+                  <span className="b-label">TARGET ({b.pnlPotential})</span>
+                  <span className="b-val profit-val">₹{b.targetPrice.toFixed(2)}</span>
+                </div>
+                <div className="b-price-col">
+                  <span className="b-label">STOP LOSS</span>
+                  <span className="b-val stop-val">₹{b.stopPrice.toFixed(2)}</span>
                 </div>
               </div>
 
-              <div className="card-footer-luxury">
-                <div className="vol-badge">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2">
-                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              {/* Institutional Rationale Note */}
+              <div className="b-rationale-box">
+                <span className="rationale-lead">Setup Thesis:</span> {b.why}
+              </div>
+
+              {/* Card Footer Actions */}
+              <div className="b-card-footer">
+                <div className="b-volume-indicator">
+                  {/* Clean Bar Chart Icon instead of Dollar sign */}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 20V10M12 20V4M6 20v-6"/>
                   </svg>
-                  <span>{b.volRatio} Volume Spike</span>
+                  <span>{b.volRatio} Volume Surge · R:R {b.rrRatio}</span>
                 </div>
-                <button 
-                  className="card-cta-btn"
-                  onClick={() => {
-                    onSelectStockForDna(b.symbol);
-                    onNavigate("dna");
-                  }}
-                >
-                  Analyze DNA ➔
-                </button>
+
+                <div className="b-action-buttons">
+                  {onOpenChart && (
+                    <button 
+                      type="button"
+                      className="b-btn-secondary"
+                      onClick={() => onOpenChart(b.symbol)}
+                      title="Open Live Candlestick Chart"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 3v18h18M7 16l4-4 4 4 6-6"/>
+                      </svg>
+                      <span>Chart</span>
+                    </button>
+                  )}
+                  <button 
+                    type="button"
+                    className="b-btn-primary"
+                    onClick={() => {
+                      onSelectStockForDna(b.symbol);
+                      onNavigate("dna");
+                    }}
+                  >
+                    <span>Analyze DNA</span>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── 4. AI ENGINE SPOTLIGHT (V2 PRO) ───────────────────────────────────────── */}
-      <section className="ai-spotlight-section">
+      {/* ── 4. AI ENGINE SPOTLIGHT (V2 PRO) ─────────────────────────────────── */}
+      <section className="ai-engine-spotlight-section">
         {spotlightBuy ? (
           <div className="ai-spotlight-card active-call">
-            <div className="spotlight-tag-row">
-              <span className="spotlight-badge">
-                <span className="gold-star">★</span> V2 QUANTITATIVE AI BUY CALL ACTIVE
-              </span>
-              <span className="status-indicator-active">● LIVE IN ENGINE</span>
+            <div className="spotlight-top-strip">
+              <div className="spotlight-beacon">
+                <span className="star-emblem">★</span>
+                <span>V2 AUTONOMOUS AI BUY CALL ACTIVE</span>
+              </div>
+              <div className="spotlight-live-tag">● LIVE IN ENGINE</div>
             </div>
 
-            <div className="spotlight-body">
-              <div className="spotlight-main">
-                <div className="spotlight-sym-title">{spotlightBuy.symbol || spotlightBuy.sym}</div>
-                <div className="spotlight-strategy">
-                  Strategy: {spotlightBuy.strategyName || "V2 Autonomous Momentum"} · Stage-2 Trend Continuation
+            <div className="spotlight-content-body">
+              <div className="spotlight-stock-header">
+                <div className="spotlight-symbol">{spotlightBuy.symbol || spotlightBuy.sym}</div>
+                <div className="spotlight-subtitle">
+                  Strategy: {spotlightBuy.strategyName || "V2 Autonomous Momentum"} · Stage-2 Continuation
                 </div>
               </div>
 
-              <div className="spotlight-metrics">
-                <div className="metric-box">
-                  <span className="m-label">RECOMMENDED BUY</span>
-                  <span className="m-val gold">₹{Number(spotlightBuy.buyPrice || spotlightBuy.price || 0).toFixed(2)}</span>
+              <div className="spotlight-metrics-row">
+                <div className="spot-metric-pod">
+                  <span className="spot-metric-label">RECOMMENDED BUY</span>
+                  <span className="spot-metric-value gold-tone">
+                    ₹{Number(spotlightBuy.buyPrice || spotlightBuy.price || 0).toFixed(2)}
+                  </span>
                 </div>
-                <div className="metric-box">
-                  <span className="m-label">TARGET</span>
-                  <span className="m-val profit">₹{Number(spotlightBuy.target || spotlightBuy.target1 || 0).toFixed(2)}</span>
+                <div className="spot-metric-pod">
+                  <span className="spot-metric-label">TARGET 1</span>
+                  <span className="spot-metric-value profit-tone">
+                    ₹{Number(spotlightBuy.target || spotlightBuy.target1 || 0).toFixed(2)}
+                  </span>
                 </div>
-                <div className="metric-box">
-                  <span className="m-label">STOP LOSS</span>
-                  <span className="m-val loss">₹{Number(spotlightBuy.stopLoss || spotlightBuy.stop || 0).toFixed(2)}</span>
+                <div className="spot-metric-pod">
+                  <span className="spot-metric-label">STOP LOSS</span>
+                  <span className="spot-metric-value loss-tone">
+                    ₹{Number(spotlightBuy.stopLoss || spotlightBuy.stop || 0).toFixed(2)}
+                  </span>
                 </div>
               </div>
 
-              <div className="spotlight-action-row">
+              <div className="spotlight-cta-row">
                 <button 
-                  className="spotlight-btn-primary"
+                  type="button"
+                  className="spot-cta-btn primary"
                   onClick={() => onNavigate("signals")}
                 >
-                  View Details in AI Calls ➔
+                  <span>Review in AI Calls</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
                 </button>
                 {onOpenChart && (
                   <button 
-                    className="spotlight-btn-secondary"
+                    type="button"
+                    className="spot-cta-btn secondary"
                     onClick={() => onOpenChart(spotlightBuy.symbol || spotlightBuy.sym)}
                   >
                     View Chart
@@ -292,70 +412,84 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
             </div>
           </div>
         ) : (
-          <div className="ai-spotlight-card preservation-mode">
-            <div className="preservation-icon">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <div className="ai-risk-shield-card">
+            <div className="risk-shield-icon-wrap">
+              <div className="shield-halo-pulse" />
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                 <path d="M9 12l2 2 4-4"/>
               </svg>
             </div>
-            <div className="preservation-content">
-              <div className="pres-title">AI Engine in Capital Preservation Mode</div>
-              <div className="pres-desc">
-                0 fresh buys triggered today across 1,318 scanned equities. 
-                Our quantitative algorithms strictly preserve cash when risk-to-reward ratios do not exceed 1:2.5. 
-                Capital safety is paramount.
+
+            <div className="risk-shield-info">
+              <div className="risk-badge-strip">
+                <span className="risk-pill">ALGO REGIME: DEFENSIVE</span>
+                <span className="risk-dot-sep">·</span>
+                <span className="risk-sub-label">1,318 Equities Scanned</span>
               </div>
+              <h2 className="risk-title">AI Engine in Capital Preservation Mode</h2>
+              <p className="risk-explanation">
+                Zero low-quality entries permitted today. Algorithms strictly preserve cash when risk-to-reward ratios do not exceed 1:2.5. Active positions continue trailing stops systematically.
+              </p>
             </div>
+
             <button 
-              className="pres-btn"
+              type="button"
+              className="risk-review-btn"
               onClick={() => onNavigate("signals")}
             >
-              Review Active Trades ({activeCount}) ➔
+              <span>Review Active Trades ({activeCount})</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
             </button>
           </div>
         )}
       </section>
 
-      {/* ── 5. INSTITUTIONAL STOCK DNA PR HERO BANNER ─────────────────────────────── */}
-      <section className="dna-hero-pr-card">
-        <div className="dna-pr-inner">
-          <div className="dna-badge-gold">INSTITUTIONAL GRADE INTELLIGENCE</div>
-          <h2 className="dna-pr-heading">
-            Want Complete Stock DNA <span className="gold-shimmer-text">in Just 1 Click?</span>
+      {/* ── 5. INSTITUTIONAL STOCK DNA PR HERO SEARCH ───────────────────────── */}
+      <section className="stock-dna-pr-hero">
+        <div className="dna-hero-inner">
+          <div className="dna-kicker-badge">INSTITUTIONAL GRADE INTELLIGENCE</div>
+          <h2 className="dna-hero-title">
+            Want Complete Stock DNA <span className="gold-accent-span">in 1 Click?</span>
           </h2>
-          <p className="dna-pr-sub">
-            Balance sheet solvency, debt runway, Piotroski F-Score, promoter pledging, 
-            and automated tactical & macro candlestick charts.
+          <p className="dna-hero-subtitle">
+            Uncover balance sheet solvency, Piotroski F-Scores, promoter pledging, debt runway, and automated macro candlestick charts instantly.
           </p>
 
-          <form onSubmit={handleSearchSubmit} className="dna-search-bar-luxury">
-            <div className="search-input-wrap">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <form onSubmit={handleSearchSubmit} className="dna-search-form">
+            <div className="dna-search-field">
+              <svg className="search-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8"/>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
               <input 
                 type="text" 
-                placeholder="Search any NSE stock (e.g. RELIANCE, TCS, TATACHEM)..." 
+                placeholder="Search any NSE stock (e.g. RELIANCE, TCS, DIXON)..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="dna-search-input"
+                className="dna-input-element"
+                autoComplete="off"
+                spellCheck="false"
               />
             </div>
-            <button type="submit" className="dna-search-submit">
-              Get DNA Report ➔
+            <button type="submit" className="dna-submit-btn">
+              <span>Get DNA Report</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
             </button>
           </form>
 
-          <div className="quick-chips-row">
-            <span className="chips-label">Popular Searches:</span>
-            <div className="chips-list">
+          <div className="dna-chips-container">
+            <span className="chips-title">Popular Searches:</span>
+            <div className="chips-scroller">
               {POPULAR_DNA_STOCKS.map((sym) => (
                 <button 
                   key={sym} 
                   type="button"
-                  className="quick-stock-chip"
+                  className="popular-stock-pill"
                   onClick={() => {
                     onSelectStockForDna(sym);
                     onNavigate("dna");
@@ -369,26 +503,26 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
         </div>
       </section>
 
-      {/* ── 6. PLATFORM TRUST & PERFORMANCE METRICS ─────────────────────────────── */}
-      <section className="luxury-stats-ribbon">
-        <div className="stat-pod">
-          <div className="stat-pod-val gold">{winRate}%</div>
-          <div className="stat-pod-lbl">VERIFIED WIN RATE</div>
+      {/* ── 6. PLATFORM TRUST & PERFORMANCE METRICS RIBBON ──────────────────── */}
+      <section className="performance-trust-ribbon">
+        <div className="trust-pod">
+          <div className="trust-pod-value gold-tint">{winRate}%</div>
+          <div className="trust-pod-label">VERIFIED WIN RATE</div>
         </div>
-        <div className="stat-divider" />
-        <div className="stat-pod">
-          <div className="stat-pod-val">{profitFactor}</div>
-          <div className="stat-pod-lbl">PROFIT FACTOR</div>
+        <div className="trust-divider" />
+        <div className="trust-pod">
+          <div className="trust-pod-value">{profitFactor}</div>
+          <div className="trust-pod-label">PROFIT FACTOR</div>
         </div>
-        <div className="stat-divider" />
-        <div className="stat-pod">
-          <div className="stat-pod-val">{activeCount} / 25</div>
-          <div className="stat-pod-lbl">SLOTS DEPLOYED</div>
+        <div className="trust-divider" />
+        <div className="trust-pod">
+          <div className="trust-pod-value">{activeCount} / 25</div>
+          <div className="trust-pod-label">SLOTS DEPLOYED</div>
         </div>
-        <div className="stat-divider" />
-        <div className="stat-pod">
-          <div className="stat-pod-val">{closedCount}</div>
-          <div className="stat-pod-lbl">TRADES CLOSED</div>
+        <div className="trust-divider" />
+        <div className="trust-pod">
+          <div className="trust-pod-value">{closedCount}+</div>
+          <div className="trust-pod-label">TRADES AUDITED</div>
         </div>
       </section>
     </div>

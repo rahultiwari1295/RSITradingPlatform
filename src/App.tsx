@@ -2602,6 +2602,7 @@ export default function App() {
             livePrices={livePrices}
             terminalIndices={terminalIndices}
             isWsConnected={isWsConnected}
+            theme={theme}
             onNavigate={(tab, filter) => {
               setActiveTab(tab as any);
             }}
