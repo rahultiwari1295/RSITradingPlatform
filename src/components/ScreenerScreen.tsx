@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { quantsyncApi } from "../api/quantsyncApi";
+import { liveMarketSocket } from "../services/liveMarketSocket";
 
 interface ScreenerScreenProps {
   theme?: "dark" | "light";
@@ -315,15 +316,36 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
     });
   }, [rawStocks, activeTab]);
 
+  // Auto-subscribe all visible stocks to live WebSocket stream
+  useEffect(() => {
+    if (validStocks && validStocks.length > 0) {
+      const syms = validStocks.map((s) => s.symbol).filter(Boolean);
+      liveMarketSocket.subscribe(syms);
+    }
+  }, [validStocks]);
+
+  // Merge livePrices into validStocks so breakout distances and targets update on the fly!
+  const liveEnrichedStocks = useMemo(() => {
+    if (!livePrices || Object.keys(livePrices).length === 0) return validStocks;
+    return validStocks.map((s) => {
+      const sym = (s.symbol || "").toUpperCase();
+      const live = livePrices[sym];
+      if (live && live.price > 0 && live.price !== s.curr_price) {
+        return { ...s, curr_price: live.price };
+      }
+      return s;
+    });
+  }, [validStocks, livePrices]);
+
   // Compute active pattern counts across valid stocks
   const patternCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    validStocks.forEach((s) => {
+    liveEnrichedStocks.forEach((s) => {
       const pid = normalizePatternId(s.pattern_type);
       counts[pid] = (counts[pid] || 0) + 1;
     });
     return counts;
-  }, [validStocks]);
+  }, [liveEnrichedStocks]);
 
   // Only show chart patterns that have count > 0!
   // "and chart pattern show those list which have the count .. dont show those who have 0 values .."
@@ -336,9 +358,9 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
 
   // Filter stocks by selected pattern
   const patternFilteredStocks = useMemo(() => {
-    if (selectedPattern === "ALL") return validStocks;
-    return validStocks.filter((s) => normalizePatternId(s.pattern_type) === selectedPattern);
-  }, [validStocks, selectedPattern]);
+    if (selectedPattern === "ALL") return liveEnrichedStocks;
+    return liveEnrichedStocks.filter((s) => normalizePatternId(s.pattern_type) === selectedPattern);
+  }, [liveEnrichedStocks, selectedPattern]);
 
   // Action status counts for Confirmed Breakout
   const { buyCount, missedCount, skipCount } = useMemo(() => {

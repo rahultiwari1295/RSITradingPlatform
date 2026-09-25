@@ -985,9 +985,16 @@ function normalizeActiveTrade(t: any, idx: number, eng: "v2" | "v3") {
   const days = Number(t.days ?? t.holdingDays ?? (idx * 4 + 2));
   const shares = Number(t.shares ?? 10);
 
-  const pnlPct = Number(t.pnlPct ?? t.roiPct ?? t.currentROI ?? (entry ? ((now - entry) / entry) * 100 : 0));
-  const pnl = Number(t.pnl ?? t.unrealizedPnl ?? Math.round((now - entry) * shares));
-  const r = Number(t.r ?? (Math.abs(entry - stop) > 0.001 ? (now - entry) / Math.abs(entry - stop) : 0.36));
+  const isLive = Boolean(t.isLivePrice);
+  const pnlPct = isLive || (t.pnlPct == null && t.roiPct == null && t.currentROI == null)
+    ? (entry > 0 ? ((now - entry) / entry) * 100 : 0)
+    : Number(t.pnlPct ?? t.roiPct ?? t.currentROI);
+  const pnl = isLive || (t.pnl == null && t.unrealizedPnl == null)
+    ? Math.round((now - entry) * shares)
+    : Number(t.pnl ?? t.unrealizedPnl);
+  const r = isLive || t.r == null
+    ? (Math.abs(entry - stop) > 0.001 ? (now - entry) / Math.abs(entry - stop) : 0.36)
+    : Number(t.r);
   const stars = Number(t.stars ?? (t.compositeScore ? t.compositeScore / 20 : 4.5));
   const ml = Number(t.ml ?? t.mlProbability ?? t.convictionScore ?? 70);
   const comp = Number(t.comp ?? t.compositeScore ?? 75);
@@ -1995,7 +2002,7 @@ export default function App() {
   const activeTrades = rawActive.map((t: any, idx: number) => {
     const sym = (t.symbol || t.title || t.sym || "").toUpperCase().trim();
     const live = livePrices && sym ? livePrices[sym] : undefined;
-    const tradeData = live && live.price > 0 ? { ...t, currentPrice: live.price, price: live.price, ltp: live.price, now: live.price } : t;
+    const tradeData = live && live.price > 0 ? { ...t, currentPrice: live.price, price: live.price, ltp: live.price, now: live.price, isLivePrice: true } : t;
     return normalizeActiveTrade(tradeData, idx, engine);
   });
 
@@ -2040,8 +2047,12 @@ export default function App() {
     const v3Raw = getRaw(terminalDataV3 || (engine === "v3" ? terminalData : null), "v3");
 
     v2Raw.forEach((t: any, idx: number) => {
-      const norm = normalizeActiveTrade(t, idx, "v2");
-      const sym = (norm.sym || norm.symbol || "").toUpperCase().trim();
+      const sym = (t.symbol || t.title || t.sym || "").toUpperCase().trim();
+      const live = livePrices && sym ? livePrices[sym] : undefined;
+      const tradeData = live && live.price > 0 
+        ? { ...t, currentPrice: live.price, price: live.price, ltp: live.price, now: live.price, isLivePrice: true }
+        : t;
+      const norm = normalizeActiveTrade(tradeData, idx, "v2");
       if (sym && !seen.has(`${sym}_v2`)) {
         seen.add(`${sym}_v2`);
         list.push({ ...norm, engine: "v2" });
@@ -2049,8 +2060,12 @@ export default function App() {
     });
 
     v3Raw.forEach((t: any, idx: number) => {
-      const norm = normalizeActiveTrade(t, idx, "v3");
-      const sym = (norm.sym || norm.symbol || "").toUpperCase().trim();
+      const sym = (t.symbol || t.title || t.sym || "").toUpperCase().trim();
+      const live = livePrices && sym ? livePrices[sym] : undefined;
+      const tradeData = live && live.price > 0 
+        ? { ...t, currentPrice: live.price, price: live.price, ltp: live.price, now: live.price, isLivePrice: true }
+        : t;
+      const norm = normalizeActiveTrade(tradeData, idx, "v3");
       if (sym && !seen.has(`${sym}_v3`)) {
         seen.add(`${sym}_v3`);
         list.push({ ...norm, engine: "v3" });
@@ -2058,7 +2073,7 @@ export default function App() {
     });
 
     return list;
-  }, [terminalDataV2, terminalDataV3, terminalData, engine]);
+  }, [terminalDataV2, terminalDataV3, terminalData, engine, livePrices]);
 
   // Dynamic header date (no hardcoded current date)
   const headerDateStr = useMemo(() => {
