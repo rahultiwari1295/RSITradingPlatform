@@ -144,7 +144,7 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
   const ema50: number | null = apiData?.ema50 != null ? Number(apiData.ema50) : null;
   const ema200: number | null = apiData?.ema200 != null ? Number(apiData.ema200) : null;
   const volRatioVal: number | null = apiData?.volume_ratio_20d != null ? Number(apiData.volume_ratio_20d) : null;
-  const volRatioStr = volRatioVal != null ? `${volRatioVal.toFixed(1)}×` : "—";
+  const volRatioStr = (volRatioVal != null && !isNaN(volRatioVal)) ? `${volRatioVal.toFixed(1)}×` : "—";
 
   // Key Price Rails
   const r2: number | null = apiData?.resistance_2 != null ? Number(apiData.resistance_2) : (apiData?.target_2 != null ? Number(apiData.target_2) : null);
@@ -152,15 +152,15 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
   const s1: number | null = apiData?.support_1 != null ? Number(apiData.support_1) : (stopLossPrice != null ? Number(stopLossPrice) : null);
 
   // Dynamic Percentage calculations
-  const targetPctStr = (targetPrice != null && cmp != null && cmp > 0)
+  const targetPctStr = (targetPrice != null && cmp != null && cmp > 0 && !isNaN(targetPrice) && !isNaN(cmp))
     ? `(+${(((targetPrice - cmp) / cmp) * 100).toFixed(1)}%)`
     : "";
-  const slPctStr = (stopLossPrice != null && cmp != null && cmp > 0)
+  const slPctStr = (stopLossPrice != null && cmp != null && cmp > 0 && !isNaN(stopLossPrice) && !isNaN(cmp))
     ? `(-${Math.abs(((cmp - stopLossPrice) / cmp) * 100).toFixed(1)}%)`
     : "";
-  const potentialGainStr = (targetPrice != null && cmp != null && cmp > 0)
+  const potentialGainStr = (targetPrice != null && cmp != null && cmp > 0 && !isNaN(targetPrice) && !isNaN(cmp))
     ? `+${(((targetPrice - cmp) / cmp) * 100).toFixed(1)}% Potential`
-    : (targetPrice != null && entryPrice != null && entryPrice > 0)
+    : (targetPrice != null && entryPrice != null && entryPrice > 0 && !isNaN(targetPrice) && !isNaN(entryPrice))
     ? `+${(((targetPrice - entryPrice) / entryPrice) * 100).toFixed(1)}% Potential`
     : "";
 
@@ -168,29 +168,29 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
   const apiGood: string[] = apiData?.why_buy_reasons && Array.isArray(apiData.why_buy_reasons) ? apiData.why_buy_reasons : [];
   const apiBad: string[] = apiData?.why_avoid_reasons && Array.isArray(apiData.why_avoid_reasons) ? apiData.why_avoid_reasons : [];
 
-  const good1 = apiGood[0] || (volRatioVal != null && volRatioVal >= 1.5
+  const good1 = apiGood[0] || (volRatioVal != null && !isNaN(volRatioVal) && volRatioVal >= 1.5
     ? `Volume Surge: ${volRatioStr} volume spike confirming strong institutional accumulation.`
     : `Technical Setup: Clean ${patternName} demonstrating structural strength.`);
-  const good2 = apiGood[1] || (rsi != null
+  const good2 = apiGood[1] || (rsi != null && !isNaN(rsi)
     ? `Momentum Indicator: 14-Day RSI at ${rsi.toFixed(1)} showing sustained buyer conviction.`
     : "Trend Alignment: Key moving averages positioned favorably for continuation.");
 
-  const bad1 = apiBad[0] || (r1 != null
+  const bad1 = apiBad[0] || (r1 != null && !isNaN(r1)
     ? `Overhead Supply: Prior resistance near ₹${r1.toFixed(2)} may test buying volume.`
     : "Market Volatility: Broader index corrections may induce consolidation.");
-  const bad2 = apiBad[1] || (stopLossPrice != null
+  const bad2 = apiBad[1] || (stopLossPrice != null && !isNaN(stopLossPrice)
     ? `Capital Protection: Setup strictly invalidates on any daily close below ₹${stopLossPrice.toFixed(2)}.`
     : "Execution Discipline: Invalidation on breach of the defined protective floor.");
 
   const websiteLink = typeof window !== "undefined" && window.location.origin
     ? `${window.location.origin}/?stock=${cleanSymbol}`
-    : `https://rsitradingplatform.vercel.app/?stock=${cleanSymbol}`;
+    : `https://rsitradingPlatform.vercel.app/?stock=${cleanSymbol}`;
 
   // Helper formatting functions (strictly show '—' for missing values, NEVER fake numbers)
   const fmtCurrency = (val: number | null | undefined) =>
-    val != null ? `₹${Number(val).toLocaleString("en-IN", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}` : "—";
+    val != null && !isNaN(Number(val)) ? `₹${Number(val).toLocaleString("en-IN", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}` : "—";
   const fmtNumber = (val: number | null | undefined, dec = 1) =>
-    val != null ? Number(val).toFixed(dec) : "—";
+    val != null && !isNaN(Number(val)) ? Number(val).toFixed(dec) : "—";
 
   // Exact WhatsApp Message specified by user
   const shareText = `📊 *QUANTSYNC ALPHA | BREAKOUT SETUP*

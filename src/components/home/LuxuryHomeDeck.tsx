@@ -22,6 +22,12 @@ interface LuxuryHomeDeckProps {
   onOpenAnalyst?: (stock: any) => void;
 }
 
+// Safe currency formatting helper (zero runtime errors on undefined/null)
+const fmtPrice = (val: any): string => {
+  if (val == null || val === "" || isNaN(Number(val)) || Number(val) <= 0) return "—";
+  return `₹${Number(val).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
 // Curated breakout setups (zero fake hardcoded prices)
 const FEATURED_BREAKOUT_DATA = [
   {
@@ -33,7 +39,11 @@ const FEATURED_BREAKOUT_DATA = [
     dnaScore: 92,
     pnlPotential: "+12.0%",
     rrRatio: "1 : 2.8",
-    why: "Institutional volume breakout after consolidation. High relative strength vs Nifty 50."
+    why: "Institutional volume breakout after consolidation. High relative strength vs Nifty 50.",
+    currPrice: undefined,
+    breakoutPrice: undefined,
+    targetPrice: undefined,
+    stopPrice: undefined
   },
   {
     symbol: "SMLMAH",
@@ -44,7 +54,11 @@ const FEATURED_BREAKOUT_DATA = [
     dnaScore: 89,
     pnlPotential: "+13.5%",
     rrRatio: "1 : 2.5",
-    why: "Heavy institutional accumulation above pivot with surging volume. Clean multi-month cup pattern."
+    why: "Heavy institutional accumulation above pivot with surging volume. Clean multi-month cup pattern.",
+    currPrice: undefined,
+    breakoutPrice: undefined,
+    targetPrice: undefined,
+    stopPrice: undefined
   },
   {
     symbol: "VIJAYA",
@@ -55,7 +69,11 @@ const FEATURED_BREAKOUT_DATA = [
     dnaScore: 87,
     pnlPotential: "+14.5%",
     rrRatio: "1 : 2.9",
-    why: "Healthcare sector momentum leader. Handle contraction with volume dry-up, then violent breakout."
+    why: "Healthcare sector momentum leader. Handle contraction with volume dry-up, then violent breakout.",
+    currPrice: undefined,
+    breakoutPrice: undefined,
+    targetPrice: undefined,
+    stopPrice: undefined
   }
 ];
 
@@ -108,10 +126,10 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
         name: r.company_name || r.symbol,
         sector: r.sector || "Equities",
         stage: r.pattern_type || "Stage-2 Base Breakout 🚀",
-        volRatio: r.volume_ratio_20d ? `${Number(r.volume_ratio_20d).toFixed(1)}×` : "2.5×",
+        volRatio: r.volume_ratio_20d != null && !isNaN(Number(r.volume_ratio_20d)) ? `${Number(r.volume_ratio_20d).toFixed(1)}×` : "2.5×",
         dnaScore: r.dna_score || 90,
-        pnlPotential: r.curr_price && r.target_1 ? `+${(((r.target_1 - r.curr_price) / r.curr_price) * 100).toFixed(1)}%` : "+12.0%",
-        rrRatio: r.risk_reward_ratio ? `1 : ${Number(r.risk_reward_ratio).toFixed(1)}` : "1 : 2.5",
+        pnlPotential: r.curr_price != null && r.target_1 != null && Number(r.curr_price) > 0 ? `+${(((Number(r.target_1) - Number(r.curr_price)) / Number(r.curr_price)) * 100).toFixed(1)}%` : "+12.0%",
+        rrRatio: r.risk_reward_ratio != null && !isNaN(Number(r.risk_reward_ratio)) ? `1 : ${Number(r.risk_reward_ratio).toFixed(1)}` : "1 : 2.5",
         why: `Confirmed stage breakout with volume expansion and defined risk boundaries.`,
         currPrice: r.curr_price,
         breakoutPrice: r.breakout_level,
@@ -308,19 +326,19 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
               <div className="b-pricing-architecture">
                 <div className="b-price-col">
                   <span className="b-label">BREAKOUT PIVOT</span>
-                  <span className="b-val gold-accent">₹{b.breakoutPrice.toFixed(2)}</span>
+                  <span className="b-val gold-accent">{fmtPrice(b.breakoutPrice)}</span>
                 </div>
                 <div className="b-price-col">
                   <span className="b-label">CURRENT CMP</span>
-                  <span className="b-val live-cmp">₹{b.currPrice.toFixed(2)}</span>
+                  <span className="b-val live-cmp">{fmtPrice(b.currPrice)}</span>
                 </div>
                 <div className="b-price-col">
-                  <span className="b-label">TARGET ({b.pnlPotential})</span>
-                  <span className="b-val profit-val">₹{b.targetPrice.toFixed(2)}</span>
+                  <span className="b-label">TARGET {b.pnlPotential ? `(${b.pnlPotential})` : ""}</span>
+                  <span className="b-val profit-val">{fmtPrice(b.targetPrice)}</span>
                 </div>
                 <div className="b-price-col">
                   <span className="b-label">STOP LOSS</span>
-                  <span className="b-val stop-val">₹{b.stopPrice.toFixed(2)}</span>
+                  <span className="b-val stop-val">{fmtPrice(b.stopPrice)}</span>
                 </div>
               </div>
 
@@ -388,19 +406,19 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
                 <div className="spot-metric-pod">
                   <span className="spot-metric-label">RECOMMENDED BUY</span>
                   <span className="spot-metric-value gold-tone">
-                    ₹{Number(spotlightBuy.buyPrice || spotlightBuy.price || 0).toFixed(2)}
+                    {fmtPrice(spotlightBuy.buyPrice || spotlightBuy.price)}
                   </span>
                 </div>
                 <div className="spot-metric-pod">
                   <span className="spot-metric-label">TARGET 1</span>
                   <span className="spot-metric-value profit-tone">
-                    ₹{Number(spotlightBuy.target || spotlightBuy.target1 || 0).toFixed(2)}
+                    {fmtPrice(spotlightBuy.target || spotlightBuy.target1)}
                   </span>
                 </div>
                 <div className="spot-metric-pod">
                   <span className="spot-metric-label">STOP LOSS</span>
                   <span className="spot-metric-value loss-tone">
-                    ₹{Number(spotlightBuy.stopLoss || spotlightBuy.stop || 0).toFixed(2)}
+                    {fmtPrice(spotlightBuy.stopLoss || spotlightBuy.stop)}
                   </span>
                 </div>
               </div>
