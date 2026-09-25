@@ -1,0 +1,823 @@
+/* ==========================================================================
+   LuxuryHomeDeck.css — Obsidian & 24K Brushed Gold Executive Styling
+   ========================================================================== */
+
+.luxury-deck-container {
+  position: relative;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 16px 20px 80px;
+  color: #F8FAFC;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Outfit", sans-serif;
+  overflow: hidden;
+}
+
+/* Ambient Gold & Midnight Mesh */
+.luxury-ambient-mesh {
+  position: absolute;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 900px;
+  height: 500px;
+  background: radial-gradient(circle at 50% 30%, rgba(212, 175, 55, 0.12) 0%, rgba(245, 158, 11, 0.05) 45%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(60px);
+}
+
+/* ── 1. EXECUTIVE HEADER ─────────────────────────────────────────────────── */
+.luxury-deck-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+  margin-bottom: 24px;
+}
+
+.brand-crest {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.crest-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(253, 230, 138, 0.2);
+}
+
+.crest-tag {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  background: linear-gradient(135deg, #FDE68A 0%, #D4AF37 50%, #F59E0B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.crest-sub {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #94A3B8;
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+
+.live-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.live-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.live-pulse-dot.online {
+  background: #10B981;
+  box-shadow: 0 0 10px #10B981;
+  animation: liveGlow 1.8s infinite alternate;
+}
+
+.live-pulse-dot.sync {
+  background: #F59E0B;
+}
+
+@keyframes liveGlow {
+  0% { opacity: 0.6; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1.15); box-shadow: 0 0 12px #10B981; }
+}
+
+.live-text {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #E2E8F0;
+}
+
+/* ── 2. LIVE BENCHMARK INDICES BAR ────────────────────────────────────────── */
+.luxury-indices-bar {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 768px) {
+  .luxury-indices-bar {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+.luxury-index-card {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 14px 18px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.luxury-index-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+.idx-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.idx-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #94A3B8;
+  letter-spacing: 0.04em;
+}
+
+.idx-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.idx-badge.pos {
+  color: #10B981;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.idx-badge.neg {
+  color: #EF4444;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.idx-value {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #F8FAFC;
+}
+
+/* ── 3. ACTION COMMAND CENTER ("WHAT TO BUY TODAY?") ──────────────────────── */
+.action-command-center {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 40px;
+}
+
+.section-head-luxury {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.gold-pill-mini {
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #D4AF37;
+  background: rgba(212, 175, 55, 0.12);
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  margin-bottom: 8px;
+}
+
+.hero-gold-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #F8FAFC;
+  margin: 0;
+  line-height: 1.15;
+}
+
+.gold-gradient-text {
+  background: linear-gradient(135deg, #FDE68A 0%, #D4AF37 50%, #F59E0B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-subtext {
+  font-size: 13px;
+  color: #94A3B8;
+  margin: 6px 0 0;
+}
+
+.view-all-gold-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 10px;
+  color: #FDE68A;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.view-all-gold-btn:hover {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(245, 158, 11, 0.3) 100%);
+  border-color: rgba(212, 175, 55, 0.6);
+  transform: translateX(2px);
+  color: #FFF;
+}
+
+/* Breakout Cards Grid */
+.featured-breakouts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .featured-breakouts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.breakout-luxury-card {
+  position: relative;
+  background: linear-gradient(145deg, rgba(18, 24, 38, 0.85) 0%, rgba(10, 14, 24, 0.85) 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.25s ease;
+}
+
+.breakout-luxury-card:hover {
+  border-color: rgba(212, 175, 55, 0.5);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45), 0 0 20px rgba(212, 175, 55, 0.15);
+  transform: translateY(-3px);
+}
+
+.card-top-line {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.sym-ticker {
+  display: block;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #FFFFFF;
+}
+
+.sym-name {
+  display: block;
+  font-size: 11px;
+  color: #94A3B8;
+  margin-top: 1px;
+}
+
+.score-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+}
+
+.score-num {
+  font-size: 12px;
+  font-weight: 800;
+  color: #10B981;
+}
+
+.score-lbl {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #6EE7B7;
+}
+
+.pattern-banner {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #CBD5E1;
+  margin-bottom: 16px;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  margin-bottom: 16px;
+}
+
+.price-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.price-lbl {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #64748B;
+  letter-spacing: 0.04em;
+  margin-bottom: 3px;
+}
+
+.price-val {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #F8FAFC;
+}
+
+.price-val.gold {
+  color: #FDE68A;
+}
+
+.price-val.profit {
+  color: #10B981;
+}
+
+.card-footer-luxury {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.vol-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #F59E0B;
+}
+
+.card-cta-btn {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(245, 158, 11, 0.25) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  color: #FDE68A;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.card-cta-btn:hover {
+  background: linear-gradient(135deg, #D4AF37 0%, #F59E0B 100%);
+  color: #000;
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
+}
+
+/* ── 4. AI ENGINE SPOTLIGHT (V2 PRO) ───────────────────────────────────────── */
+.ai-spotlight-section {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 40px;
+}
+
+.ai-spotlight-card {
+  position: relative;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.ai-spotlight-card.active-call {
+  background: linear-gradient(145deg, rgba(26, 32, 44, 0.95) 0%, rgba(15, 20, 30, 0.95) 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.5);
+  box-shadow: 0 0 35px rgba(212, 175, 55, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.spotlight-tag-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.spotlight-badge {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #FDE68A;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gold-star {
+  color: #F59E0B;
+  font-size: 13px;
+}
+
+.status-indicator-active {
+  font-size: 10px;
+  font-weight: 800;
+  color: #10B981;
+  letter-spacing: 0.06em;
+}
+
+.spotlight-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+@media (max-width: 850px) {
+  .spotlight-body {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.spotlight-sym-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #FFFFFF;
+}
+
+.spotlight-strategy {
+  font-size: 12px;
+  color: #94A3B8;
+  margin-top: 4px;
+}
+
+.spotlight-metrics {
+  display: flex;
+  gap: 20px;
+}
+
+.metric-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.m-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: #64748B;
+  margin-bottom: 3px;
+}
+
+.m-val {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.m-val.gold { color: #FDE68A; }
+.m-val.profit { color: #10B981; }
+.m-val.loss { color: #EF4444; }
+
+.spotlight-action-row {
+  display: flex;
+  gap: 10px;
+}
+
+.spotlight-btn-primary {
+  background: linear-gradient(135deg, #FDE68A 0%, #D4AF37 50%, #B45309 100%);
+  color: #0A0E17;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.3);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.spotlight-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(212, 175, 55, 0.45);
+}
+
+.spotlight-btn-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #E2E8F0;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 12px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.spotlight-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Capital Preservation State */
+.ai-spotlight-card.preservation-mode {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px dashed rgba(212, 175, 55, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+@media (max-width: 850px) {
+  .ai-spotlight-card.preservation-mode {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.preservation-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pres-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #FDE68A;
+}
+
+.pres-desc {
+  font-size: 12px;
+  color: #94A3B8;
+  margin-top: 4px;
+  line-height: 1.5;
+  max-width: 650px;
+}
+
+.pres-btn {
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  color: #FDE68A;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.pres-btn:hover {
+  background: rgba(212, 175, 55, 0.2);
+  border-color: rgba(212, 175, 55, 0.5);
+}
+
+/* ── 5. INSTITUTIONAL STOCK DNA PR HERO BANNER ─────────────────────────────── */
+.dna-hero-pr-card {
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(135deg, rgba(20, 27, 45, 0.8) 0%, rgba(12, 16, 26, 0.95) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 24px;
+  padding: 32px 36px;
+  margin-bottom: 36px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+}
+
+.dna-badge-gold {
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #D4AF37;
+  background: rgba(212, 175, 55, 0.12);
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  margin-bottom: 12px;
+}
+
+.dna-pr-heading {
+  font-size: 26px;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0 0 8px;
+  line-height: 1.2;
+}
+
+.gold-shimmer-text {
+  background: linear-gradient(135deg, #FDE68A 0%, #D4AF37 50%, #F59E0B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dna-pr-sub {
+  font-size: 13px;
+  color: #94A3B8;
+  margin: 0 0 24px;
+  max-width: 680px;
+  line-height: 1.5;
+}
+
+.dna-search-bar-luxury {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+@media (max-width: 700px) {
+  .dna-search-bar-luxury {
+    flex-direction: column;
+  }
+}
+
+.search-input-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: rgba(8, 12, 20, 0.85);
+  border: 1.5px solid rgba(212, 175, 55, 0.3);
+  border-radius: 12px;
+  padding: 0 16px;
+  transition: all 0.2s ease;
+}
+
+.search-input-wrap:focus-within {
+  border-color: #D4AF37;
+  box-shadow: 0 0 16px rgba(212, 175, 55, 0.25);
+}
+
+.dna-search-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 14px 12px;
+  outline: none;
+}
+
+.dna-search-input::placeholder {
+  color: #64748B;
+  font-weight: 500;
+}
+
+.dna-search-submit {
+  background: linear-gradient(135deg, #FDE68A 0%, #D4AF37 50%, #B45309 100%);
+  border: none;
+  color: #0A0E17;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 0 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.dna-search-submit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 18px rgba(212, 175, 55, 0.35);
+}
+
+.quick-chips-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.chips-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748B;
+}
+
+.chips-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quick-stock-chip {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #CBD5E1;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quick-stock-chip:hover {
+  background: rgba(212, 175, 55, 0.15);
+  border-color: rgba(212, 175, 55, 0.4);
+  color: #FDE68A;
+  transform: translateY(-1px);
+}
+
+/* ── 6. PLATFORM TRUST & PERFORMANCE METRICS ─────────────────────────────── */
+.luxury-stats-ribbon {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 16px 24px;
+}
+
+@media (max-width: 650px) {
+  .luxury-stats-ribbon {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .stat-divider {
+    display: none;
+  }
+}
+
+.stat-pod {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.stat-pod-val {
+  font-size: 20px;
+  font-weight: 800;
+  color: #F8FAFC;
+}
+
+.stat-pod-val.gold {
+  color: #FDE68A;
+}
+
+.stat-pod-lbl {
+  font-size: 9px;
+  font-weight: 700;
+  color: #64748B;
+  letter-spacing: 0.08em;
+  margin-top: 4px;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.08);
+  align-self: center;
+}

@@ -25,6 +25,8 @@ import TradingViewStockDetail from "./components/TradingViewStockDetail";
 import StockDNAScreen from "./components/StockDNAScreen";
 import ScreenerScreen from "./components/ScreenerScreen";
 import { useLiveMarket, liveMarketSocket } from "./services/liveMarketSocket";
+import { LuxuryHomeDeck } from "./components/home/LuxuryHomeDeck";
+import "./components/home/LuxuryHomeDeck.css";
 
 /* ============================================================
    FORMATTERS & HELPERS
@@ -2593,11 +2595,26 @@ export default function App() {
 
       {/* ============ SCREENS ============ */}
       <main className="screens" id="screens">
-        {/* ===== HOME SCREEN (LUXURY TERMINAL INTEL) ===== */}
-        <section className={`screen ${activeTab === "home" ? "active" : ""}`} id="screen-home">
-          {/* ============================================================
-             LUXURY TERMINAL HOME VIEW
-             ============================================================ */}
+        {/* ===== HOME SCREEN (LUXURY EXECUTIVE "WHAT TO BUY TODAY" DECK) ===== */}
+        <section className={`screen ${activeTab === "home" ? "active" : ""}`} id="screen-home" style={{ padding: 0 }}>
+          <LuxuryHomeDeck
+            terminalData={terminalData}
+            livePrices={livePrices}
+            terminalIndices={terminalIndices}
+            isWsConnected={isWsConnected}
+            onNavigate={(tab, filter) => {
+              setActiveTab(tab as any);
+            }}
+            onSelectStockForDna={(sym) => {
+              setSelectedDnaStock(sym);
+            }}
+            onOpenChart={(sym) => {
+              fetchChart(sym, "v2");
+            }}
+          />
+        </section>
+
+        {false && (
           <div className="shell">
             {/* HERO */}
             <section className="hero">
@@ -2972,9 +2989,9 @@ export default function App() {
               <div className="meta">Data sourced from NSE · BSE · 15:45 IST</div>
             </footer>
           </div>
-        </section>
+        )}
 
-        {/* ===== SIGNALS SCREEN ===== */}
+        {/* ===== SIGNALS SCREEN (AI CALLS) ===== */}
         <section className={`screen ${activeTab === "signals" ? "active" : ""}`} id="screen-signals">
           {/* Collapsible iOS-Style Engine Bar (Default Collapsed) */}
           <div className={`signals-engine-compact-card ${isEngineInfoOpen ? "is-open" : ""}`}>
@@ -4266,6 +4283,7 @@ export default function App() {
 
       {/* ============ TAB BAR ============ */}
       <nav className="tabbar" id="tabbar">
+        {/* 1. HOME */}
         <button
           className={`tab ${activeTab === "home" ? "active" : ""}`}
           onClick={() => setActiveTab("home")}
@@ -4274,6 +4292,8 @@ export default function App() {
           <svg viewBox="0 0 24 24"><path d="M3 10.6 12 3.2l9 7.4V20a1 1 0 0 1-1 1h-5.2v-6.4H9.2V21H4a1 1 0 0 1-1-1z" /></svg>
           Home
         </button>
+
+        {/* 2. DNA */}
         <button
           className={`tab ${activeTab === "dna" ? "active" : ""}`}
           onClick={() => {
@@ -4307,15 +4327,41 @@ export default function App() {
             boxShadow: "0 0 6px var(--accent, #D4AF37)"
           }} />
         </button>
+
+        {/* 3. AI CALLS (Renamed from Signals) */}
         <button
           className={`tab ${activeTab === "signals" ? "active" : ""}`}
           onClick={() => setActiveTab("signals")}
           data-tab="signals"
         >
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.6" /><circle cx="12" cy="12" r="1" /></svg>
-          Signals
+          AI Calls
           <span className="radar-ring" />
         </button>
+
+        {/* 4. BREAKOUT (Renamed from Screener) */}
+        <button
+          className={`tab ${activeTab === "screener" ? "active" : ""}`}
+          onClick={() => setActiveTab("screener")}
+          data-tab="screener"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+          </svg>
+          Breakout
+          <span style={{
+            position: "absolute",
+            top: 5,
+            right: "calc(50% - 19px)",
+            width: 5,
+            height: 5,
+            borderRadius: "50%",
+            background: "#10B981",
+            boxShadow: "0 0 6px #10B981"
+          }} />
+        </button>
+
+        {/* 5. PORTFOLIO */}
         <button
           className={`tab ${activeTab === "portfolio" ? "active" : ""}`}
           onClick={() => setActiveTab("portfolio")}
@@ -4344,55 +4390,6 @@ export default function App() {
               {portfolio.length}
             </span>
           )}
-        </button>
-        <button
-          className={`tab ${activeTab === "screener" ? "active" : ""}`}
-          onClick={() => setActiveTab("screener")}
-          data-tab="screener"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-          </svg>
-          Screener
-          <span style={{
-            position: "absolute",
-            top: 5,
-            right: "calc(50% - 19px)",
-            width: 5,
-            height: 5,
-            borderRadius: "50%",
-            background: "#10B981",
-            boxShadow: "0 0 6px #10B981"
-          }} />
-        </button>
-        <button
-          className={`tab ${activeTab === "lounge" ? "active" : ""}`}
-          onClick={() => setActiveTab("lounge")}
-          data-tab="lounge"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-          Lounge
-          <span style={{
-            position: "absolute",
-            top: 5,
-            right: "calc(50% - 17px)",
-            background: "#00A884",
-            color: "#fff",
-            fontSize: 8.5,
-            fontWeight: 800,
-            padding: "0 3.5px",
-            borderRadius: 6,
-            minWidth: 12,
-            height: 12,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            lineHeight: 1
-          }}>
-            AI
-          </span>
         </button>
       </nav>
 
