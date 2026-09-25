@@ -2075,6 +2075,22 @@ export default function App() {
     return list;
   }, [terminalDataV2, terminalDataV3, terminalData, engine, livePrices]);
 
+  // Auto-subscribe all active trades across V2 and V3, and portfolio positions to WebSocket
+  useEffect(() => {
+    const symsToWatch = new Set<string>();
+    allInTradeTrades.forEach((t: any) => {
+      const s = (t.sym || t.symbol || "").toUpperCase().trim();
+      if (s) symsToWatch.add(s);
+    });
+    portfolio.forEach((p: any) => {
+      const s = (p.symbol || "").toUpperCase().trim();
+      if (s) symsToWatch.add(s);
+    });
+    if (symsToWatch.size > 0) {
+      liveMarketSocket.subscribe(Array.from(symsToWatch));
+    }
+  }, [allInTradeTrades.length, portfolio.length]);
+
   // Dynamic header date (no hardcoded current date)
   const headerDateStr = useMemo(() => {
     if (terminalData?.asOfDate) return formatDisplayDate(terminalData.asOfDate);
@@ -2100,8 +2116,11 @@ export default function App() {
       totalInvested += invested;
 
       const sym = (pos.symbol || "").toUpperCase().trim();
+      const live = livePrices && sym ? livePrices[sym] : undefined;
       const liveMatch = allInTradeTrades.find((a: any) => (a.sym || a.symbol || "").toUpperCase().trim() === sym);
-      const curP = liveMatch ? Number(liveMatch.now || liveMatch.currentPrice || liveMatch.price || buyP) : Number(pos.currentPrice || buyP);
+      const curP = live && live.price > 0 
+        ? live.price 
+        : (liveMatch ? Number(liveMatch.now || liveMatch.currentPrice || liveMatch.price || buyP) : Number(pos.currentPrice || buyP));
       currentValue += curP * qty;
     });
 
@@ -2117,7 +2136,7 @@ export default function App() {
       totalPortfolioValue,
       count: portfolio.length,
     };
-  }, [portfolio, allInTradeTrades]);
+  }, [portfolio, allInTradeTrades, livePrices]);
 
   // Synchronize live LTP and active status into portfolio across both engines
   useEffect(() => {
@@ -3323,7 +3342,7 @@ export default function App() {
                         </div>
                         <div className="mtile">
                           <div className="k">Current</div>
-                          <div className="v" style={{ color: "var(--accent)" }}>{INR(t.now || t.currentPrice || t.price || t.entry)}</div>
+                          <div className="v" style={{ color: "var(--accent)" }}>{INR2(t.now || t.currentPrice || t.price || t.entry)}</div>
                         </div>
                         <div className="mtile">
                           <div className="k">Target</div>
@@ -3468,7 +3487,7 @@ export default function App() {
                         </div>
                         <div className="mtile">
                           <div className="k">Current</div>
-                          <div className="v" style={{ color: "var(--accent)" }}>{INR(t.now || t.currentPrice || t.price || 46.0)}</div>
+                          <div className="v" style={{ color: "var(--accent)" }}>{INR2(t.now || t.currentPrice || t.price || 46.0)}</div>
                         </div>
                         <div className="mtile">
                           <div className="k">Target</div>
@@ -3726,6 +3745,7 @@ export default function App() {
               portfolio={portfolio}
               completedHistory={completedHistory}
               closedTrades={closedTrades}
+              livePrices={livePrices}
               inTradeTrades={allInTradeTrades.map((t: any) => ({
                 symbol: t.sym || t.symbol,
                 engine: t.engine,

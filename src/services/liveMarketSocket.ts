@@ -90,7 +90,7 @@ class LiveMarketSocketService {
       this.socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (data.type === "TICK") {
+          if (data.type === "TICK" || data.type === "SUBSCRIBE_ACK") {
             this.latestPayload = data as MarketTickPayload;
             this.notifyTick(this.latestPayload);
           }

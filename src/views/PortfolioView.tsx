@@ -20,6 +20,7 @@ interface PortfolioViewProps {
   completedHistory?: CompletedTrade[];
   closedTrades?: ClosedTrade[];
   inTradeTrades?: InTradeTrade[];
+  livePrices?: Record<string, { price: number; change_pct?: number }>;
   onOpenAddModal?: () => void;
   onOpenBuyModal?: (symbol: string, currentPrice: number, strategyName?: string) => void;
   onOpenSellModal: (trade: any) => void;
@@ -55,6 +56,7 @@ export default function PortfolioView({
   completedHistory,
   closedTrades,
   inTradeTrades,
+  livePrices,
   onOpenAddModal,
   onOpenBuyModal,
   onOpenSellModal,
@@ -109,6 +111,7 @@ export default function PortfolioView({
 
     activeHoldings.forEach((trade: any) => {
       const sym = (trade.symbol || "").toUpperCase().trim();
+      const live = livePrices && sym ? livePrices[sym] : undefined;
       const activeMatch = activeSignalMap.get(sym);
       const dbLtp = liveDbQuotes[sym];
       const buyPrice = Number(trade.buyPrice || 0);
@@ -116,7 +119,9 @@ export default function PortfolioView({
       invested += buyPrice * qty;
 
       let curPrice = buyPrice;
-      if (activeMatch) {
+      if (live && live.price > 0) {
+        curPrice = live.price;
+      } else if (activeMatch) {
         curPrice = Number(activeMatch.currentPrice || activeMatch.entryPrice || trade.currentPrice || buyPrice);
       } else if (dbLtp && dbLtp > 0) {
         curPrice = dbLtp;
@@ -134,7 +139,7 @@ export default function PortfolioView({
       totalUnrealizedPnL: pnl,
       returnPct: pct
     };
-  }, [activeHoldings, activeSignalMap, liveDbQuotes]);
+  }, [activeHoldings, activeSignalMap, liveDbQuotes, livePrices]);
 
   // Realized statistics
   const { totalRealizedPnL, winCount, lossCount, winRate } = useMemo(() => {
@@ -339,13 +344,16 @@ export default function PortfolioView({
                 const qty = Number(holding.quantity || 1);
                 const invested = buy * qty;
 
-                // Sync live LTP directly from active signals or SQLite DB quote
+                // Sync live LTP directly from WebSocket stream, active signals, or SQLite DB quote
+                const live = livePrices && sym ? livePrices[sym] : undefined;
                 const dbLtp = liveDbQuotes[sym];
-                const cur = isSignalActive
-                  ? Number(activeMatch.currentPrice || activeMatch.entryPrice || holding.currentPrice || buy)
-                  : (dbLtp && dbLtp > 0 
-                      ? dbLtp 
-                      : (holding.currentPrice && Number(holding.currentPrice) > 0 ? Number(holding.currentPrice) : buy));
+                const cur = (live && live.price > 0)
+                  ? live.price
+                  : (isSignalActive
+                      ? Number(activeMatch.currentPrice || activeMatch.entryPrice || holding.currentPrice || buy)
+                      : (dbLtp && dbLtp > 0 
+                          ? dbLtp 
+                          : (holding.currentPrice && Number(holding.currentPrice) > 0 ? Number(holding.currentPrice) : buy)));
 
                 const currentVal = cur * qty;
                 const pnl = currentVal - invested;
