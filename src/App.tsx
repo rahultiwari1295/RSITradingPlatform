@@ -24,7 +24,7 @@ import InstitutionalPatternChart from "./components/charts/InstitutionalPatternC
 import TradingViewStockDetail from "./components/TradingViewStockDetail";
 import StockDNAScreen from "./components/StockDNAScreen";
 import ScreenerScreen from "./components/ScreenerScreen";
-import { useLiveMarket } from "./services/liveMarketSocket";
+import { useLiveMarket, liveMarketSocket } from "./services/liveMarketSocket";
 
 /* ============================================================
    FORMATTERS & HELPERS
