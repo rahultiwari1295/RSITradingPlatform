@@ -1160,7 +1160,8 @@ export default function App() {
      ============================================================ */
   const { user } = useAuth();
   const [engine, setEngine] = useState<"v2" | "v3">(() => {
-    return (localStorage.getItem("engine") as "v2" | "v3") || "v2";
+    // V3 is disabled — always use V2 for maximum performance
+    return "v2";
   });
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     return (localStorage.getItem("theme") as "dark" | "light") || "light";
@@ -1489,8 +1490,7 @@ export default function App() {
 
       if (termRes) {
         setTerminalData(termRes);
-        if (currentEngine === "v2") setTerminalDataV2(termRes);
-        else setTerminalDataV3(termRes);
+        setTerminalDataV2(termRes);
 
         const activeList = termRes.active || termRes.inTradeTrades || [];
         if (activeList.length > 0) {
@@ -1502,17 +1502,10 @@ export default function App() {
         }
       }
 
-      // Unblock the loading spinner immediately — secondary engine loads in background
+      // Unblock the loading spinner immediately
       setIsTerminalLoading(false);
 
-      // Background-fetch the other engine so cross-engine active tracking stays current
-      const otherEngine = currentEngine === "v2" ? "v3" : "v2";
-      quantsyncApi.getTerminalData(otherEngine).then(otherRes => {
-        if (otherRes) {
-          if (otherEngine === "v2") setTerminalDataV2(otherRes);
-          else setTerminalDataV3(otherRes);
-        }
-      }).catch(() => {});
+      // V3 is disabled — no secondary engine fetch needed
 
       // 2. Equity Curve
       fetchEquity(currentEngine, range);
@@ -3017,23 +3010,14 @@ export default function App() {
                 </svg>
               </button>
 
-              {/* iOS-Style Segmented Toggle Pill */}
-              <div className="ios-segmented-control" data-sel={engine}>
+              {/* V3 disabled — single engine mode for maximum performance */}
+              <div className="ios-segmented-control" data-sel="v2" style={{ pointerEvents: "none", opacity: 0.85 }}>
                 <button
                   type="button"
-                  className={`ios-segment-btn ${engine === "v2" ? "active" : ""}`}
-                  onClick={() => switchEngine("v2")}
+                  className="ios-segment-btn active"
                 >
                   <span className="segment-dot v2" />
                   <span>AI Pro</span>
-                </button>
-                <button
-                  type="button"
-                  className={`ios-segment-btn ${engine === "v3" ? "active" : ""}`}
-                  onClick={() => switchEngine("v3")}
-                >
-                  <span className="segment-dot v3" />
-                  <span>Chart + AI</span>
                 </button>
               </div>
             </div>
@@ -4243,13 +4227,13 @@ export default function App() {
                 <div className={`switch ${theme === "dark" ? "on" : ""}`} id="themeSwitch" />
               </div>
             </div>
-            <div className="setrow" onClick={() => switchEngine(engine === "v2" ? "v3" : "v2")}>
+            <div className="setrow">
               <div className="l">
                 <svg viewBox="0 0 24 24"><path d="M3 17V7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v10" /><path d="M8 20h8" /></svg>
                 Default Engine
               </div>
-              <div className="r" id="defaultEngine">
-                {engine === "v2" ? "V2 · AI Trading" : "V3 · Chart Engine"}
+              <div className="r" id="defaultEngine" style={{ color: "var(--accent-green)" }}>
+                V2 · AI Trading
               </div>
             </div>
           </div>
