@@ -1181,7 +1181,7 @@ export default function App() {
         return "dna";
       }
     }
-    return "dna";
+    return "home";
   });
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [sigSub, setSigSub] = useState<"active" | "closed">("active");
@@ -4333,14 +4333,14 @@ export default function App() {
           }} />
         </button>
 
-        {/* 3. AI CALLS (Renamed from Signals) */}
+        {/* 3. AI BUYSELL (Renamed from Signals / AI Calls) */}
         <button
           className={`tab ${activeTab === "signals" ? "active" : ""}`}
           onClick={() => setActiveTab("signals")}
           data-tab="signals"
         >
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.6" /><circle cx="12" cy="12" r="1" /></svg>
-          AI Calls
+          AI BuySell
           <span className="radar-ring" />
         </button>
 

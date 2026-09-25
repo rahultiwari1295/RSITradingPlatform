@@ -376,13 +376,15 @@ body::before{
    ============================================================ */
 .tabbar{
   flex:0 0 auto;
-  display:grid;grid-template-columns:repeat(6,1fr);
+  display:grid;
+  grid-template-columns:repeat(5, 1fr);
   background:var(--s0);
   box-shadow:none;
   border-top:1px solid var(--line);
   padding-bottom:max(6px, env(safe-area-inset-bottom));
   position:relative;z-index:50;
   width:100%;
+  margin: 0 auto;
 }
 .tabbar::before{
   display:none;
