@@ -19,6 +19,7 @@ interface LuxuryHomeDeckProps {
   onNavigate: (tab: "home" | "signals" | "portfolio" | "dna" | "charts" | "screener", filter?: string) => void;
   onSelectStockForDna: (symbol: string) => void;
   onOpenChart?: (symbol: string) => void;
+  onOpenAnalyst?: (stock: any) => void;
 }
 
 // High-conviction curated breakout setups
@@ -79,7 +80,8 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
   theme = "light",
   onNavigate,
   onSelectStockForDna,
-  onOpenChart
+  onOpenChart,
+  onOpenAnalyst
 }) => {
   const [activeCardIdx, setActiveCardIdx] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
@@ -197,9 +199,6 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
       <section className="action-command-section">
         <div className="section-header-row">
           <div className="header-titles">
-            <div className="luxury-kicker-pill">
-              <span className="kicker-spark">✦</span> ACTION SIGNALS · HIGH CONVICTION
-            </div>
             <h1 className="hero-headline">
               What to Buy <span className="headline-gold-gradient">Today?</span>
             </h1>
@@ -314,28 +313,19 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
                 </div>
 
                 <div className="b-action-buttons">
-                  {onOpenChart && (
-                    <button 
-                      type="button"
-                      className="b-btn-secondary"
-                      onClick={() => onOpenChart(b.symbol)}
-                      title="Open Live Candlestick Chart"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M3 3v18h18M7 16l4-4 4 4 6-6"/>
-                      </svg>
-                      <span>Chart</span>
-                    </button>
-                  )}
                   <button 
                     type="button"
                     className="b-btn-primary"
                     onClick={() => {
-                      onSelectStockForDna(b.symbol);
-                      onNavigate("dna");
+                      if (onOpenAnalyst) {
+                        onOpenAnalyst(b);
+                      } else {
+                        onSelectStockForDna(b.symbol);
+                        onNavigate("dna");
+                      }
                     }}
                   >
-                    <span>Analyze DNA</span>
+                    <span>Analyze</span>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M5 12h14M12 5l7 7-7 7"/>
                     </svg>

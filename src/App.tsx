@@ -27,6 +27,7 @@ import ScreenerScreen from "./components/ScreenerScreen";
 import { useLiveMarket, liveMarketSocket } from "./services/liveMarketSocket";
 import { LuxuryHomeDeck } from "./components/home/LuxuryHomeDeck";
 import "./components/home/LuxuryHomeDeck.css";
+import { BreakoutAnalystView } from "./components/analyst/BreakoutAnalystView";
 
 /* ============================================================
    FORMATTERS & HELPERS
@@ -1270,6 +1271,7 @@ export default function App() {
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
   const [buyModalItem, setBuyModalItem] = useState<{ symbol: string; initialPrice: number; strategyName?: string } | null>(null);
   const [sellModalItem, setSellModalItem] = useState<any | null>(null);
+  const [analystStock, setAnalystStock] = useState<any | null>(null);
 
   // Centralized Paper Trade modal opener with authentication gate
   const handleOpenBuyModal = useCallback(
@@ -2611,6 +2613,9 @@ export default function App() {
             }}
             onOpenChart={(sym) => {
               fetchChart(sym, "v2");
+            }}
+            onOpenAnalyst={(stock) => {
+              setAnalystStock(stock);
             }}
           />
         </section>
@@ -4174,8 +4179,7 @@ export default function App() {
             theme={theme}
             livePrices={livePrices}
             onSelectStock={(sym, fullData) => {
-              // Open dedicated Stock Detail view with full audited screener row metrics
-              openSheet("screener_detail", fullData || { symbol: sym, sym });
+              setAnalystStock(fullData || { symbol: sym, sym });
             }}
           />
         </section>
@@ -4725,6 +4729,20 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* Breakout Analyst Modal View */}
+      {analystStock && (
+        <BreakoutAnalystView
+          stock={analystStock}
+          theme={theme}
+          onClose={() => setAnalystStock(null)}
+          onNavigateDna={(sym) => {
+            setAnalystStock(null);
+            setSelectedDnaStock(sym);
+            setActiveTab("dna");
+          }}
+        />
+      )}
     </div>
   );
 }

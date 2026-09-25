@@ -1,0 +1,545 @@
+/* ==========================================================================
+   BreakoutAnalystView.css — High-End Institutional Breakout Analyst Modal
+   Dual-Theme Support (Light Porcelain & Dark Obsidian)
+   ========================================================================== */
+
+.analyst-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: fadeInModal 0.22s ease-out;
+}
+
+@keyframes fadeInModal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.analyst-view-panel {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  height: 94dvh;
+  max-height: 94dvh;
+  border-radius: 28px 28px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  padding: 18px 16px 36px;
+  animation: slideUpPanel 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.45);
+}
+
+@keyframes slideUpPanel {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* Theme Skins */
+.analyst-modal-backdrop.theme-dark .analyst-view-panel {
+  background: #0B0E17;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  color: #F8FAFC;
+}
+
+.analyst-modal-backdrop.theme-light .analyst-view-panel {
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #0F172A;
+}
+
+/* Share Toast Bubble */
+.share-toast-bubble {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: #10B981;
+  color: #FFFFFF;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 7px 16px;
+  border-radius: 999px;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
+  animation: popToast 0.2s ease-out;
+}
+
+@keyframes popToast {
+  from { transform: translate(-50%, -10px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+/* ── 1. TOP APP BAR ──────────────────────────────────────────────────────── */
+.analyst-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--line, rgba(0, 0, 0, 0.07));
+}
+
+.analyst-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.analyst-modal-backdrop.theme-dark .analyst-back-btn {
+  color: #94A3B8;
+}
+.analyst-modal-backdrop.theme-dark .analyst-back-btn:hover {
+  color: #F8FAFC;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.analyst-modal-backdrop.theme-light .analyst-back-btn {
+  color: #475569;
+}
+.analyst-modal-backdrop.theme-light .analyst-back-btn:hover {
+  color: #0F172A;
+  background: #F1F5F9;
+}
+
+.analyst-stock-title-cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.stock-ticker-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stock-ticker-bold {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.exchange-pill-bse {
+  font-size: 8.5px;
+  font-weight: 800;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  background: #3B82F6;
+  color: #FFFFFF;
+  letter-spacing: 0.04em;
+}
+
+.dna-score-micro-tag {
+  font-size: 8.5px;
+  font-weight: 800;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.stock-company-name-sub {
+  font-size: 10.5px;
+  color: var(--ink3, #64748B);
+  margin-top: 1px;
+}
+
+.analyst-quick-share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  border: none;
+}
+
+.analyst-modal-backdrop.theme-dark .analyst-quick-share-btn {
+  background: linear-gradient(135deg, #FDE68A 0%, #D4AF37 50%, #B45309 100%);
+  color: #0A0E17;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.25);
+}
+
+.analyst-modal-backdrop.theme-light .analyst-quick-share-btn {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.25);
+}
+
+/* ── 2. KEY METRICS STRIP (ENTRY, TARGET, SL, CMP) ───────────────────────── */
+.analyst-metrics-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.analyst-metric-box {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 6px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.analyst-modal-backdrop.theme-dark .analyst-metric-box {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.analyst-modal-backdrop.theme-light .analyst-metric-box {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+}
+
+.a-metric-lbl {
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #64748B;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.a-metric-val {
+  font-size: 12.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.a-metric-val.gold-accent {
+  color: #F59E0B;
+}
+
+.a-metric-val.profit-accent {
+  color: #10B981;
+}
+.analyst-modal-backdrop.theme-light .a-metric-val.profit-accent {
+  color: #047857;
+}
+
+.a-metric-val.loss-accent {
+  color: #EF4444;
+}
+
+.a-metric-val.cmp-accent {
+  color: inherit;
+}
+
+.a-metric-badge {
+  font-size: 8px;
+  font-weight: 800;
+  color: #10B981;
+  margin-top: 1px;
+}
+
+.a-metric-badge.red {
+  color: #EF4444;
+}
+
+/* ── 3. CHART NAVIGATION TABS ────────────────────────────────────────────── */
+.chart-view-selector-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 8px;
+}
+
+.chart-tabs-left {
+  display: flex;
+  gap: 6px;
+}
+
+.chart-mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.analyst-modal-backdrop.theme-dark .chart-mode-pill {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94A3B8;
+}
+
+.analyst-modal-backdrop.theme-dark .chart-mode-pill.active {
+  background: rgba(212, 175, 55, 0.18);
+  border-color: rgba(212, 175, 55, 0.45);
+  color: #FDE68A;
+}
+
+.analyst-modal-backdrop.theme-light .chart-mode-pill {
+  background: #F1F5F9;
+  border: 1px solid #CBD5E1;
+  color: #475569;
+}
+
+.analyst-modal-backdrop.theme-light .chart-mode-pill.active {
+  background: #FEF3C7;
+  border-color: #F59E0B;
+  color: #B45309;
+}
+
+.timeframe-toggle-pills {
+  display: flex;
+  gap: 4px;
+}
+
+.tf-pill {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: #64748B;
+  transition: all 0.15s ease;
+}
+
+.analyst-modal-backdrop.theme-dark .tf-pill.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+}
+
+.analyst-modal-backdrop.theme-light .tf-pill.active {
+  background: #E2E8F0;
+  color: #0F172A;
+}
+
+/* ── 4. CHART DISPLAY STAGE ──────────────────────────────────────────────── */
+.analyst-chart-stage-container {
+  position: relative;
+  width: 100%;
+  height: 380px;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.analyst-modal-backdrop.theme-dark .analyst-chart-stage-container {
+  background: #080A10;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.analyst-modal-backdrop.theme-light .analyst-chart-stage-container {
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+}
+
+.dna-chart-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.dna-chart-canvas-wrap {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+}
+
+.dna-chart-rendered-img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  display: block;
+}
+
+/* Clean SVG Levels Overlay with NO text on chart */
+.clean-levels-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Clean Legend Bar BELOW the chart (keeping chart itself 100% clean) */
+.dna-chart-clean-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 8px 10px;
+  border-top: 1px solid var(--line, rgba(0, 0, 0, 0.07));
+  font-size: 10.5px;
+}
+
+.analyst-modal-backdrop.theme-dark .dna-chart-clean-legend {
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.analyst-modal-backdrop.theme-light .dna-chart-clean-legend {
+  background: #F8FAFC;
+}
+
+.legend-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-line {
+  width: 14px;
+  height: 2.5px;
+  border-radius: 2px;
+}
+
+.legend-line.green { background: #10B981; }
+.legend-line.amber { background: #F59E0B; }
+.legend-line.red { background: #EF4444; }
+
+.legend-text {
+  font-size: 10px;
+}
+
+/* TradingView Viewport */
+.tradingview-viewport {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── 5. SHARE MESSAGE CARD PREVIEW ────────────────────────────────────────── */
+.analyst-share-card {
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+.analyst-modal-backdrop.theme-dark .analyst-share-card {
+  background: rgba(18, 24, 38, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.analyst-modal-backdrop.theme-light .analyst-share-card {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+}
+
+.share-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.share-card-title {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #64748B;
+}
+
+.copy-btn-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+}
+
+.analyst-modal-backdrop.theme-dark .copy-btn-mini {
+  background: rgba(212, 175, 55, 0.15);
+  color: #FDE68A;
+}
+
+.analyst-modal-backdrop.theme-light .copy-btn-mini {
+  background: #FEF3C7;
+  color: #B45309;
+}
+
+.share-message-box {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace, Consolas, sans-serif;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  user-select: all;
+}
+
+.analyst-modal-backdrop.theme-dark .share-message-box {
+  background: #06080E;
+  color: #E2E8F0;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.analyst-modal-backdrop.theme-light .share-message-box {
+  background: #FFFFFF;
+  color: #0F172A;
+  border: 1px solid #CBD5E1;
+}
+
+/* ── 6. BOTTOM ACTION FOOTER ─────────────────────────────────────────────── */
+.analyst-footer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.analyst-btn-dna {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.analyst-modal-backdrop.theme-dark .analyst-btn-dna {
+  background: linear-gradient(135deg, #FDE68A 0%, #D4AF37 50%, #B45309 100%);
+  color: #0A0E17;
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.25);
+}
+
+.analyst-modal-backdrop.theme-light .analyst-btn-dna {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 16px rgba(217, 119, 6, 0.25);
+}
