@@ -1,6 +1,7 @@
 /* ==========================================================================
    BreakoutAnalystView.css — High-End Institutional Breakout Citadel
    Fully Responsive Dual-Theme (Dark Obsidian & Light Porcelain)
+   Institutional Volumetric Shadows & Spring Transition Physics
    ========================================================================== */
 
 /* ── THEME DESIGN SYSTEM ─────────────────────────────────────────────────── */
@@ -9,31 +10,43 @@
 .dna-analyst-fullscreen-overlay.theme-dark {
   --an-bg: #06080E;
   --an-bg-gradient: 
-    radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 60%),
-    radial-gradient(circle at 100% 100%, rgba(245, 158, 11, 0.04) 0%, transparent 50%);
-  --an-card-bg: rgba(14, 18, 28, 0.92);
-  --an-card-border: rgba(255, 255, 255, 0.08);
-  --an-card-hover-border: rgba(255, 255, 255, 0.16);
+    radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.1) 0%, transparent 60%),
+    radial-gradient(circle at 100% 100%, rgba(245, 158, 11, 0.05) 0%, transparent 50%);
+  --an-card-bg: rgba(14, 18, 28, 0.94);
+  --an-card-border: rgba(255, 255, 255, 0.09);
+  --an-card-hover-border: rgba(255, 255, 255, 0.2);
   --an-text-title: #FFFFFF;
   --an-text-body: #E2E8F0;
   --an-text-sub: #94A3B8;
   --an-text-muted: #64748B;
   --an-pill-bg: rgba(255, 255, 255, 0.05);
   --an-pill-border: rgba(255, 255, 255, 0.08);
-  --an-pod-bg: rgba(14, 18, 28, 0.85);
+  --an-pod-bg: rgba(14, 18, 28, 0.88);
   --an-track-bg: rgba(255, 255, 255, 0.08);
-  --an-subpod-bg: rgba(8, 11, 18, 0.7);
-  --an-subpod-border: rgba(255, 255, 255, 0.06);
+  --an-subpod-bg: rgba(8, 11, 18, 0.75);
+  --an-subpod-border: rgba(255, 255, 255, 0.07);
   --an-nav-btn-bg: rgba(255, 255, 255, 0.05);
   --an-nav-btn-border: rgba(255, 255, 255, 0.1);
   --an-nav-btn-text: #E2E8F0;
   --an-good-bg: rgba(16, 185, 129, 0.08);
-  --an-good-border: rgba(16, 185, 129, 0.25);
+  --an-good-border: rgba(16, 185, 129, 0.28);
   --an-good-text: #E2E8F0;
   --an-bad-bg: rgba(239, 68, 68, 0.08);
-  --an-bad-border: rgba(239, 68, 68, 0.25);
+  --an-bad-border: rgba(239, 68, 68, 0.28);
   --an-bad-text: #E2E8F0;
-  --an-card-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  --an-card-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 8px 24px -4px rgba(0, 0, 0, 0.65),
+    0 24px 56px -8px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  --an-card-shadow-hover:
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    0 14px 32px -4px rgba(0, 0, 0, 0.75),
+    0 36px 72px -10px rgba(0, 0, 0, 0.9),
+    0 0 25px rgba(59, 130, 246, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 0 0 1px rgba(59, 130, 246, 0.2);
   --an-chart-stage-bg: #080A10;
 }
 
@@ -41,8 +54,8 @@
 .dna-analyst-fullscreen-overlay.theme-light {
   --an-bg: #F8FAFC;
   --an-bg-gradient: 
-    radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.05) 0%, transparent 60%),
-    radial-gradient(circle at 100% 100%, rgba(245, 158, 11, 0.03) 0%, transparent 50%);
+    radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.06) 0%, transparent 60%),
+    radial-gradient(circle at 100% 100%, rgba(245, 158, 11, 0.04) 0%, transparent 50%);
   --an-card-bg: #FFFFFF;
   --an-card-border: #E2E8F0;
   --an-card-hover-border: #CBD5E1;
@@ -65,7 +78,17 @@
   --an-bad-bg: #FEF2F2;
   --an-bad-border: #FECACA;
   --an-bad-text: #991B1B;
-  --an-card-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+  --an-card-shadow: 
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 6px 18px -2px rgba(15, 23, 42, 0.06),
+    0 20px 44px -8px rgba(15, 23, 42, 0.09),
+    inset 0 1px 0 #FFFFFF;
+  --an-card-shadow-hover:
+    0 2px 4px rgba(15, 23, 42, 0.04),
+    0 12px 28px -4px rgba(15, 23, 42, 0.09),
+    0 28px 60px -10px rgba(15, 23, 42, 0.12),
+    0 0 20px rgba(59, 130, 246, 0.1),
+    inset 0 1px 0 #FFFFFF;
   --an-chart-stage-bg: #F1F5F9;
 }
 
@@ -81,12 +104,12 @@
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Outfit", sans-serif;
-  animation: overlayFadeIn 0.22s ease-out;
+  animation: overlayFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes overlayFadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(12px) scale(0.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .dna-analyst-scroll-citadel {
@@ -432,10 +455,16 @@
 .dna-52w-range-card {
   background: var(--an-card-bg);
   border: 1px solid var(--an-card-border);
-  border-radius: 14px;
-  padding: 12px 14px;
+  border-radius: 16px;
+  padding: 14px 16px;
   margin-bottom: 14px;
   box-shadow: var(--an-card-shadow);
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dna-52w-range-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--an-card-shadow-hover);
 }
 
 .range-52w-labels {
@@ -476,7 +505,7 @@
   border-radius: 50%;
   background: #FFFFFF;
   border: 2px solid #3B82F6;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
   transform: translateX(-50%);
 }
 
@@ -490,12 +519,56 @@
 .level-pod {
   background: var(--an-pod-bg);
   border: 1px solid var(--an-card-border);
-  border-radius: 12px;
-  padding: 11px 10px;
+  border-radius: 14px;
+  padding: 12px 10px;
   text-align: center;
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow: hidden;
   box-shadow: var(--an-card-shadow);
+  transition: 
+    transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s ease;
+  cursor: default;
+}
+
+.level-pod:hover {
+  transform: translateY(-3px) scale(1.02);
+}
+
+.level-pod:nth-child(1) {
+  border-top: 2.5px solid #F59E0B;
+}
+.level-pod:nth-child(1):hover {
+  border-color: #F59E0B;
+  box-shadow: 
+    0 4px 16px -2px rgba(245, 158, 11, 0.3),
+    0 16px 36px -6px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.level-pod:nth-child(2) {
+  border-top: 2.5px solid #10B981;
+}
+.level-pod:nth-child(2):hover {
+  border-color: #10B981;
+  box-shadow: 
+    0 4px 16px -2px rgba(16, 185, 129, 0.35),
+    0 16px 36px -6px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.level-pod:nth-child(3) {
+  border-top: 2.5px solid #EF4444;
+}
+.level-pod:nth-child(3):hover {
+  border-color: #EF4444;
+  box-shadow: 
+    0 4px 16px -2px rgba(239, 68, 68, 0.35),
+    0 16px 36px -6px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .level-lbl {
@@ -521,10 +594,16 @@
 .dna-chart-card-section {
   background: var(--an-card-bg);
   border: 1px solid var(--an-card-border);
-  border-radius: 18px;
-  padding: 16px;
-  margin-bottom: 16px;
+  border-radius: 20px;
+  padding: 18px;
+  margin-bottom: 18px;
   box-shadow: var(--an-card-shadow);
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dna-chart-card-section:hover {
+  transform: translateY(-2.5px);
+  box-shadow: var(--an-card-shadow-hover);
 }
 
 .chart-card-header-bar {
@@ -646,23 +725,40 @@
   justify-content: center;
   gap: 10px;
   width: 100%;
-  padding: 14px 20px;
-  border-radius: 14px;
-  background: #25D366;
+  padding: 15px 22px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #28E06D 0%, #25D366 50%, #1EB859 100%);
   color: #FFFFFF;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.01em;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 18px rgba(37, 211, 102, 0.4);
-  transition: all 0.2s ease;
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 6px 20px -2px rgba(37, 211, 102, 0.5),
+    0 16px 36px -6px rgba(37, 211, 102, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: 
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.2s ease;
 }
 
 .dna-whatsapp-button-hero:hover {
-  background: #20BD5A;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(37, 211, 102, 0.55);
+  transform: translateY(-2.5px) scale(1.012);
+  filter: brightness(1.05);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    0 10px 28px -2px rgba(37, 211, 102, 0.65),
+    0 24px 48px -6px rgba(37, 211, 102, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.dna-whatsapp-button-hero:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 10px rgba(37, 211, 102, 0.4);
+  transition-duration: 0.08s;
 }
 
 /* ── 5. WHATS GOOD & WHATS BAD (WITH CLEAR LINE GAP) ──────────────────────── */
@@ -674,9 +770,17 @@
 }
 
 .pros-cons-card {
-  border-radius: 14px;
-  padding: 14px 16px;
+  border-radius: 16px;
+  padding: 16px 18px;
   box-shadow: var(--an-card-shadow);
+  transition: 
+    transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pros-cons-card:hover {
+  transform: translateY(-2.5px);
+  box-shadow: var(--an-card-shadow-hover);
 }
 
 .pros-cons-card.good-card {
@@ -815,10 +919,16 @@
 .dna-technical-citadel {
   background: var(--an-card-bg);
   border: 1px solid var(--an-card-border);
-  border-radius: 18px;
-  padding: 16px;
-  margin-bottom: 18px;
+  border-radius: 20px;
+  padding: 18px;
+  margin-bottom: 20px;
   box-shadow: var(--an-card-shadow);
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dna-technical-citadel:hover {
+  transform: translateY(-2.5px);
+  box-shadow: var(--an-card-shadow-hover);
 }
 
 .citadel-header-strip {
@@ -867,8 +977,20 @@
 .tech-bento-pod {
   background: var(--an-subpod-bg);
   border: 1px solid var(--an-subpod-border);
-  border-radius: 12px;
-  padding: 12px 14px;
+  border-radius: 14px;
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+  transition: 
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease,
+    box-shadow 0.3s ease;
+}
+
+.tech-bento-pod:hover {
+  transform: translateY(-2px);
+  border-color: var(--an-card-hover-border);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
 }
 
 .tech-pod-top {
@@ -1013,18 +1135,24 @@
 .dna-tradingview-full-section {
   background: var(--an-card-bg);
   border: 1px solid var(--an-card-border);
-  border-radius: 18px;
+  border-radius: 20px;
   padding: 0; /* REMOVE inner card padding so chart sits edge-to-edge! */
-  margin-bottom: 22px;
+  margin-bottom: 24px;
   overflow: hidden;
   box-shadow: var(--an-card-shadow);
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dna-tradingview-full-section:hover {
+  transform: translateY(-2.5px);
+  box-shadow: var(--an-card-shadow-hover);
 }
 
 .tv-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px 12px;
+  padding: 14px 18px 12px;
   border-bottom: 1px solid var(--an-card-border);
   background: var(--an-card-bg);
 }
@@ -1041,7 +1169,7 @@
 }
 
 .tv-title {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 800;
   color: var(--an-text-title);
 }
@@ -1060,7 +1188,7 @@
   height: 540px; /* Ample vertical space for interactive charting */
   margin: 0;
   padding: 0;
-  border-radius: 0 0 18px 18px;
+  border-radius: 0 0 20px 20px;
   overflow: hidden;
   background: transparent;
 }
@@ -1076,19 +1204,33 @@
   justify-content: center;
   gap: 8px;
   width: 100%;
-  padding: 14px 20px;
-  border-radius: 12px;
+  padding: 15px 22px;
+  border-radius: 14px;
   background: linear-gradient(135deg, #FDE68A 0%, #D4AF37 50%, #B45309 100%);
   color: #0A0E17;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 800;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.3);
-  transition: all 0.2s ease;
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 4px 18px rgba(212, 175, 55, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: 
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.25s ease;
 }
 
 .dna-deep-dive-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 22px rgba(212, 175, 55, 0.45);
+  transform: translateY(-2px) scale(1.015);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 8px 24px rgba(212, 175, 55, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.dna-deep-dive-btn:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.35);
+  transition-duration: 0.08s;
 }
