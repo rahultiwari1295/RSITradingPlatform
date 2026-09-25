@@ -1393,6 +1393,7 @@ export default function App() {
 
   // Live Chart state
   const [liveChartData, setLiveChartData] = useState<ChartData | null>(null);
+  const fetchedQuotesRef = useRef<Set<string>>(new Set());
 
   // ── Real-Time WebSocket Market Stream (Every 1s) ──
   const { isConnected: isWsConnected, indices: wsIndices, livePrices } = useLiveMarket();
@@ -1520,17 +1521,7 @@ export default function App() {
         if (res) setScannerReport(res);
       }).catch(() => {});
 
-      // 5. Patterns (V3)
-      quantsyncApi.getPatterns().then(res => {
-        if (res && res.sections) setPatterns(res.sections);
-      }).catch(() => {});
-
-      // 6. Breakouts (V3)
-      quantsyncApi.getBreakouts().then(res => {
-        if (res && res.breakouts) setBreakouts(res.breakouts);
-      }).catch(() => {});
-
-      // 7. Market Pulse, Sectors, News & Daily Digest
+      // 5. Market Pulse (Fast RAM return)
       quantsyncApi.getMarketPulse().then(res => {
         if (res) {
           setMarketPulse(res);
@@ -1555,71 +1546,73 @@ export default function App() {
         }
       }).catch(() => {});
 
-      quantsyncApi.getSectors("day").then(res => {
-        if (res && res.sectors && res.sectors.length > 0) {
-          setSectorsData(res.sectors);
-          setTerminalSectors(filterTo12CoreSectors(res.sectors));
-        }
-      }).catch(() => {});
-
-      quantsyncApi.getDayReports(10).then(res => {
-        if (res) {
-          if (res.reports && res.reports.length > 0) setDayReports(res.reports);
-          const rawAny = res as any;
-          if (rawAny.timeline_briefs && rawAny.timeline_briefs.length > 0) {
-            setTerminalBriefs(rawAny.timeline_briefs);
-          } else if (res.reports && res.reports.length > 0) {
-            setTerminalBriefs(parseReportsToBriefs(res.reports));
+      // 6. Defer secondary tabs to background so Signals & Portfolio render in < 50ms
+      setTimeout(() => {
+        quantsyncApi.getSectors("day").then(res => {
+          if (res && res.sectors && res.sectors.length > 0) {
+            setSectorsData(res.sectors);
+            setTerminalSectors(filterTo12CoreSectors(res.sectors));
           }
-        }
-      }).catch(() => {});
+        }).catch(() => {});
 
-      quantsyncApi.getNewsMovers().then(res => {
-        if (res && res.movers && res.movers.length > 0) {
-          setNewsMovers(res.movers);
-          const mappedMovers = res.movers.map((m: any) => ({
-            sym: m.sym || m.symbol || "",
-            pct: typeof m.pct === "number" ? m.pct : (typeof m.change_pct === "number" ? m.change_pct : 0),
-            desc: m.desc || m.catalyst || "",
-            label: m.label || "Corporate Move"
-          }));
-          setTerminalMovers(mappedMovers);
-        }
-      }).catch(() => {});
-
-      quantsyncApi.getNews(30).then(res => {
-        if (res) {
-          const rawItems = (res as any).disclosures || (res as any).news || [];
-          if (rawItems.length > 0) {
-            setNewsData(rawItems);
-            const normalized = rawItems.map(normalizeNewsItem);
-            const groups: Array<{ day: string; items: any[] }> = [];
-            normalized.forEach((n: any) => {
-              const dayStr = n.day || "Recent Filings";
-              let g = groups.find((x) => x.day === dayStr);
-              if (!g) {
-                g = { day: dayStr, items: [] };
-                groups.push(g);
-              }
-              g.items.push(n);
-            });
-            setTerminalNewsGroups(groups);
+        quantsyncApi.getDayReports(10).then(res => {
+          if (res) {
+            if (res.reports && res.reports.length > 0) setDayReports(res.reports);
+            const rawAny = res as any;
+            if (rawAny.timeline_briefs && rawAny.timeline_briefs.length > 0) {
+              setTerminalBriefs(rawAny.timeline_briefs);
+            } else if (res.reports && res.reports.length > 0) {
+              setTerminalBriefs(parseReportsToBriefs(res.reports));
+            }
           }
-        }
-      }).catch(() => {});
+        }).catch(() => {});
 
-      quantsyncApi.getDailyDigest(currentEngine).then(res => {
-        if (res && res.summary_text) setDailyDigest(res.summary_text);
-      }).catch(() => {});
+        quantsyncApi.getNewsMovers().then(res => {
+          if (res && res.movers && res.movers.length > 0) {
+            setNewsMovers(res.movers);
+            const mappedMovers = res.movers.map((m: any) => ({
+              sym: m.sym || m.symbol || "",
+              pct: typeof m.pct === "number" ? m.pct : (typeof m.change_pct === "number" ? m.change_pct : 0),
+              desc: m.desc || m.catalyst || "",
+              label: m.label || "Corporate Move"
+            }));
+            setTerminalMovers(mappedMovers);
+          }
+        }).catch(() => {});
 
-      // 8. System Status & Config
-      quantsyncApi.getSystemStatus().then(res => {
-        if (res) setSystemStatus(res);
-      }).catch(() => {});
+        quantsyncApi.getNews(30).then(res => {
+          if (res) {
+            const rawItems = (res as any).disclosures || (res as any).news || [];
+            if (rawItems.length > 0) {
+              setNewsData(rawItems);
+              const normalized = rawItems.map(normalizeNewsItem);
+              const groups: Array<{ day: string; items: any[] }> = [];
+              normalized.forEach((n: any) => {
+                const dayStr = n.day || "Recent Filings";
+                let g = groups.find((x) => x.day === dayStr);
+                if (!g) {
+                  g = { day: dayStr, items: [] };
+                  groups.push(g);
+                }
+                g.items.push(n);
+              });
+              setTerminalNewsGroups(groups);
+            }
+          }
+        }).catch(() => {});
 
-      quantsyncApi.getSystemConfig().then(res => {
-        if (res) setSystemConfig(res);
-      }).catch(() => {});
+        quantsyncApi.getDailyDigest(currentEngine).then(res => {
+          if (res && res.summary_text) setDailyDigest(res.summary_text);
+        }).catch(() => {});
+
+        quantsyncApi.getSystemStatus().then(res => {
+          if (res) setSystemStatus(res);
+        }).catch(() => {});
+
+        quantsyncApi.getSystemConfig().then(res => {
+          if (res) setSystemConfig(res);
+        }).catch(() => {});
+      }, 1000);
     } catch (err) {
       console.error("Error fetching live data:", err);
     }
@@ -2189,16 +2182,17 @@ export default function App() {
       });
     }
 
-    // Also fetch latest DB candle closes for non-algorithmic holdings (e.g. manual stocks)
+    // Also fetch latest DB candle closes for non-algorithmic holdings (fetch at most once per symbol)
     if (portfolio.length > 0) {
       const activeSymbols = new Set(allInTradeTrades.map((t: any) => (t.sym || t.symbol || "").toUpperCase().trim()));
       const pendingManualHoldings = portfolio.filter((p: any) => {
         const s = (p.symbol || "").toUpperCase().trim();
-        return s && !activeSymbols.has(s);
+        return s && !activeSymbols.has(s) && !fetchedQuotesRef.current.has(s);
       });
 
       pendingManualHoldings.forEach((pos: any) => {
         const s = (pos.symbol || "").toUpperCase().trim();
+        fetchedQuotesRef.current.add(s);
         fetch(`/api/stock/quote/${encodeURIComponent(s)}`)
           .then((res) => (res.ok ? res.json() : null))
           .then((q) => {
