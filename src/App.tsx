@@ -4339,7 +4339,12 @@ export default function App() {
           onClick={() => setActiveTab("signals")}
           data-tab="signals"
         >
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.6" /><circle cx="12" cy="12" r="1" /></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m3 8 4-4 4 4" />
+            <path d="M7 4v16" />
+            <path d="m21 16-4 4-4-4" />
+            <path d="M17 20V4" />
+          </svg>
           AI BuySell
           <span className="radar-ring" />
         </button>
@@ -4350,8 +4355,12 @@ export default function App() {
           onClick={() => setActiveTab("screener")}
           data-tab="screener"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 20h18" />
+            <path d="M6 20v-4" />
+            <path d="M11 20v-9" />
+            <path d="M16 20V6" />
+            <path d="m13 9 3-3 3 3" />
           </svg>
           Breakout
           <span style={{
