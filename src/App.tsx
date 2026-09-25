@@ -1352,6 +1352,7 @@ export default function App() {
   const [terminalData, setTerminalData] = useState<TerminalSnapshot | null>(null);
   const [terminalDataV2, setTerminalDataV2] = useState<TerminalSnapshot | null>(null);
   const [terminalDataV3, setTerminalDataV3] = useState<TerminalSnapshot | null>(null);
+  const [isTerminalLoading, setIsTerminalLoading] = useState<boolean>(true);
   const [showEngineExplainer, setShowEngineExplainer] = useState<boolean>(false);
   const [equityData, setEquityData] = useState<EquityCurveData | null>(INITIAL_EQUITY_DATA);
   const [feedItems, setFeedItems] = useState<ActivityFeedItem[]>(DEMO_FEED as any);
@@ -1480,6 +1481,7 @@ export default function App() {
      DATA FETCHING
      ============================================================ */
   const fetchAllData = useCallback(async (currentEngine: "v2" | "v3") => {
+    setIsTerminalLoading(true);
     try {
       // 1. Terminal master snapshots (fetch both V2 & V3 concurrently for seamless cross-engine active tracking)
       const otherEngine = currentEngine === "v2" ? "v3" : "v2";
@@ -1506,6 +1508,7 @@ export default function App() {
         if (otherEngine === "v2") setTerminalDataV2(otherRes);
         else setTerminalDataV3(otherRes);
       }
+      setIsTerminalLoading(false);
 
       // 2. Equity Curve
       fetchEquity(currentEngine, range);
@@ -1987,18 +1990,18 @@ export default function App() {
   /* ============================================================
      RENDER CALCULATED VALUES
      ============================================================ */
-  const heroNav = terminalData?.hero?.nav || terminalData?.portfolioValue || DEMO_DATA[engine].nav;
-  const heroPnl = terminalData?.hero?.todayPnl || (engine === "v2" ? 4361 : 2918);
-  const heroPnlPct = terminalData?.hero?.todayPnlPct || (engine === "v2" ? 1.06 : 1.03);
-  const heroWin = terminalData?.hero?.winRate || terminalData?.winRate || terminalData?.kpis?.winRate || DEMO_DATA[engine].win;
-  const heroWins = terminalData?.hero?.wins || terminalData?.kpis?.wins || terminalData?.totalSummary?.wins || DEMO_DATA[engine].wins;
-  const heroLosses = terminalData?.hero?.losses || terminalData?.kpis?.losses || terminalData?.totalSummary?.losses || DEMO_DATA[engine].losses;
+  const heroNav = terminalData?.hero?.nav || terminalData?.portfolioValue || 300000;
+  const heroPnl = terminalData?.hero?.todayPnl || 0;
+  const heroPnlPct = terminalData?.hero?.todayPnlPct || 0;
+  const heroWin = terminalData?.hero?.winRate || terminalData?.winRate || terminalData?.kpis?.winRate || 0;
+  const heroWins = terminalData?.hero?.wins || terminalData?.kpis?.wins || terminalData?.totalSummary?.wins || 0;
+  const heroLosses = terminalData?.hero?.losses || terminalData?.kpis?.losses || terminalData?.totalSummary?.losses || 0;
 
   const rawActive = (terminalData?.active && terminalData.active.length > 0)
     ? terminalData.active
     : ((terminalData?.inTradeTrades && terminalData.inTradeTrades.length > 0)
       ? terminalData.inTradeTrades
-      : DEMO_DATA[engine].active);
+      : []);
   const activeTrades = rawActive.map((t: any, idx: number) => {
     const sym = (t.symbol || t.title || t.sym || "").toUpperCase().trim();
     const live = livePrices && sym ? livePrices[sym] : undefined;
@@ -2010,7 +2013,7 @@ export default function App() {
     ? terminalData.closed
     : ((terminalData?.closedTrades && terminalData.closedTrades.length > 0)
       ? terminalData.closedTrades
-      : DEMO_DATA[engine].closed);
+      : []);
   const closedTrades = rawClosed.map((t: any, idx: number) => normalizeClosedTrade(t, idx));
 
   // Sort active trades: latest record first
@@ -2037,10 +2040,10 @@ export default function App() {
     const seen = new Set<string>();
 
     const getRaw = (data: TerminalSnapshot | null, eng: "v2" | "v3") => {
-      if (!data) return DEMO_DATA[eng].active || [];
+      if (!data) return [];
       if (data.active && data.active.length > 0) return data.active;
       if (data.inTradeTrades && data.inTradeTrades.length > 0) return data.inTradeTrades;
-      return DEMO_DATA[eng].active || [];
+      return [];
     };
 
     const v2Raw = getRaw(terminalDataV2 || (engine === "v2" ? terminalData : null), "v2");
@@ -3161,13 +3164,13 @@ export default function App() {
               className={`subtab ${sigSub === "active" ? "on" : ""}`}
               onClick={() => setSigSub("active")}
             >
-              Active Trades ({sortedActiveTrades.length})
+              Active Trades {isTerminalLoading ? "(...)" : `(${sortedActiveTrades.length})`}
             </button>
             <button
               className={`subtab ${sigSub === "closed" ? "on" : ""}`}
               onClick={() => setSigSub("closed")}
             >
-              Closed Trades ({sortedClosedTrades.length})
+              Closed Trades {isTerminalLoading ? "(...)" : `(${sortedClosedTrades.length})`}
             </button>
           </div>
 
@@ -3239,7 +3242,37 @@ export default function App() {
                 </div>
               </div>
 
-              {engine === "v2" ? (
+              {isTerminalLoading ? (
+                <div style={{ textAlign: "center", padding: "48px 16px", color: "var(--ink3)" }}>
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      border: "3px solid var(--line-2)",
+                      borderTopColor: "var(--accent)",
+                      animation: "spin 0.8s linear infinite",
+                      margin: "0 auto 12px"
+                    }}
+                  />
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink1)" }}>
+                    Loading Live {engine === "v2" ? "AI Pro" : "Chart + AI"} Setups...
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--ink3)", marginTop: 4 }}>
+                    Fetching verified exchange signals from VPS master ledger
+                  </div>
+                </div>
+              ) : sortedActiveTrades.length === 0 ? (
+                <div className="card" style={{ textAlign: "center", padding: "36px 16px", borderRadius: 16 }}>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>🛡️</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink1)" }}>
+                    No Active Positions Open
+                  </div>
+                  <div style={{ fontSize: 11.5, color: "var(--ink3)", marginTop: 4 }}>
+                    Current market conditions do not meet strict institutional risk criteria · Preserving Capital
+                  </div>
+                </div>
+              ) : engine === "v2" ? (
                 // V2 ACTIVE CARDS (+ADD button, % ROI, Stars + Action tag, Signal Date, Stop/Entry/Current/Target sequence — NO ML/scores, NO chart)
                 sortedActiveTrades.map((t: any, i: number) => {
                   const pPct = t.pnlPct ?? t.roiPct ?? 0;
@@ -3596,7 +3629,31 @@ export default function App() {
                 </div>
               </div>
 
-              {engine === "v2" ? (
+              {isTerminalLoading ? (
+                <div style={{ textAlign: "center", padding: "48px 16px", color: "var(--ink3)" }}>
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      border: "3px solid var(--line-2)",
+                      borderTopColor: "var(--accent)",
+                      animation: "spin 0.8s linear infinite",
+                      margin: "0 auto 12px"
+                    }}
+                  />
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink1)" }}>
+                    Loading Closed Performance Ledger...
+                  </div>
+                </div>
+              ) : sortedClosedTrades.length === 0 ? (
+                <div className="card" style={{ textAlign: "center", padding: "36px 16px", borderRadius: 16 }}>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>📜</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink1)" }}>
+                    No Closed Positions Logged
+                  </div>
+                </div>
+              ) : engine === "v2" ? (
                 // V2 Closed Rows (Sorted latest exit first, clear return %, no arbitrary rupee P&L)
                 sortedClosedTrades.map((t: any, i: number) => {
                   const pPct = t.pnlPct ?? t.roiPct ?? 0;
