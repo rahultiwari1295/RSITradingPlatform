@@ -42,15 +42,56 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [apiData, setApiData] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadingStep, setLoadingStep] = useState<number>(1);
+  const [loadingProgress, setLoadingProgress] = useState<number>(20);
+  const [loadedChartSrc, setLoadedChartSrc] = useState<string>("");
   const tvContainerRef = useRef<HTMLDivElement>(null);
 
   const cleanSymbol = (stock.symbol || "").trim().toUpperCase().replace(/^(BSE:|NSE:)/i, "");
 
-  // ── Fetch 100% Real Live Stock Details (Zero Hardcoded Values) ───────────
+  // ── 1. Fetch Live Stock Details & Preload Chart Image (Zero Hardcoding) ──
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
+    setLoadingStep(1);
+    setLoadingProgress(20);
 
+    // Step 2 & 3 visual progress timer
+    const t1 = setTimeout(() => {
+      if (isMounted) {
+        setLoadingStep(2);
+        setLoadingProgress(45);
+      }
+    }, 320);
+
+    const t2 = setTimeout(() => {
+      if (isMounted) {
+        setLoadingStep(3);
+        setLoadingProgress(75);
+      }
+    }, 700);
+
+    // Preload the Analysed Chart Image so it never flashes white or blank
+    const primaryChartUrl = `/api/dna/chart/${cleanSymbol}?view=${dnaTimeframe}&theme=${theme}&t=${Date.now()}`;
+    const fallbackChartUrl = `https://quantsync-api.duckdns.org:8443/api/dna/chart/${cleanSymbol}?view=${dnaTimeframe}&theme=${theme}&t=${Date.now()}`;
+
+    const chartImg = new Image();
+    chartImg.src = primaryChartUrl;
+    chartImg.onload = () => {
+      if (isMounted) setLoadedChartSrc(primaryChartUrl);
+    };
+    chartImg.onerror = () => {
+      const fbImg = new Image();
+      fbImg.src = fallbackChartUrl;
+      fbImg.onload = () => {
+        if (isMounted) setLoadedChartSrc(fallbackChartUrl);
+      };
+      fbImg.onerror = () => {
+        if (isMounted) setLoadedChartSrc(fallbackChartUrl);
+      };
+    };
+
+    // Pull 100% genuine data from API
     quantsyncApi
       .getStockDetail(cleanSymbol)
       .then((detail) => {
@@ -59,43 +100,51 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
         }
       })
       .catch((err) => {
-        console.warn(`Could not fetch details for ${cleanSymbol}:`, err);
+        console.warn(`Error loading stock detail for ${cleanSymbol}:`, err);
       })
       .finally(() => {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setLoadingStep(4);
+          setLoadingProgress(100);
+          setTimeout(() => {
+            if (isMounted) setLoading(false);
+          }, 280);
+        }
       });
 
     return () => {
       isMounted = false;
+      clearTimeout(t1);
+      clearTimeout(t2);
     };
-  }, [cleanSymbol]);
+  }, [cleanSymbol, dnaTimeframe, theme]);
 
-  // Dynamic Factual Fields strictly from API or stock prop (Never hardcoded fallbacks)
+  // Dynamic Factual Fields strictly from API response (ZERO hardcoded fallback numbers)
   const stockName = apiData?.company_name || stock.name || cleanSymbol;
   const sector = apiData?.sector || stock.sector || "Equities";
   const patternName = apiData?.pattern_type || stock.stage || stock.pattern || "Breakout Setup";
 
-  const cmp: number | null = apiData?.curr_price ?? stock.currPrice ?? stock.price ?? null;
-  const entryPrice: number | null = apiData?.breakout_level ?? stock.breakoutPrice ?? stock.entryPrice ?? null;
-  const targetPrice: number | null = apiData?.target_1 ?? stock.targetPrice ?? stock.target ?? null;
-  const stopLossPrice: number | null = apiData?.stop_loss ?? stock.stopPrice ?? stock.stopLoss ?? null;
+  const cmp: number | null = apiData?.curr_price ?? null;
+  const entryPrice: number | null = apiData?.breakout_level ?? null;
+  const targetPrice: number | null = apiData?.target_1 ?? null;
+  const stopLossPrice: number | null = apiData?.stop_loss ?? null;
 
-  const low52: number | null = apiData?.w52_low ?? stock.w52Low ?? null;
-  const high52: number | null = apiData?.w52_high ?? stock.w52High ?? null;
+  const low52: number | null = apiData?.w52_low ?? null;
+  const high52: number | null = apiData?.w52_high ?? null;
 
-  // 52-Week Range Percentage calculation (if available)
+  // 52-Week Range Percentage calculation (if both valid)
   let range52Pct: number | null = null;
   if (cmp != null && low52 != null && high52 != null && high52 > low52) {
     range52Pct = Math.max(3, Math.min(97, Math.round(((cmp - low52) / (high52 - low52)) * 100)));
   }
 
-  // Technical Indicators
+  // Technical Indicators strictly from API
   const rsi: number | null = apiData?.rsi != null ? Number(apiData.rsi) : null;
   const ema20: number | null = apiData?.ema20 != null ? Number(apiData.ema20) : null;
   const ema50: number | null = apiData?.ema50 != null ? Number(apiData.ema50) : null;
   const ema200: number | null = apiData?.ema200 != null ? Number(apiData.ema200) : null;
   const volRatioVal: number | null = apiData?.volume_ratio_20d != null ? Number(apiData.volume_ratio_20d) : null;
-  const volRatioStr = volRatioVal != null ? `${volRatioVal.toFixed(1)}×` : (stock.volRatio || "—");
+  const volRatioStr = volRatioVal != null ? `${volRatioVal.toFixed(1)}×` : "—";
 
   // Key Price Rails
   const r2: number | null = apiData?.resistance_2 != null ? Number(apiData.resistance_2) : (apiData?.target_2 != null ? Number(apiData.target_2) : null);
@@ -137,7 +186,7 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
     ? `${window.location.origin}/?stock=${cleanSymbol}`
     : `https://rsitradingplatform.vercel.app/?stock=${cleanSymbol}`;
 
-  // Helper formatting functions (show '—' instead of any hardcoded numbers)
+  // Helper formatting functions (strictly show '—' for missing values, NEVER fake numbers)
   const fmtCurrency = (val: number | null | undefined) =>
     val != null ? `₹${Number(val).toLocaleString("en-IN", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}` : "—";
   const fmtNumber = (val: number | null | undefined, dec = 1) =>
@@ -166,7 +215,7 @@ ChartAnalysis : ${websiteLink}`;
 
   // WhatsApp Share with Direct Chart Image Attachment
   const handleWhatsAppShare = async () => {
-    const chartImageUrl = `/api/dna/chart/${cleanSymbol}?view=${dnaTimeframe}&theme=${theme}&t=${Date.now()}`;
+    const chartImageUrl = loadedChartSrc || `/api/dna/chart/${cleanSymbol}?view=${dnaTimeframe}&theme=${theme}&t=${Date.now()}`;
     let fileShared = false;
 
     try {
@@ -220,9 +269,9 @@ ChartAnalysis : ${websiteLink}`;
     }
   };
 
-  // Embed TradingView Widget strictly with BSE exchange prefix and responsive theme
+  // Embed TradingView Widget strictly with BSE exchange prefix
   useEffect(() => {
-    if (!tvContainerRef.current) return;
+    if (loading || !tvContainerRef.current) return;
     tvContainerRef.current.innerHTML = "";
 
     const widgetWrap = document.createElement("div");
@@ -275,8 +324,65 @@ ChartAnalysis : ${websiteLink}`;
 
     widgetWrap.appendChild(script);
     tvContainerRef.current.appendChild(widgetWrap);
-  }, [cleanSymbol, theme]);
+  }, [loading, cleanSymbol, theme]);
 
+  // ── 2. ENGAGING RADAR LOADING SCREEN (From Signal / Breakout Page) ─────────
+  if (loading) {
+    return (
+      <div className={`dna-analyst-fullscreen-overlay theme-${theme}`} data-theme={theme}>
+        <div className="dna-analyst-scroll-citadel">
+          <header className="dna-analyst-nav">
+            <button type="button" className="dna-nav-back-btn" onClick={onClose}>
+              <span>←</span>
+              <span>Back to Screener</span>
+            </button>
+          </header>
+
+          <div className="chart-loading-container">
+            <div className="chart-loading-card">
+              <div className="chart-radar-pulse-ring">
+                <div className="radar-scan-sweep" />
+                <div className="radar-center-icon">📈</div>
+              </div>
+
+              <h3 className="chart-loading-title">
+                Building Institutional Chart for <span className="loading-highlight-sym">{cleanSymbol}</span>
+              </h3>
+
+              <p className="chart-loading-subtitle">
+                Streaming daily OHLCV candlesticks, detecting multi-timeframe swing geometry & calculating institutional levels...
+              </p>
+
+              <div className="chart-progress-track">
+                <div className="chart-progress-fill" style={{ width: `${loadingProgress}%` }} />
+              </div>
+
+              <div className="chart-scan-steps-list">
+                <div className={`chart-step-item ${loadingStep > 1 ? "done" : loadingStep === 1 ? "active" : ""}`}>
+                  <span className="step-indicator">{loadingStep > 1 ? "✓" : "1"}</span>
+                  <span>Streaming daily candle history & LTP</span>
+                </div>
+                <div className={`chart-step-item ${loadingStep > 2 ? "done" : loadingStep === 2 ? "active" : ""}`}>
+                  <span className="step-indicator">{loadingStep > 2 ? "✓" : "2"}</span>
+                  <span>Detecting Stage-2 Breakout geometry & Rails</span>
+                </div>
+                <div className={`chart-step-item ${loadingStep > 3 ? "done" : loadingStep === 3 ? "active" : ""}`}>
+                  <span className="step-indicator">{loadingStep > 3 ? "✓" : "3"}</span>
+                  <span>Calculating Pivot, Target & Protective Stop Loss</span>
+                </div>
+                <div className={`chart-step-item ${loadingStep === 4 ? "done" : ""}`}>
+                  <span className="step-indicator">{loadingStep === 4 ? "✓" : "4"}</span>
+                  <span>Pre-rendering Analysed DNA Chart & BSE Terminal</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── 3. MAIN ANALYST CONTENT (Revealed ONLY after full data arrival) ───────
   return (
     <div className={`dna-analyst-fullscreen-overlay theme-${theme}`} data-theme={theme}>
       <div className="dna-analyst-scroll-citadel">
@@ -326,7 +432,7 @@ ChartAnalysis : ${websiteLink}`;
             )}
           </div>
 
-          {/* 52-Week Range Bar (Dynamic or Clean Fallback) */}
+          {/* 52-Week Range Bar */}
           <div className="dna-52w-range-card">
             <div className="range-52w-labels">
               <span>52W Low: <strong>{fmtCurrency(low52)}</strong></span>
@@ -344,7 +450,7 @@ ChartAnalysis : ${websiteLink}`;
             </div>
           </div>
 
-          {/* 3 Key Levels HUD */}
+          {/* 3 Key Levels HUD (Factual Data Only) */}
           <div className="dna-3-levels-hud">
             <div className="level-pod pivot-pod">
               <span className="level-lbl">BREAKOUT PIVOT</span>
@@ -361,7 +467,7 @@ ChartAnalysis : ${websiteLink}`;
           </div>
         </section>
 
-        {/* ── 3. FIRST CHART: THE ANALYSED DNA CHART (STRICTLY NO TEXT ON CHART) ── */}
+        {/* ── 3. FIRST CHART: THE ANALYSED DNA CHART (NO TEXT ON CHART) ────── */}
         <section className="dna-chart-card-section">
           <div className="chart-card-header-bar">
             <div className="chart-header-left">
@@ -389,13 +495,13 @@ ChartAnalysis : ${websiteLink}`;
           {/* Clean Image with NO TEXT on chart (Lines only) */}
           <div className="dna-clean-chart-stage">
             <img
-              src={`/api/dna/chart/${cleanSymbol}?view=${dnaTimeframe}&theme=${theme}&t=${Date.now()}`}
+              src={loadedChartSrc || `/api/dna/chart/${cleanSymbol}?view=${dnaTimeframe}&theme=${theme}&t=${Date.now()}`}
               alt={`${cleanSymbol} Analysed Chart`}
               className="dna-rendered-chart-image"
               onError={(e) => {
                 const target = e.currentTarget;
-                if (!target.src.includes("tactical")) {
-                  target.src = `/api/dna/chart/${cleanSymbol}?view=tactical`;
+                if (!target.src.startsWith("https://quantsync-api.duckdns.org:8443")) {
+                  target.src = `https://quantsync-api.duckdns.org:8443/api/dna/chart/${cleanSymbol}?view=${dnaTimeframe}&theme=${theme}&t=${Date.now()}`;
                 }
               }}
             />
@@ -454,7 +560,7 @@ ChartAnalysis : ${websiteLink}`;
           </button>
         </section>
 
-        {/* ── 5. WHATS GOOD & WHATS BAD (2 SPECIFIC POINTS EACH, GAP IN BETWEEN) ─ */}
+        {/* ── 5. WHATS GOOD & WHATS BAD (WITH CLEAR LINE GAP) ──────────────── */}
         <section className="dna-pros-cons-grid">
           {/* Whats Good Card */}
           <div className="pros-cons-card good-card">

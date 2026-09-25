@@ -109,7 +109,7 @@
   font-size: 12px;
   font-weight: 800;
   padding: 9px 20px;
-  border-radius: 999px;
+  border-radius: 9999px;
   box-shadow: 0 6px 22px rgba(16, 185, 129, 0.45);
   animation: popCapsule 0.2s ease-out;
   white-space: nowrap;
@@ -118,6 +118,163 @@
 @keyframes popCapsule {
   from { transform: translate(-50%, -10px); opacity: 0; }
   to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+/* ── RADAR LOADING SCREEN (From Signal / Breakout Page) ─────────────────── */
+.chart-loading-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 0 16px;
+  box-sizing: border-box;
+  animation: fadeInLoad 0.25s ease-out;
+}
+
+@keyframes fadeInLoad {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chart-loading-card {
+  background: var(--an-card-bg);
+  border: 1px solid var(--an-card-border);
+  border-radius: 20px;
+  padding: 38px 24px;
+  text-align: center;
+  box-shadow: var(--an-card-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.chart-radar-pulse-ring {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 18px auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(79, 70, 229, 0.12);
+  border: 2px solid #4F46E5;
+  box-shadow: 0 0 24px rgba(79, 70, 229, 0.3);
+}
+
+.radar-scan-sweep {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: #38BDF8;
+  animation: radarSpin 0.9s linear infinite;
+}
+
+.radar-center-icon {
+  font-size: 26px;
+  animation: iconPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes radarSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes iconPulse {
+  from { transform: scale(0.92); opacity: 0.85; }
+  to { transform: scale(1.12); opacity: 1; }
+}
+
+.chart-loading-title {
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--an-text-title);
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+
+.loading-highlight-sym {
+  color: #38BDF8;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 900;
+  background: rgba(56, 189, 248, 0.12);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.chart-loading-subtitle {
+  font-size: 12.5px;
+  color: var(--an-text-sub);
+  line-height: 1.5;
+  max-width: 440px;
+  margin: 0 auto 20px auto;
+}
+
+.chart-progress-track {
+  height: 6px;
+  background: var(--an-track-bg);
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-bottom: 22px;
+}
+
+.chart-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4F46E5, #38BDF8);
+  border-radius: 9999px;
+  transition: width 0.35s ease;
+}
+
+.chart-scan-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.chart-step-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--an-text-sub);
+  transition: all 0.2s ease;
+}
+
+.chart-step-item.active {
+  color: var(--an-text-title);
+  font-weight: 700;
+}
+
+.chart-step-item.done {
+  color: #10B981;
+  font-weight: 700;
+}
+
+.step-indicator {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  border: 1.5px solid var(--an-card-border);
+  color: var(--an-text-muted);
+  flex-shrink: 0;
+}
+
+.chart-step-item.active .step-indicator {
+  border-color: #38BDF8;
+  color: #38BDF8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+}
+
+.chart-step-item.done .step-indicator {
+  background: #10B981;
+  border-color: #10B981;
+  color: #FFFFFF;
 }
 
 /* ── 1. TOP NAV BAR ──────────────────────────────────────────────────────── */

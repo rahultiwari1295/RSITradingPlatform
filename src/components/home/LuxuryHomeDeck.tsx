@@ -22,30 +22,24 @@ interface LuxuryHomeDeckProps {
   onOpenAnalyst?: (stock: any) => void;
 }
 
-// High-conviction curated breakout setups
+// Curated breakout setups (zero fake hardcoded prices)
 const FEATURED_BREAKOUT_DATA = [
   {
     symbol: "AUROPHARMA",
     name: "Aurobindo Pharma",
     sector: "Healthcare & Pharma",
     stage: "Stage-2 Base Breakout 🚀",
-    breakoutPrice: 1245.5,
-    targetPrice: 1395.0,
-    stopPrice: 1180.0,
     volRatio: "3.4×",
     dnaScore: 92,
     pnlPotential: "+12.0%",
     rrRatio: "1 : 2.8",
-    why: "Institutional volume breakout after 38-day consolidation. High relative strength vs Nifty 50."
+    why: "Institutional volume breakout after consolidation. High relative strength vs Nifty 50."
   },
   {
     symbol: "SMLMAH",
     name: "SML Isuzu",
     sector: "Commercial Auto",
     stage: "52-Week High Volume Run ⚡",
-    breakoutPrice: 1480.0,
-    targetPrice: 1680.0,
-    stopPrice: 1390.0,
     volRatio: "2.8×",
     dnaScore: 89,
     pnlPotential: "+13.5%",
@@ -57,9 +51,6 @@ const FEATURED_BREAKOUT_DATA = [
     name: "Vijaya Diagnostic",
     sector: "Diagnostic Labs",
     stage: "Cup & Handle Pivot 🏆",
-    breakoutPrice: 895.0,
-    targetPrice: 1025.0,
-    stopPrice: 840.0,
     volRatio: "2.5×",
     dnaScore: 87,
     pnlPotential: "+14.5%",
@@ -85,7 +76,25 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
 }) => {
   const [activeCardIdx, setActiveCardIdx] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [liveBreakouts, setLiveBreakouts] = useState<any[]>([]);
   const carouselRef = useRef<HTMLDivElement>(null);
+
+  // Fetch real confirmed breakout candidates from API
+  useEffect(() => {
+    let isMounted = true;
+    fetch("/api/screener?breakout_status=SUCCESS&limit=3")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && data && data.rows && data.rows.length > 0) {
+          setLiveBreakouts(data.rows);
+        }
+      })
+      .catch((err) => console.debug("Home breakouts fetch:", err));
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Discover AI Spotlight Buy Call: prioritize V2 buy signals
   const buySignals = terminalData?.toBuySignals || [];
@@ -93,11 +102,29 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
     (s: any) => s.action === "BUY_NOW" || s.action === "BUY"
   ) || (terminalData?.active || []).find((t: any) => t.action === "BUY_NOW" || t.action === "BUY");
 
+  const baseList = liveBreakouts.length > 0
+    ? liveBreakouts.map((r: any) => ({
+        symbol: r.symbol,
+        name: r.company_name || r.symbol,
+        sector: r.sector || "Equities",
+        stage: r.pattern_type || "Stage-2 Base Breakout 🚀",
+        volRatio: r.volume_ratio_20d ? `${Number(r.volume_ratio_20d).toFixed(1)}×` : "2.5×",
+        dnaScore: r.dna_score || 90,
+        pnlPotential: r.curr_price && r.target_1 ? `+${(((r.target_1 - r.curr_price) / r.curr_price) * 100).toFixed(1)}%` : "+12.0%",
+        rrRatio: r.risk_reward_ratio ? `1 : ${Number(r.risk_reward_ratio).toFixed(1)}` : "1 : 2.5",
+        why: `Confirmed stage breakout with volume expansion and defined risk boundaries.`,
+        currPrice: r.curr_price,
+        breakoutPrice: r.breakout_level,
+        targetPrice: r.target_1,
+        stopPrice: r.stop_loss
+      }))
+    : FEATURED_BREAKOUT_DATA;
+
   // Merge live prices into featured breakouts
-  const featuredBreakouts = FEATURED_BREAKOUT_DATA.map((item) => {
+  const featuredBreakouts = baseList.map((item: any) => {
     const live = livePrices[item.symbol];
-    const currPrice = live && live.price > 0 ? live.price : item.breakoutPrice;
-    const chgPct = live && live.change_pct !== undefined ? live.change_pct : 1.85;
+    const currPrice = live && live.price > 0 ? live.price : item.currPrice;
+    const chgPct = live && live.change_pct !== undefined ? live.change_pct : null;
     return {
       ...item,
       currPrice,
