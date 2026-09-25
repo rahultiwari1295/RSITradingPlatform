@@ -254,9 +254,9 @@ function getMarketStatusInfo() {
 }
 
 const TERMINAL_INDICES = [
-  { n: 'Nifty 50', v: 23346.40, p: 0.05, seed: 11, trend: 0.05 },
-  { n: 'Sensex', v: 76879.70, p: 0.04, seed: 22, trend: 0.04 },
-  { n: 'Bank Nifty', v: 56358.70, p: 0.33, seed: 33, trend: 0.33 }
+  { n: 'Nifty 50', v: 23091.30, p: 0.12, seed: 11, trend: 0.12 },
+  { n: 'Sensex', v: 73698.12, p: 0.16, seed: 22, trend: 0.16 },
+  { n: 'Bank Nifty', v: 55545.80, p: 0.19, seed: 33, trend: 0.19 }
 ];
 
 const TERMINAL_BRIEFS: any[] = [];
@@ -1529,7 +1529,10 @@ export default function App() {
           setMarketPulse(res);
           const rawAny = res as any;
           if (rawAny.indices && rawAny.indices.length > 0) {
-            setTerminalIndices(rawAny.indices);
+            setTerminalIndices((prev) => {
+              if (isWsConnected) return prev;
+              return rawAny.indices;
+            });
           }
           if (rawAny.advances_pct != null) {
             setTerminalPulse(prev => ({
