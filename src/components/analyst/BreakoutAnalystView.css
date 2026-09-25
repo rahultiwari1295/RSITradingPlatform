@@ -1,17 +1,82 @@
 /* ==========================================================================
    BreakoutAnalystView.css — High-End Institutional Breakout Citadel
-   Matching DNA Screen (Deep Luxury Obsidian Atmosphere)
+   Fully Responsive Dual-Theme (Dark Obsidian & Light Porcelain)
    ========================================================================== */
 
+/* ── THEME DESIGN SYSTEM ─────────────────────────────────────────────────── */
+.dna-analyst-fullscreen-overlay,
+.dna-analyst-fullscreen-overlay[data-theme="dark"],
+.dna-analyst-fullscreen-overlay.theme-dark {
+  --an-bg: #06080E;
+  --an-bg-gradient: 
+    radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 60%),
+    radial-gradient(circle at 100% 100%, rgba(245, 158, 11, 0.04) 0%, transparent 50%);
+  --an-card-bg: rgba(14, 18, 28, 0.92);
+  --an-card-border: rgba(255, 255, 255, 0.08);
+  --an-card-hover-border: rgba(255, 255, 255, 0.16);
+  --an-text-title: #FFFFFF;
+  --an-text-body: #E2E8F0;
+  --an-text-sub: #94A3B8;
+  --an-text-muted: #64748B;
+  --an-pill-bg: rgba(255, 255, 255, 0.05);
+  --an-pill-border: rgba(255, 255, 255, 0.08);
+  --an-pod-bg: rgba(14, 18, 28, 0.85);
+  --an-track-bg: rgba(255, 255, 255, 0.08);
+  --an-subpod-bg: rgba(8, 11, 18, 0.7);
+  --an-subpod-border: rgba(255, 255, 255, 0.06);
+  --an-nav-btn-bg: rgba(255, 255, 255, 0.05);
+  --an-nav-btn-border: rgba(255, 255, 255, 0.1);
+  --an-nav-btn-text: #E2E8F0;
+  --an-good-bg: rgba(16, 185, 129, 0.08);
+  --an-good-border: rgba(16, 185, 129, 0.25);
+  --an-good-text: #E2E8F0;
+  --an-bad-bg: rgba(239, 68, 68, 0.08);
+  --an-bad-border: rgba(239, 68, 68, 0.25);
+  --an-bad-text: #E2E8F0;
+  --an-card-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  --an-chart-stage-bg: #080A10;
+}
+
+.dna-analyst-fullscreen-overlay[data-theme="light"],
+.dna-analyst-fullscreen-overlay.theme-light {
+  --an-bg: #F8FAFC;
+  --an-bg-gradient: 
+    radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.05) 0%, transparent 60%),
+    radial-gradient(circle at 100% 100%, rgba(245, 158, 11, 0.03) 0%, transparent 50%);
+  --an-card-bg: #FFFFFF;
+  --an-card-border: #E2E8F0;
+  --an-card-hover-border: #CBD5E1;
+  --an-text-title: #0F172A;
+  --an-text-body: #1E293B;
+  --an-text-sub: #475569;
+  --an-text-muted: #64748B;
+  --an-pill-bg: #F1F5F9;
+  --an-pill-border: #E2E8F0;
+  --an-pod-bg: #F8FAFC;
+  --an-track-bg: #E2E8F0;
+  --an-subpod-bg: #F8FAFC;
+  --an-subpod-border: #E2E8F0;
+  --an-nav-btn-bg: #F1F5F9;
+  --an-nav-btn-border: #E2E8F0;
+  --an-nav-btn-text: #0F172A;
+  --an-good-bg: #F0FDF4;
+  --an-good-border: #BBF7D0;
+  --an-good-text: #166534;
+  --an-bad-bg: #FEF2F2;
+  --an-bad-border: #FECACA;
+  --an-bad-text: #991B1B;
+  --an-card-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+  --an-chart-stage-bg: #F1F5F9;
+}
+
+/* ── OVERLAY CONTAINER ───────────────────────────────────────────────────── */
 .dna-analyst-fullscreen-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: #06080E;
-  background-image: 
-    radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 60%),
-    radial-gradient(circle at 100% 100%, rgba(245, 158, 11, 0.04) 0%, transparent 50%);
-  color: #F8FAFC;
+  background: var(--an-bg);
+  background-image: var(--an-bg-gradient);
+  color: var(--an-text-body);
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
@@ -20,15 +85,15 @@
 }
 
 @keyframes overlayFadeIn {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .dna-analyst-scroll-citadel {
   width: 100%;
-  max-width: 480px;
+  max-width: 780px; /* Spacious, terminal-grade layout */
   margin: 0 auto;
-  padding: 14px 14px 80px;
+  padding: 16px 16px 80px;
   box-sizing: border-box;
 }
 
@@ -43,9 +108,9 @@
   color: #FFFFFF;
   font-size: 12px;
   font-weight: 800;
-  padding: 8px 18px;
+  padding: 9px 20px;
   border-radius: 999px;
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 6px 22px rgba(16, 185, 129, 0.45);
   animation: popCapsule 0.2s ease-out;
   white-space: nowrap;
 }
@@ -55,46 +120,45 @@
   to { transform: translate(-50%, 0); opacity: 1; }
 }
 
-/* ── 1. TOP NAV BAR (MATCHING DNA SCREEN SHOT 2) ─────────────────────────── */
+/* ── 1. TOP NAV BAR ──────────────────────────────────────────────────────── */
 .dna-analyst-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 4px 0 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  margin-bottom: 16px;
+  border-bottom: 1px solid var(--an-card-border);
+  margin-bottom: 18px;
 }
 
 .dna-nav-back-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #E2E8F0;
+  background: var(--an-nav-btn-bg);
+  border: 1px solid var(--an-nav-btn-border);
+  color: var(--an-nav-btn-text);
   font-size: 11.5px;
   font-weight: 700;
-  padding: 6px 14px;
+  padding: 7px 15px;
   border-radius: 999px;
   cursor: pointer;
   transition: all 0.18s ease;
 }
 
 .dna-nav-back-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #FFFFFF;
+  filter: brightness(1.15);
 }
 
 .dna-nav-share-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #E2E8F0;
+  background: var(--an-nav-btn-bg);
+  border: 1px solid var(--an-nav-btn-border);
+  color: var(--an-nav-btn-text);
   font-size: 11.5px;
   font-weight: 700;
-  padding: 6px 14px;
+  padding: 7px 15px;
   border-radius: 999px;
   cursor: pointer;
   transition: all 0.18s ease;
@@ -106,9 +170,9 @@
   color: #FFFFFF;
 }
 
-/* ── 2. HERO STOCK IDENTITY & 52W RANGE (MATCHING SCREENSHOT 2) ─────────── */
+/* ── 2. HERO STOCK IDENTITY & 52W RANGE ──────────────────────────────────── */
 .dna-stock-identity-hero {
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 
 .dna-badge-pill-row {
@@ -125,15 +189,15 @@
   font-family: 'JetBrains Mono', monospace, sans-serif;
   padding: 3px 8px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #94A3B8;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--an-pill-bg);
+  color: var(--an-text-sub);
+  border: 1px solid var(--an-pill-border);
 }
 
 .dna-pill.symbol-pill {
-  background: rgba(59, 130, 246, 0.15);
+  background: rgba(59, 130, 246, 0.12);
   color: #38BDF8;
-  border-color: rgba(59, 130, 246, 0.35);
+  border-color: rgba(59, 130, 246, 0.3);
 }
 
 .dna-pill.bse-pill {
@@ -155,7 +219,7 @@
   font-size: 10px;
   font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
-  color: #6EE7B7;
+  color: #10B981;
   background: rgba(16, 185, 129, 0.1);
   border: 1px solid rgba(16, 185, 129, 0.25);
   padding: 2.5px 8px;
@@ -164,33 +228,40 @@
 }
 
 .dna-stock-massive-title {
-  font-size: 32px;
+  font-size: 34px;
   font-weight: 900;
-  letter-spacing: -0.02em;
-  color: #FFFFFF;
-  margin: 0 0 6px;
+  letter-spacing: -0.025em;
+  color: var(--an-text-title);
+  margin: 0 0 4px;
   line-height: 1.1;
+}
+
+.dna-stock-sub-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--an-text-sub);
+  margin-bottom: 8px;
 }
 
 .dna-price-change-cluster {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 14px;
 }
 
 .dna-live-price {
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 900;
   letter-spacing: -0.02em;
-  color: #FFFFFF;
+  color: var(--an-text-title);
   font-variant-numeric: tabular-nums;
 }
 
 .dna-change-pill {
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 800;
-  padding: 3px 8px;
+  padding: 3px 9px;
   border-radius: 6px;
 }
 
@@ -200,32 +271,33 @@
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
-/* 52-Week Range Bar (Exact DNA Screen match from Screenshot 2) */
+/* 52-Week Range Bar */
 .dna-52w-range-card {
-  background: rgba(14, 18, 28, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 12px;
-  padding: 10px 12px;
+  background: var(--an-card-bg);
+  border: 1px solid var(--an-card-border);
+  border-radius: 14px;
+  padding: 12px 14px;
   margin-bottom: 14px;
+  box-shadow: var(--an-card-shadow);
 }
 
 .range-52w-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 10.5px;
-  color: #94A3B8;
+  font-size: 11px;
+  color: var(--an-text-sub);
   font-family: 'JetBrains Mono', monospace;
   margin-bottom: 8px;
 }
 
 .range-52w-labels strong {
-  color: #F8FAFC;
+  color: var(--an-text-title);
 }
 
 .range-52w-track {
   position: relative;
   height: 6px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--an-track-bg);
   border-radius: 3px;
   overflow: visible;
 }
@@ -246,7 +318,8 @@
   height: 14px;
   border-radius: 50%;
   background: #FFFFFF;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+  border: 2px solid #3B82F6;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.35);
   transform: translateX(-50%);
 }
 
@@ -254,31 +327,32 @@
 .dna-3-levels-hud {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 10px;
 }
 
 .level-pod {
-  background: rgba(14, 18, 28, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: var(--an-pod-bg);
+  border: 1px solid var(--an-card-border);
   border-radius: 12px;
-  padding: 10px 8px;
+  padding: 11px 10px;
   text-align: center;
   display: flex;
   flex-direction: column;
+  box-shadow: var(--an-card-shadow);
 }
 
 .level-lbl {
-  font-size: 8px;
+  font-size: 8.5px;
   font-weight: 700;
   letter-spacing: 0.05em;
-  color: #64748B;
-  margin-bottom: 3px;
+  color: var(--an-text-muted);
+  margin-bottom: 4px;
   white-space: nowrap;
 }
 
 .level-val {
-  font-size: 14px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 900;
   font-variant-numeric: tabular-nums;
 }
 
@@ -288,12 +362,12 @@
 
 /* ── 3. FIRST CHART: THE ANALYSED DNA CHART (NO TEXT ON CHART) ───────────── */
 .dna-chart-card-section {
-  background: rgba(13, 17, 26, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--an-card-bg);
+  border: 1px solid var(--an-card-border);
   border-radius: 18px;
-  padding: 14px;
-  margin-bottom: 14px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--an-card-shadow);
 }
 
 .chart-card-header-bar {
@@ -315,17 +389,17 @@
 }
 
 .chart-card-heading {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 800;
-  color: #FFFFFF;
+  color: var(--an-text-title);
   letter-spacing: -0.01em;
 }
 
 .chart-tf-toggle-capsule {
   display: flex;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--an-pill-bg);
+  border: 1px solid var(--an-card-border);
   padding: 2px;
   border-radius: 8px;
 }
@@ -335,8 +409,8 @@
   border: none;
   font-size: 9.5px;
   font-weight: 700;
-  color: #94A3B8;
-  padding: 4px 8px;
+  color: var(--an-text-sub);
+  padding: 5px 9px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -350,11 +424,11 @@
 .dna-clean-chart-stage {
   position: relative;
   width: 100%;
-  height: 270px;
+  height: 320px; /* Enhanced height for rich clarity */
   border-radius: 12px;
   overflow: hidden;
-  background: #080A10;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--an-chart-stage-bg);
+  border: 1px solid var(--an-card-border);
 }
 
 .dna-rendered-chart-image {
@@ -377,16 +451,21 @@
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding-top: 10px;
-  margin-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  font-size: 10px;
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid var(--an-card-border);
+  font-size: 10.5px;
+  color: var(--an-text-sub);
+}
+
+.dna-chart-levels-legend strong {
+  color: var(--an-text-title);
 }
 
 .legend-chip {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
 .dot-mark {
@@ -399,9 +478,9 @@
 .dot-mark.amber { background: #F59E0B; box-shadow: 0 0 6px #F59E0B; }
 .dot-mark.red { background: #EF4444; box-shadow: 0 0 6px #EF4444; }
 
-/* ── 4. SHARE TRADE SETUP TO WHATSAPP BUTTON (JUST 1 BUTTON) ─────────────── */
+/* ── 4. SHARE TRADE SETUP TO WHATSAPP (JUST 1 PROMINENT BUTTON) ───────────── */
 .dna-whatsapp-share-section {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .dna-whatsapp-button-hero {
@@ -429,27 +508,30 @@
   box-shadow: 0 6px 24px rgba(37, 211, 102, 0.55);
 }
 
-/* ── 5. WHATS GOOD & WHATS BAD (2 SPECIFIC POINTS EACH) ─────────────────── */
+/* ── 5. WHATS GOOD & WHATS BAD (WITH CLEAR LINE GAP) ──────────────────────── */
 .dna-pros-cons-grid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: 14px; /* Distinct line gap between What's Good and What's Bad */
+  margin-bottom: 18px;
 }
 
 .pros-cons-card {
   border-radius: 14px;
-  padding: 12px 14px;
-  background: rgba(14, 18, 28, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 14px 16px;
+  box-shadow: var(--an-card-shadow);
 }
 
 .pros-cons-card.good-card {
-  border-left: 3px solid #10B981;
+  background: var(--an-good-bg);
+  border: 1px solid var(--an-good-border);
+  border-left: 4px solid #10B981;
 }
 
 .pros-cons-card.bad-card {
-  border-left: 3px solid #EF4444;
+  background: var(--an-bad-bg);
+  border: 1px solid var(--an-bad-border);
+  border-left: 4px solid #EF4444;
 }
 
 .pc-card-header {
@@ -460,9 +542,9 @@
 }
 
 .pc-title {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 800;
-  color: #FFFFFF;
+  color: var(--an-text-title);
   letter-spacing: 0.02em;
 }
 
@@ -472,21 +554,21 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
 .pc-list li {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  font-size: 11px;
-  line-height: 1.45;
-  color: #CBD5E1;
+  font-size: 11.5px;
+  line-height: 1.48;
+  color: var(--an-text-body);
 }
 
 .pc-bullet {
   font-weight: 900;
-  font-size: 11px;
+  font-size: 11.5px;
   flex-shrink: 0;
   margin-top: 1px;
 }
@@ -499,12 +581,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(135deg, rgba(20, 26, 40, 0.9) 0%, rgba(12, 16, 26, 0.9) 100%);
-  border: 1px dashed rgba(59, 130, 246, 0.35);
+  background: var(--an-card-bg);
+  border: 1px dashed rgba(59, 130, 246, 0.4);
   border-radius: 14px;
-  padding: 12px 14px;
-  margin-bottom: 16px;
+  padding: 13px 16px;
+  margin-bottom: 18px;
   gap: 12px;
+  box-shadow: var(--an-card-shadow);
 }
 
 .ai-prob-left {
@@ -534,12 +617,12 @@
 .ai-prob-title {
   font-size: 12.5px;
   font-weight: 800;
-  color: #FFFFFF;
+  color: var(--an-text-title);
 }
 
 .ai-prob-desc {
   font-size: 9.5px;
-  color: #94A3B8;
+  color: var(--an-text-sub);
   margin-top: 2px;
 }
 
@@ -547,7 +630,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: rgba(59, 130, 246, 0.15);
+  background: rgba(59, 130, 246, 0.12);
   border: 1px solid rgba(59, 130, 246, 0.4);
   color: #38BDF8;
   font-size: 10.5px;
@@ -573,18 +656,19 @@
 
 /* ── 7. TECHNICAL OVERVIEW CITADEL (THE WOW FACTOR) ──────────────────────── */
 .dna-technical-citadel {
-  background: rgba(13, 17, 26, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--an-card-bg);
+  border: 1px solid var(--an-card-border);
   border-radius: 18px;
-  padding: 14px;
-  margin-bottom: 16px;
+  padding: 16px;
+  margin-bottom: 18px;
+  box-shadow: var(--an-card-shadow);
 }
 
 .citadel-header-strip {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .citadel-title-wrap {
@@ -598,30 +682,36 @@
 }
 
 .citadel-heading {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 800;
-  color: #FFFFFF;
+  color: var(--an-text-title);
   letter-spacing: -0.01em;
 }
 
 .citadel-sub {
   font-size: 9.5px;
   font-weight: 700;
-  color: #94A3B8;
+  color: var(--an-text-sub);
   font-family: 'JetBrains Mono', monospace;
 }
 
 .technical-radar-bento {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 10px;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .technical-radar-bento {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .tech-bento-pod {
-  background: rgba(8, 11, 18, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--an-subpod-bg);
+  border: 1px solid var(--an-subpod-border);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 12px 14px;
 }
 
 .tech-pod-top {
@@ -635,7 +725,7 @@
   font-size: 8.5px;
   font-weight: 800;
   letter-spacing: 0.06em;
-  color: #94A3B8;
+  color: var(--an-text-muted);
 }
 
 .tech-pod-status {
@@ -655,10 +745,15 @@
   color: #F59E0B;
 }
 
+.tech-pod-status.red {
+  background: rgba(239, 68, 68, 0.12);
+  color: #EF4444;
+}
+
 .tech-pod-val {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 900;
-  color: #FFFFFF;
+  color: var(--an-text-title);
   margin-bottom: 6px;
 }
 
@@ -668,7 +763,7 @@
 
 .tech-pod-bar-track {
   height: 5px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--an-track-bg);
   border-radius: 3px;
   overflow: hidden;
   margin-bottom: 6px;
@@ -688,7 +783,7 @@
 
 .tech-pod-footer-note {
   font-size: 9.5px;
-  color: #94A3B8;
+  color: var(--an-text-sub);
   line-height: 1.4;
 }
 
@@ -696,24 +791,24 @@
 .ema-stack-list {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .ema-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 11.5px;
 }
 
 .ema-tag {
-  color: #94A3B8;
+  color: var(--an-text-sub);
   font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
 }
 
 .ema-price {
-  color: #FFFFFF;
+  color: var(--an-text-title);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
@@ -730,7 +825,7 @@
   gap: 6px;
   font-size: 11px;
   font-weight: 800;
-  color: #FFFFFF;
+  color: var(--an-text-title);
   text-align: center;
 }
 
@@ -738,38 +833,43 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 5px 2px;
+  background: var(--an-pill-bg);
+  padding: 6px 2px;
   border-radius: 6px;
+  border: 1px solid var(--an-subpod-border);
 }
 
 .rail-item.pivot-rail {
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .r-tag {
   font-size: 8px;
-  color: #94A3B8;
+  color: var(--an-text-muted);
 }
 
 .r-tag.gold { color: #F59E0B; }
 .r-tag.red { color: #EF4444; }
 
-/* ── 8. COMPLETE TRADINGVIEW INTERACTIVE BSE CHART ────────────────────────── */
+/* ── 8. COMPLETE TRADINGVIEW INTERACTIVE BSE CHART (NO INNER MARGINS) ─────── */
 .dna-tradingview-full-section {
-  background: rgba(13, 17, 26, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--an-card-bg);
+  border: 1px solid var(--an-card-border);
   border-radius: 18px;
-  padding: 14px;
-  margin-bottom: 20px;
+  padding: 0; /* REMOVE inner card padding so chart sits edge-to-edge! */
+  margin-bottom: 22px;
+  overflow: hidden;
+  box-shadow: var(--an-card-shadow);
 }
 
 .tv-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--an-card-border);
+  background: var(--an-card-bg);
 }
 
 .tv-header-left {
@@ -784,9 +884,9 @@
 }
 
 .tv-title {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 800;
-  color: #FFFFFF;
+  color: var(--an-text-title);
 }
 
 .tv-bse-tag {
@@ -800,15 +900,17 @@
 
 .tv-embed-container {
   width: 100%;
-  height: 480px;
-  border-radius: 12px;
+  height: 540px; /* Ample vertical space for interactive charting */
+  margin: 0;
+  padding: 0;
+  border-radius: 0 0 18px 18px;
   overflow: hidden;
-  background: #0A0D14;
+  background: transparent;
 }
 
 /* ── 9. BOTTOM ACTION BAR ─────────────────────────────────────────────────── */
 .dna-analyst-footer {
-  padding-bottom: 20px;
+  padding-bottom: 24px;
 }
 
 .dna-deep-dive-btn {
@@ -817,11 +919,11 @@
   justify-content: center;
   gap: 8px;
   width: 100%;
-  padding: 13px 18px;
+  padding: 14px 20px;
   border-radius: 12px;
   background: linear-gradient(135deg, #FDE68A 0%, #D4AF37 50%, #B45309 100%);
   color: #0A0E17;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 800;
   border: none;
   cursor: pointer;

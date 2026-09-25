@@ -316,4 +316,8 @@ export const quantsyncApi = {
       inconclusive: number;
       win_rate_pct: number;
     }>(`/api/screener/accuracy?days=${days}`),
+
+  getStockDetail: (symbol: string) =>
+    apiFetch<any>(`/api/stock/detail/${encodeURIComponent(symbol)}`),
 };
+
