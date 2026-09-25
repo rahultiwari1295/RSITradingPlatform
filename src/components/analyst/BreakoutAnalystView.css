@@ -1,388 +1,370 @@
 /* ==========================================================================
-   BreakoutAnalystView.css — High-End Institutional Breakout Analyst Modal
-   Dual-Theme Support (Light Porcelain & Dark Obsidian)
+   BreakoutAnalystView.css — High-End Institutional Breakout Citadel
+   Matching DNA Screen (Deep Luxury Obsidian Atmosphere)
    ========================================================================== */
 
-.analyst-modal-backdrop {
+.dna-analyst-fullscreen-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  animation: fadeInModal 0.22s ease-out;
-}
-
-@keyframes fadeInModal {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.analyst-view-panel {
-  position: relative;
-  width: 100%;
-  max-width: 480px;
-  height: 94dvh;
-  max-height: 94dvh;
-  border-radius: 28px 28px 0 0;
-  display: flex;
-  flex-direction: column;
+  background: #06080E;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 60%),
+    radial-gradient(circle at 100% 100%, rgba(245, 158, 11, 0.04) 0%, transparent 50%);
+  color: #F8FAFC;
   overflow-y: auto;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Outfit", sans-serif;
+  animation: overlayFadeIn 0.22s ease-out;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dna-analyst-scroll-citadel {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 14px 14px 80px;
   box-sizing: border-box;
-  padding: 18px 16px 36px;
-  animation: slideUpPanel 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.45);
 }
 
-@keyframes slideUpPanel {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-
-/* Theme Skins */
-.analyst-modal-backdrop.theme-dark .analyst-view-panel {
-  background: #0B0E17;
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  color: #F8FAFC;
-}
-
-.analyst-modal-backdrop.theme-light .analyst-view-panel {
-  background: #FFFFFF;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  color: #0F172A;
-}
-
-/* Share Toast Bubble */
-.share-toast-bubble {
-  position: absolute;
-  top: 14px;
+/* Toast Notification Capsule */
+.dna-toast-capsule {
+  position: fixed;
+  top: 18px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1000;
+  z-index: 10000;
   background: #10B981;
   color: #FFFFFF;
-  font-size: 11.5px;
-  font-weight: 700;
-  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 8px 18px;
   border-radius: 999px;
-  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
-  animation: popToast 0.2s ease-out;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  animation: popCapsule 0.2s ease-out;
+  white-space: nowrap;
 }
 
-@keyframes popToast {
+@keyframes popCapsule {
   from { transform: translate(-50%, -10px); opacity: 0; }
   to { transform: translate(-50%, 0); opacity: 1; }
 }
 
-/* ── 1. TOP APP BAR ──────────────────────────────────────────────────────── */
-.analyst-top-bar {
+/* ── 1. TOP NAV BAR (MATCHING DNA SCREEN SHOT 2) ─────────────────────────── */
+.dna-analyst-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 12px;
-  margin-bottom: 14px;
-  border-bottom: 1px solid var(--line, rgba(0, 0, 0, 0.07));
+  padding: 4px 0 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 16px;
 }
 
-.analyst-back-btn {
+.dna-nav-back-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  background: transparent;
-  border: none;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 6px 8px;
-  border-radius: 8px;
-  transition: all 0.15s ease;
-}
-
-.analyst-modal-backdrop.theme-dark .analyst-back-btn {
-  color: #94A3B8;
-}
-.analyst-modal-backdrop.theme-dark .analyst-back-btn:hover {
-  color: #F8FAFC;
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.analyst-modal-backdrop.theme-light .analyst-back-btn {
-  color: #475569;
-}
-.analyst-modal-backdrop.theme-light .analyst-back-btn:hover {
-  color: #0F172A;
-  background: #F1F5F9;
-}
-
-.analyst-stock-title-cluster {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.stock-ticker-row {
-  display: flex;
-  align-items: center;
   gap: 6px;
-}
-
-.stock-ticker-bold {
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-}
-
-.exchange-pill-bse {
-  font-size: 8.5px;
-  font-weight: 800;
-  padding: 1.5px 6px;
-  border-radius: 4px;
-  background: #3B82F6;
-  color: #FFFFFF;
-  letter-spacing: 0.04em;
-}
-
-.dna-score-micro-tag {
-  font-size: 8.5px;
-  font-weight: 800;
-  padding: 1.5px 6px;
-  border-radius: 4px;
-  background: rgba(16, 185, 129, 0.15);
-  color: #10B981;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-.stock-company-name-sub {
-  font-size: 10.5px;
-  color: var(--ink3, #64748B);
-  margin-top: 1px;
-}
-
-.analyst-quick-share-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 11.5px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all 0.18s ease;
-  border: none;
-}
-
-.analyst-modal-backdrop.theme-dark .analyst-quick-share-btn {
-  background: linear-gradient(135deg, #FDE68A 0%, #D4AF37 50%, #B45309 100%);
-  color: #0A0E17;
-  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.25);
-}
-
-.analyst-modal-backdrop.theme-light .analyst-quick-share-btn {
-  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-  color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.25);
-}
-
-/* ── 2. KEY METRICS STRIP (ENTRY, TARGET, SL, CMP) ───────────────────────── */
-.analyst-metrics-strip {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  margin-bottom: 14px;
-}
-
-.analyst-metric-box {
-  display: flex;
-  flex-direction: column;
-  padding: 8px 6px;
-  border-radius: 10px;
-  text-align: center;
-}
-
-.analyst-modal-backdrop.theme-dark .analyst-metric-box {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-.analyst-modal-backdrop.theme-light .analyst-metric-box {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
-}
-
-.a-metric-lbl {
-  font-size: 7.5px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  color: #64748B;
-  margin-bottom: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.a-metric-val {
-  font-size: 12.5px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.a-metric-val.gold-accent {
-  color: #F59E0B;
-}
-
-.a-metric-val.profit-accent {
-  color: #10B981;
-}
-.analyst-modal-backdrop.theme-light .a-metric-val.profit-accent {
-  color: #047857;
-}
-
-.a-metric-val.loss-accent {
-  color: #EF4444;
-}
-
-.a-metric-val.cmp-accent {
-  color: inherit;
-}
-
-.a-metric-badge {
-  font-size: 8px;
-  font-weight: 800;
-  color: #10B981;
-  margin-top: 1px;
-}
-
-.a-metric-badge.red {
-  color: #EF4444;
-}
-
-/* ── 3. CHART NAVIGATION TABS ────────────────────────────────────────────── */
-.chart-view-selector-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-  gap: 8px;
-}
-
-.chart-tabs-left {
-  display: flex;
-  gap: 6px;
-}
-
-.chart-mode-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.18s ease;
-}
-
-.analyst-modal-backdrop.theme-dark .chart-mode-pill {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #94A3B8;
-}
-
-.analyst-modal-backdrop.theme-dark .chart-mode-pill.active {
-  background: rgba(212, 175, 55, 0.18);
-  border-color: rgba(212, 175, 55, 0.45);
-  color: #FDE68A;
-}
-
-.analyst-modal-backdrop.theme-light .chart-mode-pill {
-  background: #F1F5F9;
-  border: 1px solid #CBD5E1;
-  color: #475569;
-}
-
-.analyst-modal-backdrop.theme-light .chart-mode-pill.active {
-  background: #FEF3C7;
-  border-color: #F59E0B;
-  color: #B45309;
-}
-
-.timeframe-toggle-pills {
-  display: flex;
-  gap: 4px;
-}
-
-.tf-pill {
-  font-size: 9.5px;
+  color: #E2E8F0;
+  font-size: 11.5px;
   font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
   cursor: pointer;
-  background: transparent;
-  border: none;
-  color: #64748B;
-  transition: all 0.15s ease;
+  transition: all 0.18s ease;
 }
 
-.analyst-modal-backdrop.theme-dark .tf-pill.active {
+.dna-nav-back-btn:hover {
   background: rgba(255, 255, 255, 0.12);
   color: #FFFFFF;
 }
 
-.analyst-modal-backdrop.theme-light .tf-pill.active {
-  background: #E2E8F0;
-  color: #0F172A;
+.dna-nav-share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #E2E8F0;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.18s ease;
 }
 
-/* ── 4. CHART DISPLAY STAGE ──────────────────────────────────────────────── */
-.analyst-chart-stage-container {
-  position: relative;
-  width: 100%;
-  height: 380px;
-  border-radius: 14px;
-  overflow: hidden;
-  margin-bottom: 14px;
+.dna-nav-share-btn:hover {
+  background: #25D366;
+  border-color: #25D366;
+  color: #FFFFFF;
 }
 
-.analyst-modal-backdrop.theme-dark .analyst-chart-stage-container {
-  background: #080A10;
+/* ── 2. HERO STOCK IDENTITY & 52W RANGE (MATCHING SCREENSHOT 2) ─────────── */
+.dna-stock-identity-hero {
+  margin-bottom: 20px;
+}
+
+.dna-badge-pill-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.dna-pill {
+  font-size: 10px;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace, sans-serif;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #94A3B8;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.analyst-modal-backdrop.theme-light .analyst-chart-stage-container {
-  background: #FFFFFF;
-  border: 1px solid #CBD5E1;
+.dna-pill.symbol-pill {
+  background: rgba(59, 130, 246, 0.15);
+  color: #38BDF8;
+  border-color: rgba(59, 130, 246, 0.35);
 }
 
-.dna-chart-viewport {
+.dna-pill.bse-pill {
+  background: rgba(245, 158, 11, 0.12);
+  color: #F59E0B;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.dna-pill.pattern-pill {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10B981;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.dna-verified-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: #6EE7B7;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  padding: 2.5px 8px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.dna-stock-massive-title {
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #FFFFFF;
+  margin: 0 0 6px;
+  line-height: 1.1;
+}
+
+.dna-price-change-cluster {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.dna-live-price {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #FFFFFF;
+  font-variant-numeric: tabular-nums;
+}
+
+.dna-change-pill {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.dna-change-pill.up {
+  color: #10B981;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* 52-Week Range Bar (Exact DNA Screen match from Screenshot 2) */
+.dna-52w-range-card {
+  background: rgba(14, 18, 28, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+
+.range-52w-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: #94A3B8;
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 8px;
+}
+
+.range-52w-labels strong {
+  color: #F8FAFC;
+}
+
+.range-52w-track {
   position: relative;
-  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: visible;
+}
+
+.range-52w-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
   height: 100%;
+  background: linear-gradient(90deg, #F59E0B 0%, #10B981 100%);
+  border-radius: 3px;
+}
+
+.range-52w-thumb {
+  position: absolute;
+  top: -4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+  transform: translateX(-50%);
+}
+
+/* 3 Key Levels HUD */
+.dna-3-levels-hud {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.level-pod {
+  background: rgba(14, 18, 28, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 10px 8px;
+  text-align: center;
   display: flex;
   flex-direction: column;
 }
 
-.dna-chart-canvas-wrap {
-  position: relative;
-  flex: 1;
-  width: 100%;
-  overflow: hidden;
+.level-lbl {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #64748B;
+  margin-bottom: 3px;
+  white-space: nowrap;
 }
 
-.dna-chart-rendered-img {
+.level-val {
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.level-val.gold { color: #F59E0B; }
+.level-val.profit { color: #10B981; }
+.level-val.loss { color: #EF4444; }
+
+/* ── 3. FIRST CHART: THE ANALYSED DNA CHART (NO TEXT ON CHART) ───────────── */
+.dna-chart-card-section {
+  background: rgba(13, 17, 26, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.chart-card-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.chart-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-icon-flair {
+  font-size: 14px;
+}
+
+.chart-card-heading {
+  font-size: 12px;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: -0.01em;
+}
+
+.chart-tf-toggle-capsule {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 2px;
+  border-radius: 8px;
+}
+
+.chart-tf-btn {
+  background: transparent;
+  border: none;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #94A3B8;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chart-tf-btn.active {
+  background: #3B82F6;
+  color: #FFFFFF;
+}
+
+.dna-clean-chart-stage {
+  position: relative;
+  width: 100%;
+  height: 270px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #080A10;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dna-rendered-chart-image {
   width: 100%;
   height: 100%;
   object-fit: fill;
   display: block;
 }
 
-/* Clean SVG Levels Overlay with NO text on chart */
-.clean-levels-overlay {
+.clean-chart-overlay-svg {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -390,207 +372,464 @@
   pointer-events: none;
 }
 
-/* Clean Legend Bar BELOW the chart (keeping chart itself 100% clean) */
-.dna-chart-clean-legend {
+/* Legend BELOW chart (keeping chart itself 100% clean) */
+.dna-chart-levels-legend {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 8px 10px;
-  border-top: 1px solid var(--line, rgba(0, 0, 0, 0.07));
-  font-size: 10.5px;
-}
-
-.analyst-modal-backdrop.theme-dark .dna-chart-clean-legend {
-  background: rgba(15, 23, 42, 0.9);
-}
-
-.analyst-modal-backdrop.theme-light .dna-chart-clean-legend {
-  background: #F8FAFC;
-}
-
-.legend-indicator {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.legend-line {
-  width: 14px;
-  height: 2.5px;
-  border-radius: 2px;
-}
-
-.legend-line.green { background: #10B981; }
-.legend-line.amber { background: #F59E0B; }
-.legend-line.red { background: #EF4444; }
-
-.legend-text {
+  padding-top: 10px;
+  margin-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
   font-size: 10px;
 }
 
-/* TradingView Viewport */
-.tradingview-viewport {
-  width: 100%;
-  height: 100%;
+.legend-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
-/* ── 5. SHARE TO WHATSAPP PRIMARY ACTION ─────────────────────────────────── */
-.whatsapp-action-block {
-  margin-bottom: 14px;
+.dot-mark {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
 }
 
-.whatsapp-share-btn-large {
+.dot-mark.green { background: #10B981; box-shadow: 0 0 6px #10B981; }
+.dot-mark.amber { background: #F59E0B; box-shadow: 0 0 6px #F59E0B; }
+.dot-mark.red { background: #EF4444; box-shadow: 0 0 6px #EF4444; }
+
+/* ── 4. SHARE TRADE SETUP TO WHATSAPP BUTTON (JUST 1 BUTTON) ─────────────── */
+.dna-whatsapp-share-section {
+  margin-bottom: 16px;
+}
+
+.dna-whatsapp-button-hero {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  padding: 12px 18px;
-  border-radius: 12px;
+  padding: 14px 20px;
+  border-radius: 14px;
   background: #25D366;
   color: #FFFFFF;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 800;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(37, 211, 102, 0.35);
+  box-shadow: 0 4px 18px rgba(37, 211, 102, 0.4);
   transition: all 0.2s ease;
 }
 
-.whatsapp-share-btn-large:hover {
+.dna-whatsapp-button-hero:hover {
   background: #20BD5A;
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.45);
+  box-shadow: 0 6px 24px rgba(37, 211, 102, 0.55);
 }
 
-.analyst-whatsapp-mini-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 11.5px;
-  font-weight: 800;
-  cursor: pointer;
-  border: none;
-  background: #25D366;
-  color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
-  transition: all 0.18s ease;
+/* ── 5. WHATS GOOD & WHATS BAD (2 SPECIFIC POINTS EACH) ─────────────────── */
+.dna-pros-cons-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
-.analyst-whatsapp-mini-btn:hover {
-  background: #20BD5A;
-  transform: translateY(-1px);
-}
-
-/* ── 6. SHARE MESSAGE CARD PREVIEW ────────────────────────────────────────── */
-.analyst-share-card {
-  border-radius: 12px;
-  padding: 12px;
-  margin-bottom: 14px;
-}
-
-.analyst-modal-backdrop.theme-dark .analyst-share-card {
-  background: rgba(18, 24, 38, 0.7);
+.pros-cons-card {
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: rgba(14, 18, 28, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-.analyst-modal-backdrop.theme-light .analyst-share-card {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+.pros-cons-card.good-card {
+  border-left: 3px solid #10B981;
 }
 
-.share-card-header {
+.pros-cons-card.bad-card {
+  border-left: 3px solid #EF4444;
+}
+
+.pc-card-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 6px;
   margin-bottom: 8px;
 }
 
-.share-card-title {
-  font-size: 9.5px;
+.pc-title {
+  font-size: 11.5px;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  color: #64748B;
+  color: #FFFFFF;
+  letter-spacing: 0.02em;
 }
 
-.copy-btn-mini {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 10px;
-  font-weight: 700;
-  cursor: pointer;
-  border: none;
-}
-
-.analyst-modal-backdrop.theme-dark .copy-btn-mini {
-  background: rgba(212, 175, 55, 0.15);
-  color: #FDE68A;
-}
-
-.analyst-modal-backdrop.theme-light .copy-btn-mini {
-  background: #FEF3C7;
-  color: #B45309;
-}
-
-.share-message-box {
+.pc-list {
+  list-style: none;
+  padding: 0;
   margin: 0;
-  padding: 10px 12px;
-  border-radius: 8px;
-  font-family: 'JetBrains Mono', monospace, Consolas, sans-serif;
-  font-size: 12px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  user-select: all;
-}
-
-.analyst-modal-backdrop.theme-dark .share-message-box {
-  background: #06080E;
-  color: #E2E8F0;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.analyst-modal-backdrop.theme-light .share-message-box {
-  background: #FFFFFF;
-  color: #0F172A;
-  border: 1px solid #CBD5E1;
-}
-
-/* ── 6. BOTTOM ACTION FOOTER ─────────────────────────────────────────────── */
-.analyst-footer-actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
-.analyst-btn-dna {
+.pc-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #CBD5E1;
+}
+
+.pc-bullet {
+  font-weight: 900;
+  font-size: 11px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.pc-bullet.green { color: #10B981; }
+.pc-bullet.red { color: #EF4444; }
+
+/* ── 6. AI PROBABILITY ON SUCCESS: "COMING SOON" ─────────────────────────── */
+.dna-ai-probability-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, rgba(20, 26, 40, 0.9) 0%, rgba(12, 16, 26, 0.9) 100%);
+  border: 1px dashed rgba(59, 130, 246, 0.35);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.ai-prob-left {
+  flex: 1;
+}
+
+.ai-prob-kicker {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #38BDF8;
+  margin-bottom: 3px;
+}
+
+.neural-spin {
+  animation: spinSlow 6s linear infinite;
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.ai-prob-title {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.ai-prob-desc {
+  font-size: 9.5px;
+  color: #94A3B8;
+  margin-top: 2px;
+}
+
+.coming-soon-badge {
   display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #38BDF8;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.pulse-sparkle {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #38BDF8;
+  box-shadow: 0 0 6px #38BDF8;
+  animation: pulseDot 1.5s infinite alternate;
+}
+
+@keyframes pulseDot {
+  0% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+/* ── 7. TECHNICAL OVERVIEW CITADEL (THE WOW FACTOR) ──────────────────────── */
+.dna-technical-citadel {
+  background: rgba(13, 17, 26, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.citadel-header-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.citadel-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.citadel-crown {
+  font-size: 14px;
+}
+
+.citadel-heading {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: -0.01em;
+}
+
+.citadel-sub {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #94A3B8;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.technical-radar-bento {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.tech-bento-pod {
+  background: rgba(8, 11, 18, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.tech-pod-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.tech-pod-name {
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #94A3B8;
+}
+
+.tech-pod-status {
+  font-size: 8.5px;
+  font-weight: 800;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+}
+
+.tech-pod-status.green {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10B981;
+}
+
+.tech-pod-status.amber {
+  background: rgba(245, 158, 11, 0.12);
+  color: #F59E0B;
+}
+
+.tech-pod-val {
+  font-size: 20px;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin-bottom: 6px;
+}
+
+.tech-pod-val.gold {
+  color: #F59E0B;
+}
+
+.tech-pod-bar-track {
+  height: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.tech-pod-bar-fill.rsi {
+  height: 100%;
+  background: linear-gradient(90deg, #3B82F6 0%, #10B981 100%);
+  border-radius: 3px;
+}
+
+.tech-pod-bar-fill.vol {
+  height: 100%;
+  background: linear-gradient(90deg, #F59E0B 0%, #D97706 100%);
+  border-radius: 3px;
+}
+
+.tech-pod-footer-note {
+  font-size: 9.5px;
+  color: #94A3B8;
+  line-height: 1.4;
+}
+
+/* EMA Stack */
+.ema-stack-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ema-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.ema-tag {
+  color: #94A3B8;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.ema-price {
+  color: #FFFFFF;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.ema-check.green {
+  color: #10B981;
+  font-weight: 800;
+}
+
+/* Rails Grid */
+.rails-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #FFFFFF;
+  text-align: center;
+}
+
+.rail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 5px 2px;
+  border-radius: 6px;
+}
+
+.rail-item.pivot-rail {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.r-tag {
+  font-size: 8px;
+  color: #94A3B8;
+}
+
+.r-tag.gold { color: #F59E0B; }
+.r-tag.red { color: #EF4444; }
+
+/* ── 8. COMPLETE TRADINGVIEW INTERACTIVE BSE CHART ────────────────────────── */
+.dna-tradingview-full-section {
+  background: rgba(13, 17, 26, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 14px;
+  margin-bottom: 20px;
+}
+
+.tv-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.tv-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tv-logo-dot {
+  color: #3B82F6;
+  font-size: 12px;
+}
+
+.tv-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.tv-bse-tag {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: #3B82F6;
+  color: #FFFFFF;
+}
+
+.tv-embed-container {
+  width: 100%;
+  height: 480px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0A0D14;
+}
+
+/* ── 9. BOTTOM ACTION BAR ─────────────────────────────────────────────────── */
+.dna-analyst-footer {
+  padding-bottom: 20px;
+}
+
+.dna-deep-dive-btn {
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   width: 100%;
-  padding: 12px 16px;
+  padding: 13px 18px;
   border-radius: 12px;
-  font-size: 12.5px;
+  background: linear-gradient(135deg, #FDE68A 0%, #D4AF37 50%, #B45309 100%);
+  color: #0A0E17;
+  font-size: 12px;
   font-weight: 800;
-  cursor: pointer;
   border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.3);
   transition: all 0.2s ease;
 }
 
-.analyst-modal-backdrop.theme-dark .analyst-btn-dna {
-  background: linear-gradient(135deg, #FDE68A 0%, #D4AF37 50%, #B45309 100%);
-  color: #0A0E17;
-  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.25);
-}
-
-.analyst-modal-backdrop.theme-light .analyst-btn-dna {
-  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-  color: #FFFFFF;
-  box-shadow: 0 4px 16px rgba(217, 119, 6, 0.25);
+.dna-deep-dive-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(212, 175, 55, 0.45);
 }
