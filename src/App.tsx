@@ -1569,10 +1569,35 @@ export default function App() {
     }
   }, [activeTab, chartSymbol, engine]);
 
-  const [hasOpenedLounge, setHasOpenedLounge] = useState<boolean>(false);
+  // Performance optimization: Lazy-mount offscreen tab components so unvisited tabs
+  // do not trigger heavy backend queries, iframes, or chart rendering on initial home load
+  const [hasOpenedLounge, setHasOpenedLounge] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("tab") === "lounge";
+    }
+    return false;
+  });
+
+  const [hasOpenedDna, setHasOpenedDna] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const p = new URLSearchParams(window.location.search);
+      return p.get("tab") === "dna" || !!p.get("stock") || !!p.get("sym");
+    }
+    return false;
+  });
+
+  const [hasOpenedScreener, setHasOpenedScreener] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("tab") === "screener";
+    }
+    return false;
+  });
+
   useEffect(() => {
     if (activeTab === "lounge") setHasOpenedLounge(true);
-  }, [activeTab]);
+    if (activeTab === "dna" || selectedDnaStock) setHasOpenedDna(true);
+    if (activeTab === "screener") setHasOpenedScreener(true);
+  }, [activeTab, selectedDnaStock]);
 
   const handleRangeChange = (r: number) => {
     setRange(r);
@@ -3775,12 +3800,14 @@ export default function App() {
 
         {/* ===== DNA SCREEN ===== */}
         <section className={`screen ${activeTab === "dna" ? "active" : ""}`} id="screen-dna">
-          <StockDNAScreen
-            theme={theme}
-            resetTrigger={dnaResetTrigger}
-            selectedStock={selectedDnaStock}
-            onSwitchTab={(tab) => setActiveTab(tab as any)}
-          />
+          {hasOpenedDna && (
+            <StockDNAScreen
+              theme={theme}
+              resetTrigger={dnaResetTrigger}
+              selectedStock={selectedDnaStock}
+              onSwitchTab={(tab) => setActiveTab(tab as any)}
+            />
+          )}
         </section>
 
         {/* ===== CHARTS SCREEN ===== */}
@@ -4109,13 +4136,15 @@ export default function App() {
 
         {/* ===== SCREENER SCREEN (INSTITUTIONAL PATTERN INTELLIGENCE) ===== */}
         <section className={`screen ${activeTab === "screener" ? "active" : ""}`} id="screen-screener">
-          <ScreenerScreen
-            theme={theme}
-            livePrices={livePrices}
-            onSelectStock={(sym, fullData) => {
-              setAnalystStock(fullData || { symbol: sym, sym });
-            }}
-          />
+          {hasOpenedScreener && (
+            <ScreenerScreen
+              theme={theme}
+              livePrices={livePrices}
+              onSelectStock={(sym, fullData) => {
+                setAnalystStock(fullData || { symbol: sym, sym });
+              }}
+            />
+          )}
         </section>
 
         {/* ===== LOUNGE SCREEN (INSTITUTIONAL CHAT & AI CO-PILOT) ===== */}

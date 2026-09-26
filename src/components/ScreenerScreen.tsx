@@ -314,25 +314,30 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
     fetchStocks();
   }, [fetchStocks]);
 
-  // Pre-fetch the opposite tab in the background so tab switching is instantaneous
+  // Pre-fetch the opposite tab in the background (with a 2.5s gentle delay) so tab switching is instantaneous
+  // without clogging the network connection during initial tab load
   useEffect(() => {
     const otherTab = activeTab === "near_breakout" ? "success" : "near_breakout";
     if (!SCREENER_MEMORY_CACHE[otherTab]) {
-      const otherParams: Record<string, any> = { limit: 150 };
-      if (otherTab === "near_breakout") {
-        otherParams.pattern_stage = "NEAR_BREAKOUT";
-      } else {
-        otherParams.breakout_status = "SUCCESS";
-      }
-      quantsyncApi.getScreenerRows(otherParams).then((res) => {
-        if (res && res.rows) {
-          SCREENER_MEMORY_CACHE[otherTab] = {
-            rows: res.rows,
-            scan_date: res.scan_date || "",
-            timestamp: Date.now()
-          };
+      const timer = setTimeout(() => {
+        const otherParams: Record<string, any> = { limit: 150 };
+        if (otherTab === "near_breakout") {
+          otherParams.pattern_stage = "NEAR_BREAKOUT";
+        } else {
+          otherParams.breakout_status = "SUCCESS";
         }
-      }).catch(() => {});
+        quantsyncApi.getScreenerRows(otherParams).then((res) => {
+          if (res && res.rows) {
+            SCREENER_MEMORY_CACHE[otherTab] = {
+              rows: res.rows,
+              scan_date: res.scan_date || "",
+              timestamp: Date.now()
+            };
+          }
+        }).catch(() => {});
+      }, 2500);
+
+      return () => clearTimeout(timer);
     }
   }, [activeTab]);
 

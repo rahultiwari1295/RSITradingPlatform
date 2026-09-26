@@ -415,6 +415,21 @@ export default function TradingViewStockDetail({
   const starsVal = Number(t.stars || 4.5);
   const starsPct = Math.min(100, Math.max(0, (starsVal / 5) * 100));
 
+  // Dynamically load TradingView widget web component scripts on-demand only
+  useEffect(() => {
+    const loadScript = (src: string, id: string) => {
+      if (document.getElementById(id)) return;
+      const script = document.createElement("script");
+      script.id = id;
+      script.type = "module";
+      script.src = src;
+      script.async = true;
+      document.head.appendChild(script);
+    };
+    loadScript("https://widgets.tradingview-widget.com/w/en/tv-technical-analysis.js", "tv-tech-analysis-script");
+    loadScript("https://widgets.tradingview-widget.com/w/en/tv-company-profile.js", "tv-company-profile-script");
+  }, []);
+
   return (
     <div className="stock-detail-common" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* 1. Header: Stock name with star as it is */}
