@@ -95,24 +95,49 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
   const [activeCardIdx, setActiveCardIdx] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [liveBreakouts, setLiveBreakouts] = useState<any[]>([]);
+  const [isBreakoutsLoading, setIsBreakoutsLoading] = useState(true);
   const carouselRef = useRef<HTMLDivElement>(null);
 
-  // Fetch real confirmed breakout candidates from API
+  // Fetch real confirmed breakout candidates from API with shimmer placeholder
   useEffect(() => {
     let isMounted = true;
-    fetch("/api/screener?breakout_status=SUCCESS&limit=3")
+    setIsBreakoutsLoading(true);
+    fetch("/api/screener?breakout_status=SUCCESS&limit=5")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (isMounted && data && data.rows && data.rows.length > 0) {
           setLiveBreakouts(data.rows);
         }
       })
-      .catch((err) => console.debug("Home breakouts fetch:", err));
+      .catch((err) => console.debug("Home breakouts fetch:", err))
+      .finally(() => {
+        if (isMounted) setIsBreakoutsLoading(false);
+      });
 
     return () => {
       isMounted = false;
     };
   }, []);
+
+  // Auto-peek nudge animation on load so user intuitively understands it's scrollable
+  useEffect(() => {
+    if (!isBreakoutsLoading && featuredBreakouts.length > 1 && carouselRef.current) {
+      const el = carouselRef.current;
+      const nudgeTimer = setTimeout(() => {
+        const cardWidth = el.offsetWidth;
+        const nudgeDist = Math.min(95, Math.round(cardWidth * 0.18));
+        el.scrollTo({ left: nudgeDist, behavior: "smooth" });
+
+        const returnTimer = setTimeout(() => {
+          el.scrollTo({ left: 0, behavior: "smooth" });
+        }, 600);
+
+        return () => clearTimeout(returnTimer);
+      }, 450);
+
+      return () => clearTimeout(nudgeTimer);
+    }
+  }, [isBreakoutsLoading, featuredBreakouts.length]);
 
   // Discover AI Spotlight Buy Call: prioritize V2 buy signals
   const buySignals = terminalData?.toBuySignals || [];
@@ -296,8 +321,31 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
           ref={carouselRef}
           onScroll={handleCarouselScroll}
         >
-          {featuredBreakouts.map((b) => (
-            <div key={b.symbol} className="breakout-master-card">
+          {isBreakoutsLoading ? (
+            <div className="breakout-skeleton-card">
+              <div className="sk-header-row">
+                <div className="sk-sym-block">
+                  <div className="sk-bar sk-sym" style={{ width: 140, height: 22 }} />
+                  <div className="sk-bar sk-sub" style={{ width: 210, height: 13 }} />
+                </div>
+                <div className="sk-bar sk-badge-block" />
+              </div>
+              <div className="sk-bar sk-pattern" style={{ width: "100%", height: 32, borderRadius: 8 }} />
+              <div className="sk-grid">
+                <div className="sk-bar sk-col" />
+                <div className="sk-bar sk-col" />
+                <div className="sk-bar sk-col" />
+                <div className="sk-bar sk-col" />
+              </div>
+              <div className="sk-bar sk-thesis" style={{ width: "100%", height: 36, borderRadius: 8 }} />
+              <div className="sk-footer-row">
+                <div className="sk-bar sk-vol" style={{ width: 160, height: 16 }} />
+                <div className="sk-bar sk-btn" style={{ width: 100, height: 34, borderRadius: 9 }} />
+              </div>
+            </div>
+          ) : (
+            featuredBreakouts.map((b) => (
+              <div key={b.symbol} className="breakout-master-card">
               {/* Card Header */}
               <div className="b-card-header">
                 <div className="b-sym-info">
@@ -378,12 +426,34 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
                 </div>
               </div>
             </div>
-          ))}
+          )))}
         </div>
       </section>
 
-      {/* ── 4. AI ENGINE SPOTLIGHT (V2 PRO) ─────────────────────────────────── */}
-      <section className="ai-engine-spotlight-section">
+      {/* ── 4. AI RECOMMENDED TRADES ─────────────────────────────────────── */}
+      <section className="action-command-section ai-recommended-section">
+        <div className="section-header-row">
+          <div className="header-titles">
+            <h2 className="hero-headline">
+              AI Recommended <span className="headline-gold-gradient">Trades</span>
+            </h2>
+            <p className="hero-descriptor">
+              Systematic quantitative setups strictly validated through institutional risk criteria.
+            </p>
+          </div>
+          <button 
+            type="button"
+            className="view-all-screener-btn"
+            onClick={() => onNavigate("signals")}
+            aria-label="View all active AI signals"
+          >
+            <span>View Active ({activeCount})</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </button>
+        </div>
+
         {spotlightBuy ? (
           <div className="ai-spotlight-card active-call">
             <div className="spotlight-top-strip">
@@ -429,7 +499,7 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
                   className="spot-cta-btn primary"
                   onClick={() => onNavigate("signals")}
                 >
-                  <span>Review in AI Calls</span>
+                  <span>Review in AI BuySell</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <path d="M5 12h14M12 5l7 7-7 7"/>
                   </svg>
@@ -462,9 +532,9 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
                 <span className="risk-dot-sep">·</span>
                 <span className="risk-sub-label">1,318 Equities Scanned</span>
               </div>
-              <h2 className="risk-title">AI Engine in Capital Preservation Mode</h2>
+              <h3 className="risk-title">No Fresh Entry Today · Preserving Capital</h3>
               <p className="risk-explanation">
-                Zero low-quality entries permitted today. Algorithms strictly preserve cash when risk-to-reward ratios do not exceed 1:2.5. Active positions continue trailing stops systematically.
+                Since current market conditions do not meet our strict risk-reward criteria, the AI is not recommending any new calls today. In volatile markets, protecting your hard-earned capital and waiting for high-conviction setups is the smartest trade. Existing open positions continue to be monitored with trailing stops.
               </p>
             </div>
 
@@ -482,57 +552,70 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
         )}
       </section>
 
-      {/* ── 5. INSTITUTIONAL STOCK DNA PR HERO SEARCH ───────────────────────── */}
-      <section className="stock-dna-pr-hero">
-        <div className="dna-hero-inner">
-          <div className="dna-kicker-badge">INSTITUTIONAL GRADE INTELLIGENCE</div>
-          <h2 className="dna-hero-title">
-            Want Complete Stock DNA <span className="gold-accent-span">in 1 Click?</span>
-          </h2>
-          <p className="dna-hero-subtitle">
-            Uncover balance sheet solvency, Piotroski F-Scores, promoter pledging, debt runway, and automated macro candlestick charts instantly.
-          </p>
+      {/* ── 5. ANALYZE ANY STOCK LIKE A PRO ───────────────────────────────── */}
+      <section className="action-command-section stock-analysis-section">
+        <div className="section-header-row">
+          <div className="header-titles">
+            <h2 className="hero-headline">
+              Analyze Any Stock <span className="headline-gold-gradient">Like a Pro</span>
+            </h2>
+            <p className="hero-descriptor">
+              Instant fundamental health check, Piotroski solvency score & breakout targets.
+            </p>
+          </div>
+        </div>
 
-          <form onSubmit={handleSearchSubmit} className="dna-search-form">
-            <div className="dna-search-field">
-              <svg className="search-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"/>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-              <input 
-                type="text" 
-                placeholder="Search any NSE stock (e.g. RELIANCE, TCS, DIXON)..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="dna-input-element"
-                autoComplete="off"
-                spellCheck="false"
-              />
-            </div>
-            <button type="submit" className="dna-submit-btn">
-              <span>Get DNA Report</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
-            </button>
-          </form>
+        <div className="stock-dna-pr-hero">
+          <div className="dna-hero-inner">
+            <div className="dna-kicker-badge">INSTITUTIONAL STOCK BLUEPRINT</div>
+            <h3 className="dna-hero-title">
+              Complete 360° Stock Analysis <span className="gold-accent-span">& Health Score</span>
+            </h3>
+            <p className="dna-hero-subtitle">
+              Scan balance sheet solvency, Piotroski score, promoter holdings, valuation checks, and calculated Target & Stop-loss levels for any NSE stock.
+            </p>
 
-          <div className="dna-chips-container">
-            <span className="chips-title">Popular Searches:</span>
-            <div className="chips-scroller">
-              {POPULAR_DNA_STOCKS.map((sym) => (
-                <button 
-                  key={sym} 
-                  type="button"
-                  className="popular-stock-pill"
-                  onClick={() => {
-                    onSelectStockForDna(sym);
-                    onNavigate("dna");
-                  }}
-                >
-                  {sym}
-                </button>
-              ))}
+            <form onSubmit={handleSearchSubmit} className="dna-search-form">
+              <div className="dna-search-field">
+                <svg className="search-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input 
+                  type="text" 
+                  placeholder="Search any stock (e.g. RELIANCE, TCS, TATASTEEL, DIXON)..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="dna-input-element"
+                  autoComplete="off"
+                  spellCheck="false"
+                />
+              </div>
+              <button type="submit" className="dna-submit-btn">
+                <span>Analyze Stock Report</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </button>
+            </form>
+
+            <div className="dna-chips-container">
+              <span className="chips-title">Popular Searches:</span>
+              <div className="chips-scroller">
+                {POPULAR_DNA_STOCKS.map((sym) => (
+                  <button 
+                    key={sym} 
+                    type="button"
+                    className="popular-stock-pill"
+                    onClick={() => {
+                      onSelectStockForDna(sym);
+                      onNavigate("dna");
+                    }}
+                  >
+                    {sym}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

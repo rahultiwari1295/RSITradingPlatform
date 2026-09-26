@@ -1651,3 +1651,126 @@
 
 [data-theme="dark"] .trust-divider { background: rgba(255, 255, 255, 0.08); }
 [data-theme="light"] .trust-divider { background: rgba(0, 0, 0, 0.08); }
+
+/* ── 7. SHIMMER SKELETON MOTION PLACEHOLDER ──────────────────────────────── */
+@keyframes luxuryShimmerSweep {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+
+.breakout-skeleton-card {
+  flex: 0 0 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  border-radius: 20px;
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+[data-theme="dark"] .breakout-skeleton-card {
+  background: linear-gradient(150deg, rgba(22, 30, 48, 0.95) 0%, rgba(12, 17, 28, 0.98) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.45),
+    0 8px 24px -4px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="light"] .breakout-skeleton-card {
+  background: linear-gradient(165deg, #FFFFFF 0%, #FAFCFF 100%);
+  border: 1.5px solid rgba(217, 119, 6, 0.18);
+  box-shadow: 
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 6px 18px -2px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 #FFFFFF;
+}
+
+.sk-bar {
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+[data-theme="dark"] .sk-bar {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="light"] .sk-bar {
+  background: #E2E8F0;
+}
+
+.sk-bar::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  transform: translateX(-120%);
+  animation: luxuryShimmerSweep 1.6s ease-in-out infinite;
+}
+
+[data-theme="dark"] .sk-bar::after {
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.22), transparent);
+}
+
+[data-theme="light"] .sk-bar::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85), transparent);
+}
+
+.sk-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sk-sym-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sk-badge-block {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+}
+
+.sk-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.sk-col {
+  height: 48px;
+  border-radius: 8px;
+}
+
+.sk-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid var(--line, rgba(0, 0, 0, 0.06));
+}
+
+/* Section Spacing between Command Blocks */
+.action-command-section {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 28px;
+}
+
+.ai-recommended-section {
+  margin-top: 6px;
+}
+
+.stock-analysis-section {
+  margin-top: 6px;
+}
+
