@@ -3275,7 +3275,7 @@
           <div class="radar-center-icon">⚡</div>
         </div>
         <h3 class="dna-loading-title">
-          Scanning Institutional Geometry for <span id="loading-stock-symbol">TCS</span>
+          Scanning Institutional Geometry for <span id="loading-stock-symbol">Stock</span>
         </h3>
         <p class="dna-loading-subtitle">
           Synthesizing 5-year OHLCV candlesticks, volume footprint, multi-timeframe EMAs & balance sheet safety...
@@ -3337,18 +3337,18 @@
         <!-- Left: Identity & Price Architecture (Strict Left Alignment) -->
         <div class="stock-identity-col">
           <div class="stock-badges-row">
-            <span class="badge-pill symbol-badge" id="hero-symbol">TCS</span>
-            <span class="badge-pill" id="hero-tier">Large-Cap</span>
-            <span class="badge-pill" id="hero-sector">IT Services</span>
-            <span class="badge-pill" id="hero-group">Tata Group</span>
+            <span class="badge-pill symbol-badge" id="hero-symbol">--</span>
+            <span class="badge-pill" id="hero-tier">--</span>
+            <span class="badge-pill" id="hero-sector">--</span>
+            <span class="badge-pill" id="hero-group">--</span>
             <span class="badge-pill fresh-badge" id="hero-freshness" style="display:none;">Live</span>
           </div>
           
-          <h2 class="stock-headline-name" id="hero-name">Tata Consultancy Services</h2>
+          <h2 class="stock-headline-name" id="hero-name">--</h2>
 
           <div class="stock-price-stack">
-            <span class="price-value-big" id="hero-price">₹2,107.00</span>
-            <span class="price-change-pill up" id="hero-change">+₹28.40 (+1.35%)</span>
+            <span class="price-value-big" id="hero-price">--</span>
+            <span class="price-change-pill" id="hero-change">--</span>
           </div>
 
           <!-- 52-Week Range Bar -->
@@ -4118,12 +4118,19 @@
       currentChartView = view;
       const isMacro = view === 'macro';
       
-      document.getElementById('btn-chart-4m').classList.toggle('active', !isMacro);
-      document.getElementById('btn-chart-1y').classList.toggle('active', isMacro);
+      const btn4m = document.getElementById('btn-chart-4m');
+      const btn1y = document.getElementById('btn-chart-1y');
+      if (btn4m) btn4m.classList.toggle('active', !isMacro);
+      if (btn1y) btn1y.classList.toggle('active', isMacro);
+
+      // Do not fetch or load charts if report view is not active or no symbol is set
+      const reportView = document.getElementById('dna-report-view');
+      if (!reportView || reportView.style.display !== 'block') return;
 
       const symEl = document.getElementById('hero-symbol');
-      const sym = symEl ? symEl.textContent.trim() : "";
-      if (!sym) return;
+      const rawSym = symEl ? symEl.textContent.trim() : "";
+      const sym = (rawSym && rawSym !== '--' ? rawSym : currentStockSymbol) || "";
+      if (!sym || sym === '--') return;
 
       const theme = document.documentElement.getAttribute('data-theme') || 'dark';
       const img = document.getElementById('chart-api-img');
@@ -4135,17 +4142,22 @@
 
       img.onload = function() {
         img.style.display = 'block';
-        svg.style.display = 'none';
+        if (svg) svg.style.display = 'none';
       };
       img.onerror = function() {
         img.style.display = 'none';
-        svg.style.display = 'block';
-        drawInteractiveCandlestickChart('chart-svg-canvas', isMacro);
+        if (svg) {
+          svg.style.display = 'block';
+          drawInteractiveCandlestickChart('chart-svg-canvas', isMacro);
+        }
       };
     }
 
     function openChartLightbox() {
-      const sym = (document.getElementById('hero-symbol')?.textContent || 'TCS').trim().toUpperCase();
+      const symEl = document.getElementById('hero-symbol');
+      const rawSym = symEl ? symEl.textContent.trim() : "";
+      const sym = (rawSym && rawSym !== '--' ? rawSym : currentStockSymbol || '').trim().toUpperCase();
+      if (!sym || sym === '--') return;
       const theme = document.documentElement.getAttribute('data-theme') || 'dark';
       const viewer = document.getElementById('chart-photo-viewer');
       const photoImg = document.getElementById('photo-viewer-image');
@@ -4477,7 +4489,7 @@
       }).join('');
     }
 
-    let currentStockSymbol = "TCS";
+    let currentStockSymbol = "";
 
     function showDnaError(sym, title, message) {
       if (radarTimer) {
@@ -4818,7 +4830,11 @@
     }
 
     async function selectStock(sym, skipScanAnimation = false) {
-      const cleanSym = (sym || "TCS").trim().toUpperCase();
+      if (!sym || !sym.trim() || sym.trim() === '--') {
+        resetToHome();
+        return;
+      }
+      const cleanSym = sym.trim().toUpperCase();
 
       if (window.history && window.history.pushState) {
         window.history.pushState({ stock: cleanSym }, '', `?stock=${cleanSym}`);
@@ -4968,10 +4984,14 @@
         themeIcon.textContent = theme === 'dark' ? '🌙' : '☀️';
       }
 
-      // Re-fetch chart in new theme if a stock report is currently active
+      // Re-fetch chart in new theme ONLY if a stock report is actively displayed
       try {
+        const reportView = document.getElementById('dna-report-view');
+        const isReportActive = reportView && reportView.style.display === 'block';
         const symEl = document.getElementById('hero-symbol');
-        if (symEl && symEl.textContent.trim() && typeof switchChartView === 'function') {
+        const rawSym = symEl ? symEl.textContent.trim() : "";
+        const sym = (rawSym && rawSym !== '--' ? rawSym : currentStockSymbol) || "";
+        if (isReportActive && sym && typeof switchChartView === 'function') {
           switchChartView(currentChartView);
         }
       } catch (e) {}
@@ -5246,7 +5266,9 @@
     // EXECUTIVE SHARING & WHATSAPP SUITE LOGIC
     // ==========================================================================
     function getDnaDeeplink(sym) {
-      const s = (sym || document.getElementById('hero-symbol')?.textContent || 'TCS').trim().toUpperCase();
+      const symEl = document.getElementById('hero-symbol');
+      const rawSym = symEl ? symEl.textContent.trim() : "";
+      const s = (sym || (rawSym !== '--' ? rawSym : currentStockSymbol) || '').trim().toUpperCase();
       let origin = window.location.origin;
       try {
         if (window.parent && window.parent.location && window.parent.location.origin) {
@@ -5257,7 +5279,9 @@
     }
 
     function generateShareBriefing() {
-      const sym = (document.getElementById('hero-symbol')?.textContent || 'TCS').trim().toUpperCase();
+      const symEl = document.getElementById('hero-symbol');
+      const rawSym = symEl ? symEl.textContent.trim() : "";
+      const sym = ((rawSym !== '--' ? rawSym : currentStockSymbol) || '').trim().toUpperCase();
       const name = document.getElementById('hero-name')?.textContent?.trim() || sym;
       const price = document.getElementById('hero-price')?.textContent?.trim() || '';
       const change = document.getElementById('hero-change')?.textContent?.trim() || '';
@@ -5323,7 +5347,10 @@
 
     async function getChartImageFile() {
       try {
-        const sym = (document.getElementById('hero-symbol')?.textContent || 'TCS').trim().toUpperCase();
+        const symEl = document.getElementById('hero-symbol');
+        const rawSym = symEl ? symEl.textContent.trim() : "";
+        const sym = ((rawSym !== '--' ? rawSym : currentStockSymbol) || '').trim().toUpperCase();
+        if (!sym) return null;
         const img = document.getElementById('chart-api-img');
         if (img && img.src && img.style.display !== 'none' && !img.src.startsWith('data:')) {
           const resp = await fetch(img.src);
@@ -5467,8 +5494,8 @@
     // Initial load: Only load report if stock is explicitly in query params, otherwise stay on DNA Home Screen!
     const urlParams = new URLSearchParams(window.location.search);
     const initialSym = urlParams.get('stock') || urlParams.get('sym') || urlParams.get('s');
-    if (initialSym) {
-      selectStock(initialSym);
+    if (initialSym && initialSym.trim() && initialSym.trim() !== '--') {
+      selectStock(initialSym.trim().toUpperCase());
     } else {
       resetToHome();
     }
