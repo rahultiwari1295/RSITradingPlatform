@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { TerminalSnapshot } from "../../api/quantsyncApi";
 
 interface IndexTick {
@@ -119,6 +119,46 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
     };
   }, []);
 
+  // Discover AI Spotlight Buy Call: prioritize V2 buy signals
+  const buySignals = terminalData?.toBuySignals || [];
+  const spotlightBuy = buySignals.find(
+    (s: any) => s.action === "BUY_NOW" || s.action === "BUY"
+  ) || (terminalData?.active || []).find((t: any) => t.action === "BUY_NOW" || t.action === "BUY");
+
+  const baseList = useMemo(() => {
+    return liveBreakouts.length > 0
+      ? liveBreakouts.map((r: any) => ({
+          symbol: r.symbol,
+          name: r.company_name || r.symbol,
+          sector: r.sector || "Equities",
+          stage: r.pattern_type || "Stage-2 Base Breakout 🚀",
+          volRatio: r.volume_ratio_20d != null && !isNaN(Number(r.volume_ratio_20d)) ? `${Number(r.volume_ratio_20d).toFixed(1)}×` : "2.5×",
+          dnaScore: r.dna_score || 90,
+          pnlPotential: r.curr_price != null && r.target_1 != null && Number(r.curr_price) > 0 ? `+${(((Number(r.target_1) - Number(r.curr_price)) / Number(r.curr_price)) * 100).toFixed(1)}%` : "+12.0%",
+          rrRatio: r.risk_reward_ratio != null && !isNaN(Number(r.risk_reward_ratio)) ? `1 : ${Number(r.risk_reward_ratio).toFixed(1)}` : "1 : 2.5",
+          why: `Confirmed stage breakout with volume expansion and defined risk boundaries.`,
+          currPrice: r.curr_price,
+          breakoutPrice: r.breakout_level,
+          targetPrice: r.target_1,
+          stopPrice: r.stop_loss
+        }))
+      : FEATURED_BREAKOUT_DATA;
+  }, [liveBreakouts]);
+
+  // Merge live prices into featured breakouts
+  const featuredBreakouts = useMemo(() => {
+    return baseList.map((item: any) => {
+      const live = livePrices[item.symbol];
+      const currPrice = live && live.price > 0 ? live.price : item.currPrice;
+      const chgPct = live && live.change_pct !== undefined ? live.change_pct : null;
+      return {
+        ...item,
+        currPrice,
+        chgPct
+      };
+    });
+  }, [baseList, livePrices]);
+
   // Auto-peek nudge animation on load so user intuitively understands it's scrollable
   useEffect(() => {
     if (!isBreakoutsLoading && featuredBreakouts.length > 1 && carouselRef.current) {
@@ -138,42 +178,6 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
       return () => clearTimeout(nudgeTimer);
     }
   }, [isBreakoutsLoading, featuredBreakouts.length]);
-
-  // Discover AI Spotlight Buy Call: prioritize V2 buy signals
-  const buySignals = terminalData?.toBuySignals || [];
-  const spotlightBuy = buySignals.find(
-    (s: any) => s.action === "BUY_NOW" || s.action === "BUY"
-  ) || (terminalData?.active || []).find((t: any) => t.action === "BUY_NOW" || t.action === "BUY");
-
-  const baseList = liveBreakouts.length > 0
-    ? liveBreakouts.map((r: any) => ({
-        symbol: r.symbol,
-        name: r.company_name || r.symbol,
-        sector: r.sector || "Equities",
-        stage: r.pattern_type || "Stage-2 Base Breakout 🚀",
-        volRatio: r.volume_ratio_20d != null && !isNaN(Number(r.volume_ratio_20d)) ? `${Number(r.volume_ratio_20d).toFixed(1)}×` : "2.5×",
-        dnaScore: r.dna_score || 90,
-        pnlPotential: r.curr_price != null && r.target_1 != null && Number(r.curr_price) > 0 ? `+${(((Number(r.target_1) - Number(r.curr_price)) / Number(r.curr_price)) * 100).toFixed(1)}%` : "+12.0%",
-        rrRatio: r.risk_reward_ratio != null && !isNaN(Number(r.risk_reward_ratio)) ? `1 : ${Number(r.risk_reward_ratio).toFixed(1)}` : "1 : 2.5",
-        why: `Confirmed stage breakout with volume expansion and defined risk boundaries.`,
-        currPrice: r.curr_price,
-        breakoutPrice: r.breakout_level,
-        targetPrice: r.target_1,
-        stopPrice: r.stop_loss
-      }))
-    : FEATURED_BREAKOUT_DATA;
-
-  // Merge live prices into featured breakouts
-  const featuredBreakouts = baseList.map((item: any) => {
-    const live = livePrices[item.symbol];
-    const currPrice = live && live.price > 0 ? live.price : item.currPrice;
-    const chgPct = live && live.change_pct !== undefined ? live.change_pct : null;
-    return {
-      ...item,
-      currPrice,
-      chgPct
-    };
-  });
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
