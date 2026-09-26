@@ -1530,26 +1530,12 @@ export default function App() {
           }
         }
       }
-
-      // Fast RAM return for index market pulse (Nifty / Bank Nifty / Sensex pills)
-      quantsyncApi.getMarketPulse().then(res => {
-        if (res) {
-          setMarketPulse(res);
-          const rawAny = res as any;
-          if (rawAny.indices && rawAny.indices.length > 0) {
-            setTerminalIndices((prev) => {
-              if (isWsConnected) return prev;
-              return rawAny.indices;
-            });
-          }
-        }
-      }).catch(() => {});
     } catch (err) {
       console.error("Error fetching live data:", err);
     } finally {
       setIsTerminalLoading(false);
     }
-  }, [isWsConnected]);
+  }, []);
 
   const fetchEquity = async (v: "v2" | "v3", days: number) => {
     try {
