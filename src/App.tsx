@@ -1527,30 +1527,11 @@ export default function App() {
           const sym = activeList[0].sym || activeList[0].symbol;
           if (sym) {
             setChartSymbol(sym);
-            fetchChart(sym, currentEngine);
           }
         }
       }
 
-      // Unblock the loading spinner immediately
-      setIsTerminalLoading(false);
-
-      // V3 is disabled — no secondary engine fetch needed
-
-      // 2. Equity Curve
-      fetchEquity(currentEngine, range);
-
-      // 3. Activity Feed
-      quantsyncApi.getActivityFeed(currentEngine, 10).then(res => {
-        if (res && res.feed) setFeedItems(res.feed);
-      }).catch(() => {});
-
-      // 4. Scanner Report
-      quantsyncApi.getScannerReport(currentEngine).then(res => {
-        if (res) setScannerReport(res);
-      }).catch(() => {});
-
-      // 5. Market Pulse (Fast RAM return)
+      // Fast RAM return for index market pulse (Nifty / Bank Nifty / Sensex pills)
       quantsyncApi.getMarketPulse().then(res => {
         if (res) {
           setMarketPulse(res);
@@ -1561,91 +1542,14 @@ export default function App() {
               return rawAny.indices;
             });
           }
-          if (rawAny.advances_pct != null) {
-            setTerminalPulse(prev => ({
-              ...prev,
-              display_date: rawAny.display_date || prev.display_date,
-              sentiment_pill: rawAny.sentiment_pill || prev.sentiment_pill,
-              advances_pct: rawAny.advances_pct,
-              declines_pct: rawAny.declines_pct,
-              fii_net_cr: rawAny.fii_net_cr ?? prev.fii_net_cr,
-              dii_net_cr: rawAny.dii_net_cr ?? prev.dii_net_cr,
-            }));
-          }
         }
       }).catch(() => {});
-
-      // 6. Defer secondary tabs to background so Signals & Portfolio render in < 50ms
-      setTimeout(() => {
-        quantsyncApi.getSectors("day").then(res => {
-          if (res && res.sectors && res.sectors.length > 0) {
-            setSectorsData(res.sectors);
-            setTerminalSectors(filterTo12CoreSectors(res.sectors));
-          }
-        }).catch(() => {});
-
-        quantsyncApi.getDayReports(10).then(res => {
-          if (res) {
-            if (res.reports && res.reports.length > 0) setDayReports(res.reports);
-            const rawAny = res as any;
-            if (rawAny.timeline_briefs && rawAny.timeline_briefs.length > 0) {
-              setTerminalBriefs(rawAny.timeline_briefs);
-            } else if (res.reports && res.reports.length > 0) {
-              setTerminalBriefs(parseReportsToBriefs(res.reports));
-            }
-          }
-        }).catch(() => {});
-
-        quantsyncApi.getNewsMovers().then(res => {
-          if (res && res.movers && res.movers.length > 0) {
-            setNewsMovers(res.movers);
-            const mappedMovers = res.movers.map((m: any) => ({
-              sym: m.sym || m.symbol || "",
-              pct: typeof m.pct === "number" ? m.pct : (typeof m.change_pct === "number" ? m.change_pct : 0),
-              desc: m.desc || m.catalyst || "",
-              label: m.label || "Corporate Move"
-            }));
-            setTerminalMovers(mappedMovers);
-          }
-        }).catch(() => {});
-
-        quantsyncApi.getNews(30).then(res => {
-          if (res) {
-            const rawItems = (res as any).disclosures || (res as any).news || [];
-            if (rawItems.length > 0) {
-              setNewsData(rawItems);
-              const normalized = rawItems.map(normalizeNewsItem);
-              const groups: Array<{ day: string; items: any[] }> = [];
-              normalized.forEach((n: any) => {
-                const dayStr = n.day || "Recent Filings";
-                let g = groups.find((x) => x.day === dayStr);
-                if (!g) {
-                  g = { day: dayStr, items: [] };
-                  groups.push(g);
-                }
-                g.items.push(n);
-              });
-              setTerminalNewsGroups(groups);
-            }
-          }
-        }).catch(() => {});
-
-        quantsyncApi.getDailyDigest(currentEngine).then(res => {
-          if (res && res.summary_text) setDailyDigest(res.summary_text);
-        }).catch(() => {});
-
-        quantsyncApi.getSystemStatus().then(res => {
-          if (res) setSystemStatus(res);
-        }).catch(() => {});
-
-        quantsyncApi.getSystemConfig().then(res => {
-          if (res) setSystemConfig(res);
-        }).catch(() => {});
-      }, 1000);
     } catch (err) {
       console.error("Error fetching live data:", err);
+    } finally {
+      setIsTerminalLoading(false);
     }
-  }, [range]);
+  }, [isWsConnected]);
 
   const fetchEquity = async (v: "v2" | "v3", days: number) => {
     try {
@@ -1664,6 +1568,25 @@ export default function App() {
       console.error(`Failed to load chart for ${sym}:`, e);
     }
   };
+
+  // Fetch equity curve on-demand ONLY when user opens portfolio tab
+  useEffect(() => {
+    if (activeTab === "portfolio") {
+      fetchEquity(engine, range);
+    }
+  }, [activeTab, engine, range]);
+
+  // Fetch chart on-demand ONLY when user opens charts tab
+  useEffect(() => {
+    if (activeTab === "charts" && chartSymbol) {
+      fetchChart(chartSymbol, engine);
+    }
+  }, [activeTab, chartSymbol, engine]);
+
+  const [hasOpenedLounge, setHasOpenedLounge] = useState<boolean>(false);
+  useEffect(() => {
+    if (activeTab === "lounge") setHasOpenedLounge(true);
+  }, [activeTab]);
 
   const handleRangeChange = (r: number) => {
     setRange(r);
@@ -4211,24 +4134,26 @@ export default function App() {
 
         {/* ===== LOUNGE SCREEN (INSTITUTIONAL CHAT & AI CO-PILOT) ===== */}
         <section className={`screen ${activeTab === "lounge" ? "active" : ""}`} id="screen-lounge" style={{ padding: 0 }}>
-          <iframe
-            ref={loungeIframeRef}
-            src="/chat.html"
-            style={{ width: "100%", height: "100%", border: "none", display: "block" }}
-            title="QuantSync Lounge & AI Community"
-            onLoad={() => {
-              if (user && loungeIframeRef.current?.contentWindow) {
-                loungeIframeRef.current.contentWindow.postMessage({
-                  type: "AUTH_SYNC",
-                  user: {
-                    email: user.email,
-                    displayName: user.displayName || user.email?.split("@")[0],
-                    photoURL: user.photoURL
-                  }
-                }, "*");
-              }
-            }}
-          />
+          {hasOpenedLounge && (
+            <iframe
+              ref={loungeIframeRef}
+              src="/chat.html"
+              style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+              title="QuantSync Lounge & AI Community"
+              onLoad={() => {
+                if (user && loungeIframeRef.current?.contentWindow) {
+                  loungeIframeRef.current.contentWindow.postMessage({
+                    type: "AUTH_SYNC",
+                    user: {
+                      email: user.email,
+                      displayName: user.displayName || user.email?.split("@")[0],
+                      photoURL: user.photoURL
+                    }
+                  }, "*");
+                }
+              }}
+            />
+          )}
         </section>
 
         {/* ===== MORE SCREEN ===== */}
