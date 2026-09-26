@@ -225,6 +225,9 @@ function matchesMcap(s: any, filter: string) {
   return true;
 }
 
+// Fast module-level in-memory cache across tab switches so switching between tabs is 0ms instant
+const SCREENER_MEMORY_CACHE: Record<string, { rows: any[]; scan_date: string; timestamp: number }> = {};
+
 export default function ScreenerScreen({ theme, livePrices, onSelectStock }: ScreenerScreenProps) {
   // 1. Two-way primary switch: "near_breakout" vs "success" (Confirmed Breakout)
   const [activeTab, setActiveTab] = useState<"near_breakout" | "success">("near_breakout");
@@ -234,9 +237,15 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
   const [mcapFilter, setMcapFilter] = useState<string>("ALL");
   const [expandedOlder, setExpandedOlder] = useState<boolean>(false);
 
-  const [loading, setLoading] = useState<boolean>(true);
-  const [rawStocks, setRawStocks] = useState<any[]>([]);
-  const [scanDate, setScanDate] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(() => {
+    return !SCREENER_MEMORY_CACHE["near_breakout"];
+  });
+  const [rawStocks, setRawStocks] = useState<any[]>(() => {
+    return SCREENER_MEMORY_CACHE["near_breakout"]?.rows || [];
+  });
+  const [scanDate, setScanDate] = useState<string>(() => {
+    return SCREENER_MEMORY_CACHE["near_breakout"]?.scan_date || "";
+  });
 
   const [breakouts, setBreakouts] = useState<{ success: any[]; near_breakout: any[] }>({
     success: [],
@@ -255,9 +264,24 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
       .catch((e) => console.warn("Could not load screener breakouts", e));
   }, []);
 
-  // Fetch stocks when primary tab changes
-  const fetchStocks = useCallback(() => {
-    setLoading(true);
+  // Fetch stocks when primary tab changes (serves instant cache first, then refreshes if stale)
+  const fetchStocks = useCallback((forceRefresh = false) => {
+    const cacheKey = activeTab;
+    const cached = SCREENER_MEMORY_CACHE[cacheKey];
+
+    if (!forceRefresh && cached && cached.rows && cached.rows.length > 0) {
+      setRawStocks(cached.rows);
+      if (cached.scan_date) setScanDate(cached.scan_date);
+      setLoading(false);
+
+      // If cache is fresh (< 60s), avoid background re-fetch
+      if (Date.now() - cached.timestamp < 60000) {
+        return;
+      }
+    } else if (!cached || !cached.rows || cached.rows.length === 0) {
+      setLoading(true);
+    }
+
     const params: Record<string, any> = {
       limit: 150
     };
@@ -271,12 +295,17 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
     quantsyncApi.getScreenerRows(params)
       .then((res) => {
         let rows = res.rows || [];
+        SCREENER_MEMORY_CACHE[cacheKey] = {
+          rows,
+          scan_date: res.scan_date || "",
+          timestamp: Date.now()
+        };
         setRawStocks(rows);
         if (res.scan_date) setScanDate(res.scan_date);
       })
       .catch((err) => {
         console.error("Error fetching screener rows:", err);
-        setRawStocks([]);
+        if (!cached) setRawStocks([]);
       })
       .finally(() => setLoading(false));
   }, [activeTab]);
@@ -284,6 +313,28 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
   useEffect(() => {
     fetchStocks();
   }, [fetchStocks]);
+
+  // Pre-fetch the opposite tab in the background so tab switching is instantaneous
+  useEffect(() => {
+    const otherTab = activeTab === "near_breakout" ? "success" : "near_breakout";
+    if (!SCREENER_MEMORY_CACHE[otherTab]) {
+      const otherParams: Record<string, any> = { limit: 150 };
+      if (otherTab === "near_breakout") {
+        otherParams.pattern_stage = "NEAR_BREAKOUT";
+      } else {
+        otherParams.breakout_status = "SUCCESS";
+      }
+      quantsyncApi.getScreenerRows(otherParams).then((res) => {
+        if (res && res.rows) {
+          SCREENER_MEMORY_CACHE[otherTab] = {
+            rows: res.rows,
+            scan_date: res.scan_date || "",
+            timestamp: Date.now()
+          };
+        }
+      }).catch(() => {});
+    }
+  }, [activeTab]);
 
   // Filter out target-hit stocks & at-risk stocks per user requirements:
   // 1. "if any stock already touched the target then it should not needed in pattern page right"

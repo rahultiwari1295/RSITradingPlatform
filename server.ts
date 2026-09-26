@@ -410,42 +410,75 @@ async function startServer() {
     return null;
   };
 
+  // Fast in-memory cache for terminal data
+  const terminalDataCache = new Map<string, { data: any; expires: number }>();
+
   app.get(["/api/terminalData", "/api/terminalDataV3"], async (req, res) => {
     const isV3 = req.path.includes("V3") || ((req.query.engine as string) || (req.query.version as string) || "").toLowerCase() === "v3";
     const eng = isV3 ? "v3" : (((req.query.engine as string) || (req.query.version as string) || "v2").toLowerCase());
+
+    const cacheKey = `${eng}:${req.url}`;
+    const cached = terminalDataCache.get(cacheKey);
+    if (cached && Date.now() < cached.expires) {
+      res.setHeader("Cache-Control", "public, max-age=15, s-maxage=30, stale-while-revalidate=60");
+      return res.json(cached.data);
+    }
 
     const localData = getLocalEngineSnapshot(eng);
 
     try {
       const queryStr = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
-      const vpsUrl = `https://quantsync-api.duckdns.org:8443/api/terminalData${queryStr}`;
-      const vpsRes = await fetch(vpsUrl, {
-        method: "GET",
-        headers: { "Accept": "application/json" },
-        signal: AbortSignal.timeout(5000),
-      }).catch(() => null);
 
-      if (vpsRes && vpsRes.ok) {
-        const data = await vpsRes.json();
-        if (data) {
-          if (!data.active && data.inTradeTrades) data.active = data.inTradeTrades;
-          if (!data.closed && data.closedTrades) data.closed = data.closedTrades;
-          if (!data.inTradeTrades && data.active) data.inTradeTrades = data.active;
-          if (!data.closedTrades && data.closed) data.closedTrades = data.closed;
-          if (!data.hero) {
-            data.hero = {
-              nav: data.portfolioValue || (eng === "v2" ? 414249 : 339872),
-              todayPnl: eng === "v2" ? 4361 : 0,
-              todayPnlPct: eng === "v2" ? 1.06 : 0,
-              winRate: data.winRate || data.kpis?.winRate || (eng === "v2" ? 68.4 : 55.7),
-              wins: data.kpis?.wins || (eng === "v2" ? 171 : 54),
-              losses: data.kpis?.losses || (eng === "v2" ? 79 : 43),
-              navSparkline: data.sparkline || [],
-            };
-          }
-          if (data.active?.length > 0 || data.closed?.length > 0) {
-            return res.json(data);
-          }
+      // 1. Try local Python FastAPI backend first (< 5ms response)
+      let responseData: any = null;
+      try {
+        const localFastApiRes = await fetch(`http://127.0.0.1:8000/api/terminalData${queryStr}`, {
+          method: "GET",
+          headers: { "Accept": "application/json" },
+          signal: AbortSignal.timeout(1200),
+        });
+        if (localFastApiRes.ok) {
+          responseData = await localFastApiRes.json();
+        }
+      } catch {
+        // Local FastAPI not running or timed out, fallback to VPS
+      }
+
+      // 2. Fallback to VPS endpoint if local FastAPI is not active
+      if (!responseData) {
+        const vpsUrl = `https://quantsync-api.duckdns.org:8443/api/terminalData${queryStr}`;
+        const vpsRes = await fetch(vpsUrl, {
+          method: "GET",
+          headers: { "Accept": "application/json" },
+          signal: AbortSignal.timeout(4000),
+        }).catch(() => null);
+
+        if (vpsRes && vpsRes.ok) {
+          responseData = await vpsRes.json();
+        }
+      }
+
+      if (responseData) {
+        const data = responseData;
+        if (!data.active && data.inTradeTrades) data.active = data.inTradeTrades;
+        if (!data.closed && data.closedTrades) data.closed = data.closedTrades;
+        if (!data.inTradeTrades && data.active) data.inTradeTrades = data.active;
+        if (!data.closedTrades && data.closed) data.closedTrades = data.closed;
+        if (!data.hero) {
+          data.hero = {
+            nav: data.portfolioValue || (eng === "v2" ? 414249 : 339872),
+            todayPnl: eng === "v2" ? 4361 : 0,
+            todayPnlPct: eng === "v2" ? 1.06 : 0,
+            winRate: data.winRate || data.kpis?.winRate || (eng === "v2" ? 68.4 : 55.7),
+            wins: data.kpis?.wins || (eng === "v2" ? 171 : 54),
+            losses: data.kpis?.losses || (eng === "v2" ? 79 : 43),
+            navSparkline: data.sparkline || [],
+          };
+        }
+        if (data.active?.length > 0 || data.closed?.length > 0) {
+          terminalDataCache.set(cacheKey, { data, expires: Date.now() + 15000 });
+          res.setHeader("Cache-Control", "public, max-age=15, s-maxage=30, stale-while-revalidate=60");
+          return res.json(data);
         }
       }
     } catch (err: any) {

@@ -1353,11 +1353,31 @@ export default function App() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetPayload, setSheetPayload] = useState<{ kind: "v2" | "v3" | "closed" | "screener_detail"; trade: any } | null>(null);
 
-  // Live Data States
-  const [terminalData, setTerminalData] = useState<TerminalSnapshot | null>(null);
-  const [terminalDataV2, setTerminalDataV2] = useState<TerminalSnapshot | null>(null);
+  // Live Data States — initialized from fast session cache so first frame render is 0ms instant
+  const [terminalData, setTerminalData] = useState<TerminalSnapshot | null>(() => {
+    try {
+      const cached = sessionStorage.getItem("quantsync_cached_terminal_v2");
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [terminalDataV2, setTerminalDataV2] = useState<TerminalSnapshot | null>(() => {
+    try {
+      const cached = sessionStorage.getItem("quantsync_cached_terminal_v2");
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
   const [terminalDataV3, setTerminalDataV3] = useState<TerminalSnapshot | null>(null);
-  const [isTerminalLoading, setIsTerminalLoading] = useState<boolean>(true);
+  const [isTerminalLoading, setIsTerminalLoading] = useState<boolean>(() => {
+    try {
+      return !sessionStorage.getItem("quantsync_cached_terminal_v2");
+    } catch {
+      return true;
+    }
+  });
   const [showEngineExplainer, setShowEngineExplainer] = useState<boolean>(false);
   const [equityData, setEquityData] = useState<EquityCurveData | null>(INITIAL_EQUITY_DATA);
   const [feedItems, setFeedItems] = useState<ActivityFeedItem[]>(DEMO_FEED as any);
@@ -1475,10 +1495,8 @@ export default function App() {
     setEngine(next);
     setV2ChartSel(0);
 
-    // Guaranteed smooth rocket animation while fetching data
-    const fetchP = fetchAllData(next);
-    const minDelay = new Promise(res => setTimeout(res, 850));
-    Promise.all([fetchP, minDelay]).then(() => {
+    // Fast asynchronous data fetching without artificial delays
+    fetchAllData(next).finally(() => {
       setIsTransitioning(false);
     });
   };
@@ -1487,15 +1505,22 @@ export default function App() {
      DATA FETCHING
      ============================================================ */
   const fetchAllData = useCallback(async (currentEngine: "v2" | "v3") => {
-    setIsTerminalLoading(true);
+    // Only show full loading spinner if we don't already have live data in memory
+    setTerminalData(prev => {
+      if (!prev) setIsTerminalLoading(true);
+      return prev;
+    });
+
     try {
-      // 1. Terminal master snapshot — only await the CURRENT engine to unblock loading fast.
-      //    The other engine is fetched concurrently in the background.
+      // 1. Terminal master snapshot — fetch with immediate background resolution
       const termRes = await quantsyncApi.getTerminalData(currentEngine).catch(() => null);
 
       if (termRes) {
         setTerminalData(termRes);
         setTerminalDataV2(termRes);
+        try {
+          sessionStorage.setItem(`quantsync_cached_terminal_${currentEngine}`, JSON.stringify(termRes));
+        } catch {}
 
         const activeList = termRes.active || termRes.inTradeTrades || [];
         if (activeList.length > 0) {
