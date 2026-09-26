@@ -5215,42 +5215,110 @@
       }
     }
 
+    let _ALL_STOCKS_INDEX = [];
+    async function preloadStockCatalog() {
+      try {
+        const res = await fetch('/api/dna/search?q=ALL');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            _ALL_STOCKS_INDEX = data;
+          }
+        }
+      } catch (_) {}
+    }
+    if (typeof window !== 'undefined') {
+      setTimeout(preloadStockCatalog, 50);
+    }
+
+    function renderSearchPopover(list, popover) {
+      if (!Array.isArray(list) || list.length === 0) {
+        popover.style.display = 'none';
+        return;
+      }
+      popover.innerHTML = list.slice(0, 8).map(s => {
+        const sym = esc(s.symbol || '');
+        const nm  = esc(s.name || s.company_name || '');
+        const bars = s.candleCount ? esc(String(s.candleCount)) + ' bars' : 'NSE';
+        return `
+        <div class="autocomplete-item" onclick="selectStock('${sym}')">
+          <div class="ac-left">
+            <span class="ac-symbol">${sym}</span>
+            <span class="ac-name">${nm}</span>
+          </div>
+          <span class="ac-badge">${bars}</span>
+        </div>`;
+      }).join('');
+      popover.style.display = 'block';
+    }
+
+    function searchInMemory(q) {
+      if (!_ALL_STOCKS_INDEX || _ALL_STOCKS_INDEX.length === 0) return null;
+      const upper = q.toUpperCase();
+      const prefixSym = [];
+      const prefixName = [];
+      const containsSym = [];
+      const containsName = [];
+
+      for (let i = 0; i < _ALL_STOCKS_INDEX.length; i++) {
+        const item = _ALL_STOCKS_INDEX[i];
+        const s = item.symbol;
+        const n = (item.name || "").toUpperCase();
+
+        if (s === upper) {
+          prefixSym.unshift(item);
+        } else if (s.startsWith(upper)) {
+          prefixSym.push(item);
+        } else if (n.startsWith(upper)) {
+          prefixName.push(item);
+        } else if (s.includes(upper)) {
+          containsSym.push(item);
+        } else if (n.includes(upper)) {
+          containsName.push(item);
+        }
+      }
+      const combined = [...prefixSym, ...prefixName, ...containsSym, ...containsName];
+      const seen = new Set();
+      const deduped = [];
+      for (const item of combined) {
+        if (!seen.has(item.symbol)) {
+          seen.add(item.symbol);
+          deduped.push(item);
+          if (deduped.length >= 8) break;
+        }
+      }
+      return deduped;
+    }
+
     let searchDebounce = null;
-    async function handleHomeSearch(val) {
-      clearTimeout(searchDebounce);
+    function handleHomeSearch(val) {
       const q = (val || "").trim().toUpperCase();
       const popover = document.getElementById('home-search-popover');
-      if (!q || q.length < 1) {
-        if (popover) popover.style.display = 'none';
+      if (!popover) return;
+      if (!q) {
+        popover.style.display = 'none';
         return;
       }
 
+      // 1. Instant client-side match (< 0.1ms on the very first keystroke!)
+      const instantList = searchInMemory(q);
+      if (instantList && instantList.length > 0) {
+        renderSearchPopover(instantList, popover);
+      }
+
+      // 2. Fast background server sync (60ms) for aliases or latest data
+      clearTimeout(searchDebounce);
       searchDebounce = setTimeout(async () => {
         try {
           const res = await fetch(`/api/dna/search?q=${encodeURIComponent(q)}`);
           if (res.ok) {
             const list = await res.json();
             if (Array.isArray(list) && list.length > 0) {
-              popover.innerHTML = list.slice(0, 6).map(s => {
-                const sym = esc(s.symbol || '');
-                const nm  = esc(s.name || s.company_name || '');
-                const bars = s.candleCount ? esc(String(s.candleCount)) + ' bars' : 'NSE';
-                return `
-                <div class="autocomplete-item" onclick="selectStock('${sym}')">
-                  <div class="ac-left">
-                    <span class="ac-symbol">${sym}</span>
-                    <span class="ac-name">${nm}</span>
-                  </div>
-                  <span class="ac-badge">${bars}</span>
-                </div>`;
-              }).join('');
-              popover.style.display = 'block';
-              return;
+              renderSearchPopover(list, popover);
             }
           }
         } catch (e) {}
-        if (popover) popover.style.display = 'none';
-      }, 150);
+      }, 60);
     }
 
     // Close autocomplete popover when clicking outside
