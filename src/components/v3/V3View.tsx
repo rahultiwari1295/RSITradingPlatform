@@ -146,8 +146,8 @@ export default function V3View({ onOpenChart, isSyncing, onRequestSync }: V3View
 
   useEffect(() => { fetchV3Data(); }, []);
 
-  const activeTrades = terminalData?.inTradeTrades ?? [];
-  const closedTrades = terminalData?.closedTrades ?? [];
+  const activeTrades = terminalData?.active ?? terminalData?.inTradeTrades ?? [];
+  const closedTrades = terminalData?.closed ?? terminalData?.closedTrades ?? [];
   const kpis = terminalData?.kpis ?? {};
 
   const wins = closedTrades.filter(t => {
