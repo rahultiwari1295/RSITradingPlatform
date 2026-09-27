@@ -434,6 +434,18 @@ export default function TradingViewStockDetail({
   const totalMove = target - entry;
   const progressPct = totalMove > 0 ? Math.max(0, Math.min(100, ((now - entry) / totalMove) * 100)) : 0;
 
+  // Task 4.4: Institutional Position Sizer State & Calculations
+  const [capital, setCapital] = useState<number>(100000);
+  const [riskPct, setRiskPct] = useState<number>(1.0);
+
+  const riskAmount = capital * (riskPct / 100);
+  const riskPerShare = Math.max(0.5, Math.abs(entry - stop));
+  const qty = riskPerShare > 0 ? Math.floor(riskAmount / riskPerShare) : 0;
+  const totalInvestment = qty * entry;
+  const maxLoss = qty * riskPerShare;
+  const projectedProfit = qty * Math.max(0, target - entry);
+  const portfolioPct = capital > 0 ? (totalInvestment / capital) * 100 : 0;
+
   // Dynamic Status Badge
   let statusBadge = {
     label: "ENTRY BASE · 0.00%",
@@ -905,6 +917,121 @@ export default function TradingViewStockDetail({
           </div>
         </div>
       </div>
+
+      {/* Block 4: Institutional Position Sizer Calculator (Task 4.4) */}
+      <div className="position-sizer-card">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ink1)", display: "flex", alignItems: "center", gap: 6, letterSpacing: "-0.01em" }}>
+            <span>🧮</span>
+            <span>INSTITUTIONAL POSITION SIZER</span>
+          </div>
+          <span style={{ fontSize: 11, color: "var(--ink3)", fontWeight: 600 }}>
+            Fixed Risk Model ({riskPct}%)
+          </span>
+        </div>
+
+        <div className="sizer-inputs">
+          <div className="sizer-input-grp">
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <label>Trading Capital (₹)</label>
+              <span style={{ fontSize: 11, color: "var(--accent, #6366F1)", fontWeight: 700 }}>
+                {INR(capital)}
+              </span>
+            </div>
+            <div className="sizer-input-wrap">
+              <span style={{ color: "var(--ink3)", marginRight: 6, fontWeight: 700 }}>₹</span>
+              <input
+                type="number"
+                value={capital || ""}
+                onChange={(e) => setCapital(Math.max(0, Number(e.target.value)))}
+                step="10000"
+                min="10000"
+                placeholder="100000"
+              />
+            </div>
+            <div className="sizer-quick-chips">
+              {[50000, 100000, 200000, 500000, 1000000].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  className={`sizer-chip ${capital === c ? "active" : ""}`}
+                  onClick={() => setCapital(c)}
+                >
+                  {c >= 100000 ? `${c / 100000}L` : `${c / 1000}K`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="sizer-input-grp">
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <label>Risk Per Trade (%)</label>
+              <span style={{ fontSize: 11, color: "#f87171", fontWeight: 700 }}>
+                Max Loss: {INR(riskAmount)}
+              </span>
+            </div>
+            <div className="sizer-input-wrap">
+              <input
+                type="number"
+                value={riskPct || ""}
+                onChange={(e) => setRiskPct(Math.max(0.1, Math.min(10, Number(e.target.value))))}
+                step="0.25"
+                min="0.25"
+                max="5.0"
+                placeholder="1.0"
+              />
+              <span style={{ color: "var(--ink3)", marginLeft: 6, fontWeight: 700 }}>%</span>
+            </div>
+            <div className="sizer-quick-chips">
+              {[0.5, 1.0, 1.5, 2.0, 3.0].map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  className={`sizer-chip ${riskPct === r ? "active" : ""}`}
+                  onClick={() => setRiskPct(r)}
+                >
+                  {r}%
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="sizer-results-grid">
+          <div className="sizer-res-box">
+            <span className="lbl">Recommended Qty</span>
+            <span className="val" style={{ color: "#60a5fa" }}>
+              {qty.toLocaleString("en-IN")} <span style={{ fontSize: 11, fontWeight: 600 }}>shares</span>
+            </span>
+            <span className="sub">Based on ₹{riskPerShare.toFixed(1)}/sh risk</span>
+          </div>
+
+          <div className="sizer-res-box">
+            <span className="lbl">Required Capital</span>
+            <span className="val">
+              {INR(totalInvestment)}
+            </span>
+            <span className="sub">{portfolioPct.toFixed(1)}% of trading pool</span>
+          </div>
+
+          <div className="sizer-res-box">
+            <span className="lbl">Max Rupee Loss</span>
+            <span className="val" style={{ color: "#ef4444" }}>
+              -{INR(maxLoss)}
+            </span>
+            <span className="sub">Strict stop at {INR(stop)} (-{stopPct.toFixed(1)}%)</span>
+          </div>
+
+          <div className="sizer-res-box">
+            <span className="lbl">Projected Profit</span>
+            <span className="val" style={{ color: "#10b981" }}>
+              +{INR(projectedProfit)}
+            </span>
+            <span className="sub">Target at {INR(target)} (+{targetPct.toFixed(1)}%)</span>
+          </div>
+        </div>
+      </div>
+
 
       {/* 4. Widget 1: Technical Analysis Widget (370x340 aspect ratio auto-adjusting to screen width) */}
       <div style={{ marginTop: 4 }}>
