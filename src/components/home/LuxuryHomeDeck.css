@@ -1329,7 +1329,7 @@
   border-radius: 20px;
   padding: 22px 18px;
   margin-bottom: 24px;
-  overflow: hidden;
+  overflow: visible;
   transition: 
     transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
@@ -1495,6 +1495,103 @@
 }
 [data-theme="light"] .dna-input-element::placeholder {
   color: #94A3B8;
+}
+
+.home-search-recommendations-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 99999;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: left;
+}
+
+[data-theme="dark"] .home-search-recommendations-popover {
+  background: #0D121F;
+  border-color: rgba(212, 175, 55, 0.35);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65), 0 0 16px rgba(212, 175, 55, 0.15);
+}
+
+[data-theme="light"] .home-search-recommendations-popover {
+  background: #FFFFFF;
+  border-color: #E2E8F0;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+}
+
+.home-rec-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.15s ease;
+}
+
+[data-theme="light"] .home-rec-item {
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.home-rec-item:last-child {
+  border-bottom: none;
+}
+
+[data-theme="dark"] .home-rec-item:hover {
+  background: rgba(212, 175, 55, 0.12);
+}
+
+[data-theme="light"] .home-rec-item:hover {
+  background: #F8FAFC;
+}
+
+.home-rec-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.home-rec-symbol {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+[data-theme="dark"] .home-rec-symbol { color: #FFFFFF; }
+[data-theme="light"] .home-rec-symbol { color: #0F172A; }
+
+.home-rec-name {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .home-rec-name { color: #94A3B8; }
+[data-theme="light"] .home-rec-name { color: #64748B; }
+
+.home-rec-price {
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  color: #10B981;
+}
+
+.home-rec-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #94A3B8;
+}
+
+[data-theme="light"] .home-rec-badge {
+  background: #F1F5F9;
+  color: #64748B;
 }
 
 .dna-submit-btn {

@@ -69,14 +69,76 @@
     }
 
     /* ─────────────────────────────────────────────────────────────
-       TOP BAR (Back to Search & Share)
+       TOPBAR HEADER (Unified QuantSync Topbar)
        ───────────────────────────────────────────────────────────── */
-    .top-bar {
+    .topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 4px 2px;
+      padding: 10px 16px;
+      background: var(--card-bg, #FFFFFF);
+      border-radius: var(--radius-xl, 18px);
+      border: 1px solid var(--card-border, #E2E8F0);
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-mark {
+      font-weight: 800;
+      font-size: 17px;
+      letter-spacing: -0.03em;
+      color: #0F172A;
+      background: linear-gradient(180deg, #0F172A 0%, #334155 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10B981;
+      position: relative;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+    .pulse-dot::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 1px solid #10B981;
+      opacity: 0.7;
+      animation: ping 2.6s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+    }
+    @keyframes ping {
+      0% { transform: scale(0.4); opacity: 0.8; }
+      70%, 100% { transform: scale(1.7); opacity: 0; }
+    }
+    .theme-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid var(--card-border, #E2E8F0);
+      background: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #0F172A;
+      transition: all 0.2s ease;
+    }
+    .theme-btn:hover {
+      background: #F1F5F9;
+      transform: scale(1.04);
+    }
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .btn-nav {
@@ -646,25 +708,37 @@
 
   <div class="page-wrapper">
 
-    <!-- 1. TOP NAV BAR -->
-    <div class="top-bar">
-      <button class="btn-nav" onclick="goBack()" title="Back to Search">
-        <span>←</span>
-        <span>Back to Search</span>
-      </button>
+    <!-- 1. TOPBAR HEADER (Unified QuantSync Topbar Everywhere) -->
+    <header class="topbar">
+      <div class="brand">
+        <button type="button" class="theme-btn" onclick="goBack()" title="Back to Screener" aria-label="Back">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <span class="brand-mark">QuantSync</span>
+        <span class="pulse-dot" id="mktDot"></span>
+      </div>
 
-      <a href="/chat.html" class="btn-nav" style="text-decoration:none; color:inherit;" title="Join Traders Community Chat">
-        <span>💬</span>
-        <span>Traders Chat</span>
-      </a>
+      <div class="topbar-right">
+        <button type="button" class="btn-nav" onclick="goBack()" title="Back to Screener">
+          <span>←</span>
+          <span>Back</span>
+        </button>
 
-      <button class="btn-nav btn-whatsapp-top" onclick="shareToWhatsApp()" title="Share setup to WhatsApp">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
-          <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm.01 1.67c4.56 0 8.25 3.69 8.25 8.24 0 2.2-.86 4.28-2.42 5.84-1.56 1.56-3.64 2.41-5.84 2.41-1.44 0-2.85-.38-4.09-1.11l-.29-.17-3.12.82.83-3.04-.19-.3A8.17 8.17 0 0 1 3.8 11.91c0-4.55 3.7-8.24 8.25-8.24zm4.52 11.66c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.47c-.17 0-.43.06-.66.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.12.17 1.78 2.72 4.31 3.81.6.26 1.07.42 1.44.54.61.19 1.16.17 1.6.1.49-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.12-.22-.19-.47-.31z"/>
-        </svg>
-        <span>Share Setup</span>
-      </button>
-    </div>
+        <a href="/chat.html" class="btn-nav" style="text-decoration:none;" title="Join Traders Community Chat">
+          <span>💬</span>
+          <span>Chat</span>
+        </a>
+
+        <button class="btn-nav btn-whatsapp-top" onclick="shareToWhatsApp()" title="Share setup to WhatsApp">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+            <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm.01 1.67c4.56 0 8.25 3.69 8.25 8.24 0 2.2-.86 4.28-2.42 5.84-1.56 1.56-3.64 2.41-5.84 2.41-1.44 0-2.85-.38-4.09-1.11l-.29-.17-3.12.82.83-3.04-.19-.3A8.17 8.17 0 0 1 3.8 11.91c0-4.55 3.7-8.24 8.25-8.24zm4.52 11.66c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.39-1.72-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.42-.56-.43h-.47c-.17 0-.43.06-.66.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.12.17 1.78 2.72 4.31 3.81.6.26 1.07.42 1.44.54.61.19 1.16.17 1.6.1.49-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.12-.22-.19-.47-.31z"/>
+          </svg>
+          <span>Share Setup</span>
+        </button>
+      </div>
+    </header>
 
     <!-- 2. ENGAGING CHART-BUILDING RADAR LOADING SCREEN -->
     <div id="chart-loading-view" class="chart-loading-container">
@@ -843,8 +917,11 @@
 
     function goBack() {
       if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type: 'CLOSE_STOCK_DETAIL' }, '*');
-        window.parent.postMessage({ type: 'BACK_TO_SEARCH' }, '*');
+        try {
+          window.parent.postMessage({ type: 'CLOSE_STOCK_DETAIL' }, '*');
+          window.parent.postMessage({ type: 'BACK_TO_SEARCH' }, '*');
+        } catch (_) {}
+        return;
       }
       if (window.history.length > 1 && document.referrer && document.referrer.includes(window.location.host)) {
         window.history.back();
@@ -852,6 +929,14 @@
         window.location.href = "/screener.html";
       }
     }
+
+    // Intercept back button to return to screener rather than exiting website
+    try {
+      window.history.pushState({ page: 'stock_detail' }, '', window.location.href);
+      window.addEventListener('popstate', function(e) {
+        goBack();
+      });
+    } catch (_) {}
 
     function openFullDna() {
       if (window.parent && window.parent !== window) {

@@ -3127,10 +3127,147 @@
       color: #475569 !important;
       border: 1px solid #E2E8F0 !important;
     }
+
+    /* ── UNIFIED QUANTSYNC TOPBAR (Header Everywhere) ── */
+    .qs-unified-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 54px;
+      padding: 10px 16px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-card);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+    [data-theme="light"] .qs-unified-topbar {
+      background: #FFFFFF !important;
+      border-bottom: 1px solid #E2E8F0 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+    }
+    .qs-topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .qs-topbar-back-btn, .qs-theme-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid var(--border-card);
+      background: var(--bg-surface-elevated);
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    [data-theme="light"] .qs-topbar-back-btn, [data-theme="light"] .qs-theme-btn {
+      background: #F8FAFC !important;
+      border-color: #CBD5E1 !important;
+      color: #0F172A !important;
+    }
+    .qs-topbar-back-btn:hover, .qs-theme-btn:hover {
+      transform: scale(1.05);
+      border-color: var(--accent);
+    }
+    .qs-brand-mark {
+      font-weight: 800;
+      font-size: 17px;
+      letter-spacing: -0.03em;
+      color: var(--text-main);
+      background: linear-gradient(180deg, #FFFFFF 0%, #CBD5E1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    [data-theme="light"] .qs-brand-mark {
+      color: #0F172A !important;
+      background: linear-gradient(180deg, #0F172A 0%, #334155 100%) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+    }
+    .qs-pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--good);
+      position: relative;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+    .qs-pulse-dot::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 1px solid var(--good);
+      opacity: 0.7;
+      animation: qs-ping 2.6s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+    }
+    @keyframes qs-ping {
+      0% { transform: scale(0.4); opacity: 0.8; }
+      70%, 100% { transform: scale(1.7); opacity: 0; }
+    }
+    .qs-topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .qs-topbar-home-btn, .qs-share-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: var(--r-pill);
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid var(--border-card);
+      background: var(--bg-surface-elevated);
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    [data-theme="light"] .qs-topbar-home-btn, [data-theme="light"] .qs-share-btn {
+      background: #F8FAFC !important;
+      border-color: #CBD5E1 !important;
+      color: #0F172A !important;
+    }
   </style>
 </head>
 <body>
 
+  <!-- TOPBAR HEADER (Unified QuantSync Topbar) -->
+  <header class="qs-unified-topbar" id="qs-unified-topbar">
+    <div class="qs-topbar-brand">
+      <button type="button" class="qs-topbar-back-btn" id="qs-topbar-back-btn" onclick="handleDnaBack()" title="Back to DNA Search" aria-label="Back" style="display:none;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <span class="qs-brand-mark">QuantSync</span>
+      <span class="qs-pulse-dot"></span>
+    </div>
+    <div class="qs-topbar-right">
+      <button type="button" class="qs-topbar-home-btn" id="qs-topbar-home-btn" onclick="handleDnaBack()" title="Back to Search" style="display:none;">
+        <span>←</span>
+        <span>Back</span>
+      </button>
+      <button type="button" class="qs-theme-btn" id="qs-theme-btn" onclick="toggleTheme()" title="Toggle Theme" aria-label="Toggle Theme">
+        <svg class="i-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="4.2"/>
+          <path d="M12 2v2.4M12 19.6V22M22 12h-2.4M4.4 12H2M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7M19.1 19.1l-1.7-1.7M6.6 6.6 4.9 4.9"/>
+        </svg>
+      </button>
+      <button type="button" class="qs-share-btn" id="qs-topbar-share-btn" onclick="quickShareBriefing()" title="Share stock briefing" style="display:none;">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+          <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/>
+        </svg>
+        <span>Share</span>
+      </button>
+    </div>
+  </header>
 
   <!-- MAIN APP CONTAINER -->
   <main class="app-frame-wrapper" id="app-container">
@@ -4570,9 +4707,24 @@
       }, stepDuration);
 
       // Enforce a minimum animation duration of 750ms for radar visual feel
-      // And allow up to 15000ms for fresh mathematical computation on cold stocks
+      // And allow up to 60000ms for fresh mathematical computation on cold stocks
       const minAnimationPromise = new Promise(res => setTimeout(res, 750));
-      const maxTimeoutPromise = new Promise(res => setTimeout(() => res(null), 15000));
+      const maxTimeoutPromise = new Promise(res => setTimeout(() => res(null), 60000));
+
+      // Show extended-wait indicator after 20s for cold stock computations
+      const extendedWaitTimer = setTimeout(() => {
+        const symEl = document.getElementById('loading-stock-symbol');
+        const progBar = document.getElementById('loading-progress-bar');
+        const existingNote = document.getElementById('dna-extended-wait-note');
+        if (!existingNote) {
+          const note = document.createElement('div');
+          note.id = 'dna-extended-wait-note';
+          note.style.cssText = 'margin-top:12px;font-size:11px;color:var(--text-dim);text-align:center;animation:pulse 2s infinite;';
+          note.textContent = '🔬 Deep institutional pattern analysis in progress…';
+          if (symEl && symEl.parentNode) symEl.parentNode.appendChild(note);
+        }
+        if (progBar) progBar.style.width = '90%';
+      }, 20000);
 
       let data = null;
       try {
@@ -4584,6 +4736,10 @@
       } catch (err) {
         console.warn('[DNA] Radar scanning data resolution error:', err);
       }
+
+      clearTimeout(extendedWaitTimer);
+      const extNote = document.getElementById('dna-extended-wait-note');
+      if (extNote) extNote.remove();
 
       if (radarTimer) {
         clearInterval(radarTimer);
@@ -4829,7 +4985,7 @@
       }
     }
 
-    async function selectStock(sym, skipScanAnimation = false) {
+    async function selectStock(sym, skipScanAnimation = false, forceRefresh = false) {
       if (!sym || !sym.trim() || sym.trim() === '--') {
         resetToHome();
         return;
@@ -4837,13 +4993,20 @@
       const cleanSym = sym.trim().toUpperCase();
 
       if (window.history && window.history.pushState) {
-        window.history.pushState({ stock: cleanSym }, '', `?stock=${cleanSym}`);
+        window.history.pushState({ view: 'report', stock: cleanSym }, '', `?stock=${cleanSym}`);
       }
       try {
-        if (window.parent && window.parent !== window && window.parent.history && window.parent.history.pushState) {
-          window.parent.history.pushState({ tab: 'dna', stock: cleanSym }, '', `?tab=dna&stock=${cleanSym}`);
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'DNA_STOCK_SELECTED', stock: cleanSym }, '*');
         }
       } catch (e) {}
+
+      const topbarBackBtn = document.getElementById('qs-topbar-back-btn');
+      const topbarHomeBtn = document.getElementById('qs-topbar-home-btn');
+      const topbarShareBtn = document.getElementById('qs-topbar-share-btn');
+      if (topbarBackBtn) topbarBackBtn.style.display = 'inline-flex';
+      if (topbarHomeBtn) topbarHomeBtn.style.display = 'inline-flex';
+      if (topbarShareBtn) topbarShareBtn.style.display = 'inline-flex';
 
       document.querySelectorAll('.chip-btn').forEach(btn => {
         btn.classList.toggle('active', btn.textContent.trim().toUpperCase().startsWith(cleanSym));
@@ -4853,13 +5016,13 @@
       const heroSym = document.getElementById('hero-symbol');
       if (heroSym) heroSym.textContent = cleanSym;
 
-      // Start real data fetch in parallel with 15s timeout abort (never fallback to synthetic)
+      // Start real data fetch in parallel with 60s timeout abort (never fallback to synthetic)
       const fetchPromise = (async () => {
         let rep = null;
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 15000);
-          const forceParam = (typeof forceRefresh !== 'undefined' && forceRefresh) ? '?force=true' : '';
+          const timeoutId = setTimeout(() => controller.abort(), 60000);
+          const forceParam = forceRefresh ? '?force=true' : '';
           const res = await fetch(`/api/dna/report/${encodeURIComponent(cleanSym)}${forceParam}`, { signal: controller.signal });
           clearTimeout(timeoutId);
           if (res.ok) {
@@ -4870,7 +5033,7 @@
           }
         } catch (err) {
           console.warn(`[DNA Live] Fetch error for ${cleanSym}:`, err);
-          return { error: err.name === 'AbortError' ? 'Calculation timed out (15s)' : err.message };
+          return { error: err.name === 'AbortError' ? 'Calculation timed out (60s)' : err.message };
         }
 
         if (!rep) return { error: 'No data returned from DNA Engine' };
@@ -4997,7 +5160,7 @@
       } catch (e) {}
     }
 
-    // Listen to parent postMessage (e.g. from StockDNAScreen in React)
+    // Listen to parent postMessage (e.g. from StockDNAScreen in React, or screener iframe)
     window.addEventListener('message', function(e) {
       if (!e.data) return;
       if (e.data.type === 'THEME_CHANGE' || e.data.type === 'theme') {
@@ -5005,8 +5168,10 @@
         if (t) setTheme(t);
       } else if (e.data.type === 'RESET_TO_HOME' || e.data === 'RESET_TO_HOME') {
         resetToHome();
-      } else if (e.data.type === 'LOAD_STOCK' && e.data.stock) {
-        selectStock(e.data.stock);
+      } else if (e.data.type === 'LOAD_STOCK' && (e.data.stock || e.data.symbol)) {
+        selectStock(e.data.stock || e.data.symbol);
+      } else if (e.data.type === 'SELECT_STOCK' && (e.data.symbol || e.data.stock)) {
+        selectStock(e.data.symbol || e.data.stock);
       }
     });
 
@@ -5044,20 +5209,41 @@
       const errorView = document.getElementById('dna-error-view');
       const popover = document.getElementById('home-search-popover');
 
+      const topbarBackBtn = document.getElementById('qs-topbar-back-btn');
+      const topbarHomeBtn = document.getElementById('qs-topbar-home-btn');
+      const topbarShareBtn = document.getElementById('qs-topbar-share-btn');
+
       if (loadingView) loadingView.style.display = 'none';
       if (reportView) reportView.style.display = 'none';
       if (errorView) errorView.style.display = 'none';
       if (homeView) homeView.style.display = 'flex';
       if (popover) popover.style.display = 'none';
+      if (topbarBackBtn) topbarBackBtn.style.display = 'none';
+      if (topbarHomeBtn) topbarHomeBtn.style.display = 'none';
+      if (topbarShareBtn) topbarShareBtn.style.display = 'none';
 
-      if (window.history && window.history.pushState) {
-        window.history.pushState(null, '', window.location.pathname);
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'DNA_BACK_TO_SEARCH' }, '*');
+        }
+      } catch (e) {}
+
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({ view: 'home' }, '', window.location.pathname);
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
       const inp = document.getElementById('home-search-input');
       if (inp) {
         inp.value = '';
         setTimeout(() => inp.focus(), 120);
+      }
+    }
+
+    function handleDnaBack() {
+      if (window.history.length > 1 && window.history.state?.view === 'report') {
+        window.history.back();
+      } else {
+        resetToHome();
       }
     }
 
@@ -5545,16 +5731,18 @@
     window.addEventListener('popstate', (e) => {
       const urlParams = new URLSearchParams(window.location.search);
       const sym = urlParams.get('stock') || urlParams.get('sym') || urlParams.get('s');
-      if (sym) {
-        selectStock(sym);
+      if (sym && e.state?.stock) {
+        selectStock(sym, true);
       } else {
         resetToHome();
       }
     });
 
-    // Signal parent container that DNA DOM is initialized
+    // If embedded inside parent app (App.tsx), let parent topbar take over
     try {
       if (window.parent && window.parent !== window) {
+        const topbarEl = document.getElementById('qs-unified-topbar');
+        if (topbarEl) topbarEl.style.display = 'none';
         window.parent.postMessage({ type: 'DNA_READY' }, '*');
       }
     } catch (e) {}

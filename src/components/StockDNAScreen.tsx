@@ -78,7 +78,7 @@ export default function StockDNAScreen({ theme, resetTrigger, selectedStock, onS
     return () => window.removeEventListener("message", handleMessage);
   }, [onSwitchTab]);
 
-  // When selectedStock changes dynamically (e.g. user clicked a stock in Screener or Home)
+  // When selectedStock changes dynamically (e.g. user clicked a stock in Screener or Home, or pressed Back)
   useEffect(() => {
     if (selectedStock && selectedStock.trim()) {
       const s = selectedStock.trim().toUpperCase();
@@ -92,6 +92,15 @@ export default function StockDNAScreen({ theme, resetTrigger, selectedStock, onS
         } catch (err) {
           console.warn("Could not post LOAD_STOCK to DNA iframe:", err);
         }
+      }
+    } else {
+      // Empty stock: reset iframe to DNA home search view
+      if (iframeRef.current?.contentWindow) {
+        try {
+          iframeRef.current.contentWindow.postMessage({
+            type: "RESET_TO_HOME",
+          }, "*");
+        } catch (_) {}
       }
     }
   }, [selectedStock]);

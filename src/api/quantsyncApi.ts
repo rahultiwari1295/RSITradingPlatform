@@ -319,5 +319,10 @@ export const quantsyncApi = {
 
   getStockDetail: (symbol: string) =>
     apiFetch<any>(`/api/stock/detail/${encodeURIComponent(symbol)}`),
+
+  searchSymbols: (query: string) =>
+    apiFetch<Array<{ symbol: string; name?: string; token?: string; price?: number; candleCount?: number }>>(
+      `/api/dna/search?q=${encodeURIComponent(query)}`
+    ),
 };
 

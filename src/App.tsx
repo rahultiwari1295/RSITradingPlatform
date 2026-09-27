@@ -1235,6 +1235,80 @@ export default function App() {
     return "";
   });
 
+  const navigateToTab = (
+    tab: "home" | "signals" | "portfolio" | "dna" | "charts" | "intel" | "screener" | "lounge" | "more",
+    stock?: string,
+    resetDna: boolean = false
+  ) => {
+    setActiveTab(tab);
+    if (stock !== undefined) {
+      setSelectedDnaStock(stock);
+    }
+    if (resetDna) {
+      setSelectedDnaStock("");
+      setDnaResetTrigger((prev) => prev + 1);
+    }
+    if (typeof window !== "undefined" && window.history && window.history.pushState) {
+      const p = new URLSearchParams(window.location.search);
+      p.set("tab", tab);
+      if (stock) {
+        p.set("stock", stock);
+      } else if (tab !== "dna") {
+        p.delete("stock");
+        p.delete("sym");
+      }
+      window.history.pushState({ tab, stock: stock || "" }, "", `?${p.toString()}`);
+    }
+  };
+
+  // Browser Back/Forward navigation interception
+  useEffect(() => {
+    const handlePopState = () => {
+      // 1. If breakout analyst modal is open, close it!
+      if (analystStock) {
+        setAnalystStock(null);
+        return;
+      }
+
+      // 2. Read new location from browser
+      const p = new URLSearchParams(window.location.search);
+      const tab = p.get("tab") || "home";
+      const stock = p.get("stock") || p.get("sym") || "";
+
+      if (["home", "signals", "portfolio", "dna", "charts", "intel", "screener", "lounge", "more"].includes(tab)) {
+        setActiveTab(tab as any);
+      }
+      setSelectedDnaStock(stock);
+
+      if (tab === "dna" && !stock) {
+        setDnaResetTrigger((prev) => prev + 1);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [analystStock]);
+
+  // Handle messages from embedded iframes (e.g. DNA reset or back to search)
+  useEffect(() => {
+    const handleFrameMsg = (e: MessageEvent) => {
+      if (e.data?.type === "DNA_BACK_TO_SEARCH") {
+        setSelectedDnaStock("");
+        const p = new URLSearchParams(window.location.search);
+        p.delete("stock");
+        p.delete("sym");
+        window.history.replaceState({ tab: "dna" }, "", `?${p.toString()}`);
+      } else if (e.data?.type === "DNA_STOCK_SELECTED" && e.data?.stock) {
+        setSelectedDnaStock(e.data.stock);
+        const p = new URLSearchParams(window.location.search);
+        p.set("stock", e.data.stock);
+        window.history.pushState({ tab: "dna", stock: e.data.stock }, "", `?${p.toString()}`);
+      }
+    };
+    window.addEventListener("message", handleFrameMsg);
+    return () => window.removeEventListener("message", handleFrameMsg);
+  }, []);
+
   // Transitional Animation State (Rocket hitting bulls eye)
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionEngine, setTransitionEngine] = useState<"v2" | "v3">("v2");
@@ -2520,7 +2594,37 @@ export default function App() {
       {/* ============ TOP BAR ============ */}
       {activeTab !== "lounge" && (
         <header className="topbar">
-          <div className="brand">
+          <div className="brand" style={{ display: "flex", alignItems: "center" }}>
+            {activeTab === "dna" && selectedDnaStock ? (
+              <button
+                type="button"
+                className="theme-btn"
+                onClick={() => {
+                  setSelectedDnaStock("");
+                  setDnaResetTrigger((prev) => prev + 1);
+                  const p = new URLSearchParams(window.location.search);
+                  p.delete("stock");
+                  p.delete("sym");
+                  window.history.pushState({ tab: "dna" }, "", `?${p.toString()}`);
+                }}
+                style={{
+                  width: 32,
+                  height: 32,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 8,
+                  cursor: "pointer",
+                  borderRadius: "50%"
+                }}
+                title="Back to DNA Search"
+                aria-label="Back"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+              </button>
+            ) : null}
             <span className="brand-mark">QuantSync</span>
             <span className="pulse-dot" id="mktDot" />
           </div>
@@ -2564,11 +2668,11 @@ export default function App() {
             terminalIndices={terminalIndices}
             isWsConnected={isWsConnected}
             theme={theme}
-            onNavigate={(tab, filter) => {
-              setActiveTab(tab as any);
+            onNavigate={(tab) => {
+              navigateToTab(tab as any);
             }}
             onSelectStockForDna={(sym) => {
-              setSelectedDnaStock(sym);
+              navigateToTab("dna", sym);
             }}
             onOpenChart={(sym) => {
               fetchChart(sym, "v2");
@@ -4256,7 +4360,7 @@ export default function App() {
         {/* 1. HOME */}
         <button
           className={`tab ${activeTab === "home" ? "active" : ""}`}
-          onClick={() => setActiveTab("home")}
+          onClick={() => navigateToTab("home")}
           data-tab="home"
         >
           <svg viewBox="0 0 24 24"><path d="M3 10.6 12 3.2l9 7.4V20a1 1 0 0 1-1 1h-5.2v-6.4H9.2V21H4a1 1 0 0 1-1-1z" /></svg>
@@ -4266,10 +4370,7 @@ export default function App() {
         {/* 2. DNA */}
         <button
           className={`tab ${activeTab === "dna" ? "active" : ""}`}
-          onClick={() => {
-            setActiveTab("dna");
-            setDnaResetTrigger((prev) => prev + 1);
-          }}
+          onClick={() => navigateToTab("dna", undefined, true)}
           data-tab="dna"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -4301,7 +4402,7 @@ export default function App() {
         {/* 3. AI BUYSELL (Renamed from Signals / AI Calls) */}
         <button
           className={`tab ${activeTab === "signals" ? "active" : ""}`}
-          onClick={() => setActiveTab("signals")}
+          onClick={() => navigateToTab("signals")}
           data-tab="signals"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
@@ -4317,7 +4418,7 @@ export default function App() {
         {/* 4. BREAKOUT (Renamed from Screener) */}
         <button
           className={`tab ${activeTab === "screener" ? "active" : ""}`}
-          onClick={() => setActiveTab("screener")}
+          onClick={() => navigateToTab("screener")}
           data-tab="screener"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
@@ -4343,7 +4444,7 @@ export default function App() {
         {/* 5. PORTFOLIO */}
         <button
           className={`tab ${activeTab === "portfolio" ? "active" : ""}`}
-          onClick={() => setActiveTab("portfolio")}
+          onClick={() => navigateToTab("portfolio")}
           data-tab="portfolio"
         >
           <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>

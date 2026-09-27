@@ -49,6 +49,28 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
 
   const cleanSymbol = (stock.symbol || "").trim().toUpperCase().replace(/^(BSE:|NSE:)/i, "");
 
+  // Intercept browser back button so pressing Back closes modal instead of exiting site
+  useEffect(() => {
+    window.history.pushState({ modal: "analyst", symbol: cleanSymbol }, "", window.location.href);
+
+    const handlePopState = () => {
+      onClose();
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
+  const handleBackNavigation = () => {
+    if (window.history.state?.modal === "analyst") {
+      window.history.back();
+    } else {
+      onClose();
+    }
+  };
+
   // ── 1. Fetch Live Stock Details & Preload Chart Image (Zero Hardcoding) ──
   useEffect(() => {
     let isMounted = true;
@@ -331,11 +353,35 @@ ChartAnalysis : ${websiteLink}`;
     return (
       <div className={`dna-analyst-fullscreen-overlay theme-${theme}`} data-theme={theme}>
         <div className="dna-analyst-scroll-citadel">
-          <header className="dna-analyst-nav">
-            <button type="button" className="dna-nav-back-btn" onClick={onClose}>
-              <span>←</span>
-              <span>Back to Screener</span>
-            </button>
+          <header className="topbar" style={{ position: "sticky", top: 0, zIndex: 100, marginBottom: 16 }}>
+            <div className="brand" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <button 
+                type="button" 
+                className="theme-btn" 
+                onClick={handleBackNavigation}
+                style={{ width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", borderRadius: "50%" }}
+                title="Back to Screener"
+                aria-label="Back"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+              </button>
+              <span className="brand-mark">QuantSync</span>
+              <span className="pulse-dot" id="mktDot" />
+            </div>
+
+            <div className="topbar-right" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button 
+                type="button" 
+                className="dna-nav-back-btn" 
+                onClick={handleBackNavigation}
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", fontSize: 12, borderRadius: 8 }}
+              >
+                <span>←</span>
+                <span>Back</span>
+              </button>
+            </div>
           </header>
 
           <div className="chart-loading-container">
@@ -393,19 +439,43 @@ ChartAnalysis : ${websiteLink}`;
           </div>
         )}
 
-        {/* ── 1. TOP NAV BAR ──────────────────────────────────────────────── */}
-        <header className="dna-analyst-nav">
-          <button type="button" className="dna-nav-back-btn" onClick={onClose}>
-            <span>←</span>
-            <span>Back to Screener</span>
-          </button>
+        {/* ── 1. UNIFIED QUANTSYNC TOPBAR (Header Everywhere) ──────────── */}
+        <header className="topbar" style={{ position: "sticky", top: 0, zIndex: 100, marginBottom: 16 }}>
+          <div className="brand" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button 
+              type="button" 
+              className="theme-btn" 
+              onClick={handleBackNavigation}
+              style={{ width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", borderRadius: "50%" }}
+              title="Back"
+              aria-label="Back"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+              </svg>
+            </button>
+            <span className="brand-mark">QuantSync</span>
+            <span className="pulse-dot" id="mktDot" />
+          </div>
 
-          <button type="button" className="dna-nav-share-btn" onClick={handleWhatsAppShare}>
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
-              <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/>
-            </svg>
-            <span>Share</span>
-          </button>
+          <div className="topbar-right" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button 
+              type="button" 
+              className="dna-nav-back-btn" 
+              onClick={handleBackNavigation}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", fontSize: 12, borderRadius: 8 }}
+            >
+              <span>←</span>
+              <span>Back</span>
+            </button>
+
+            <button type="button" className="dna-nav-share-btn" onClick={handleWhatsAppShare} style={{ margin: 0, padding: "6px 12px", fontSize: 12, borderRadius: 8 }}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/>
+              </svg>
+              <span>Share</span>
+            </button>
+          </div>
         </header>
 
         {/* ── 2. HERO STOCK IDENTITY & 52W RANGE ──────────────────────────── */}

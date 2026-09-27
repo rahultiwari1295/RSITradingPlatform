@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { TerminalSnapshot } from "../../api/quantsyncApi";
+import { TerminalSnapshot, quantsyncApi } from "../../api/quantsyncApi";
 
 interface IndexTick {
   n: string;
@@ -94,9 +94,57 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
 }) => {
   const [activeCardIdx, setActiveCardIdx] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [showRecommendations, setShowRecommendations] = useState(false);
+  const searchBoxRef = useRef<HTMLDivElement>(null);
+  const searchDebounceRef = useRef<any>(null);
   const [liveBreakouts, setLiveBreakouts] = useState<any[]>([]);
   const [isBreakoutsLoading, setIsBreakoutsLoading] = useState(true);
   const carouselRef = useRef<HTMLDivElement>(null);
+
+  // Close recommendations dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
+        setShowRecommendations(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Live stock recommendation search
+  useEffect(() => {
+    const q = searchQuery.trim().toUpperCase();
+    if (!q) {
+      setRecommendations([]);
+      setShowRecommendations(false);
+      return;
+    }
+
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+
+    searchDebounceRef.current = setTimeout(async () => {
+      try {
+        const data = await quantsyncApi.searchSymbols(q);
+        if (Array.isArray(data) && data.length > 0) {
+          setRecommendations(data.slice(0, 8));
+          setShowRecommendations(true);
+        } else {
+          setRecommendations([]);
+          setShowRecommendations(false);
+        }
+      } catch (err) {
+        console.debug("Stock search error:", err);
+      }
+    }, 80);
+
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [searchQuery]);
 
   // Fetch top 3 real confirmed breakout candidates from API with shimmer placeholder
   useEffect(() => {
@@ -640,8 +688,8 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
               Scan balance sheet solvency, Piotroski score, promoter holdings, valuation checks, and calculated Target & Stop-loss levels for any NSE stock.
             </p>
 
-            <form onSubmit={handleSearchSubmit} className="dna-search-form">
-              <div className="dna-search-field">
+            <form onSubmit={handleSearchSubmit} className="dna-search-form" style={{ position: "relative" }}>
+              <div className="dna-search-field" ref={searchBoxRef} style={{ position: "relative" }}>
                 <svg className="search-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="11" cy="11" r="8"/>
                   <line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -651,10 +699,54 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
                   placeholder="Search any stock (e.g. RELIANCE, TCS, TATASTEEL, DIXON)..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => {
+                    if (recommendations.length > 0) setShowRecommendations(true);
+                  }}
                   className="dna-input-element"
                   autoComplete="off"
                   spellCheck="false"
                 />
+
+                {/* Autocomplete Recommendation Dropdown Popover */}
+                {showRecommendations && recommendations.length > 0 && (
+                  <div className="home-search-recommendations-popover">
+                    {recommendations.map((item) => {
+                      const sym = (item.symbol || "").toUpperCase();
+                      const nm = item.name || item.company_name || "";
+                      return (
+                        <div
+                          key={sym}
+                          className="home-rec-item"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setShowRecommendations(false);
+                            setSearchQuery("");
+                            onSelectStockForDna(sym);
+                            onNavigate("dna");
+                          }}
+                          onClick={() => {
+                            setShowRecommendations(false);
+                            setSearchQuery("");
+                            onSelectStockForDna(sym);
+                            onNavigate("dna");
+                          }}
+                        >
+                          <div className="home-rec-left">
+                            <span className="home-rec-symbol">{sym}</span>
+                            {nm && <span className="home-rec-name">{nm}</span>}
+                          </div>
+                          <div className="home-rec-right">
+                            {item.price ? (
+                              <span className="home-rec-price">₹{Number(item.price).toFixed(2)}</span>
+                            ) : (
+                              <span className="home-rec-badge">{item.candleCount ? `${item.candleCount} bars` : "NSE"}</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
               <button type="submit" className="dna-submit-btn">
                 <span>Analyze Stock Report</span>

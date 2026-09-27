@@ -314,7 +314,7 @@
         <div class="badge-chip">⚡ QuantSync Institutional Screener</div>
         <div class="title">Pattern &amp; Breakout Radar</div>
         <div class="subtitle" id="scanMeta">Scanned across 1,318 NSE universe equities</div>
-        <!-- KPI Row -->
+        <div id="scanDateBadge" style="display:none;margin-top:4px;"></div>
         <div class="kpi-row">
           <div>
             <div class="kpi-lbl">Universe</div>
@@ -522,6 +522,29 @@
           document.getElementById('kpiUniverse').textContent = n;
           const bullish = (d.stances || {}).BULLISH || 0;
           document.getElementById('kpiBullish').textContent = bullish.toLocaleString();
+
+          // Weekend-aware freshness indicator
+          const badge = document.getElementById('scanDateBadge');
+          if (badge && d.scan_date) {
+            const nowIST = new Date(new Date().getTime() + (5.5 * 60 * 60 * 1000));
+            const todayIST = nowIST.toISOString().slice(0, 10);
+            const scanDate = d.scan_date;
+            const dayOfWeek = nowIST.getUTCDay(); // 0 = Sun, 6 = Sat
+            const daysDiff = Math.floor((new Date(todayIST) - new Date(scanDate)) / (1000 * 60 * 60 * 24));
+
+            if (daysDiff === 0) {
+              badge.innerHTML = '<span style="color:#10b981;font-size:11px;font-weight:700;">✅ Today\'s EOD data</span>';
+            } else if (daysDiff === 1 && (dayOfWeek === 6 || dayOfWeek === 1)) {
+              badge.innerHTML = '<span style="color:#10b981;font-size:11px;font-weight:700;">✅ Friday\'s EOD close (Active)</span>';
+            } else if (daysDiff === 2 && dayOfWeek === 0) {
+              badge.innerHTML = '<span style="color:#10b981;font-size:11px;font-weight:700;">✅ Weekend · Friday\'s EOD close</span>';
+            } else if (daysDiff === 1) {
+              badge.innerHTML = '<span style="color:#f59e0b;font-size:11px;font-weight:700;">⚠️ Previous close (Overnight batch running)</span>';
+            } else {
+              badge.innerHTML = `<span style="color:#ef4444;font-size:11px;font-weight:700;">🚨 Data is ${daysDiff} days old — batch may have failed!</span>`;
+            }
+            badge.style.display = 'block';
+          }
 
           // Sector heatmap
           const sectors = d.top_sectors || {};
