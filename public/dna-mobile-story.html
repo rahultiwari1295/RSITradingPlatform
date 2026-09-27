@@ -1282,37 +1282,16 @@
       background: rgba(0, 0, 0, 0.02);
     }
 
-    /* 1-Liner Answer Preview on Collapsed Card */
-    .q-answer-preview {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      background: rgba(59, 130, 246, 0.06);
-      border: 1px solid rgba(59, 130, 246, 0.15);
-      border-radius: 10px;
-      padding: 9px 12px;
-      margin-top: 10px;
-      margin-bottom: 10px;
-      transition: all 0.2s ease;
-    }
-    [data-theme="light"] .q-answer-preview {
-      background: #F8FAFC;
-      border: 1px solid #E2E8F0;
-    }
-    .preview-sparkle {
-      font-size: 13px;
-      line-height: 1.2;
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
-    .preview-text {
-      font-size: 12.5px;
-      line-height: 1.45;
-      color: var(--text-main);
-      font-weight: 500;
-    }
-    [data-theme="light"] .preview-text {
-      color: #1E293B;
+    /* Status Heading inside the Takeaway Callout */
+    .insight-status-pill {
+      font-family: var(--font-display);
+      font-size: 11.5px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
     /* Click to Expand Action Bar */
@@ -1320,27 +1299,30 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 8px 12px;
-      border-radius: 9px;
+      padding: 9px 13px;
+      border-radius: 10px;
       background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       color: var(--accent);
       font-family: var(--font-display);
       font-size: 11.5px;
       font-weight: 700;
       letter-spacing: 0.02em;
+      cursor: pointer;
+      user-select: none;
       transition: all 0.2s ease;
+      margin-top: 8px;
     }
     [data-theme="light"] .q-expand-action-bar {
       background: #F1F5F9;
       border: 1px solid #E2E8F0;
       color: #2563EB;
     }
-    .accordion-trigger:hover .q-expand-action-bar {
+    .q-expand-action-bar:hover {
       background: rgba(59, 130, 246, 0.08);
       border-color: rgba(59, 130, 246, 0.28);
     }
-    [data-theme="light"] .accordion-trigger:hover .q-expand-action-bar {
+    [data-theme="light"] .q-expand-action-bar:hover {
       background: #EBF3FE;
       border-color: #BFDBFE;
     }
@@ -4260,26 +4242,27 @@
            QUESTION 1: CAN I BUY TODAY? (FOR SWING TRADERS & TIMING)
            ==================================================================== -->
       <article class="q-bento-card highlight-action accordion-open" id="card-q1" data-qid="q1">
-        <div class="q-header-block accordion-trigger" onclick="toggleAccordion('q1')">
+        <div class="q-header-block">
           <div class="q-top-bar">
             <div class="q-category-chip">
               <span class="q-num-pill">01</span>
               <span class="q-category-text">Timing & Entry</span>
             </div>
-            <div class="q-status-wrap">
-              <span class="q-verdict-badge warning" id="q1-pill">⏳ Wait · Too Risky</span>
-            </div>
           </div>
           <h3 class="q-headline-question">Can I buy right now, or is it too late / risky?</h3>
 
-          <!-- 1-Liner Answer Preview -->
-          <div class="q-answer-preview" id="q1-preview">
-            <span class="preview-sparkle">💡</span>
-            <span class="preview-text" id="q1-preview-text">Evaluating optimal entry timing and resistance levels...</span>
+          <!-- Plain-English Callout with Status as Bold Heading -->
+          <div class="q-insight-callout caution-tint" id="q1-truth-box">
+            <div class="insight-callout-header">
+              <span class="insight-status-pill" id="q1-pill">🔴 SETUP INVALIDATED</span>
+            </div>
+            <p class="insight-answer-text" id="q1-answer">
+              <strong>Don't Buy Today:</strong> TCS is hitting an invisible price ceiling near <strong>₹2,135</strong> right now. If you buy here, you risk buying at the peak. Wait for a pullback to <strong>₹2,060</strong> for a safe entry, or wait for it to cleanly break above <strong>₹2,140</strong>.
+            </p>
           </div>
 
           <!-- Click to Expand Action Bar -->
-          <div class="q-expand-action-bar">
+          <div class="q-expand-action-bar" onclick="toggleAccordion('q1')">
             <span class="expand-action-label" id="q1-expand-label">Click to collapse analysis ↑</span>
             <span class="expand-action-chevron">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -4290,20 +4273,6 @@
         </div>
 
         <div class="accordion-content">
-          <!-- Dynamic Entry State Machine Live Badge (Task 2.4) -->
-          <div class="entry-state-badge-container" id="entry-state-container">
-            <div class="entry-state-badge state-prime" id="entry-state-badge">🟢 PRIME BUY POCKET</div>
-            <div class="entry-state-guidance" id="entry-state-guidance">Price is sitting directly on support. Risk:Reward ratio is mathematically optimal.</div>
-          </div>
-
-          <div class="q-insight-callout caution-tint" id="q1-truth-box">
-            <div class="insight-callout-header">
-              <span>✦ Plain-English Takeaway</span>
-            </div>
-            <p class="insight-answer-text" id="q1-answer">
-              <strong>Don't Buy Today:</strong> TCS is hitting an invisible price ceiling near <strong>₹2,135</strong> right now. If you buy here, you risk buying at the peak. Wait for a pullback to <strong>₹2,060</strong> for a safe entry, or wait for it to cleanly break above <strong>₹2,140</strong>.
-            </p>
-          </div>
 
           <div class="q-proof-canvas">
             <div class="proof-canvas-title">
@@ -4347,27 +4316,28 @@
            QUESTION 2: CHART & TECHNICAL SPEED (WITH REAL 4M & 1Y CHART)
            ==================================================================== -->
       <article class="q-bento-card" id="card-q2" data-qid="q2">
-        <div class="q-header-block accordion-trigger" onclick="toggleAccordion('q2')">
+        <div class="q-header-block">
           <div class="q-top-bar">
             <div class="q-category-chip">
               <span class="q-num-pill">02</span>
               <span class="q-category-text">Technical Speed</span>
               <span class="q-chip-subtag">1–4 W</span>
             </div>
-            <div class="q-status-wrap">
-              <span class="q-verdict-badge bullish" id="q2-pill">🟢 Upward Velocity</span>
-            </div>
           </div>
           <h3 class="q-headline-question">What is the Chart & Technical Speed Saying?</h3>
 
-          <!-- 1-Liner Answer Preview -->
-          <div class="q-answer-preview" id="q2-preview">
-            <span class="preview-sparkle">💡</span>
-            <span class="preview-text" id="q2-preview-text">Analyzing trend velocity, EMA moving averages, and tactical momentum...</span>
+          <!-- Plain-English Callout with Status as Bold Heading -->
+          <div class="q-insight-callout good-tint" id="q2-truth-box">
+            <div class="insight-callout-header">
+              <span class="insight-status-pill" id="q2-pill">🟢 UPWARD VELOCITY</span>
+            </div>
+            <p class="insight-answer-text" id="q2-answer">
+              Powerful speed in motion. The stock is surfing calmly above its 20-day line (<strong>₹2,070</strong>) and 50-day line. As long as it holds this floor, the quick momentum target is <strong>₹2,240</strong>.
+            </p>
           </div>
 
           <!-- Click to Expand Action Bar -->
-          <div class="q-expand-action-bar">
+          <div class="q-expand-action-bar" onclick="toggleAccordion('q2')">
             <span class="expand-action-label" id="q2-expand-label">Click to view deep analysis ↓</span>
             <span class="expand-action-chevron">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -4378,14 +4348,6 @@
         </div>
 
         <div class="accordion-content">
-          <div class="q-insight-callout good-tint" id="q2-truth-box">
-            <div class="insight-callout-header">
-              <span>✦ Plain-English Takeaway</span>
-            </div>
-            <p class="insight-answer-text" id="q2-answer">
-              Powerful speed in motion. The stock is surfing calmly above its 20-day line (<strong>₹2,070</strong>) and 50-day line. As long as it holds this floor, the quick momentum target is <strong>₹2,240</strong>.
-            </p>
-          </div>
 
           <div class="q-proof-canvas">
             <div class="proof-canvas-title">
@@ -4486,27 +4448,28 @@
            QUESTION 3: LONG-TERM COMPOUNDING (1-3 YEARS)
            ==================================================================== -->
       <article class="q-bento-card" id="card-q3" data-qid="q3">
-        <div class="q-header-block accordion-trigger" onclick="toggleAccordion('q3')">
+        <div class="q-header-block">
           <div class="q-top-bar">
             <div class="q-category-chip">
               <span class="q-num-pill">03</span>
               <span class="q-category-text">Wealth Compounding</span>
               <span class="q-chip-subtag">1–3 Y</span>
             </div>
-            <div class="q-status-wrap">
-              <span class="q-verdict-badge bullish" id="q3-pill">🟢 Super Wealth Builder</span>
-            </div>
           </div>
           <h3 class="q-headline-question">Is This a Multi-Year Compounding Machine?</h3>
 
-          <!-- 1-Liner Answer Preview -->
-          <div class="q-answer-preview" id="q3-preview">
-            <span class="preview-sparkle">💡</span>
-            <span class="preview-text" id="q3-preview-text">Auditing capital efficiency (ROCE), earnings quality, and multi-year CAGRs...</span>
+          <!-- Plain-English Callout with Status as Bold Heading -->
+          <div class="q-insight-callout good-tint" id="q3-truth-box">
+            <div class="insight-callout-header">
+              <span class="insight-status-pill" id="q3-pill">🟢 Super Wealth Builder</span>
+            </div>
+            <p class="insight-answer-text" id="q3-answer">
+              High-grade business engine with elite capital efficiency (<strong>ROCE 63.0%</strong>). Protected by strong market moats and high dividend generation, this is engineered for patient multi-year wealth accumulation.
+            </p>
           </div>
 
           <!-- Click to Expand Action Bar -->
-          <div class="q-expand-action-bar">
+          <div class="q-expand-action-bar" onclick="toggleAccordion('q3')">
             <span class="expand-action-label" id="q3-expand-label">Click to view deep analysis ↓</span>
             <span class="expand-action-chevron">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -4517,15 +4480,6 @@
         </div>
 
         <div class="accordion-content">
-          <div class="q-insight-callout good-tint" id="q3-truth-box">
-            <div class="insight-callout-header">
-              <span>✦ Plain-English Takeaway</span>
-            </div>
-            <p class="insight-answer-text" id="q3-answer">
-              High-grade business engine with elite capital efficiency (<strong>ROCE 63.0%</strong>). Protected by strong market moats and high dividend generation, this is engineered for patient multi-year wealth accumulation.
-            </p>
-          </div>
-
           <div class="q-proof-canvas">
             <div class="proof-canvas-title">
               <span>📊 3-Year Compounding Engine (Audited CAGRs)</span>
@@ -4575,26 +4529,27 @@
            QUESTION 4: BALANCE SHEET & SOLVENCY SAFETY
            ==================================================================== -->
       <article class="q-bento-card" id="card-q4" data-qid="q4">
-        <div class="q-header-block accordion-trigger" onclick="toggleAccordion('q4')">
+        <div class="q-header-block">
           <div class="q-top-bar">
             <div class="q-category-chip">
               <span class="q-num-pill">04</span>
               <span class="q-category-text">Solvency & Debt</span>
             </div>
-            <div class="q-status-wrap">
-              <span class="q-verdict-badge bullish" id="q4-pill">🟢 100% Fortress</span>
-            </div>
           </div>
           <h3 class="q-headline-question">How Safe is the Balance Sheet? Any Bankruptcy Danger?</h3>
 
-          <!-- 1-Liner Answer Preview -->
-          <div class="q-answer-preview" id="q4-preview">
-            <span class="preview-sparkle">💡</span>
-            <span class="preview-text" id="q4-preview-text">Evaluating debt-to-equity ratio, interest coverage, and reserve buffer...</span>
+          <!-- Plain-English Callout with Status as Bold Heading -->
+          <div class="q-insight-callout good-tint" id="q4-truth-box">
+            <div class="insight-callout-header">
+              <span class="insight-status-pill" id="q4-pill">🟢 100% Fortress</span>
+            </div>
+            <p class="insight-answer-text" id="q4-answer">
+              <strong>Owes virtually zero money to banks</strong> (Debt-to-Equity is only <strong>0.11</strong>) and sits on a colossal piggy bank of <strong>₹1,06,878 Cr</strong> in reserves. Financial insolvency danger is <strong>0%</strong>.
+            </p>
           </div>
 
           <!-- Click to Expand Action Bar -->
-          <div class="q-expand-action-bar">
+          <div class="q-expand-action-bar" onclick="toggleAccordion('q4')">
             <span class="expand-action-label" id="q4-expand-label">Click to view deep analysis ↓</span>
             <span class="expand-action-chevron">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -4605,15 +4560,6 @@
         </div>
 
         <div class="accordion-content">
-          <div class="q-insight-callout good-tint" id="q4-truth-box">
-            <div class="insight-callout-header">
-              <span>✦ Plain-English Takeaway</span>
-            </div>
-            <p class="insight-answer-text" id="q4-answer">
-              <strong>Owes virtually zero money to banks</strong> (Debt-to-Equity is only <strong>0.11</strong>) and sits on a colossal piggy bank of <strong>₹1,06,878 Cr</strong> in reserves. Financial insolvency danger is <strong>0%</strong>.
-            </p>
-          </div>
-
           <div class="q-proof-canvas">
             <div class="proof-canvas-title">
               <span>📊 Reserves vs. Borrowings Balance Scale</span>
@@ -4657,26 +4603,27 @@
            QUESTION 5: SMART MONEY & WHALES (FII/DII)
            ==================================================================== -->
       <article class="q-bento-card" id="card-q5" data-qid="q5">
-        <div class="q-header-block accordion-trigger" onclick="toggleAccordion('q5')">
+        <div class="q-header-block">
           <div class="q-top-bar">
             <div class="q-category-chip">
               <span class="q-num-pill">05</span>
               <span class="q-category-text">Smart Money & Whales</span>
             </div>
-            <div class="q-status-wrap">
-              <span class="q-verdict-badge bullish" id="q5-pill">🟢 Whale Accumulation</span>
-            </div>
           </div>
           <h3 class="q-headline-question">Are Big Whales (FIIs & Mutual Funds) Buying or Dumping?</h3>
 
-          <!-- 1-Liner Answer Preview -->
-          <div class="q-answer-preview" id="q5-preview">
-            <span class="preview-sparkle">💡</span>
-            <span class="preview-text" id="q5-preview-text">Tracking institutional ownership, delivery spikes, and custodial holdings...</span>
+          <!-- Plain-English Callout with Status as Bold Heading -->
+          <div class="q-insight-callout good-tint" id="q5-truth-box">
+            <div class="insight-callout-header">
+              <span class="insight-status-pill" id="q5-pill">🟢 Whale Accumulation</span>
+            </div>
+            <p class="insight-answer-text" id="q5-answer">
+              Big institutions hold a dominant <strong>22.5%</strong> stake alongside <strong>71.8%</strong> promoter holding. High delivery volume confirms real custodial holding rather than day-trader churn.
+            </p>
           </div>
 
           <!-- Click to Expand Action Bar -->
-          <div class="q-expand-action-bar">
+          <div class="q-expand-action-bar" onclick="toggleAccordion('q5')">
             <span class="expand-action-label" id="q5-expand-label">Click to view deep analysis ↓</span>
             <span class="expand-action-chevron">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -4687,15 +4634,6 @@
         </div>
 
         <div class="accordion-content">
-          <div class="q-insight-callout good-tint" id="q5-truth-box">
-            <div class="insight-callout-header">
-              <span>✦ Plain-English Takeaway</span>
-            </div>
-            <p class="insight-answer-text" id="q5-answer">
-              Big institutions hold a dominant <strong>22.5%</strong> stake alongside <strong>71.8%</strong> promoter holding. High delivery volume confirms real custodial holding rather than day-trader churn.
-            </p>
-          </div>
-
           <div class="q-proof-canvas">
             <div class="proof-canvas-title">
               <span>📊 Complete Shareholding Architecture</span>
@@ -4756,26 +4694,27 @@
            QUESTION 6: VALUATION & DIRECT SECTOR ALTERNATIVES
            ==================================================================== -->
       <article class="q-bento-card" id="card-q6" data-qid="q6">
-        <div class="q-header-block accordion-trigger" onclick="toggleAccordion('q6')">
+        <div class="q-header-block">
           <div class="q-top-bar">
             <div class="q-category-chip">
               <span class="q-num-pill">06</span>
               <span class="q-category-text">Valuation & Peers</span>
             </div>
-            <div class="q-status-wrap">
-              <span class="q-verdict-badge neutral" id="q6-pill">🟡 Fairly Priced</span>
-            </div>
           </div>
           <h3 class="q-headline-question">Are There Better Value Alternatives in This Sector?</h3>
 
-          <!-- 1-Liner Answer Preview -->
-          <div class="q-answer-preview" id="q6-preview">
-            <span class="preview-sparkle">💡</span>
-            <span class="preview-text" id="q6-preview-text">Benchmarking P/E spectrum positioning vs industry median and head-to-head peers...</span>
+          <!-- Plain-English Callout with Status as Bold Heading -->
+          <div class="q-insight-callout caution-tint" id="q6-truth-box">
+            <div class="insight-callout-header">
+              <span class="insight-status-pill" id="q6-pill">🟡 Fairly Priced</span>
+            </div>
+            <p class="insight-answer-text" id="q6-answer">
+              Trading at a P/E of <strong>15.29</strong> compared to the Industry Median of <strong>24.60</strong>. While cheaper than high-flying tech peers, its growth pace is mature. Excellent for downside defense.
+            </p>
           </div>
 
           <!-- Click to Expand Action Bar -->
-          <div class="q-expand-action-bar">
+          <div class="q-expand-action-bar" onclick="toggleAccordion('q6')">
             <span class="expand-action-label" id="q6-expand-label">Click to view deep analysis ↓</span>
             <span class="expand-action-chevron">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -4786,15 +4725,6 @@
         </div>
 
         <div class="accordion-content">
-          <div class="q-insight-callout caution-tint" id="q6-truth-box">
-            <div class="insight-callout-header">
-              <span>✦ Plain-English Takeaway</span>
-            </div>
-            <p class="insight-answer-text" id="q6-answer">
-              Trading at a P/E of <strong>15.29</strong> compared to the Industry Median of <strong>24.60</strong>. While cheaper than high-flying tech peers, its growth pace is mature. Excellent for downside defense.
-            </p>
-          </div>
-
           <div class="q-proof-canvas">
             <div class="proof-canvas-title">
               <span>📊 Valuation Spectrum Slider (P/E Positioning)</span>
@@ -4852,26 +4782,27 @@
            QUESTION 7: CATALYSTS, NEWS & FORENSIC RED FLAGS
            ==================================================================== -->
       <article class="q-bento-card" id="card-q7" data-qid="q7">
-        <div class="q-header-block accordion-trigger" onclick="toggleAccordion('q7')">
+        <div class="q-header-block">
           <div class="q-top-bar">
             <div class="q-category-chip">
               <span class="q-num-pill">07</span>
               <span class="q-category-text">Catalysts & Forensics</span>
             </div>
-            <div class="q-status-wrap">
-              <span class="q-verdict-badge bullish" id="q7-pill">🟢 Clean Audit Track</span>
-            </div>
           </div>
           <h3 class="q-headline-question">What Are the Catalysts, News Sparks & Red Flags?</h3>
 
-          <!-- 1-Liner Answer Preview -->
-          <div class="q-answer-preview" id="q7-preview">
-            <span class="preview-sparkle">💡</span>
-            <span class="preview-text" id="q7-preview-text">Auditing forensic integrity, accounting red flags, and upcoming corporate catalysts...</span>
+          <!-- Plain-English Callout with Status as Bold Heading -->
+          <div class="q-insight-callout good-tint" id="q7-truth-box">
+            <div class="insight-callout-header">
+              <span class="insight-status-pill" id="q7-pill">🟢 Clean Audit Track</span>
+            </div>
+            <p class="insight-answer-text" id="q7-answer">
+              Passed all <strong>4 critical forensic safety tests</strong> with <strong>0 accounting red flags</strong>. Upcoming quarterly earnings release and large IT deal wins are the primary price catalysts.
+            </p>
           </div>
 
           <!-- Click to Expand Action Bar -->
-          <div class="q-expand-action-bar">
+          <div class="q-expand-action-bar" onclick="toggleAccordion('q7')">
             <span class="expand-action-label" id="q7-expand-label">Click to view deep analysis ↓</span>
             <span class="expand-action-chevron">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -4882,15 +4813,6 @@
         </div>
 
         <div class="accordion-content">
-          <div class="q-insight-callout good-tint" id="q7-truth-box">
-            <div class="insight-callout-header">
-              <span>✦ Plain-English Takeaway</span>
-            </div>
-            <p class="insight-answer-text" id="q7-answer">
-              Passed all <strong>4 critical forensic safety tests</strong> with <strong>0 accounting red flags</strong>. Upcoming quarterly earnings release and large IT deal wins are the primary price catalysts.
-            </p>
-          </div>
-
           <div class="q-proof-canvas">
             <div class="proof-canvas-title">
               <span>🛡️ Forensic Health & Corporate Calendar</span>
@@ -5889,8 +5811,8 @@
         if (!qData) return;
         const pillEl = document.getElementById(`q${qNum}-pill`);
         if (pillEl) {
-          let pillText = (qData.pill || '').trim();
-          if (pillText.length > 22 && pillText.includes(' · ')) {
+          let pillText = (qData.pill || qData.status || qData.verdict || '').trim();
+          if (pillText.length > 28 && pillText.includes(' · ')) {
             pillText = pillText.split(' · ')[0].trim();
           }
           if (!pillText.startsWith('🟢') && !pillText.startsWith('🟡') && !pillText.startsWith('🔴') && !pillText.startsWith('⏳') && !pillText.startsWith('⚪')) {
@@ -5898,16 +5820,12 @@
             pillText = icon + pillText;
           }
           pillEl.textContent = pillText;
-          pillEl.className = `q-verdict-badge ${qData.type || 'neutral'}`;
+          pillEl.className = `insight-status-pill ${qData.type || 'neutral'}`;
         }
         const calloutEl = document.getElementById(`q${qNum}-truth-box`);
         if (calloutEl) {
           const tint = qData.type === 'bullish' ? 'good-tint' : (qData.type === 'bearish' ? 'danger-tint' : 'caution-tint');
           calloutEl.className = `q-insight-callout ${tint}`;
-        }
-        const previewEl = document.getElementById(`q${qNum}-preview-text`);
-        if (previewEl && qData.answer) {
-          previewEl.textContent = extractOneLinerAnswer(qData.answer);
         }
       }
 
