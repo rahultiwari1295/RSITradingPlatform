@@ -5944,7 +5944,7 @@
 
     function retryDnaScan() {
       if (currentStockSymbol) {
-        selectStock(currentStockSymbol, false, true);
+        selectStock(currentStockSymbol, false, false);
       } else {
         resetToHome();
       }
@@ -6539,17 +6539,35 @@
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 60000);
           const forceParam = forceRefresh ? '?force=true' : '';
-          const res = await fetch(`/api/dna/report/${encodeURIComponent(cleanSym)}${forceParam}`, { signal: controller.signal });
+          let res = await fetch(`/api/dna/report/${encodeURIComponent(cleanSym)}${forceParam}`, { signal: controller.signal });
           clearTimeout(timeoutId);
+          if (!res.ok && forceRefresh) {
+            try {
+              const fallbackRes = await fetch(`/api/dna/report/${encodeURIComponent(cleanSym)}`);
+              if (fallbackRes.ok) res = fallbackRes;
+            } catch (fbErr) {}
+          }
           if (res.ok) {
             rep = await res.json();
           } else {
-            const errJson = await res.json().catch(() => ({}));
-            return { error: errJson.detail || `Server returned ${res.status}` };
+            try {
+              const fallbackRes = await fetch(`/api/dna/report/${encodeURIComponent(cleanSym)}`);
+              if (fallbackRes.ok) rep = await fallbackRes.json();
+            } catch (fbErr) {}
+            if (!rep) {
+              const errJson = await res.json().catch(() => ({}));
+              return { error: errJson.detail || `Server returned ${res.status}` };
+            }
           }
         } catch (err) {
-          console.warn(`[DNA Live] Fetch error for ${cleanSym}:`, err);
-          return { error: err.name === 'AbortError' ? 'Calculation timed out (60s)' : err.message };
+          try {
+            const fallbackRes = await fetch(`/api/dna/report/${encodeURIComponent(cleanSym)}`);
+            if (fallbackRes.ok) rep = await fallbackRes.json();
+          } catch (fbErr) {}
+          if (!rep) {
+            console.warn(`[DNA Live] Fetch error for ${cleanSym}:`, err);
+            return { error: err.name === 'AbortError' ? 'Calculation timed out (60s)' : (err.message || 'Server error') };
+          }
         }
 
         if (!rep) return { error: 'No data returned from DNA Engine' };

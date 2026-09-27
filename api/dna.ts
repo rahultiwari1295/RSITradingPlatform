@@ -31,7 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'Accept': action === 'chart' ? 'image/png,image/*,*/*' : 'application/json',
         'User-Agent': 'QuantSync-Vercel-DNAClient/1.0',
       },
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(45000),
     });
 
     if (!response.ok) {

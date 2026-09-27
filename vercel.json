@@ -1,16 +1,13 @@
 {
+  "functions": {
+    "api/*.ts": {
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     {
       "source": "/api/dna/chart/:symbol",
       "destination": "/api/dna-chart?symbol=:symbol"
-    },
-    {
-      "source": "/api/dna/report/:symbol",
-      "destination": "/api/dna?action=report&symbol=:symbol"
-    },
-    {
-      "source": "/api/dna/search",
-      "destination": "/api/dna?action=search"
     },
     {
       "source": "/api/terminal-data",
