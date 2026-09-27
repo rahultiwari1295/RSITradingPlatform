@@ -510,7 +510,10 @@ export default function TradingViewStockDetail({
   const volMult = t.volume_mult || t.vol_mult || (t.current_metrics?.volume_mult ? Number(t.current_metrics.volume_mult).toFixed(1) : 1.8);
   const accDays = t.acc_days !== undefined ? t.acc_days : (t.current_metrics?.acc_days_20d !== undefined ? t.current_metrics.acc_days_20d : 12);
   const distDays = t.dist_days !== undefined ? t.dist_days : (t.current_metrics?.dist_days_20d !== undefined ? t.current_metrics.dist_days_20d : 4);
-  const volDesc = `Breakout session volume was ${volMult}x 20-day SMA. ${accDays} accumulation vs ${distDays} distribution days.`;
+  const delivPct = t.deliv_pct !== undefined ? t.deliv_pct : t.current_metrics?.deliv_pct;
+  const deliv20d = t.deliv_20d_avg !== undefined ? t.deliv_20d_avg : t.current_metrics?.deliv_20d_avg;
+  const delivDesc = delivPct ? ` Official NSE delivery: ${delivPct}%${deliv20d ? ` (vs ${deliv20d}% 20d avg)` : ''}.` : '';
+  const volDesc = `Breakout session volume was ${volMult}x 20-day SMA. ${accDays} accumulation vs ${distDays} distribution days.${delivDesc}`;
 
   const rankPct = scoreVal >= 85 ? "top 5%" : (scoreVal >= 70 ? "top 12%" : "top 25%");
   const convDesc = `QuantSync Health Score: ${scoreVal}/100 — Ranked ${rankPct} of tracked NSE equities by combined technical + quality metrics.`;

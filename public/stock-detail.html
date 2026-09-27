@@ -1736,6 +1736,7 @@
               <div class="quad-row"><span>Volume Surge:</span> <strong id="anat-vol-mult">—</strong></div>
               <div class="quad-row"><span>Institutional Flow:</span> <strong id="anat-acc-dist">—</strong></div>
               <div class="quad-row"><span>Pullback Volume:</span> <strong id="anat-pullback-vol">—</strong></div>
+              <div class="quad-row"><span>Delivery Volume:</span> <strong id="anat-deliv">—</strong></div>
             </div>
             <!-- Quadrant 3: Execution Levels -->
             <div class="anatomy-quad">
@@ -1847,6 +1848,13 @@
             }
             if (m.pullback_vol_ratio !== undefined && m.pullback_vol_ratio !== null) {
               if (elPb) elPb.textContent = `${Math.round(m.pullback_vol_ratio * 100)}% of 20-SMA (${m.pullback_vol_ratio < 0.8 ? 'Dry Up' : 'Active'})`;
+            }
+            if (m.deliv_pct !== undefined && m.deliv_pct !== null) {
+              const elDeliv = document.getElementById("anat-deliv");
+              if (elDeliv) {
+                const isHigh = m.has_high_institutional_delivery || (m.deliv_ratio >= 1.4);
+                elDeliv.innerHTML = `<span style="color:${isHigh ? '#10b981' : '#f1f5f9'}">${m.deliv_pct}%</span> <span style="font-size:10px; color:#94a3b8">(${m.deliv_20d_avg ? m.deliv_20d_avg + '% 20d' : 'Official NSE'}${isHigh ? ' · 🏛️ High Inst.' : ''})</span>`;
+              }
             }
           }
         }
