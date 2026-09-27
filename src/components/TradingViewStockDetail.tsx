@@ -491,6 +491,8 @@ export default function TradingViewStockDetail({
   const [whyLine1, whyLine2] = getTradeTriggerTelemetry(t);
   const scoreVal = Number(t.health_score ?? t.dnaScore ?? t.score ?? (t.stars ? t.stars * 20 : 70));
   const convictionTier = getConvictionTier(scoreVal);
+  const atrVal = t.atr ? Number(t.atr).toFixed(1) : (t.current_metrics?.atr ? Number(t.current_metrics.atr).toFixed(1) : (entry * 0.022).toFixed(1));
+  const deRiskPrice = (entry * 1.05).toFixed(1);
 
   // Trigger Intelligence (Task 4.3)
   const stratName = t.strategy || t.engine || "QuantSync V2 Alpha";
@@ -1031,6 +1033,86 @@ export default function TradingViewStockDetail({
           </div>
         </div>
       </div>
+
+      {/* Block 5: 4-Stage Trade Management Playbook (Task 4.5) */}
+      <div className="trade-playbook-card">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ink1)", display: "flex", alignItems: "center", gap: 6, letterSpacing: "-0.01em" }}>
+            <span>📋</span>
+            <span>TRADE MANAGEMENT PLAYBOOK</span>
+          </div>
+          <span className="pill" style={{ fontSize: 10.5, fontWeight: 700, padding: "3px 8px", background: "rgba(99,102,241,0.15)", color: "#818cf8" }}>
+            Behavioral Discipline Script
+          </span>
+        </div>
+
+        <div className="playbook-steps">
+          {/* Stage 1: ENTERED */}
+          <div className={`playbook-step ${now < entry * 1.05 && now > stop ? "active" : ""}`}>
+            <span className="step-num-badge">Stage 1 · Entered</span>
+            <div className="step-content">
+              <div className="step-heading" style={{ color: now < entry * 1.05 && now > stop ? "#a5b4fc" : undefined }}>
+                Initial Entry & Noise Tolerance
+              </div>
+              <div className="step-body">
+                Hard stop is active at <strong>{INR(stop)}</strong> (-{stopPct.toFixed(1)}%). Expected daily ATR volatility is <strong>₹{atrVal}</strong>. Hold position firmly through normal intraday fluctuation as long as daily close remains above stop.
+              </div>
+            </div>
+            {now < entry * 1.05 && now > stop && (
+              <span className="pill green" style={{ fontSize: 10, padding: "2px 6px" }}>CURRENT STAGE</span>
+            )}
+          </div>
+
+          {/* Stage 2: DE-RISKED */}
+          <div className={`playbook-step ${now >= entry * 1.05 && now < target ? "derisk-zone" : ""}`}>
+            <span className="step-num-badge">Stage 2 · De-Risk (+5%)</span>
+            <div className="step-content">
+              <div className="step-heading" style={{ color: now >= entry * 1.05 && now < target ? "#60a5fa" : undefined }}>
+                Advance Stop to Breakeven
+              </div>
+              <div className="step-body">
+                When price prints above <strong>₹{deRiskPrice}</strong> (+5.0% gain), ratchet stop loss up to initial entry at <strong>{INR(entry)}</strong>. Trade becomes mathematically risk-free with zero downside exposure.
+              </div>
+            </div>
+            {now >= entry * 1.05 && now < target && (
+              <span className="pill green" style={{ fontSize: 10, padding: "2px 6px" }}>CURRENT STAGE</span>
+            )}
+          </div>
+
+          {/* Stage 3: TARGET ZONE */}
+          <div className={`playbook-step ${now >= target ? "target-zone" : ""}`}>
+            <span className="step-num-badge">Stage 3 · Target Zone</span>
+            <div className="step-content">
+              <div className="step-heading" style={{ color: now >= target ? "#34d399" : undefined }}>
+                Profit Harvesting & Trailing
+              </div>
+              <div className="step-body">
+                At <strong>{INR(target)}</strong> (+{targetPct.toFixed(1)}%), book 50-100% of position. If riding a momentum runner, trail stop loss using the daily 9-EMA close. Never let an achieved profit target turn into a loss.
+              </div>
+            </div>
+            {now >= target && (
+              <span className="pill green" style={{ fontSize: 10, padding: "2px 6px" }}>CURRENT STAGE</span>
+            )}
+          </div>
+
+          {/* Stage 4: INVALIDATED */}
+          <div className={`playbook-step ${now <= stop && stop > 0 ? "invalidated-zone" : ""}`}>
+            <span className="step-num-badge">Stage 4 · Invalidation</span>
+            <div className="step-content">
+              <div className="step-heading" style={{ color: now <= stop && stop > 0 ? "#f87171" : undefined }}>
+                Zero Hope Exit Rule
+              </div>
+              <div className="step-body">
+                If daily close violates <strong>{INR(stop)}</strong>, execute complete market exit on the next open. Zero averaging down, zero hope-trading. Preserve capital to fight the next high-probability setup.
+              </div>
+            </div>
+            {now <= stop && stop > 0 && (
+              <span className="pill red" style={{ fontSize: 10, padding: "2px 6px" }}>STOPPED OUT</span>
+            )}
+          </div>
+        </div>
+      </div>
+
 
 
       {/* 4. Widget 1: Technical Analysis Widget (370x340 aspect ratio auto-adjusting to screen width) */}

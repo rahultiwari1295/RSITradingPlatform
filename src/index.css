@@ -1451,6 +1451,158 @@ body::before{
   font-weight: 600;
 }
 
+/* 4-Stage Trade Management Playbook Styles */
+.playbook-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.playbook-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--line-2, rgba(255, 255, 255, 0.07));
+  transition: all 0.2s ease;
+}
+
+.playbook-step.active {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.playbook-step.target-zone {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.playbook-step.derisk-zone {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.playbook-step.invalidated-zone {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.step-num-badge {
+  flex-shrink: 0;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink2, #9BA3B4);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.playbook-step.active .step-num-badge {
+  background: rgba(99, 102, 241, 0.25);
+  color: #a5b4fc;
+}
+
+.playbook-step.target-zone .step-num-badge {
+  background: rgba(16, 185, 129, 0.25);
+  color: #6ee7b7;
+}
+
+.playbook-step.derisk-zone .step-num-badge {
+  background: rgba(59, 130, 246, 0.25);
+  color: #93c5fd;
+}
+
+.playbook-step.invalidated-zone .step-num-badge {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+}
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.step-heading {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink1, #F4F5F9);
+}
+
+.step-body {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink2, #9BA3B4);
+}
+
+.step-body strong {
+  color: var(--ink1, #F4F5F9);
+  font-weight: 700;
+}
+
+/* Daily Situation Check Panel Styles */
+.situation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.situation-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line-2, rgba(255, 255, 255, 0.07));
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.situation-item .sit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.situation-item .sit-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink3, #6B7280);
+}
+
+.situation-item .sit-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--ink1, #F4F5F9);
+}
+
+.situation-item .sit-sub {
+  font-size: 11px;
+  color: var(--ink2, #9BA3B4);
+  line-height: 1.4;
+}
+
+.verdict-banner {
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-width: 1px;
+  border-style: solid;
+}
+
+
 
 .radar-wrap{display:flex;align-items:center;gap:16px}
 .radar-legend{display:flex;flex-direction:column;gap:8px;flex:1}
