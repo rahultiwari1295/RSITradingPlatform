@@ -515,6 +515,208 @@ export default function TradingViewStockDetail({
   const rankPct = scoreVal >= 85 ? "top 5%" : (scoreVal >= 70 ? "top 12%" : "top 25%");
   const convDesc = `QuantSync Health Score: ${scoreVal}/100 — Ranked ${rankPct} of tracked NSE equities by combined technical + quality metrics.`;
 
+  // Task 5.1: 1200x630 Social Setup Snapshot Card Generator
+  const handleShareSnapshot = async () => {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = 1200;
+      canvas.height = 630;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      // Dark Gradient Background
+      const bgGrad = ctx.createLinearGradient(0, 0, 1200, 630);
+      bgGrad.addColorStop(0, "#090D16");
+      bgGrad.addColorStop(0.5, "#0E1524");
+      bgGrad.addColorStop(1, "#080A11");
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, 1200, 630);
+
+      // Top brand
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = 'bold 22px "Outfit", sans-serif';
+      ctx.fillText("🧬 QUANTSYNC V2", 48, 58);
+
+      ctx.fillStyle = "rgba(99, 102, 241, 0.25)";
+      ctx.beginPath();
+      if ((ctx as any).roundRect) (ctx as any).roundRect(268, 38, 170, 28, 6);
+      else ctx.rect(268, 38, 170, 28);
+      ctx.fill();
+      ctx.fillStyle = "#A5B4FC";
+      ctx.font = 'bold 12px "JetBrains Mono", monospace';
+      ctx.fillText("EXECUTION TERMINAL", 282, 57);
+
+      ctx.fillStyle = "#10B981";
+      ctx.font = 'bold 13px "JetBrains Mono", monospace';
+      ctx.fillText("● VERIFIED NSE AUDITED SETUP", 860, 57);
+
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+      ctx.beginPath();
+      ctx.moveTo(48, 80);
+      ctx.lineTo(1152, 80);
+      ctx.stroke();
+
+      // Hero
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = 'bold 50px "Outfit", sans-serif';
+      ctx.fillText(cleanSym, 48, 145);
+
+      const symW = ctx.measureText(cleanSym).width;
+      ctx.fillStyle = "rgba(255, 255, 255, 0.06)";
+      ctx.beginPath();
+      if ((ctx as any).roundRect) (ctx as any).roundRect(58 + symW, 110, 56, 26, 6);
+      else ctx.rect(58 + symW, 110, 56, 26);
+      ctx.fill();
+      ctx.fillStyle = "#94A3B8";
+      ctx.font = 'bold 12px "JetBrains Mono", monospace';
+      ctx.fillText("NSE", 68 + symW, 127);
+
+      ctx.fillStyle = "#94A3B8";
+      ctx.font = "500 17px sans-serif";
+      ctx.fillText(`${t.name || cleanSym}   ·   ${stratName}`, 48, 180);
+
+      ctx.fillStyle = "#38BDF8";
+      ctx.font = 'bold 44px "JetBrains Mono", monospace';
+      const priceStr = `₹${now.toLocaleString("en-IN")}`;
+      const priceW = ctx.measureText(priceStr).width;
+      ctx.fillText(priceStr, 1152 - priceW, 142);
+
+      // Center 4-Card Grid
+      const cards = [
+        { label: "ENTRY BASE", val: `₹${entry.toLocaleString("en-IN")}`, sub: "Quant Pivot Line", color: "#60A5FA", bg: "rgba(59, 130, 246, 0.08)", border: "rgba(59, 130, 246, 0.3)" },
+        { label: "PRIMARY TARGET", val: `₹${target.toLocaleString("en-IN")}`, sub: `+${targetPct.toFixed(1)}% Goal`, color: "#34D399", bg: "rgba(16, 185, 129, 0.08)", border: "rgba(16, 185, 129, 0.3)" },
+        { label: "HARD STOP LOSS", val: `₹${stop.toLocaleString("en-IN")}`, sub: `${stopPct.toFixed(1)}% Max Risk`, color: "#F87171", bg: "rgba(239, 68, 68, 0.08)", border: "rgba(239, 68, 68, 0.3)" },
+        { label: "HEALTH SCORE", val: `${scoreVal}/100`, sub: `${convictionTier.label}`, color: "#FBBF24", bg: "rgba(245, 158, 11, 0.08)", border: "rgba(245, 158, 11, 0.3)" },
+      ];
+
+      const cardW = 262;
+      const cardH = 138;
+      const startX = 48;
+      const gap = 20;
+      const startY = 222;
+
+      cards.forEach((c, idx) => {
+        const x = startX + idx * (cardW + gap);
+        ctx.fillStyle = c.bg;
+        ctx.strokeStyle = c.border;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        if ((ctx as any).roundRect) (ctx as any).roundRect(x, startY, cardW, cardH, 12);
+        else ctx.rect(x, startY, cardW, cardH);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#94A3B8";
+        ctx.font = 'bold 12px "JetBrains Mono", monospace';
+        ctx.fillText(c.label, x + 18, startY + 34);
+
+        ctx.fillStyle = c.color;
+        ctx.font = 'bold 28px "JetBrains Mono", monospace';
+        ctx.fillText(c.val, x + 18, startY + 76);
+
+        ctx.fillStyle = "#CBD5E1";
+        ctx.font = "500 13px sans-serif";
+        ctx.fillText(c.sub, x + 18, startY + 110);
+      });
+
+      // Track
+      const barY = 390;
+      ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+      ctx.beginPath();
+      if ((ctx as any).roundRect) (ctx as any).roundRect(48, barY, 1104, 136, 14);
+      else ctx.rect(48, barY, 1104, 136);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(100, barY + 54);
+      ctx.lineTo(1100, barY + 54);
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.6)";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(500, barY + 54);
+      ctx.lineTo(1100, barY + 54);
+      ctx.stroke();
+
+      // Stop
+      ctx.fillStyle = "#EF4444";
+      ctx.beginPath();
+      ctx.arc(100, barY + 54, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#F87171";
+      ctx.font = 'bold 13px "JetBrains Mono", monospace';
+      ctx.fillText(`STOP LOSS: ₹${stop.toLocaleString("en-IN")}`, 60, barY + 90);
+
+      // Entry
+      ctx.fillStyle = "#6366F1";
+      ctx.beginPath();
+      ctx.arc(500, barY + 54, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#A5B4FC";
+      ctx.font = 'bold 13px "JetBrains Mono", monospace';
+      ctx.fillText(`ENTRY: ₹${entry.toLocaleString("en-IN")}`, 440, barY + 90);
+
+      // Target
+      ctx.fillStyle = "#10B981";
+      ctx.beginPath();
+      ctx.arc(1100, barY + 54, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#34D399";
+      ctx.font = 'bold 13px "JetBrains Mono", monospace';
+      ctx.fillText(`TARGET: ₹${target.toLocaleString("en-IN")}`, 1000, barY + 90);
+
+      // Footer
+      const footerY = 554;
+      ctx.fillStyle = "#080C14";
+      ctx.fillRect(18, footerY, 1164, 58);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+      ctx.beginPath();
+      ctx.moveTo(18, footerY);
+      ctx.lineTo(1182, footerY);
+      ctx.stroke();
+
+      ctx.fillStyle = "#818CF8";
+      ctx.font = 'bold 13px "JetBrains Mono", monospace';
+      ctx.fillText(`🔗 quantsync.in/dna?symbol=${cleanSym}`, 48, footerY + 36);
+
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+      if (!blob) return;
+
+      const fileName = `QuantSync_${cleanSym}_Setup_1200x630.png`;
+      const file = new File([blob], fileName, { type: "image/png" });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            title: `${cleanSym} QuantSync Setup`,
+            text: `${cleanSym} verified trade setup from QuantSync V2 Terminal: https://quantsync.in/dna?symbol=${cleanSym}`,
+            files: [file],
+          });
+          return;
+        } catch (e: any) {
+          if (e.name === "AbortError") return;
+        }
+      }
+
+      // Download Fallback
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Share error:", e);
+    }
+  };
+
   // Dynamically load TradingView widget web component scripts on-demand only
   useEffect(() => {
     const loadScript = (src: string, id: string) => {
@@ -609,13 +811,8 @@ export default function TradingViewStockDetail({
             🧬 DNA Link
           </a>
           <button
-            onClick={() => {
-              const url = (typeof window !== "undefined" ? window.location.origin : "https://quantsync.in") + `/stock-detail.html?symbol=${encodeURIComponent(cleanSym)}`;
-              if (navigator.clipboard) {
-                navigator.clipboard.writeText(url);
-                alert(`Setup link copied!\n${url}`);
-              }
-            }}
+            onClick={handleShareSnapshot}
+            title="Download & Share 1200x630 Setup Snapshot Card"
             style={{
               display: "inline-flex",
               alignItems: "center",
