@@ -1418,47 +1418,109 @@
       margin-top: 14px;
     }
     .quant-gold-card {
-      background: rgba(0, 0, 0, 0.25);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: var(--r-md);
-      padding: 12px 14px;
+      border-radius: 14px;
+      padding: 13px 15px;
       display: flex;
       flex-direction: column;
       gap: 6px;
+      transition: all 0.2s ease;
+    }
+    [data-theme="dark"] .quant-gold-card {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
     [data-theme="light"] .quant-gold-card {
-      background: rgba(0, 0, 0, 0.03);
-      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: #FFFFFF;
+      border: 1.5px solid #E2E8F0;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
     }
+
+    /* 1. ATH Context Card */
+    .quant-gold-card.ath-context-card {
+      border-left: 4px solid #6366F1;
+    }
+    [data-theme="light"] .quant-gold-card.ath-context-card {
+      background: linear-gradient(135deg, #EEF2FF 0%, #FFFFFF 100%);
+      border-color: #C7D2FE;
+      border-left: 4px solid #4F46E5;
+    }
+    .ath-context-card .quant-gold-title {
+      color: #4F46E5;
+    }
+    [data-theme="dark"] .ath-context-card .quant-gold-title {
+      color: #818CF8;
+    }
+
+    /* 2. ATR Volatility Card */
+    .quant-gold-card.atr-meter-card {
+      border-left: 4px solid #0EA5E9;
+    }
+    [data-theme="light"] .quant-gold-card.atr-meter-card {
+      background: linear-gradient(135deg, #F0F9FF 0%, #FFFFFF 100%);
+      border-color: #BAE6FD;
+      border-left: 4px solid #0284C7;
+    }
+    .atr-meter-card .quant-gold-title {
+      color: #0284C7;
+    }
+    [data-theme="dark"] .atr-meter-card .quant-gold-title {
+      color: #38BDF8;
+    }
+
+    /* 3. Institutional Flow Scoreboard */
+    .quant-gold-card.acc-dist-scoreboard {
+      border-left: 4px solid #10B981;
+    }
+    [data-theme="light"] .quant-gold-card.acc-dist-scoreboard {
+      background: linear-gradient(135deg, #F0FDF4 0%, #FFFFFF 100%);
+      border-color: #A7F3D0;
+      border-left: 4px solid #059669;
+    }
+    .acc-dist-scoreboard .quant-gold-title {
+      color: #059669;
+    }
+    [data-theme="dark"] .acc-dist-scoreboard .quant-gold-title {
+      color: #34D399;
+    }
+
     .quant-gold-title {
       font-size: 11px;
-      font-weight: 700;
+      font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: #60a5fa;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     .quant-gold-body {
-      font-size: 12.5px;
+      font-size: 13px;
       color: var(--text-muted);
-      line-height: 1.4;
+      line-height: 1.45;
+    }
+    [data-theme="light"] .quant-gold-body {
+      color: #334155;
+      font-weight: 500;
     }
     .atr-noise-explainer {
-      font-size: 11px;
+      font-size: 11.5px;
       color: var(--text-dim);
       margin-top: 4px;
-      line-height: 1.35;
+      line-height: 1.4;
+    }
+    [data-theme="light"] .atr-noise-explainer {
+      color: #64748B;
     }
     .divergence-alert-box {
       background: rgba(239, 68, 68, 0.15);
       border: 1px solid rgba(239, 68, 68, 0.4);
       border-radius: var(--r-md);
-      padding: 10px 14px;
+      padding: 11px 15px;
       display: flex;
       align-items: center;
       gap: 8px;
       color: #fca5a5;
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
     }
     .divergence-alert-box.bullish-div {
       background: rgba(16, 185, 129, 0.15);
@@ -1469,48 +1531,59 @@
       background: rgba(168, 85, 247, 0.15);
       border: 1px solid rgba(168, 85, 247, 0.4);
       border-radius: var(--r-md);
-      padding: 10px 14px;
+      padding: 11px 15px;
       display: flex;
       align-items: center;
       gap: 8px;
       color: #d8b4fe;
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
     }
     .scoreboard-bar-wrapper {
-      height: 8px;
-      background: rgba(255, 255, 255, 0.08);
+      height: 9px;
+      background: rgba(0, 0, 0, 0.08);
       border-radius: 999px;
       overflow: hidden;
       display: flex;
-      margin-top: 4px;
+      margin-top: 6px;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
     }
-    [data-theme="light"] .scoreboard-bar-wrapper {
-      background: rgba(0, 0, 0, 0.08);
+    [data-theme="dark"] .scoreboard-bar-wrapper {
+      background: rgba(255, 255, 255, 0.1);
     }
     .acc-bar {
       height: 100%;
-      background: #10b981;
+      background: linear-gradient(90deg, #059669 0%, #10B981 100%);
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
       transition: width 0.8s ease;
     }
     .dist-bar {
       height: 100%;
-      background: #ef4444;
+      background: linear-gradient(90deg, #F43F5E 0%, #E11D48 100%);
+      box-shadow: 0 0 8px rgba(244, 63, 94, 0.4);
       transition: width 0.8s ease;
     }
     .scoreboard-legend {
       display: flex;
       justify-content: space-between;
-      font-size: 11px;
-      font-weight: 600;
-      margin-top: 4px;
+      font-size: 11.5px;
+      font-weight: 700;
+      margin-top: 6px;
     }
     .leg-acc {
-      color: #10b981;
+      color: #059669;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
+    [data-theme="dark"] .leg-acc { color: #34D399; }
     .leg-dist {
-      color: #ef4444;
+      color: #E11D48;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
+    [data-theme="dark"] .leg-dist { color: #FB7185; }
 
     /* ==========================================================================
        QUESTION CARD HEADER: CLEAN TOP-BAR + FULL-WIDTH HEADLINE
@@ -1554,28 +1627,59 @@
       display: inline-flex;
       align-items: center;
       gap: 7px;
-      background: var(--bg-surface-elevated);
-      border: 1px solid var(--border-subtle);
       border-radius: var(--r-pill);
       padding: 3px 10px 3px 4px;
       flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    [data-theme="dark"] .q-category-chip {
+      background: rgba(18, 27, 46, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     [data-theme="light"] .q-category-chip {
-      background: #F1F5F9;
-      border-color: #E2E8F0;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
     .q-num-pill {
       font-family: var(--font-mono);
       font-size: 10.5px;
       font-weight: 800;
-      color: var(--primary);
-      background: var(--primary-subtle);
+      color: #FFFFFF;
+      background: #3B82F6;
       border-radius: var(--r-pill);
-      padding: 2px 7px;
+      padding: 2.5px 8px;
       line-height: 1.2;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
     }
+
+    /* Vibrant Distinct Identification for Cards 1 to 7 */
+    #card-q1 .q-num-pill { background: linear-gradient(135deg, #059669, #10B981); }
+    #card-q2 .q-num-pill { background: linear-gradient(135deg, #2563EB, #3B82F6); }
+    #card-q3 .q-num-pill { background: linear-gradient(135deg, #7C3AED, #8B5CF6); }
+    #card-q4 .q-num-pill { background: linear-gradient(135deg, #0284C7, #06B6D4); }
+    #card-q5 .q-num-pill { background: linear-gradient(135deg, #4F46E5, #6366F1); }
+    #card-q6 .q-num-pill { background: linear-gradient(135deg, #D97706, #F59E0B); }
+    #card-q7 .q-num-pill { background: linear-gradient(135deg, #0D9488, #14B8A6); }
+
+    [data-theme="light"] #card-q1 { border-top: 3.5px solid #10B981; }
+    [data-theme="light"] #card-q2 { border-top: 3.5px solid #3B82F6; }
+    [data-theme="light"] #card-q3 { border-top: 3.5px solid #8B5CF6; }
+    [data-theme="light"] #card-q4 { border-top: 3.5px solid #06B6D4; }
+    [data-theme="light"] #card-q5 { border-top: 3.5px solid #6366F1; }
+    [data-theme="light"] #card-q6 { border-top: 3.5px solid #F59E0B; }
+    [data-theme="light"] #card-q7 { border-top: 3.5px solid #14B8A6; }
+
+    [data-theme="dark"] #card-q1 { border-top: 3.5px solid rgba(16, 185, 129, 0.85); }
+    [data-theme="dark"] #card-q2 { border-top: 3.5px solid rgba(59, 130, 246, 0.85); }
+    [data-theme="dark"] #card-q3 { border-top: 3.5px solid rgba(139, 92, 246, 0.85); }
+    [data-theme="dark"] #card-q4 { border-top: 3.5px solid rgba(6, 182, 212, 0.85); }
+    [data-theme="dark"] #card-q5 { border-top: 3.5px solid rgba(99, 102, 241, 0.85); }
+    [data-theme="dark"] #card-q6 { border-top: 3.5px solid rgba(245, 158, 11, 0.85); }
+    [data-theme="dark"] #card-q7 { border-top: 3.5px solid rgba(20, 184, 166, 0.85); }
 
     .q-category-text {
       font-family: var(--font-display);
@@ -1767,23 +1871,34 @@
 
     /* Proof Canvas */
     .q-proof-canvas {
-      background: var(--bg-inner);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--r-lg);
-      padding: 14px;
+      border-radius: 18px;
+      padding: 16px;
       position: relative;
+      margin-top: 10px;
+    }
+    [data-theme="dark"] .q-proof-canvas {
+      background: rgba(8, 14, 26, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    [data-theme="light"] .q-proof-canvas {
+      background: #F8FAFC;
+      border: 1.5px solid #E2E8F0;
+      box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.02);
     }
 
     .proof-canvas-title {
-      font-size: 10.5px;
-      font-weight: 700;
+      font-size: 11px;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--text-dim);
-      margin-bottom: 10px;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+    }
+    [data-theme="light"] .proof-canvas-title {
+      color: #334155;
     }
 
     .proof-verified-tag {
@@ -1792,38 +1907,104 @@
       align-items: center;
       gap: 4px;
       font-family: var(--font-mono);
-      font-size: 10px;
+      font-size: 10.5px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.1);
+      padding: 2px 8px;
+      border-radius: var(--r-pill);
+      border: 1px solid rgba(16, 185, 129, 0.25);
     }
 
     /* Metric Pills Grid */
     .metrics-pill-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 8px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 12px;
       margin-bottom: 12px;
     }
 
     .metric-data-cell {
-      background: var(--bg-card);
-      border: 1px solid var(--border-card);
-      border-radius: var(--r-md);
-      padding: 8px 10px;
+      border-radius: 12px;
+      padding: 10px 12px;
       display: flex;
       flex-direction: column;
+      gap: 3px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    [data-theme="dark"] .metric-data-cell {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+    [data-theme="light"] .metric-data-cell {
+      background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+      border: 1.5px solid #E2E8F0;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .metric-data-cell:hover {
+      transform: translateY(-1px);
+    }
+
+    /* Distinct colorful accents for metrics */
+    .metric-data-cell.metric-rsi {
+      border-left: 4px solid #10B981;
+    }
+    [data-theme="light"] .metric-data-cell.metric-rsi {
+      background: linear-gradient(135deg, #F0FDF4 0%, #FFFFFF 100%);
+      border-color: #BBF7D0;
+      border-left: 4px solid #10B981;
+    }
+
+    .metric-data-cell.metric-target {
+      border-left: 4px solid #3B82F6;
+    }
+    [data-theme="light"] .metric-data-cell.metric-target {
+      background: linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 100%);
+      border-color: #BFDBFE;
+      border-left: 4px solid #2563EB;
+    }
+
+    .metric-data-cell.metric-ema20 {
+      border-left: 4px solid #8B5CF6;
+    }
+    [data-theme="light"] .metric-data-cell.metric-ema20 {
+      background: linear-gradient(135deg, #F5F3FF 0%, #FFFFFF 100%);
+      border-color: #DDD6FE;
+      border-left: 4px solid #7C3AED;
+    }
+
+    .metric-data-cell.metric-ema50 {
+      border-left: 4px solid #F59E0B;
+    }
+    [data-theme="light"] .metric-data-cell.metric-ema50 {
+      background: linear-gradient(135deg, #FFFBEB 0%, #FFFFFF 100%);
+      border-color: #FDE68A;
+      border-left: 4px solid #D97706;
     }
 
     .m-data-label {
-      font-size: 10.5px;
+      font-size: 10px;
+      font-weight: 700;
       color: var(--text-dim);
-      font-weight: 600;
-      margin-bottom: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    [data-theme="light"] .m-data-label {
+      color: #64748B;
     }
 
     .m-data-val {
       font-family: var(--font-mono);
-      font-size: 13.5px;
-      font-weight: 700;
+      font-size: 14.5px;
+      font-weight: 800;
       color: var(--text-main);
+    }
+    [data-theme="light"] .m-data-val {
+      color: #0F172A;
     }
 
     /* ==========================================================================
@@ -1832,35 +2013,59 @@
     .action-plan-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 6px;
+      gap: 8px;
+      margin-top: 8px;
     }
 
     .action-plan-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-card);
-      border-radius: var(--r-md);
-      padding: 12px 14px;
+      border-radius: 12px;
+      padding: 11px 12px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
       transition: var(--ease-fast);
       position: relative;
     }
+    [data-theme="dark"] .action-plan-card {
+      background: rgba(15, 23, 42, 0.65);
+    }
+    [data-theme="light"] .action-plan-card {
+      background: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
 
     .action-plan-card:hover {
-      border-color: var(--border-card-hover);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
     }
 
     .action-plan-card.dip-card {
-      border-top: 3.5px solid var(--good);
+      border: 1.5px solid rgba(16, 185, 129, 0.35);
+      border-top: 4px solid #10B981;
     }
+    [data-theme="light"] .action-plan-card.dip-card {
+      background: linear-gradient(135deg, #F0FDF4 0%, #FFFFFF 100%);
+      border-color: #86EFAC;
+      border-top: 4px solid #059669;
+    }
+
     .action-plan-card.breakout-card {
-      border-top: 3.5px solid var(--primary);
+      border: 1.5px solid rgba(59, 130, 246, 0.35);
+      border-top: 4px solid #3B82F6;
     }
+    [data-theme="light"] .action-plan-card.breakout-card {
+      background: linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 100%);
+      border-color: #93C5FD;
+      border-top: 4px solid #2563EB;
+    }
+
     .action-plan-card.stop-card {
-      border-top: 3.5px solid var(--danger);
+      border: 1.5px solid rgba(244, 63, 94, 0.35);
+      border-top: 4px solid #F43F5E;
+    }
+    [data-theme="light"] .action-plan-card.stop-card {
+      background: linear-gradient(135deg, #FFF1F2 0%, #FFFFFF 100%);
+      border-color: #FDA4AF;
+      border-top: 4px solid #E11D48;
     }
 
     .action-plan-left {
@@ -1870,105 +2075,153 @@
     }
 
     .action-plan-tag {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
       text-transform: uppercase;
-      color: var(--text-muted);
     }
+    .action-plan-card.dip-card .action-plan-tag { color: #059669; }
+    [data-theme="dark"] .action-plan-card.dip-card .action-plan-tag { color: #34D399; }
+    .action-plan-card.breakout-card .action-plan-tag { color: #2563EB; }
+    [data-theme="dark"] .action-plan-card.breakout-card .action-plan-tag { color: #60A5FA; }
+    .action-plan-card.stop-card .action-plan-tag { color: #E11D48; }
+    [data-theme="dark"] .action-plan-card.stop-card .action-plan-tag { color: #FB7185; }
 
     .action-plan-price {
       font-family: var(--font-mono);
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 800;
-      color: var(--text-main);
       letter-spacing: -0.01em;
-      margin: 3px 0;
+      margin: 2px 0;
     }
-
-    .action-plan-card.dip-card .action-plan-price {
-      color: var(--good);
-    }
-    .action-plan-card.breakout-card .action-plan-price {
-      color: var(--primary);
-    }
-    .action-plan-card.stop-card .action-plan-price {
-      color: var(--danger);
-    }
+    .action-plan-card.dip-card .action-plan-price { color: #059669; }
+    [data-theme="dark"] .action-plan-card.dip-card .action-plan-price { color: #10B981; }
+    .action-plan-card.breakout-card .action-plan-price { color: #2563EB; }
+    [data-theme="dark"] .action-plan-card.breakout-card .action-plan-price { color: #3B82F6; }
+    .action-plan-card.stop-card .action-plan-price { color: #E11D48; }
+    [data-theme="dark"] .action-plan-card.stop-card .action-plan-price { color: #F43F5E; }
 
     .action-plan-sub {
-      font-size: 11.5px;
+      font-size: 11px;
       color: var(--text-dim);
-      font-weight: 500;
+      font-weight: 600;
+    }
+    [data-theme="light"] .action-plan-sub {
+      color: #64748B;
     }
 
     /* ==========================================================================
        CHART CANVAS & TIMEFRAME CONTROLS (QUESTION 2)
        ========================================================================== */
-    /* ==========================================================================
-       CLEAN NATURAL PHOTO STAGE (NO BLACK BARS!)
-       ========================================================================== */
     .chart-timeframe-switcher {
       display: flex;
-      gap: 4px;
-      background: var(--bg-surface-elevated);
+      gap: 3px;
       padding: 3px;
       border-radius: var(--r-pill);
-      border: 1px solid var(--border-card);
+      transition: all 0.2s ease;
+    }
+    [data-theme="dark"] .chart-timeframe-switcher {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    [data-theme="light"] .chart-timeframe-switcher {
+      background: #E2E8F0;
+      border: 1px solid #CBD5E1;
     }
 
     .chart-tf-pill {
       background: transparent;
       border: none;
       color: var(--text-muted);
-      font-family: var(--font-mono);
-      font-size: 10.5px;
+      font-family: var(--font-display);
+      font-size: 11px;
       font-weight: 700;
-      padding: 4px 11px;
+      padding: 5px 13px;
       border-radius: var(--r-pill);
       cursor: pointer;
-      transition: var(--ease-fast);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    [data-theme="light"] .chart-tf-pill {
+      color: #475569;
     }
 
     .chart-tf-pill.active {
-      background: var(--primary);
+      background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
       color: #FFFFFF;
-      box-shadow: 0 2px 8px var(--primary-glow);
-    }
-
-    [data-theme="light"] .chart-timeframe-switcher {
-      background: #F1F5F9;
-      border-color: rgba(0, 0, 0, 0.08);
+      box-shadow: 0 2px 10px rgba(37, 99, 235, 0.4);
     }
 
     .clean-chart-stage {
       position: relative;
       width: 100%;
+      min-height: 230px;
       margin-top: 10px;
       border-radius: var(--r-md);
       overflow: hidden;
       cursor: pointer;
-      background: transparent;
       display: flex;
       align-items: center;
       justify-content: center;
+      transition: all 0.2s ease;
+    }
+    [data-theme="dark"] .clean-chart-stage {
+      background: rgba(11, 16, 28, 0.85);
+      border: 1.5px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+    [data-theme="light"] .clean-chart-stage {
+      background: #FFFFFF;
+      border: 1.5px solid #CBD5E1;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+    }
+
+    .chart-loading-skeleton {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      z-index: 5;
+    }
+    [data-theme="dark"] .chart-loading-skeleton {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+    }
+    [data-theme="light"] .chart-loading-skeleton {
+      background: linear-gradient(135deg, #F8FAFC, #F1F5F9);
+    }
+    .skeleton-spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(59, 130, 246, 0.2);
+      border-top-color: #3B82F6;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .skeleton-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .clean-chart-img {
       width: 100%;
       height: auto;
       display: block;
-      border-radius: var(--r-md);
-      border: 1px solid var(--border-card);
-      box-shadow: var(--shadow-sm);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      border-radius: calc(var(--r-md) - 2px);
+      transition: transform 0.25s ease, opacity 0.3s ease;
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
     }
 
     .clean-chart-stage:hover .clean-chart-img {
-      box-shadow: var(--shadow-md);
+      transform: scale(1.008);
     }
 
     .chart-svg-interactive {
@@ -4360,14 +4613,20 @@
 
             <!-- Seamless Natural Photo Stage (NO black bars, NO letterbox frames!) -->
             <div class="clean-chart-stage" onclick="openChartLightbox()" title="Tap to view full resolution photo">
+              <div class="chart-loading-skeleton" id="chart-skeleton">
+                <div class="skeleton-spinner"></div>
+                <div class="skeleton-label">
+                  <span>⚡ Rendering Real Structure Candlesticks...</span>
+                </div>
+              </div>
               <img 
                 id="chart-api-img" 
                 class="clean-chart-img" 
-                alt="Technical Structure Candlestick Chart" 
+                alt="" 
+                style="display:none;"
                 draggable="false"
                 oncontextmenu="return false;"
                 ondragstart="return false;"
-                onerror="this.style.display='none'; document.getElementById('chart-svg-canvas').style.display='block';"
               />
               <svg class="chart-svg-interactive" id="chart-svg-canvas" style="display:none;" viewBox="0 0 600 280"></svg>
               <div class="clean-zoom-badge">
@@ -4376,19 +4635,19 @@
             </div>
 
             <div class="metrics-pill-grid">
-              <div class="metric-data-cell">
+              <div class="metric-data-cell metric-rsi">
                 <span class="m-data-label">RSI (14-Day Velocity)</span>
                 <span class="m-data-val" id="q2-rsi" style="color:var(--good);">58.4 (Bullish Flow)</span>
               </div>
-              <div class="metric-data-cell">
+              <div class="metric-data-cell metric-target">
                 <span class="m-data-label">Short Target 1</span>
                 <span class="m-data-val" id="q2-target1" style="color:var(--good);">₹2,240.00</span>
               </div>
-              <div class="metric-data-cell">
+              <div class="metric-data-cell metric-ema20">
                 <span class="m-data-label">20-Day EMA Line</span>
                 <span class="m-data-val" id="q2-ema20">₹2,070.00</span>
               </div>
-              <div class="metric-data-cell">
+              <div class="metric-data-cell metric-ema50">
                 <span class="m-data-label">50-Day EMA Line</span>
                 <span class="m-data-val" id="q2-ema50">₹2,040.00</span>
               </div>
@@ -5064,17 +5323,13 @@
     }
 
     function switchChartView(view) {
-      currentChartView = view;
-      const isMacro = view === 'macro';
+      currentChartView = view || currentChartView || 'tactical';
+      const isMacro = currentChartView === 'macro';
       
       const btn4m = document.getElementById('btn-chart-4m');
       const btn1y = document.getElementById('btn-chart-1y');
       if (btn4m) btn4m.classList.toggle('active', !isMacro);
       if (btn1y) btn1y.classList.toggle('active', isMacro);
-
-      // Do not fetch or load charts if report view is not active or no symbol is set
-      const reportView = document.getElementById('dna-report-view');
-      if (!reportView || reportView.style.display !== 'block') return;
 
       const symEl = document.getElementById('hero-symbol');
       const rawSym = symEl ? symEl.textContent.trim() : "";
@@ -5084,22 +5339,30 @@
       const theme = document.documentElement.getAttribute('data-theme') || 'dark';
       const img = document.getElementById('chart-api-img');
       const svg = document.getElementById('chart-svg-canvas');
+      const skeleton = document.getElementById('chart-skeleton');
       if (!img) return;
 
-      const chartUrl = `/api/dna/chart/${sym}?view=${view}&theme=${theme}&t=${Date.now()}`;
-      img.src = chartUrl;
+      // Show skeleton loader immediately while fetching new timeframe image
+      if (skeleton) skeleton.style.display = 'flex';
+      img.style.display = 'none';
+      if (svg) svg.style.display = 'none';
 
+      const chartUrl = `/api/dna/chart/${encodeURIComponent(sym)}?view=${currentChartView}&theme=${theme}&t=${Date.now()}`;
+      
       img.onload = function() {
+        if (skeleton) skeleton.style.display = 'none';
         img.style.display = 'block';
         if (svg) svg.style.display = 'none';
       };
       img.onerror = function() {
+        if (skeleton) skeleton.style.display = 'none';
         img.style.display = 'none';
         if (svg) {
           svg.style.display = 'block';
           drawInteractiveCandlestickChart('chart-svg-canvas', isMacro);
         }
       };
+      img.src = chartUrl;
     }
 
     function openChartLightbox() {
@@ -5593,6 +5856,7 @@
         if (loadingView) loadingView.style.display = 'none';
         if (reportView) reportView.style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        switchChartView(currentChartView);
       }, 160);
     }
 
@@ -6126,6 +6390,7 @@
         if (loadingView) loadingView.style.display = 'none';
         if (reportView) reportView.style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        switchChartView(currentChartView);
       } else {
         await startRadarScanning(cleanSym, fetchPromise);
       }
@@ -6189,6 +6454,12 @@
       const label = document.getElementById(`${qId}-expand-label`);
       if (label) {
         label.textContent = isOpening ? 'Click to collapse analysis ↑' : 'Click to view deep analysis ↓';
+      }
+      if (isOpening && qId === 'q2') {
+        const img = document.getElementById('chart-api-img');
+        if (!img || !img.src || img.style.display === 'none') {
+          switchChartView(currentChartView);
+        }
       }
     }
 
