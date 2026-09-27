@@ -405,6 +405,7 @@ interface TradingViewStockDetailProps {
   trade: any;
   theme?: "light" | "dark";
   onOpenChart?: (symbol: string) => void;
+  onClose?: () => void;
   INR?: (n: number | string | undefined) => string;
   INR2?: (n: number | string | undefined) => string;
 }
@@ -413,6 +414,7 @@ export default function TradingViewStockDetail({
   trade: t,
   theme = "dark",
   onOpenChart,
+  onClose,
   INR = (n) => (n !== undefined ? `₹${Number(n).toLocaleString("en-IN")}` : "₹0"),
   INR2 = (n) => (n !== undefined ? `₹${Number(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "₹0.00"),
 }: TradingViewStockDetailProps) {
@@ -446,7 +448,110 @@ export default function TradingViewStockDetail({
   }, []);
 
   return (
-    <div className="stock-detail-common" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div className="signal-terminal-modal stock-detail-common">
+      {/* Block 1: Navigation Bar & Signal Status Header */}
+      <div
+        className="signal-terminal-nav"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingBottom: 14,
+          marginBottom: 6,
+          borderBottom: "1px solid var(--line-2, rgba(255,255,255,0.1))",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <button
+          onClick={() => {
+            if (onClose) onClose();
+            else if (typeof window !== "undefined" && (window as any)._closeSheet) (window as any)._closeSheet();
+            else if (typeof window !== "undefined" && (window as any).closeSheet) (window as any).closeSheet();
+          }}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            background: "var(--s2, rgba(255,255,255,0.06))",
+            border: "1px solid var(--line-2, rgba(255,255,255,0.12))",
+            color: "var(--ink1, #F4F5F9)",
+            padding: "8px 14px",
+            borderRadius: 8,
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: "pointer",
+            transition: "background 0.15s ease",
+          }}
+        >
+          ← Back to Signals
+        </button>
+
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            fontSize: 12,
+            fontFamily: "'JetBrains Mono', monospace",
+            fontWeight: 800,
+            color: "var(--accent, #6366F1)",
+            letterSpacing: "0.04em",
+          }}
+        >
+          <span>QuantSync V2</span>
+          <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "#10B981", boxShadow: "0 0 8px #10B981" }} />
+          <span style={{ color: "#10B981", fontSize: 11 }}>Active</span>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <a
+            href={`/dna-mobile-story.html?symbol=${encodeURIComponent(cleanSym)}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "7px 12px",
+              borderRadius: 8,
+              background: "rgba(99,102,241,0.15)",
+              color: "#818cf8",
+              fontSize: 12,
+              fontWeight: 700,
+              textDecoration: "none",
+              border: "1px solid rgba(99,102,241,0.3)",
+            }}
+          >
+            🧬 DNA Link
+          </a>
+          <button
+            onClick={() => {
+              const url = (typeof window !== "undefined" ? window.location.origin : "https://quantsync.in") + `/stock-detail.html?symbol=${encodeURIComponent(cleanSym)}`;
+              if (navigator.clipboard) {
+                navigator.clipboard.writeText(url);
+                alert(`Setup link copied!\n${url}`);
+              }
+            }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "7px 12px",
+              borderRadius: 8,
+              background: "var(--s2, rgba(255,255,255,0.06))",
+              color: "var(--ink2, #9BA3B4)",
+              fontSize: 12,
+              fontWeight: 600,
+              border: "1px solid var(--line-2, rgba(255,255,255,0.12))",
+              cursor: "pointer",
+            }}
+          >
+            📤 Share
+          </button>
+        </div>
+      </div>
+
       {/* 1. Header: Stock name with star as it is */}
       <div className="row between" style={{ alignItems: "flex-start" }}>
         <div className="row gap12">

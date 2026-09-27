@@ -1307,6 +1307,30 @@ body::before{
 .sheet-body{flex:1;overflow-y:auto;padding:8px 16px 32px;scrollbar-width:none;position:relative;z-index:1}
 .sheet-body::-webkit-scrollbar{display:none}
 
+/* Phase 4: V2 Signal Terminal Fullscreen Modal Layout */
+.sheet.sheet-fullscreen {
+  height: 100% !important;
+  max-height: 100dvh !important;
+  border-radius: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+}
+.sheet.sheet-fullscreen .sheet-grip {
+  display: none !important;
+}
+.sheet.sheet-fullscreen .sheet-body {
+  padding: 16px 20px 48px;
+}
+.signal-terminal-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
 .radar-wrap{display:flex;align-items:center;gap:16px}
 .radar-legend{display:flex;flex-direction:column;gap:8px;flex:1}
 .rl{display:flex;align-items:center;justify-content:space-between;font-size:11px}

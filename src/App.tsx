@@ -4481,7 +4481,7 @@ export default function App() {
       />
       <div
         ref={sheetRef}
-        className={`sheet ${sheetOpen ? "on" : ""} ${sheetPayload?.kind === "closed" ? ((sheetPayload?.trade?.pnl || 0) >= 0 ? "win" : "lose") : ""}`}
+        className={`sheet ${sheetOpen ? "on" : ""} ${sheetPayload?.kind === "v2" || sheetPayload?.kind === "v3" ? "sheet-fullscreen" : ""} ${sheetPayload?.kind === "closed" ? ((sheetPayload?.trade?.pnl || 0) >= 0 ? "win" : "lose") : ""}`}
         id="sheet"
       >
         <div className="sheet-grip" onClick={closeSheet}>
@@ -4513,6 +4513,7 @@ export default function App() {
                   theme={theme}
                   INR={INR}
                   INR2={INR2}
+                  onClose={closeSheet}
                   onOpenChart={(sym) => {
                     closeSheet();
                     setChartSymbol(sym);
