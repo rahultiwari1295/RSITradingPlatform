@@ -505,7 +505,10 @@ export default function TradingViewStockDetail({
     `Tested key swing support near ${INR(entry)} with bullish rejection`));
 
   const rsiVal = t.rsi ? Number(t.rsi).toFixed(1) : (t.current_metrics?.rsi ? Number(t.current_metrics.rsi).toFixed(1) : "54.8");
-  const momDesc = t.rsi_desc || `Daily RSI(14) crossed ${rsiVal} from constructive consolidation zone with momentum expansion.`;
+  const rsVal = t.mansfield_rs !== undefined ? t.mansfield_rs : (t.current_metrics?.mansfield_rs !== undefined ? t.current_metrics.mansfield_rs : null);
+  const rsRatio = t.mansfield_rs_ratio !== undefined ? t.mansfield_rs_ratio : (t.current_metrics?.mansfield_rs_ratio !== undefined ? t.current_metrics.mansfield_rs_ratio : null);
+  const rsDesc = rsVal !== null ? ` Mansfield RS is ${rsVal}/99 (${rsRatio ? `${rsRatio}x vs Nifty 50` : 'quarterly'}).` : '';
+  const momDesc = t.rsi_desc || `Daily RSI(14) crossed ${rsiVal} from constructive consolidation zone with momentum expansion.${rsDesc}`;
 
   const volMult = t.volume_mult || t.vol_mult || (t.current_metrics?.volume_mult ? Number(t.current_metrics.volume_mult).toFixed(1) : 1.8);
   const accDays = t.acc_days !== undefined ? t.acc_days : (t.current_metrics?.acc_days_20d !== undefined ? t.current_metrics.acc_days_20d : 12);
@@ -589,7 +592,7 @@ export default function TradingViewStockDetail({
         { label: "ENTRY BASE", val: `₹${entry.toLocaleString("en-IN")}`, sub: "Quant Pivot Line", color: "#60A5FA", bg: "rgba(59, 130, 246, 0.08)", border: "rgba(59, 130, 246, 0.3)" },
         { label: "PRIMARY TARGET", val: `₹${target.toLocaleString("en-IN")}`, sub: `+${targetPct.toFixed(1)}% Goal`, color: "#34D399", bg: "rgba(16, 185, 129, 0.08)", border: "rgba(16, 185, 129, 0.3)" },
         { label: "HARD STOP LOSS", val: `₹${stop.toLocaleString("en-IN")}`, sub: `${stopPct.toFixed(1)}% Max Risk`, color: "#F87171", bg: "rgba(239, 68, 68, 0.08)", border: "rgba(239, 68, 68, 0.3)" },
-        { label: "HEALTH SCORE", val: `${scoreVal}/100`, sub: `${convictionTier.label}`, color: "#FBBF24", bg: "rgba(245, 158, 11, 0.08)", border: "rgba(245, 158, 11, 0.3)" },
+        { label: "HEALTH SCORE", val: `${scoreVal}/100`, sub: rsVal !== null ? `RS ${rsVal}/99 · ${convictionTier.label}` : `${convictionTier.label}`, color: "#FBBF24", bg: "rgba(245, 158, 11, 0.08)", border: "rgba(245, 158, 11, 0.3)" },
       ];
 
       const cardW = 262;

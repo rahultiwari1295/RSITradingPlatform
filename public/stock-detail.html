@@ -1729,6 +1729,7 @@
               <div class="quad-row"><span>Pattern:</span> <strong id="anat-pattern">—</strong></div>
               <div class="quad-row"><span>Base Duration:</span> <strong id="anat-duration">—</strong></div>
               <div class="quad-row"><span>ATR Compression:</span> <strong id="anat-compression">—</strong></div>
+              <div class="quad-row"><span>Mansfield RS:</span> <strong id="anat-rs">—</strong></div>
             </div>
             <!-- Quadrant 2: Volume Dynamics -->
             <div class="anatomy-quad">
@@ -1854,6 +1855,14 @@
               if (elDeliv) {
                 const isHigh = m.has_high_institutional_delivery || (m.deliv_ratio >= 1.4);
                 elDeliv.innerHTML = `<span style="color:${isHigh ? '#10b981' : '#f1f5f9'}">${m.deliv_pct}%</span> <span style="font-size:10px; color:#94a3b8">(${m.deliv_20d_avg ? m.deliv_20d_avg + '% 20d' : 'Official NSE'}${isHigh ? ' · 🏛️ High Inst.' : ''})</span>`;
+              }
+            }
+            if (m.mansfield_rs !== undefined && m.mansfield_rs !== null) {
+              const elRs = document.getElementById("anat-rs");
+              if (elRs) {
+                const color = m.mansfield_rs >= 70 ? '#10b981' : (m.mansfield_rs >= 40 ? '#f59e0b' : '#ef4444');
+                const relLabel = m.mansfield_rs_ratio >= 1.0 ? `${m.mansfield_rs_ratio}x Nifty` : `${m.mansfield_rs_ratio}x Lag`;
+                elRs.innerHTML = `<span style="color:${color}">${m.mansfield_rs}/99</span> <span style="font-size:10px; color:#94a3b8">(${relLabel})</span>`;
               }
             }
           }
