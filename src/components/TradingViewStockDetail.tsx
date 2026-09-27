@@ -427,7 +427,55 @@ export default function TradingViewStockDetail({
   const target = Number(t.target || t.targetPrice || (entry > 0 ? entry * 1.15 : 0));
   const stop = Number(t.stop || t.stopLoss || (entry > 0 ? entry * 0.95 : 0));
 
-  const prog = Math.max(0, Math.min(100, target > stop ? ((now - stop) / (target - stop)) * 100 : 50));
+  const pnlPct = entry > 0 ? ((now - entry) / entry) * 100 : 0;
+  const targetPct = entry > 0 ? ((target - entry) / entry) * 100 : 0;
+  const stopPct = entry > 0 ? ((stop - entry) / entry) * 100 : 0;
+  const bufferToStop = stop > 0 ? (((now - stop) / stop) * 100) : 0;
+  const totalMove = target - entry;
+  const progressPct = totalMove > 0 ? Math.max(0, Math.min(100, ((now - entry) / totalMove) * 100)) : 0;
+
+  // Dynamic Status Badge
+  let statusBadge = {
+    label: "ENTRY BASE · 0.00%",
+    bg: "rgba(59, 130, 246, 0.15)",
+    color: "#60a5fa",
+    border: "rgba(59, 130, 246, 0.35)",
+    icon: "🔵"
+  };
+  if (now <= stop && stop > 0) {
+    statusBadge = {
+      label: `STOPPED OUT · ${pnlPct.toFixed(2)}%`,
+      bg: "rgba(239, 68, 68, 0.2)",
+      color: "#f87171",
+      border: "rgba(239, 68, 68, 0.45)",
+      icon: "🔴"
+    };
+  } else if (now >= target && target > 0) {
+    statusBadge = {
+      label: `RUNNER · +${pnlPct.toFixed(2)}% (Target Exceeded)`,
+      bg: "rgba(245, 158, 11, 0.2)",
+      color: "#fbbf24",
+      border: "rgba(245, 158, 11, 0.45)",
+      icon: "🟠"
+    };
+  } else if (now > entry) {
+    statusBadge = {
+      label: `IN PROFIT · +${pnlPct.toFixed(2)}%`,
+      bg: "rgba(16, 185, 129, 0.18)",
+      color: "#34d399",
+      border: "rgba(16, 185, 129, 0.4)",
+      icon: "🟢"
+    };
+  } else if (now < entry && now > stop) {
+    statusBadge = {
+      label: `PULLBACK ZONE · ${pnlPct.toFixed(2)}%`,
+      bg: "rgba(245, 158, 11, 0.18)",
+      color: "#fbbf24",
+      border: "rgba(245, 158, 11, 0.4)",
+      icon: "🟡"
+    };
+  }
+
   const [whyLine1, whyLine2] = getTradeTriggerTelemetry(t);
   const scoreVal = Number(t.health_score ?? t.dnaScore ?? t.score ?? (t.stars ? t.stars * 20 : 70));
   const convictionTier = getConvictionTier(scoreVal);
@@ -590,29 +638,137 @@ export default function TradingViewStockDetail({
         </span>
       </div>
 
-      {/* 2. Price Line Box: Entry, Current, Target with colorful line */}
-      <div className="card" style={{ padding: 15, background: "var(--s2)", borderRadius: 14, border: "1px solid var(--border)" }}>
-        <div className="row between" style={{ fontSize: 10.5, color: "var(--ink3)", fontWeight: 600 }}>
-          <span>
-            Entry <b className="num" style={{ color: "var(--ink2)", fontSize: 12 }}>{INR2(entry)}</b>
-          </span>
-          <span>
-            Current <b className="num" style={{ color: "var(--ink1)", fontSize: 12 }}>{INR2(now)}</b>
-          </span>
-          <span>
-            Target <b className="num up" style={{ fontSize: 12 }}>{INR(target)}</b>
-          </span>
+      {/* Block 2: Live Trade Performance HUD */}
+      <div
+        className="trade-hud-card"
+        style={{
+          background: "var(--s2, #151823)",
+          border: "1px solid var(--border, rgba(255,255,255,0.08))",
+          borderRadius: 16,
+          padding: "18px 20px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+          <div
+            className="hud-status-badge"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "5px 12px",
+              borderRadius: 9999,
+              background: statusBadge.bg,
+              color: statusBadge.color,
+              fontSize: 12,
+              fontWeight: 800,
+              fontFamily: "'JetBrains Mono', monospace",
+              border: `1px solid ${statusBadge.border}`,
+            }}
+          >
+            <span>{statusBadge.icon}</span>
+            <span>{statusBadge.label}</span>
+          </div>
+
+          <div style={{ fontSize: 12, color: "var(--ink2)", fontFamily: "'JetBrains Mono', monospace" }}>
+            Buffer to Stop: <strong style={{ color: bufferToStop > 0 ? "#10b981" : "#ef4444" }}>+{bufferToStop.toFixed(1)}% safety cushion</strong>
+          </div>
         </div>
-        <div className="prog" style={{ marginTop: 13, height: 9 }}>
-          <span style={{ width: `${prog}%` }} />
-          <i className="stopmark" />
-          <i className="tgtmark" />
+
+        {/* Dynamic Multi-Node Track */}
+        <div style={{ position: "relative", marginTop: 4, marginBottom: 4 }}>
+          <div
+            style={{
+              height: 10,
+              background: "rgba(255,255,255,0.08)",
+              borderRadius: 999,
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            <div
+              style={{
+                width: `${progressPct}%`,
+                height: "100%",
+                background: "linear-gradient(90deg, #3b82f6, #10b981)",
+                borderRadius: 999,
+                transition: "width 0.3s ease",
+              }}
+            />
+          </div>
+
+          {/* Node Markers */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              marginTop: 10,
+              fontSize: 11,
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
+          >
+            <div style={{ color: "#ef4444" }}>
+              <div style={{ fontWeight: 800 }}>Stop Loss</div>
+              <div>{INR2(stop)}</div>
+              <div style={{ fontSize: 9.5, opacity: 0.8 }}>({stopPct.toFixed(1)}%)</div>
+            </div>
+
+            <div style={{ textAlign: "center", color: "#3b82f6" }}>
+              <div style={{ fontWeight: 800 }}>Entry Base</div>
+              <div>{INR2(entry)}</div>
+              <div style={{ fontSize: 9.5, opacity: 0.8 }}>(Base)</div>
+            </div>
+
+            <div style={{ textAlign: "center", color: "var(--ink1)" }}>
+              <div style={{ fontWeight: 800 }}>Current</div>
+              <div style={{ color: now >= entry ? "#10b981" : "#f59e0b" }}>{INR2(now)}</div>
+              <div style={{ fontSize: 9.5 }}>{now >= entry ? `+${pnlPct.toFixed(1)}%` : `${pnlPct.toFixed(1)}%`}</div>
+            </div>
+
+            <div style={{ textAlign: "right", color: "#10b981" }}>
+              <div style={{ fontWeight: 800 }}>Primary Target</div>
+              <div>{INR2(target)}</div>
+              <div style={{ fontSize: 9.5, opacity: 0.8 }}>(+{targetPct.toFixed(1)}%)</div>
+            </div>
+          </div>
         </div>
-        <div className="row between" style={{ marginTop: 9, fontSize: 10, color: "var(--ink3)", fontWeight: 600 }}>
-          <span>Stop {INR(stop)}</span>
-          <span style={{ color: "var(--accent)", fontWeight: 700 }}>{prog.toFixed(1)}% to target</span>
-          <span>Target {INR(target)}</span>
+
+        {/* Progress & Cushion Stats */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: 11.5,
+            color: "var(--ink3)",
+            paddingTop: 8,
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          <span>Progress to Target: <strong style={{ color: "var(--accent)" }}>{progressPct.toFixed(1)}%</strong></span>
+          <span>Target Gain: <strong style={{ color: "#10b981" }}>+{targetPct.toFixed(1)}%</strong></span>
         </div>
+
+        {/* De-Risk Alert Box (when price >= +5% from entry) */}
+        {pnlPct >= 5.0 && (
+          <div
+            className="hud-alert-box"
+            style={{
+              background: "rgba(16, 185, 129, 0.12)",
+              border: "1px solid rgba(16, 185, 129, 0.35)",
+              color: "#34d399",
+              padding: "10px 14px",
+              borderRadius: 10,
+              fontSize: 12,
+              lineHeight: 1.5,
+              fontWeight: 600,
+            }}
+          >
+            💡 <strong>De-Risk Guidance:</strong> Price is +{pnlPct.toFixed(1)}% from entry base. Move stop loss to Entry ({INR(entry)}) to make this trade mathematically risk-free.
+          </div>
+        )}
       </div>
 
       {/* 3. WHY AI SELECTED THIS: exactly 2 lines with actual values */}
