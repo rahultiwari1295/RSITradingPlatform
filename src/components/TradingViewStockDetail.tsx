@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, memo } from "react";
+import React, { useEffect, useRef, memo, useState } from "react";
 
 declare global {
   namespace React.JSX {
@@ -28,25 +28,21 @@ function toTradingViewSymbol(sym: string | undefined): string {
   return `NSE:${clean}`;
 }
 
-function getAiSelectedReasons(t: any): [string, string] {
-  const stars = Number(t.stars || 4.5);
-  const rs = t.rs || t.rsRating || Math.min(98, Math.max(88, Math.round(76 + stars * 4.2)));
-  const tag = String(t.tag || t.stage || "").toLowerCase();
+export function getTradeTriggerTelemetry(t: any): [string, string] {
+  const strategyName = t.strategy || t.engine || "Quant Engine";
+  const triggerReason = t.trigger_reason || t.thesis || t.setup_desc || t.tag || t.stage;
+  const volumeMult = t.volume_mult ? `${t.volume_mult}x 20-DMA volume` : (t.vol_mult ? `${t.vol_mult}x volume` : "above-average institutional volume");
+  const rsiVal = t.rsi ? `RSI at ${Number(t.rsi).toFixed(1)}` : null;
 
-  const line1 = `Elite relative strength leader outperforming ${rs}% of the market universe.`;
+  const line1 = triggerReason
+    ? `${strategyName}: ${String(triggerReason).charAt(0).toUpperCase() + String(triggerReason).slice(1)} structure confirmed.`
+    : `${strategyName} algorithmic setup active near ₹${Number(t.entry || t.price || 0).toLocaleString("en-IN")}.`;
 
-  let line2 = "Higher-high swing structure intact with tightening consolidation above 10-day EMA.";
-  if (tag.includes("base") || tag.includes("stage 2") || tag.includes("stage-2")) {
-    line2 = "Stage-2 accumulation base cleared with constructive volume support above 10-day EMA.";
-  } else if (tag.includes("52w") || tag.includes("high")) {
-    line2 = "52-week high breakout structure intact with low-cheat pivot clearance above 10-day EMA.";
-  } else if (tag.includes("darvas") || tag.includes("box")) {
-    line2 = "Darvas box upper resistance cleared with volatility contraction above 10-day EMA.";
-  } else if (tag.includes("flag") || tag.includes("tight")) {
-    line2 = "High-tight flag continuation pattern with institutional support above 10-day EMA.";
-  } else if (tag.includes("infra") || tag.includes("textile") || tag.includes("pharma") || tag.includes("auto")) {
-    line2 = "Sector money flows showing positive institutional capital rotation above 10-day EMA.";
-  }
+  const line2 = t.acc_days !== undefined
+    ? `Institutional footprint: ${t.acc_days} accumulation vs ${t.dist_days || 0} distribution days (${volumeMult}).`
+    : (rsiVal
+        ? `Technical confluence: ${rsiVal} with ${volumeMult} supporting price action.`
+        : `Higher-low price structure confirmed above key moving average support.`);
 
   return [line1, line2];
 }
@@ -169,39 +165,6 @@ const AdvancedChartWidget = memo(function AdvancedChartWidget({
   );
 });
 
-function mulberry32(a: number) {
-  return function () {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function makeJourneyCandles(
-  seed: number,
-  n: number,
-  startPrice: number,
-  endPrice: number,
-  volatility: number
-) {
-  const rnd = mulberry32(seed);
-  const candles = [];
-  const drift = (endPrice / startPrice - 1) / n;
-  let price = startPrice;
-  for (let i = 0; i < n; i++) {
-    const d = drift + (rnd() - 0.5) * volatility;
-    const o = price;
-    const c = o * (1 + d);
-    const h = Math.max(o, c) * (1 + rnd() * volatility * 0.4);
-    const l = Math.min(o, c) * (1 - rnd() * volatility * 0.4);
-    candles.push({ o, h, l, c });
-    price = c;
-  }
-  return candles;
-}
-
 const ChartOverviewWidget = memo(function ChartOverviewWidget({
   trade: t,
   INR = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`,
@@ -221,20 +184,63 @@ const ChartOverviewWidget = memo(function ChartOverviewWidget({
     .trim()
     .toUpperCase();
 
-  const seed = t.seed || (cleanSym.charCodeAt(0) * 31 + (cleanSym.charCodeAt(1) || 65) * 7);
-  const days = 44;
+  const [fetchedCandles, setFetchedCandles] = useState<any[] | null>(null);
+  const [loadingChart, setLoadingChart] = useState(false);
+
+  useEffect(() => {
+    if ((t.miniChart?.candles?.length ?? 0) > 5 || (t.candles?.length ?? 0) > 5) {
+      return;
+    }
+    let isMounted = true;
+    setLoadingChart(true);
+    fetch(`/api/chart/${encodeURIComponent(cleanSym)}?limit=44`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (isMounted && data && Array.isArray(data.candles)) {
+          setFetchedCandles(data.candles);
+        }
+      })
+      .catch((err) => console.warn(`Chart fetch failed for ${cleanSym}:`, err))
+      .finally(() => {
+        if (isMounted) setLoadingChart(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [cleanSym, t.miniChart?.candles, t.candles]);
 
   const rawCandles =
-    t.miniChart?.candles?.length > 10
+    t.miniChart?.candles?.length > 5
       ? t.miniChart.candles
-      : t.candles?.length > 10
+      : t.candles?.length > 5
       ? t.candles
-      : makeJourneyCandles(seed, days, entry * 0.93, now, 0.015);
+      : fetchedCandles || [];
 
   const W = 360;
   const H = 180;
   const padT = 24;
   const padB = 20;
+
+  if (rawCandles.length === 0) {
+    return (
+      <div
+        style={{
+          width: W,
+          height: H,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "var(--text-muted, #94a3b8)",
+          fontSize: "12px",
+          border: "1px dashed rgba(255,255,255,0.1)",
+          borderRadius: "8px",
+          background: "rgba(0,0,0,0.15)",
+        }}
+      >
+        {loadingChart ? "Loading verified market candles..." : "Candle history available via full chart"}
+      </div>
+    );
+  }
 
   const normalized = rawCandles.map((c: any) => ({
     o: Number(c.open ?? c.o ?? 0),
@@ -386,6 +392,15 @@ const ChartOverviewWidget = memo(function ChartOverviewWidget({
   );
 });
 
+export function getConvictionTier(score: number | undefined) {
+  const s = score !== undefined ? Number(score) : 70;
+  if (s >= 85) return { stars: 5, label: "Elite Conviction", badgeClass: "tier-elite", color: "#10b981", pct: 100 };
+  if (s >= 70) return { stars: 4, label: "High Conviction", badgeClass: "tier-high", color: "#3b82f6", pct: 80 };
+  if (s >= 55) return { stars: 3, label: "Moderate Setup", badgeClass: "tier-mod", color: "#f59e0b", pct: 60 };
+  if (s >= 40) return { stars: 2, label: "Speculative", badgeClass: "tier-spec", color: "#f97316", pct: 40 };
+  return { stars: 1, label: "High Risk / Avoid", badgeClass: "tier-risk", color: "#ef4444", pct: 20 };
+}
+
 interface TradingViewStockDetailProps {
   trade: any;
   theme?: "light" | "dark";
@@ -411,9 +426,9 @@ export default function TradingViewStockDetail({
   const stop = Number(t.stop || t.stopLoss || (entry > 0 ? entry * 0.95 : 0));
 
   const prog = Math.max(0, Math.min(100, target > stop ? ((now - stop) / (target - stop)) * 100 : 50));
-  const [whyLine1, whyLine2] = getAiSelectedReasons(t);
-  const starsVal = Number(t.stars || 4.5);
-  const starsPct = Math.min(100, Math.max(0, (starsVal / 5) * 100));
+  const [whyLine1, whyLine2] = getTradeTriggerTelemetry(t);
+  const scoreVal = Number(t.health_score ?? t.dnaScore ?? t.score ?? (t.stars ? t.stars * 20 : 70));
+  const convictionTier = getConvictionTier(scoreVal);
 
   // Dynamically load TradingView widget web component scripts on-demand only
   useEffect(() => {
@@ -454,8 +469,13 @@ export default function TradingViewStockDetail({
             <div style={{ fontSize: 11, color: "var(--ink3)", marginTop: 4, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
               <span>{t.tag || t.stage || "Diversified · Breakout"}</span>
               <span>·</span>
-              <span className="stars" style={{ fontSize: 10, verticalAlign: "middle" }}>
-                ★★★★★<i style={{ width: `${starsPct}%` }}>★★★★★</i>
+              <span
+                className="stars"
+                style={{ fontSize: 11, verticalAlign: "middle", color: convictionTier.color, display: "inline-flex", alignItems: "center", gap: 4 }}
+                title={`${convictionTier.label} (QuantSync Score: ${scoreVal}/100)`}
+              >
+                {"★".repeat(convictionTier.stars) + "☆".repeat(5 - convictionTier.stars)}
+                <small style={{ fontSize: 9, opacity: 0.9, fontWeight: 700 }}>({convictionTier.label})</small>
               </span>
             </div>
           </div>
