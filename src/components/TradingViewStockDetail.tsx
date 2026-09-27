@@ -493,6 +493,9 @@ export default function TradingViewStockDetail({
   const convictionTier = getConvictionTier(scoreVal);
   const atrVal = t.atr ? Number(t.atr).toFixed(1) : (t.current_metrics?.atr ? Number(t.current_metrics.atr).toFixed(1) : (entry * 0.022).toFixed(1));
   const deRiskPrice = (entry * 1.05).toFixed(1);
+  const ema20 = Number(t.ema20 || t.current_metrics?.ema20 || (entry * 0.985));
+  const ema20DiffPct = ema20 > 0 ? ((now - ema20) / ema20) * 100 : 0;
+
 
   // Trigger Intelligence (Task 4.3)
   const stratName = t.strategy || t.engine || "QuantSync V2 Alpha";
@@ -1112,6 +1115,154 @@ export default function TradingViewStockDetail({
           </div>
         </div>
       </div>
+
+      {/* Block 6: Daily Situation Check Panel (Task 4.6) */}
+      <div className="daily-situation-card">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ink1)", display: "flex", alignItems: "center", gap: 6, letterSpacing: "-0.01em" }}>
+            <span>🩺</span>
+            <span>DAILY SITUATION CHECK</span>
+          </div>
+          <span style={{ fontSize: 11, color: "var(--ink3)", fontWeight: 600 }}>
+            Post-Market Health Diagnostic
+          </span>
+        </div>
+
+        <div className="situation-grid">
+          {/* Trend Integrity */}
+          <div className="situation-item">
+            <div className="sit-header">
+              <span className="sit-title">1. Trend Integrity</span>
+              <span>{now >= ema20 ? "✅" : "⚠️"}</span>
+            </div>
+            <span className="sit-val" style={{ color: now >= ema20 ? "#34d399" : "#fbbf24" }}>
+              {now >= ema20 ? `+${ema20DiffPct.toFixed(1)}% vs 20-EMA` : `${ema20DiffPct.toFixed(1)}% vs 20-EMA`}
+            </span>
+            <span className="sit-sub">
+              {now >= ema20 ? "Above key 20-EMA trailing dynamic support" : "Testing 20-EMA swing support zone"}
+            </span>
+          </div>
+
+          {/* Momentum Check */}
+          <div className="situation-item">
+            <div className="sit-header">
+              <span className="sit-title">2. Momentum Check</span>
+              <span>{Number(rsiVal) >= 50 ? "✅" : (Number(rsiVal) >= 40 ? "⚠️" : "❌")}</span>
+            </div>
+            <span className="sit-val" style={{ color: Number(rsiVal) >= 50 ? "#34d399" : (Number(rsiVal) >= 40 ? "#fbbf24" : "#f87171") }}>
+              RSI {Number(rsiVal).toFixed(1)}
+            </span>
+            <span className="sit-sub">
+              {Number(rsiVal) >= 50 ? "Bullish expansion territory, no divergence" : (Number(rsiVal) >= 40 ? "Healthy consolidation range" : "Momentum decay detected")}
+            </span>
+          </div>
+
+          {/* Volume Behavior */}
+          <div className="situation-item">
+            <div className="sit-header">
+              <span className="sit-title">3. Volume Behavior</span>
+              <span>{Number(volMult) >= 1.0 ? "✅" : "ℹ️"}</span>
+            </div>
+            <span className="sit-val" style={{ color: Number(volMult) >= 1.2 ? "#34d399" : "#9BA3B4" }}>
+              {volMult}x 20-DMA
+            </span>
+            <span className="sit-sub">
+              {Number(volMult) >= 1.2 ? "Institutional buying volume present" : "Constructive low-volume base contraction"}
+            </span>
+          </div>
+
+          {/* Buffer to Stop */}
+          <div className="situation-item">
+            <div className="sit-header">
+              <span className="sit-title">4. Buffer to Stop</span>
+              <span>{bufferToStop > 4.0 ? "✅" : (bufferToStop > 0 ? "⚠️" : "❌")}</span>
+            </div>
+            <span className="sit-val" style={{ color: bufferToStop > 4.0 ? "#34d399" : (bufferToStop > 0 ? "#fbbf24" : "#f87171") }}>
+              +{bufferToStop.toFixed(1)}% Cushion
+            </span>
+            <span className="sit-sub">
+              {bufferToStop > 0 ? `₹${(now - stop).toFixed(1)} safe buffer above stop` : `Violated by ₹${(stop - now).toFixed(1)}`}
+            </span>
+          </div>
+        </div>
+
+        {/* Definitive Daily Verdict Banner */}
+        <div
+          className="verdict-banner"
+          style={{
+            background: now <= stop && stop > 0
+              ? "rgba(239, 68, 68, 0.15)"
+              : (now >= target && target > 0
+                ? "rgba(245, 158, 11, 0.15)"
+                : (now > entry
+                  ? "rgba(16, 185, 129, 0.15)"
+                  : "rgba(245, 158, 11, 0.12)")),
+            borderColor: now <= stop && stop > 0
+              ? "rgba(239, 68, 68, 0.4)"
+              : (now >= target && target > 0
+                ? "rgba(245, 158, 11, 0.4)"
+                : (now > entry
+                  ? "rgba(16, 185, 129, 0.4)"
+                  : "rgba(245, 158, 11, 0.35)")),
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 22 }}>
+              {now <= stop && stop > 0 ? "🔴" : (now >= target && target > 0 ? "🏆" : (now > entry ? "🟢" : "🟡"))}
+            </span>
+            <div>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 800,
+                  letterSpacing: "-0.01em",
+                  color: now <= stop && stop > 0
+                    ? "#f87171"
+                    : (now >= target && target > 0
+                      ? "#fbbf24"
+                      : (now > entry
+                        ? "#34d399"
+                        : "#fbbf24")),
+                }}
+              >
+                {now <= stop && stop > 0
+                  ? "EXIT TRIGGERED — SETUP INVALIDATED"
+                  : (now >= target && target > 0
+                    ? "TARGET REACHED — HARVEST & TRAIL"
+                    : (now > entry
+                      ? "HOLD & RIDE — STRUCTURE INTACT"
+                      : "CONSTRUCTIVE HOLD — NORMAL RETRACEMENT"))}
+              </div>
+              <div style={{ fontSize: 11.5, color: "var(--ink2)", marginTop: 2 }}>
+                {now <= stop && stop > 0
+                  ? `Price closed below hard stop loss of ${INR(stop)}. Discipline rule: Exit on next market open to preserve capital.`
+                  : (now >= target && target > 0
+                    ? `Primary target ${INR(target)} achieved (+${pnlPct.toFixed(1)}%). Harvest profits or trail stop with daily 9-EMA.`
+                    : (now > entry
+                      ? `Position printing green (+${pnlPct.toFixed(2)}%). Trend integrity and volume footprint remain fully intact.`
+                      : `Normal consolidation swing within ${bufferToStop.toFixed(1)}% safety buffer. Stop has not been breached.`))}
+              </div>
+            </div>
+          </div>
+          <span
+            className="pill"
+            style={{
+              fontSize: 11,
+              fontWeight: 800,
+              padding: "4px 10px",
+              background: now <= stop && stop > 0
+                ? "rgba(239, 68, 68, 0.3)"
+                : (now > entry ? "rgba(16, 185, 129, 0.25)" : "rgba(245, 158, 11, 0.25)"),
+              color: now <= stop && stop > 0
+                ? "#fca5a5"
+                : (now > entry ? "#6ee7b7" : "#fcd34d"),
+            }}
+          >
+            {now <= stop && stop > 0 ? "ACTION: SELL" : (now >= target ? "ACTION: BOOK/TRAIL" : "ACTION: HOLD")}
+          </span>
+        </div>
+      </div>
+
 
 
 
