@@ -1234,6 +1234,7 @@ export default function App() {
     }
     return "";
   });
+  const [analystStock, setAnalystStock] = useState<any | null>(null);
 
   const navigateToTab = (
     tab: "home" | "signals" | "portfolio" | "dna" | "charts" | "intel" | "screener" | "lounge" | "more",
@@ -1345,7 +1346,6 @@ export default function App() {
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
   const [buyModalItem, setBuyModalItem] = useState<{ symbol: string; initialPrice: number; strategyName?: string } | null>(null);
   const [sellModalItem, setSellModalItem] = useState<any | null>(null);
-  const [analystStock, setAnalystStock] = useState<any | null>(null);
 
   // Centralized Paper Trade modal opener with authentication gate
   const handleOpenBuyModal = useCallback(
