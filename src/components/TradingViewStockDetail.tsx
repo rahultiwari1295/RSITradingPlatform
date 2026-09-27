@@ -405,6 +405,7 @@ interface TradingViewStockDetailProps {
   trade: any;
   theme?: "light" | "dark";
   onOpenChart?: (symbol: string) => void;
+  onOpenDna?: (symbol: string) => void;
   onClose?: () => void;
   INR?: (n: number | string | undefined) => string;
   INR2?: (n: number | string | undefined) => string;
@@ -414,6 +415,7 @@ export default function TradingViewStockDetail({
   trade: t,
   theme = "dark",
   onOpenChart,
+  onOpenDna,
   onClose,
   INR = (n) => (n !== undefined ? `₹${Number(n).toLocaleString("en-IN")}` : "₹0"),
   INR2 = (n) => (n !== undefined ? `₹${Number(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "₹0.00"),
@@ -433,18 +435,6 @@ export default function TradingViewStockDetail({
   const bufferToStop = stop > 0 ? (((now - stop) / stop) * 100) : 0;
   const totalMove = target - entry;
   const progressPct = totalMove > 0 ? Math.max(0, Math.min(100, ((now - entry) / totalMove) * 100)) : 0;
-
-  // Task 4.4: Institutional Position Sizer State & Calculations
-  const [capital, setCapital] = useState<number>(100000);
-  const [riskPct, setRiskPct] = useState<number>(1.0);
-
-  const riskAmount = capital * (riskPct / 100);
-  const riskPerShare = Math.max(0.5, Math.abs(entry - stop));
-  const qty = riskPerShare > 0 ? Math.floor(riskAmount / riskPerShare) : 0;
-  const totalInvestment = qty * entry;
-  const maxLoss = qty * riskPerShare;
-  const projectedProfit = qty * Math.max(0, target - entry);
-  const portfolioPct = capital > 0 ? (totalInvestment / capital) * 100 : 0;
 
   // Dynamic Status Badge
   let statusBadge = {
@@ -740,155 +730,84 @@ export default function TradingViewStockDetail({
 
   return (
     <div className="signal-terminal-modal stock-detail-common">
-      {/* Block 1: Navigation Bar & Signal Status Header */}
-      <div
-        className="signal-terminal-nav"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          paddingBottom: 14,
-          marginBottom: 6,
-          borderBottom: "1px solid var(--line-2, rgba(255,255,255,0.1))",
-          gap: 12,
-          flexWrap: "wrap",
-        }}
-      >
-        <button
-          onClick={() => {
-            if (onClose) onClose();
-            else if (typeof window !== "undefined" && (window as any)._closeSheet) (window as any)._closeSheet();
-            else if (typeof window !== "undefined" && (window as any).closeSheet) (window as any).closeSheet();
-          }}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            background: "var(--s2, rgba(255,255,255,0.06))",
-            border: "1px solid var(--line-2, rgba(255,255,255,0.12))",
-            color: "var(--ink1, #F4F5F9)",
-            padding: "8px 14px",
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: "pointer",
-            transition: "background 0.15s ease",
-          }}
-        >
-          ← Back to Signals
-        </button>
-
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            fontSize: 12,
-            fontFamily: "'JetBrains Mono', monospace",
-            fontWeight: 800,
-            color: "var(--accent, #6366F1)",
-            letterSpacing: "0.04em",
-          }}
-        >
-          <span>QuantSync V2</span>
-          <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "#10B981", boxShadow: "0 0 8px #10B981" }} />
-          <span style={{ color: "#10B981", fontSize: 11 }}>Active</span>
+      {/* 1. Stock Identity & Quick Actions Header */}
+      <div className="stock-detail-header-card">
+        <div className="row between" style={{ alignItems: "flex-start", width: "100%", gap: 12 }}>
+          <div className="row gap12" style={{ alignItems: "center" }}>
+            <div
+              className="av"
+              style={{
+                background: t.grad || "linear-gradient(135deg,#6366F1,#8B5CF6)",
+                color: "#fff",
+                fontWeight: 800,
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                fontSize: 16,
+                display: "grid",
+                placeItems: "center",
+                boxShadow: "0 4px 12px rgba(99, 102, 241, 0.25)",
+                flexShrink: 0,
+              }}
+            >
+              {t.ab || cleanSym.slice(0, 2)}
+            </div>
+            <div>
+              <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-.03em", color: "var(--ink1)" }}>
+                {cleanSym}
+              </div>
+              <div style={{ fontSize: 11.5, color: "var(--ink3)", marginTop: 2, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <span>{t.tag || t.stage || "Diversified · Breakout"}</span>
+                <span>·</span>
+                <span
+                  className="stars"
+                  style={{ fontSize: 11, verticalAlign: "middle", color: convictionTier.color, display: "inline-flex", alignItems: "center", gap: 4 }}
+                  title={`${convictionTier.label} (QuantSync Score: ${scoreVal}/100)`}
+                >
+                  {"★".repeat(convictionTier.stars) + "☆".repeat(5 - convictionTier.stars)}
+                  <small style={{ fontSize: 9.5, opacity: 0.9, fontWeight: 700 }}>({convictionTier.label})</small>
+                </span>
+              </div>
+            </div>
+          </div>
+          <span className="pill accent" style={{ fontWeight: 800, fontSize: 11, padding: "4px 10px", flexShrink: 0 }}>
+            {t.status || "IN TRADE"}
+          </span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <a
-            href={`/dna-mobile-story.html?symbol=${encodeURIComponent(cleanSym)}`}
-            target="_blank"
-            rel="noreferrer"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "7px 12px",
-              borderRadius: 8,
-              background: "rgba(99,102,241,0.15)",
-              color: "#818cf8",
-              fontSize: 12,
-              fontWeight: 700,
-              textDecoration: "none",
-              border: "1px solid rgba(99,102,241,0.3)",
-            }}
-          >
-            🧬 DNA Link
-          </a>
+        {/* Action Buttons Row */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
+          {onOpenDna ? (
+            <button
+              type="button"
+              onClick={() => onOpenDna(cleanSym)}
+              className="stock-header-action-btn primary"
+            >
+              🧬 DNA Story
+            </button>
+          ) : (
+            <a
+              href={`/dna-mobile-story.html?symbol=${encodeURIComponent(cleanSym)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="stock-header-action-btn primary"
+            >
+              🧬 DNA Story
+            </a>
+          )}
           <button
+            type="button"
             onClick={handleShareSnapshot}
-            title="Download & Share 1200x630 Setup Snapshot Card"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "7px 12px",
-              borderRadius: 8,
-              background: "var(--s2, rgba(255,255,255,0.06))",
-              color: "var(--ink2, #9BA3B4)",
-              fontSize: 12,
-              fontWeight: 600,
-              border: "1px solid var(--line-2, rgba(255,255,255,0.12))",
-              cursor: "pointer",
-            }}
+            title="Download & Share Setup Snapshot"
+            className="stock-header-action-btn secondary"
           >
-            📤 Share
+            📤 Share Setup
           </button>
         </div>
       </div>
 
-      {/* 1. Header: Stock name with star as it is */}
-      <div className="row between" style={{ alignItems: "flex-start" }}>
-        <div className="row gap12">
-          <div
-            className="av"
-            style={{
-              background: t.grad || "linear-gradient(135deg,#6366F1,#8B5CF6)",
-              color: "#fff",
-              fontWeight: 800,
-              display: "grid",
-              placeItems: "center",
-            }}
-          >
-            {t.ab || cleanSym.slice(0, 2)}
-          </div>
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: "-.035em" }}>
-              {cleanSym}
-            </div>
-            <div style={{ fontSize: 11, color: "var(--ink3)", marginTop: 4, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-              <span>{t.tag || t.stage || "Diversified · Breakout"}</span>
-              <span>·</span>
-              <span
-                className="stars"
-                style={{ fontSize: 11, verticalAlign: "middle", color: convictionTier.color, display: "inline-flex", alignItems: "center", gap: 4 }}
-                title={`${convictionTier.label} (QuantSync Score: ${scoreVal}/100)`}
-              >
-                {"★".repeat(convictionTier.stars) + "☆".repeat(5 - convictionTier.stars)}
-                <small style={{ fontSize: 9, opacity: 0.9, fontWeight: 700 }}>({convictionTier.label})</small>
-              </span>
-            </div>
-          </div>
-        </div>
-        <span className="pill accent" style={{ fontWeight: 700 }}>
-          {t.status || "IN TRADE"}
-        </span>
-      </div>
-
       {/* Block 2: Live Trade Performance HUD */}
-      <div
-        className="trade-hud-card"
-        style={{
-          background: "var(--s2, #151823)",
-          border: "1px solid var(--border, rgba(255,255,255,0.08))",
-          borderRadius: 16,
-          padding: "18px 20px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 14,
-        }}
-      >
+      <div className="trade-hud-card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
           <div
             className="hud-status-badge"
@@ -920,7 +839,7 @@ export default function TradingViewStockDetail({
           <div
             style={{
               height: 10,
-              background: "rgba(255,255,255,0.08)",
+              background: "var(--line-2, rgba(255,255,255,0.08))",
               borderRadius: 999,
               overflow: "hidden",
               position: "relative",
@@ -982,7 +901,7 @@ export default function TradingViewStockDetail({
             fontSize: 11.5,
             color: "var(--ink3)",
             paddingTop: 8,
-            borderTop: "1px solid rgba(255,255,255,0.06)",
+            borderTop: "1px solid var(--line)",
           }}
         >
           <span>Progress to Target: <strong style={{ color: "var(--accent)" }}>{progressPct.toFixed(1)}%</strong></span>
@@ -1010,18 +929,7 @@ export default function TradingViewStockDetail({
       </div>
 
       {/* Block 3: Strategy Trigger Intelligence */}
-      <div
-        className="trigger-intel-card"
-        style={{
-          background: "var(--s2, #151823)",
-          border: "1px solid var(--border, rgba(255,255,255,0.08))",
-          borderRadius: 16,
-          padding: "18px 20px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 14,
-        }}
-      >
+      <div className="trigger-intel-card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ink1)", display: "flex", alignItems: "center", gap: 6, letterSpacing: "-0.01em" }}>
             <span>🧠</span>
@@ -1040,18 +948,7 @@ export default function TradingViewStockDetail({
             gap: 12,
           }}
         >
-          <div
-            className="trigger-card"
-            style={{
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid var(--line-2, rgba(255,255,255,0.07))",
-              borderRadius: 12,
-              padding: "12px 14px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 6,
-            }}
-          >
+          <div className="trigger-card">
             <div style={{ fontSize: 11, fontWeight: 800, color: "#60a5fa", display: "flex", alignItems: "center", gap: 5, textTransform: "uppercase", letterSpacing: "0.04em" }}>
               <span>📐</span>
               <span>1. Structural Setup</span>
@@ -1061,18 +958,7 @@ export default function TradingViewStockDetail({
             </div>
           </div>
 
-          <div
-            className="trigger-card"
-            style={{
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid var(--line-2, rgba(255,255,255,0.07))",
-              borderRadius: 12,
-              padding: "12px 14px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 6,
-            }}
-          >
+          <div className="trigger-card">
             <div style={{ fontSize: 11, fontWeight: 800, color: "#34d399", display: "flex", alignItems: "center", gap: 5, textTransform: "uppercase", letterSpacing: "0.04em" }}>
               <span>⚡</span>
               <span>2. Momentum Confirmation</span>
@@ -1082,18 +968,7 @@ export default function TradingViewStockDetail({
             </div>
           </div>
 
-          <div
-            className="trigger-card"
-            style={{
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid var(--line-2, rgba(255,255,255,0.07))",
-              borderRadius: 12,
-              padding: "12px 14px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 6,
-            }}
-          >
+          <div className="trigger-card">
             <div style={{ fontSize: 11, fontWeight: 800, color: "#fbbf24", display: "flex", alignItems: "center", gap: 5, textTransform: "uppercase", letterSpacing: "0.04em" }}>
               <span>📊</span>
               <span>3. Volume Footprint</span>
@@ -1103,18 +978,7 @@ export default function TradingViewStockDetail({
             </div>
           </div>
 
-          <div
-            className="trigger-card"
-            style={{
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid var(--line-2, rgba(255,255,255,0.07))",
-              borderRadius: 12,
-              padding: "12px 14px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 6,
-            }}
-          >
+          <div className="trigger-card">
             <div style={{ fontSize: 11, fontWeight: 800, color: "#a78bfa", display: "flex", alignItems: "center", gap: 5, textTransform: "uppercase", letterSpacing: "0.04em" }}>
               <span>🏆</span>
               <span>4. Conviction Score</span>
@@ -1126,121 +990,7 @@ export default function TradingViewStockDetail({
         </div>
       </div>
 
-      {/* Block 4: Institutional Position Sizer Calculator (Task 4.4) */}
-      <div className="position-sizer-card">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ink1)", display: "flex", alignItems: "center", gap: 6, letterSpacing: "-0.01em" }}>
-            <span>🧮</span>
-            <span>INSTITUTIONAL POSITION SIZER</span>
-          </div>
-          <span style={{ fontSize: 11, color: "var(--ink3)", fontWeight: 600 }}>
-            Fixed Risk Model ({riskPct}%)
-          </span>
-        </div>
-
-        <div className="sizer-inputs">
-          <div className="sizer-input-grp">
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <label>Trading Capital (₹)</label>
-              <span style={{ fontSize: 11, color: "var(--accent, #6366F1)", fontWeight: 700 }}>
-                {INR(capital)}
-              </span>
-            </div>
-            <div className="sizer-input-wrap">
-              <span style={{ color: "var(--ink3)", marginRight: 6, fontWeight: 700 }}>₹</span>
-              <input
-                type="number"
-                value={capital || ""}
-                onChange={(e) => setCapital(Math.max(0, Number(e.target.value)))}
-                step="10000"
-                min="10000"
-                placeholder="100000"
-              />
-            </div>
-            <div className="sizer-quick-chips">
-              {[50000, 100000, 200000, 500000, 1000000].map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  className={`sizer-chip ${capital === c ? "active" : ""}`}
-                  onClick={() => setCapital(c)}
-                >
-                  {c >= 100000 ? `${c / 100000}L` : `${c / 1000}K`}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="sizer-input-grp">
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <label>Risk Per Trade (%)</label>
-              <span style={{ fontSize: 11, color: "#f87171", fontWeight: 700 }}>
-                Max Loss: {INR(riskAmount)}
-              </span>
-            </div>
-            <div className="sizer-input-wrap">
-              <input
-                type="number"
-                value={riskPct || ""}
-                onChange={(e) => setRiskPct(Math.max(0.1, Math.min(10, Number(e.target.value))))}
-                step="0.25"
-                min="0.25"
-                max="5.0"
-                placeholder="1.0"
-              />
-              <span style={{ color: "var(--ink3)", marginLeft: 6, fontWeight: 700 }}>%</span>
-            </div>
-            <div className="sizer-quick-chips">
-              {[0.5, 1.0, 1.5, 2.0, 3.0].map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  className={`sizer-chip ${riskPct === r ? "active" : ""}`}
-                  onClick={() => setRiskPct(r)}
-                >
-                  {r}%
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="sizer-results-grid">
-          <div className="sizer-res-box">
-            <span className="lbl">Recommended Qty</span>
-            <span className="val" style={{ color: "#60a5fa" }}>
-              {qty.toLocaleString("en-IN")} <span style={{ fontSize: 11, fontWeight: 600 }}>shares</span>
-            </span>
-            <span className="sub">Based on ₹{riskPerShare.toFixed(1)}/sh risk</span>
-          </div>
-
-          <div className="sizer-res-box">
-            <span className="lbl">Required Capital</span>
-            <span className="val">
-              {INR(totalInvestment)}
-            </span>
-            <span className="sub">{portfolioPct.toFixed(1)}% of trading pool</span>
-          </div>
-
-          <div className="sizer-res-box">
-            <span className="lbl">Max Rupee Loss</span>
-            <span className="val" style={{ color: "#ef4444" }}>
-              -{INR(maxLoss)}
-            </span>
-            <span className="sub">Strict stop at {INR(stop)} (-{stopPct.toFixed(1)}%)</span>
-          </div>
-
-          <div className="sizer-res-box">
-            <span className="lbl">Projected Profit</span>
-            <span className="val" style={{ color: "#10b981" }}>
-              +{INR(projectedProfit)}
-            </span>
-            <span className="sub">Target at {INR(target)} (+{targetPct.toFixed(1)}%)</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Block 5: 4-Stage Trade Management Playbook (Task 4.5) */}
+      {/* Block 4: 4-Stage Trade Management Playbook */}
       <div className="trade-playbook-card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ink1)", display: "flex", alignItems: "center", gap: 6, letterSpacing: "-0.01em" }}>
@@ -1255,23 +1005,34 @@ export default function TradingViewStockDetail({
         <div className="playbook-steps">
           {/* Stage 1: ENTERED */}
           <div className={`playbook-step ${now < entry * 1.05 && now > stop ? "active" : ""}`}>
-            <span className="step-num-badge">Stage 1 · Entered</span>
+            <div className="step-header-row">
+              <span className="step-num-badge">Stage 1 · Entered</span>
+              {now < entry * 1.05 && now > stop && (
+                <span className="pill green" style={{ fontSize: 10, padding: "3px 8px", fontWeight: 700 }}>
+                  CURRENT STAGE
+                </span>
+              )}
+            </div>
             <div className="step-content">
               <div className="step-heading" style={{ color: now < entry * 1.05 && now > stop ? "#a5b4fc" : undefined }}>
-                Initial Entry & Noise Tolerance
+                Initial Entry &amp; Noise Tolerance
               </div>
               <div className="step-body">
                 Hard stop is active at <strong>{INR(stop)}</strong> (-{stopPct.toFixed(1)}%). Expected daily ATR volatility is <strong>₹{atrVal}</strong>. Hold position firmly through normal intraday fluctuation as long as daily close remains above stop.
               </div>
             </div>
-            {now < entry * 1.05 && now > stop && (
-              <span className="pill green" style={{ fontSize: 10, padding: "2px 6px" }}>CURRENT STAGE</span>
-            )}
           </div>
 
           {/* Stage 2: DE-RISKED */}
           <div className={`playbook-step ${now >= entry * 1.05 && now < target ? "derisk-zone" : ""}`}>
-            <span className="step-num-badge">Stage 2 · De-Risk (+5%)</span>
+            <div className="step-header-row">
+              <span className="step-num-badge">Stage 2 · De-Risk (+5%)</span>
+              {now >= entry * 1.05 && now < target && (
+                <span className="pill green" style={{ fontSize: 10, padding: "3px 8px", fontWeight: 700 }}>
+                  CURRENT STAGE
+                </span>
+              )}
+            </div>
             <div className="step-content">
               <div className="step-heading" style={{ color: now >= entry * 1.05 && now < target ? "#60a5fa" : undefined }}>
                 Advance Stop to Breakeven
@@ -1280,30 +1041,38 @@ export default function TradingViewStockDetail({
                 When price prints above <strong>₹{deRiskPrice}</strong> (+5.0% gain), ratchet stop loss up to initial entry at <strong>{INR(entry)}</strong>. Trade becomes mathematically risk-free with zero downside exposure.
               </div>
             </div>
-            {now >= entry * 1.05 && now < target && (
-              <span className="pill green" style={{ fontSize: 10, padding: "2px 6px" }}>CURRENT STAGE</span>
-            )}
           </div>
 
           {/* Stage 3: TARGET ZONE */}
           <div className={`playbook-step ${now >= target ? "target-zone" : ""}`}>
-            <span className="step-num-badge">Stage 3 · Target Zone</span>
+            <div className="step-header-row">
+              <span className="step-num-badge">Stage 3 · Target Zone</span>
+              {now >= target && (
+                <span className="pill green" style={{ fontSize: 10, padding: "3px 8px", fontWeight: 700 }}>
+                  CURRENT STAGE
+                </span>
+              )}
+            </div>
             <div className="step-content">
               <div className="step-heading" style={{ color: now >= target ? "#34d399" : undefined }}>
-                Profit Harvesting & Trailing
+                Profit Harvesting &amp; Trailing
               </div>
               <div className="step-body">
                 At <strong>{INR(target)}</strong> (+{targetPct.toFixed(1)}%), book 50-100% of position. If riding a momentum runner, trail stop loss using the daily 9-EMA close. Never let an achieved profit target turn into a loss.
               </div>
             </div>
-            {now >= target && (
-              <span className="pill green" style={{ fontSize: 10, padding: "2px 6px" }}>CURRENT STAGE</span>
-            )}
           </div>
 
           {/* Stage 4: INVALIDATED */}
           <div className={`playbook-step ${now <= stop && stop > 0 ? "invalidated-zone" : ""}`}>
-            <span className="step-num-badge">Stage 4 · Invalidation</span>
+            <div className="step-header-row">
+              <span className="step-num-badge">Stage 4 · Invalidation</span>
+              {now <= stop && stop > 0 && (
+                <span className="pill red" style={{ fontSize: 10, padding: "3px 8px", fontWeight: 700 }}>
+                  STOPPED OUT
+                </span>
+              )}
+            </div>
             <div className="step-content">
               <div className="step-heading" style={{ color: now <= stop && stop > 0 ? "#f87171" : undefined }}>
                 Zero Hope Exit Rule
@@ -1312,14 +1081,11 @@ export default function TradingViewStockDetail({
                 If daily close violates <strong>{INR(stop)}</strong>, execute complete market exit on the next open. Zero averaging down, zero hope-trading. Preserve capital to fight the next high-probability setup.
               </div>
             </div>
-            {now <= stop && stop > 0 && (
-              <span className="pill red" style={{ fontSize: 10, padding: "2px 6px" }}>STOPPED OUT</span>
-            )}
           </div>
         </div>
       </div>
 
-      {/* Block 6: Daily Situation Check Panel (Task 4.6) */}
+      {/* Block 5: Daily Situation Check Panel */}
       <div className="daily-situation-card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ink1)", display: "flex", alignItems: "center", gap: 6, letterSpacing: "-0.01em" }}>

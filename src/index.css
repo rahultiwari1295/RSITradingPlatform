@@ -1331,124 +1331,93 @@ body::before{
   box-sizing: border-box;
 }
 
-/* Institutional Terminal Modules */
-.position-sizer-card,
+/* Signal Full-Page Detail & Terminal Modules */
+.signal-page-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 10px 14px 48px;
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .signal-page-container {
+    padding: 18px 24px 64px;
+  }
+}
+
+.stock-detail-header-card,
+.trade-hud-card,
+.trigger-intel-card,
 .trade-playbook-card,
 .daily-situation-card {
-  background: var(--s2, #151823);
-  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  background: var(--s1, #0E1018);
+  border: 1px solid var(--line-2, rgba(255, 255, 255, 0.09));
   border-radius: 16px;
   padding: 18px 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
   box-sizing: border-box;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
-.sizer-inputs {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 14px;
+[data-theme="light"] .stock-detail-header-card,
+[data-theme="light"] .trade-hud-card,
+[data-theme="light"] .trigger-intel-card,
+[data-theme="light"] .trade-playbook-card,
+[data-theme="light"] .daily-situation-card {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04) !important;
 }
 
-.sizer-input-grp {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.sizer-input-grp label {
-  font-size: 11.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink3, #6B7280);
-}
-
-.sizer-input-wrap {
-  display: flex;
+.stock-header-action-btn {
+  display: inline-flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--line-2, rgba(255, 255, 255, 0.1));
-  border-radius: 10px;
-  padding: 0 12px;
-  transition: border-color 0.15s ease;
-}
-
-.sizer-input-wrap:focus-within {
-  border-color: var(--accent, #6366F1);
-}
-
-.sizer-input-wrap input {
-  width: 100%;
-  background: transparent;
-  border: none;
-  color: var(--ink1, #F4F5F9);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 15px;
+  gap: 5px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12px;
   font-weight: 700;
-  padding: 10px 0;
-  outline: none;
-}
-
-.sizer-quick-chips {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.sizer-chip {
-  padding: 4px 10px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--line-2, rgba(255, 255, 255, 0.08));
-  color: var(--ink2, #9BA3B4);
-  font-size: 11px;
-  font-weight: 600;
+  text-decoration: none;
   cursor: pointer;
   transition: all 0.15s ease;
+  border: 1px solid transparent;
 }
 
-.sizer-chip:hover, .sizer-chip.active {
-  background: rgba(99, 102, 241, 0.2);
-  border-color: rgba(99, 102, 241, 0.4);
-  color: #818cf8;
+.stock-header-action-btn.primary {
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--accent, #6366F1);
+  border-color: rgba(99, 102, 241, 0.25);
+}
+.stock-header-action-btn.primary:hover {
+  background: rgba(99, 102, 241, 0.22);
 }
 
-.sizer-results-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
+.stock-header-action-btn.secondary {
+  background: var(--s2, rgba(255, 255, 255, 0.05));
+  color: var(--ink2, #9BA3B4);
+  border-color: var(--line-2, rgba(255, 255, 255, 0.1));
 }
-
-.sizer-res-box {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--line-2, rgba(255, 255, 255, 0.07));
-  border-radius: 12px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.sizer-res-box .lbl {
-  font-size: 11px;
-  color: var(--ink3, #6B7280);
-  text-transform: uppercase;
-  font-weight: 600;
-}
-
-.sizer-res-box .val {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 15px;
-  font-weight: 800;
+.stock-header-action-btn.secondary:hover {
+  background: var(--s3, rgba(255, 255, 255, 0.1));
   color: var(--ink1, #F4F5F9);
 }
 
-.sizer-res-box .sub {
-  font-size: 10.5px;
-  color: var(--ink3, #6B7280);
-  font-weight: 600;
+[data-theme="light"] .trigger-card,
+[data-theme="light"] .situation-item,
+[data-theme="light"] .playbook-step {
+  background: #F8FAFC !important;
+  border: 1px solid rgba(15, 23, 42, 0.06) !important;
+}
+
+[data-theme="light"] .step-body strong {
+  color: #0F172A !important;
+}
+
+[data-theme="light"] .step-heading {
+  color: #0F172A !important;
 }
 
 /* 4-Stage Trade Management Playbook Styles */
@@ -1460,33 +1429,41 @@ body::before{
 
 .playbook-step {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 12px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--line-2, rgba(255, 255, 255, 0.07));
   transition: all 0.2s ease;
 }
 
+.step-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+}
+
 .playbook-step.active {
-  background: rgba(99, 102, 241, 0.08);
-  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.08) !important;
+  border-color: rgba(99, 102, 241, 0.4) !important;
 }
 
 .playbook-step.target-zone {
-  background: rgba(16, 185, 129, 0.08);
-  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.08) !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
 }
 
 .playbook-step.derisk-zone {
-  background: rgba(59, 130, 246, 0.08);
-  border-color: rgba(59, 130, 246, 0.4);
+  background: rgba(59, 130, 246, 0.08) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
 }
 
 .playbook-step.invalidated-zone {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
 }
 
 .step-num-badge {
@@ -1500,6 +1477,11 @@ body::before{
   background: rgba(255, 255, 255, 0.06);
   color: var(--ink2, #9BA3B4);
   font-family: 'JetBrains Mono', monospace;
+}
+
+[data-theme="light"] .step-num-badge {
+  background: rgba(15, 23, 42, 0.06);
+  color: #475569;
 }
 
 .playbook-step.active .step-num-badge {
@@ -1525,12 +1507,12 @@ body::before{
 .step-content {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  flex: 1;
+  gap: 4px;
+  width: 100%;
 }
 
 .step-heading {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--ink1, #F4F5F9);
 }

@@ -1235,6 +1235,7 @@ export default function App() {
     return "";
   });
   const [analystStock, setAnalystStock] = useState<any | null>(null);
+  const [selectedSignalTrade, setSelectedSignalTrade] = useState<any | null>(null);
 
   const navigateToTab = (
     tab: "home" | "signals" | "portfolio" | "dna" | "charts" | "intel" | "screener" | "lounge" | "more",
@@ -1242,6 +1243,9 @@ export default function App() {
     resetDna: boolean = false
   ) => {
     setActiveTab(tab);
+    if (tab === "signals" && selectedSignalTrade) {
+      setSelectedSignalTrade(null);
+    }
     if (stock !== undefined) {
       setSelectedDnaStock(stock);
     }
@@ -1271,7 +1275,13 @@ export default function App() {
         return;
       }
 
-      // 2. Read new location from browser
+      // 2. If signal trade page is open, close it!
+      if (selectedSignalTrade) {
+        setSelectedSignalTrade(null);
+        return;
+      }
+
+      // 3. Read new location from browser
       const p = new URLSearchParams(window.location.search);
       const tab = p.get("tab") || "home";
       const stock = p.get("stock") || p.get("sym") || "";
@@ -1288,7 +1298,7 @@ export default function App() {
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [analystStock]);
+  }, [analystStock, selectedSignalTrade]);
 
   // Handle messages from embedded iframes (e.g. DNA reset or back to search)
   useEffect(() => {
@@ -2624,6 +2634,30 @@ export default function App() {
                   <path d="M19 12H5M12 19l-7-7 7-7" />
                 </svg>
               </button>
+            ) : activeTab === "signals" && selectedSignalTrade ? (
+              <button
+                type="button"
+                className="theme-btn"
+                onClick={() => {
+                  setSelectedSignalTrade(null);
+                }}
+                style={{
+                  width: 32,
+                  height: 32,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 8,
+                  cursor: "pointer",
+                  borderRadius: "50%"
+                }}
+                title="Back to Signals"
+                aria-label="Back"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+              </button>
             ) : null}
             <span className="brand-mark">QuantSync</span>
             <span className="pulse-dot" id="mktDot" />
@@ -3062,8 +3096,30 @@ export default function App() {
 
         {/* ===== SIGNALS SCREEN (AI CALLS) ===== */}
         <section className={`screen ${activeTab === "signals" ? "active" : ""}`} id="screen-signals">
-          {/* Collapsible iOS-Style Engine Bar (Default Collapsed) */}
-          <div className={`signals-engine-compact-card ${isEngineInfoOpen ? "is-open" : ""}`}>
+          {selectedSignalTrade ? (
+            <div className="signal-page-container">
+              <TradingViewStockDetail
+                trade={selectedSignalTrade}
+                theme={theme}
+                INR={INR}
+                INR2={INR2}
+                onClose={() => setSelectedSignalTrade(null)}
+                onOpenDna={(sym) => {
+                  navigateToTab("dna", sym);
+                }}
+                onOpenChart={(sym) => {
+                  setSelectedSignalTrade(null);
+                  setChartSymbol(sym);
+                  setActiveTab("charts");
+                  setChartSub("live");
+                  fetchChart(sym, engine);
+                }}
+              />
+            </div>
+          ) : (
+            <>
+              {/* Collapsible iOS-Style Engine Bar (Default Collapsed) */}
+              <div className={`signals-engine-compact-card ${isEngineInfoOpen ? "is-open" : ""}`}>
             <div className="signals-engine-compact-bar">
               <button
                 type="button"
@@ -3351,7 +3407,7 @@ export default function App() {
                     <div
                       key={i}
                       className="trade-h"
-                      onClick={() => openSheet("v2", t)}
+                      onClick={() => setSelectedSignalTrade(t)}
                       style={{ animationDelay: `${i * 70}ms` }}
                     >
                       <div className="row gap12" style={{ alignItems: "flex-start" }}>
@@ -3470,7 +3526,7 @@ export default function App() {
                     <div
                       key={i}
                       className="trade-h"
-                      onClick={() => openSheet("v3", t)}
+                      onClick={() => setSelectedSignalTrade(t)}
                       style={{ animationDelay: `${i * 80}ms` }}
                     >
                       <div className="row gap12" style={{ alignItems: "flex-start" }}>
@@ -3812,6 +3868,8 @@ export default function App() {
               )}
             </div>
           )}
+            </>
+          )}
         </section>
 
         {/* ===== PORTFOLIO SCREEN ===== */}
@@ -3897,7 +3955,8 @@ export default function App() {
                 setPortfolio(prev => prev.filter(p => p.tradeId !== tradeId && p.symbol !== tradeId));
               }}
               onSelectStock={(stock) => {
-                openSheet(engine, stock);
+                setActiveTab("signals");
+                setSelectedSignalTrade(stock);
               }}
             />
         </section>
@@ -4023,7 +4082,7 @@ export default function App() {
                     </div>
 
                     <div className="actions" style={{ marginTop: 15 }}>
-                      <button className="btn" onClick={() => openSheet("v2", t)}>
+                      <button className="btn" onClick={() => { setActiveTab("signals"); setSelectedSignalTrade(t); }}>
                         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 8v4l3 2" /></svg>
                         Trade Details
                       </button>
