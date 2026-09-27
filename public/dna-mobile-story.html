@@ -31,6 +31,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- HTML2Canvas for Social Snapshot Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
 
   <style>
     /* ==========================================================================
@@ -983,84 +986,244 @@
     }
 
     /* ==========================================================================
-       Task 2.1: 30-Second Executive Verdict Card
+       Task 2.1: Premium Institutional 30-Second Executive Verdict Card
        ========================================================================== */
     .exec-verdict-card {
-      background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(15, 23, 42, 0.9));
-      border: 1px solid rgba(59, 130, 246, 0.25);
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(10, 15, 29, 0.98));
+      border: 1px solid rgba(59, 130, 246, 0.28);
       border-radius: 20px;
       padding: 20px;
       margin-bottom: 24px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 25px rgba(59, 130, 246, 0.1);
-      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), 0 0 30px rgba(59, 130, 246, 0.08);
+      backdrop-filter: blur(16px);
+      position: relative;
+      overflow: hidden;
     }
     [data-theme="light"] .exec-verdict-card {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(241, 245, 249, 0.95));
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 0 25px rgba(59, 130, 246, 0.08);
+      background: linear-gradient(145deg, #FFFFFF 0%, #F8FAFC 100%);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06), 0 0 20px rgba(59, 130, 246, 0.06);
     }
     .verdict-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      flex-wrap: wrap;
+      gap: 10px;
       padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       margin-bottom: 14px;
     }
     [data-theme="light"] .verdict-header {
       border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     }
     .verdict-title {
-      font-size: 13px;
-      font-weight: 700;
+      font-size: 12.5px;
+      font-weight: 800;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: #60a5fa;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
-    .verdict-grid {
+    [data-theme="light"] .verdict-title {
+      color: #2563EB;
+    }
+    .verdict-title-pulse {
+      display: inline-flex;
+      animation: pulse-verdict 2s infinite ease-in-out;
+    }
+    @keyframes pulse-verdict {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.15); opacity: 0.8; }
+    }
+    .verdict-stance-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 5px 13px;
+      border-radius: 999px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      transition: all 0.25s ease;
+    }
+    .verdict-stance-pill .stance-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 6px currentColor;
+    }
+    .verdict-stance-pill.bullish {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10B981;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .verdict-stance-pill.bearish {
+      background: rgba(239, 68, 68, 0.15);
+      color: #EF4444;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+    .verdict-stance-pill.warning {
+      background: rgba(245, 158, 11, 0.15);
+      color: #F59E0B;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+    .verdict-stance-pill.neutral {
+      background: rgba(148, 163, 184, 0.15);
+      color: #94A3B8;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    /* Executive Takeaway Banner (The 1-Liner Picture) */
+    .verdict-takeaway-box {
+      background: rgba(0, 0, 0, 0.22);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    [data-theme="light"] .verdict-takeaway-box {
+      background: rgba(241, 245, 249, 0.85);
+      border: 1px solid #E2E8F0;
+    }
+    .verdict-takeaway-icon {
+      font-size: 16px;
+      line-height: 1.2;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .verdict-takeaway-body {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .verdict-takeaway-tag {
+      font-family: var(--font-display);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .verdict-takeaway-text {
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: var(--text-main);
+      font-weight: 500;
+      margin: 0;
+    }
+    [data-theme="light"] .verdict-takeaway-text {
+      color: #1E293B;
+    }
+
+    /* 4 Execution Tiles */
+    .verdict-tiles-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
+      gap: 10px;
       margin-bottom: 16px;
     }
     @media (min-width: 640px) {
-      .verdict-grid { grid-template-columns: repeat(4, 1fr); }
+      .verdict-tiles-grid { grid-template-columns: repeat(4, 1fr); }
     }
-    .verdict-item {
+    .verdict-tile {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 12px;
+      padding: 12px;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
+      transition: all 0.2s ease;
     }
-    .verdict-label {
-      font-size: 11px;
+    [data-theme="light"] .verdict-tile {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+    .verdict-tile-label {
+      font-family: var(--font-display);
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
       color: var(--text-dim);
     }
-    .verdict-val {
+    [data-theme="light"] .verdict-tile-label {
+      color: #64748B;
+    }
+    .verdict-tile-val {
       font-family: var(--font-mono);
-      font-size: 16px;
-      font-weight: 700;
-      color: #ffffff;
+      font-size: 15.5px;
+      font-weight: 800;
+      color: #FFFFFF;
+      line-height: 1.25;
+      word-break: break-word;
     }
-    [data-theme="light"] .verdict-val {
-      color: #0f172a;
+    [data-theme="light"] .verdict-tile-val {
+      color: #0F172A;
     }
-    .verdict-bullets {
-      background: rgba(0, 0, 0, 0.25);
-      border-radius: 12px;
-      padding: 12px 14px;
+    .verdict-tile-val.stop-val {
+      color: #EF4444;
+    }
+    .verdict-tile-val.target-val {
+      color: #10B981;
+    }
+    .verdict-tile-sub {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      line-height: 1.2;
+    }
+
+    /* Institutional Telemetry Strip */
+    .verdict-telemetry-strip {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      font-size: 13px;
+      gap: 8px;
+    }
+    @media (min-width: 640px) {
+      .verdict-telemetry-strip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+    }
+    .telemetry-chip {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
       color: var(--text-muted);
     }
-    [data-theme="light"] .verdict-bullets {
-      background: rgba(0, 0, 0, 0.04);
+    [data-theme="light"] .telemetry-chip {
+      background: rgba(0, 0, 0, 0.03);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      color: #334155;
+    }
+    .telemetry-chip-icon {
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+    .telemetry-chip-text {
+      font-size: 11.5px;
+      line-height: 1.35;
       color: var(--text-main);
+    }
+    [data-theme="light"] .telemetry-chip-text {
+      color: #1E293B;
     }
 
     /* ==========================================================================
@@ -1102,7 +1265,7 @@
     }
 
     /* ==========================================================================
-       Task 2.2: Collapsible Accordion Cards for Q1–Q7
+       Task 2.2: Expandable Accordion Architecture for Q1–Q7
        ========================================================================== */
     .accordion-trigger {
       cursor: pointer;
@@ -1113,20 +1276,84 @@
       margin: -4px;
     }
     .accordion-trigger:hover {
-      background: rgba(255, 255, 255, 0.04);
+      background: rgba(255, 255, 255, 0.03);
     }
     [data-theme="light"] .accordion-trigger:hover {
-      background: rgba(0, 0, 0, 0.03);
+      background: rgba(0, 0, 0, 0.02);
     }
-    .accordion-icon {
+
+    /* 1-Liner Answer Preview on Collapsed Card */
+    .q-answer-preview {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      background: rgba(59, 130, 246, 0.06);
+      border: 1px solid rgba(59, 130, 246, 0.15);
+      border-radius: 10px;
+      padding: 9px 12px;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      transition: all 0.2s ease;
+    }
+    [data-theme="light"] .q-answer-preview {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+    }
+    .preview-sparkle {
+      font-size: 13px;
+      line-height: 1.2;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .preview-text {
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: var(--text-main);
+      font-weight: 500;
+    }
+    [data-theme="light"] .preview-text {
+      color: #1E293B;
+    }
+
+    /* Click to Expand Action Bar */
+    .q-expand-action-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      color: var(--accent);
+      font-family: var(--font-display);
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      transition: all 0.2s ease;
+    }
+    [data-theme="light"] .q-expand-action-bar {
+      background: #F1F5F9;
+      border: 1px solid #E2E8F0;
+      color: #2563EB;
+    }
+    .accordion-trigger:hover .q-expand-action-bar {
+      background: rgba(59, 130, 246, 0.08);
+      border-color: rgba(59, 130, 246, 0.28);
+    }
+    [data-theme="light"] .accordion-trigger:hover .q-expand-action-bar {
+      background: #EBF3FE;
+      border-color: #BFDBFE;
+    }
+    .expand-action-chevron {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      display: inline-block;
-      font-size: 11px;
-      color: var(--text-dim);
     }
-    .accordion-open .accordion-icon {
+    .accordion-open .expand-action-chevron {
       transform: rotate(180deg);
     }
+
     .accordion-content {
       display: none;
       padding-top: 14px;
@@ -1318,8 +1545,27 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
       width: 100%;
+    }
+
+    .q-status-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+    }
+
+    .q-chip-subtag {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--accent);
+      background: rgba(59, 130, 246, 0.12);
+      border-radius: var(--r-pill);
+      padding: 1px 6px;
+      line-height: 1.2;
     }
 
     .q-category-chip {
@@ -2950,8 +3196,26 @@
       }
 
       .q-headline-question {
-        font-size: 15.5px;
+        font-size: 15px;
         line-height: 1.35;
+        margin-top: 6px;
+        margin-bottom: 6px;
+      }
+
+      .q-answer-preview {
+        padding: 8px 10px;
+        margin-top: 8px;
+        margin-bottom: 8px;
+      }
+
+      .preview-text {
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .q-expand-action-bar {
+        padding: 7px 10px;
+        font-size: 11px;
       }
 
       .q-insight-callout {
@@ -3552,7 +3816,7 @@
       align-items: center;
       gap: 8px;
     }
-    .qs-topbar-home-btn, .qs-share-btn {
+    .qs-share-btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -3566,7 +3830,7 @@
       cursor: pointer;
       transition: all 0.2s ease;
     }
-    [data-theme="light"] .qs-topbar-home-btn, [data-theme="light"] .qs-share-btn {
+    [data-theme="light"] .qs-share-btn {
       background: #F8FAFC !important;
       border-color: #CBD5E1 !important;
       color: #0F172A !important;
@@ -3587,10 +3851,6 @@
       <span class="qs-pulse-dot"></span>
     </div>
     <div class="qs-topbar-right">
-      <button type="button" class="qs-topbar-home-btn" id="qs-topbar-home-btn" onclick="handleDnaBack()" title="Back to Search" style="display:none;">
-        <span>←</span>
-        <span>Back</span>
-      </button>
       <button type="button" class="qs-theme-btn" id="qs-theme-btn" onclick="toggleTheme()" title="Toggle Theme" aria-label="Toggle Theme">
         <svg class="i-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="4.2"/>
@@ -3790,20 +4050,6 @@
          ==================================================================== -->
     <div id="dna-report-view" class="dna-report-container" style="display:none;">
 
-      <!-- CLEAN TOP BAR: BACK BUTTON & QUICK SHARE -->
-      <div class="report-nav-bar">
-        <button class="back-home-btn" onclick="resetToHome()" title="Back to DNA Home">
-          <span>←</span>
-          <span>Back to Search</span>
-        </button>
-        <button class="quick-share-btn" onclick="quickShareBriefing()" title="Share stock briefing">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" style="vertical-align:-2px; margin-right:4px;">
-            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/>
-          </svg>
-          <span>Share</span>
-        </button>
-      </div>
-
     <!-- HERO CITADEL: ASSET IDENTITY & 180° SPEEDOMETER ARC GAUGE -->
     <section class="hero-citadel-card">
       <div class="hero-citadel-grid">
@@ -3947,29 +4193,63 @@
     <!-- 30-SECOND EXECUTIVE VERDICT CARD -->
     <div class="exec-verdict-card" id="exec-verdict-card">
       <div class="verdict-header">
-        <div class="verdict-title">⚡ 30-Second Executive Verdict</div>
-        <div class="q-verdict-badge" id="verdict-badge">BULLISH</div>
-      </div>
-      <div class="verdict-grid">
-        <div class="verdict-item">
-          <span class="verdict-label">Action</span>
-          <span class="verdict-val" id="verdict-action">BUY THE DIP</span>
+        <div class="verdict-title">
+          <span class="verdict-title-pulse">⚡</span>
+          <span>30-Second Executive Verdict</span>
         </div>
-        <div class="verdict-item">
-          <span class="verdict-label">Entry Pocket</span>
-          <span class="verdict-val" id="verdict-entry">₹0.00</span>
-        </div>
-        <div class="verdict-item">
-          <span class="verdict-label">Hard Stop</span>
-          <span class="verdict-val" id="verdict-stop" style="color:#ef4444">₹0.00</span>
-        </div>
-        <div class="verdict-item">
-          <span class="verdict-label">Primary Target</span>
-          <span class="verdict-val" id="verdict-target" style="color:#10b981">₹0.00</span>
+        <div class="verdict-stance-pill bullish" id="verdict-badge">
+          <span class="stance-dot" id="verdict-dot"></span>
+          <span id="verdict-stance-text">BULLISH</span>
         </div>
       </div>
-      <div class="verdict-bullets" id="verdict-bullets">
-        <!-- Populated dynamically via JS -->
+
+      <!-- Executive Takeaway Banner (The 1-Liner Complete Picture) -->
+      <div class="verdict-takeaway-box" id="verdict-takeaway-box">
+        <span class="verdict-takeaway-icon" id="verdict-takeaway-icon">💡</span>
+        <div class="verdict-takeaway-body">
+          <span class="verdict-takeaway-tag">EXECUTIVE TAKEAWAY</span>
+          <p class="verdict-takeaway-text" id="verdict-headline">Evaluating structural trade dynamics...</p>
+        </div>
+      </div>
+
+      <!-- 4 Glassmorphic Execution Tiles -->
+      <div class="verdict-tiles-grid">
+        <div class="verdict-tile">
+          <span class="verdict-tile-label">Tactical Action</span>
+          <span class="verdict-tile-val" id="verdict-action">BUY THE DIP</span>
+          <span class="verdict-tile-sub" id="verdict-action-sub">Optimal Risk:Reward</span>
+        </div>
+        <div class="verdict-tile">
+          <span class="verdict-tile-label" id="verdict-entry-label">Entry Pocket</span>
+          <span class="verdict-tile-val" id="verdict-entry">₹0.00</span>
+          <span class="verdict-tile-sub" id="verdict-entry-sub">20-EMA Pullback Base</span>
+        </div>
+        <div class="verdict-tile">
+          <span class="verdict-tile-label" id="verdict-stop-label">Capital Floor (Stop)</span>
+          <span class="verdict-tile-val stop-val" id="verdict-stop">₹0.00</span>
+          <span class="verdict-tile-sub" id="verdict-stop-sub">Strict Invalidation</span>
+        </div>
+        <div class="verdict-tile">
+          <span class="verdict-tile-label" id="verdict-target-label">Primary Objective</span>
+          <span class="verdict-tile-val target-val" id="verdict-target">₹0.00</span>
+          <span class="verdict-tile-sub" id="verdict-target-sub">Liquidity Target</span>
+        </div>
+      </div>
+
+      <!-- Institutional Signal Telemetry Strip -->
+      <div class="verdict-telemetry-strip" id="verdict-telemetry-strip">
+        <div class="telemetry-chip" id="tel-trend-chip">
+          <span class="telemetry-chip-icon">📈</span>
+          <span class="telemetry-chip-text" id="tel-trend-text">Trend: Synchronizing structural EMA...</span>
+        </div>
+        <div class="telemetry-chip" id="tel-vol-chip">
+          <span class="telemetry-chip-icon">🏛️</span>
+          <span class="telemetry-chip-text" id="tel-vol-text">Institutional Flow: Monitored vs 20-DMA...</span>
+        </div>
+        <div class="telemetry-chip" id="tel-cap-chip">
+          <span class="telemetry-chip-icon">🛡️</span>
+          <span class="telemetry-chip-text" id="tel-cap-text">Capital Protection: Risk strictly capped...</span>
+        </div>
       </div>
     </div>
 
@@ -3986,12 +4266,27 @@
               <span class="q-num-pill">01</span>
               <span class="q-category-text">Timing & Entry</span>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;">
+            <div class="q-status-wrap">
               <span class="q-verdict-badge warning" id="q1-pill">⏳ Wait · Too Risky</span>
-              <span class="accordion-icon">▼</span>
             </div>
           </div>
           <h3 class="q-headline-question">Can I buy right now, or is it too late / risky?</h3>
+
+          <!-- 1-Liner Answer Preview -->
+          <div class="q-answer-preview" id="q1-preview">
+            <span class="preview-sparkle">💡</span>
+            <span class="preview-text" id="q1-preview-text">Evaluating optimal entry timing and resistance levels...</span>
+          </div>
+
+          <!-- Click to Expand Action Bar -->
+          <div class="q-expand-action-bar">
+            <span class="expand-action-label" id="q1-expand-label">Click to collapse analysis ↑</span>
+            <span class="expand-action-chevron">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </span>
+          </div>
         </div>
 
         <div class="accordion-content">
@@ -4057,13 +4352,29 @@
             <div class="q-category-chip">
               <span class="q-num-pill">02</span>
               <span class="q-category-text">Technical Speed</span>
+              <span class="q-chip-subtag">1–4 W</span>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;">
+            <div class="q-status-wrap">
               <span class="q-verdict-badge bullish" id="q2-pill">🟢 Upward Velocity</span>
-              <span class="accordion-icon">▼</span>
             </div>
           </div>
-          <h3 class="q-headline-question">What is the Chart & Technical Speed Saying? <span class="q-horizon-tag">1–4 W</span></h3>
+          <h3 class="q-headline-question">What is the Chart & Technical Speed Saying?</h3>
+
+          <!-- 1-Liner Answer Preview -->
+          <div class="q-answer-preview" id="q2-preview">
+            <span class="preview-sparkle">💡</span>
+            <span class="preview-text" id="q2-preview-text">Analyzing trend velocity, EMA moving averages, and tactical momentum...</span>
+          </div>
+
+          <!-- Click to Expand Action Bar -->
+          <div class="q-expand-action-bar">
+            <span class="expand-action-label" id="q2-expand-label">Click to view deep analysis ↓</span>
+            <span class="expand-action-chevron">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </span>
+          </div>
         </div>
 
         <div class="accordion-content">
@@ -4180,13 +4491,29 @@
             <div class="q-category-chip">
               <span class="q-num-pill">03</span>
               <span class="q-category-text">Wealth Compounding</span>
+              <span class="q-chip-subtag">1–3 Y</span>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;">
+            <div class="q-status-wrap">
               <span class="q-verdict-badge bullish" id="q3-pill">🟢 Super Wealth Builder</span>
-              <span class="accordion-icon">▼</span>
             </div>
           </div>
-          <h3 class="q-headline-question">Is This a Multi-Year Compounding Machine? <span class="q-horizon-tag">1–3 Y</span></h3>
+          <h3 class="q-headline-question">Is This a Multi-Year Compounding Machine?</h3>
+
+          <!-- 1-Liner Answer Preview -->
+          <div class="q-answer-preview" id="q3-preview">
+            <span class="preview-sparkle">💡</span>
+            <span class="preview-text" id="q3-preview-text">Auditing capital efficiency (ROCE), earnings quality, and multi-year CAGRs...</span>
+          </div>
+
+          <!-- Click to Expand Action Bar -->
+          <div class="q-expand-action-bar">
+            <span class="expand-action-label" id="q3-expand-label">Click to view deep analysis ↓</span>
+            <span class="expand-action-chevron">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </span>
+          </div>
         </div>
 
         <div class="accordion-content">
@@ -4254,12 +4581,27 @@
               <span class="q-num-pill">04</span>
               <span class="q-category-text">Solvency & Debt</span>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;">
+            <div class="q-status-wrap">
               <span class="q-verdict-badge bullish" id="q4-pill">🟢 100% Fortress</span>
-              <span class="accordion-icon">▼</span>
             </div>
           </div>
           <h3 class="q-headline-question">How Safe is the Balance Sheet? Any Bankruptcy Danger?</h3>
+
+          <!-- 1-Liner Answer Preview -->
+          <div class="q-answer-preview" id="q4-preview">
+            <span class="preview-sparkle">💡</span>
+            <span class="preview-text" id="q4-preview-text">Evaluating debt-to-equity ratio, interest coverage, and reserve buffer...</span>
+          </div>
+
+          <!-- Click to Expand Action Bar -->
+          <div class="q-expand-action-bar">
+            <span class="expand-action-label" id="q4-expand-label">Click to view deep analysis ↓</span>
+            <span class="expand-action-chevron">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </span>
+          </div>
         </div>
 
         <div class="accordion-content">
@@ -4321,12 +4663,27 @@
               <span class="q-num-pill">05</span>
               <span class="q-category-text">Smart Money & Whales</span>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;">
+            <div class="q-status-wrap">
               <span class="q-verdict-badge bullish" id="q5-pill">🟢 Whale Accumulation</span>
-              <span class="accordion-icon">▼</span>
             </div>
           </div>
           <h3 class="q-headline-question">Are Big Whales (FIIs & Mutual Funds) Buying or Dumping?</h3>
+
+          <!-- 1-Liner Answer Preview -->
+          <div class="q-answer-preview" id="q5-preview">
+            <span class="preview-sparkle">💡</span>
+            <span class="preview-text" id="q5-preview-text">Tracking institutional ownership, delivery spikes, and custodial holdings...</span>
+          </div>
+
+          <!-- Click to Expand Action Bar -->
+          <div class="q-expand-action-bar">
+            <span class="expand-action-label" id="q5-expand-label">Click to view deep analysis ↓</span>
+            <span class="expand-action-chevron">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </span>
+          </div>
         </div>
 
         <div class="accordion-content">
@@ -4405,12 +4762,27 @@
               <span class="q-num-pill">06</span>
               <span class="q-category-text">Valuation & Peers</span>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;">
+            <div class="q-status-wrap">
               <span class="q-verdict-badge neutral" id="q6-pill">🟡 Fairly Priced</span>
-              <span class="accordion-icon">▼</span>
             </div>
           </div>
           <h3 class="q-headline-question">Are There Better Value Alternatives in This Sector?</h3>
+
+          <!-- 1-Liner Answer Preview -->
+          <div class="q-answer-preview" id="q6-preview">
+            <span class="preview-sparkle">💡</span>
+            <span class="preview-text" id="q6-preview-text">Benchmarking P/E spectrum positioning vs industry median and head-to-head peers...</span>
+          </div>
+
+          <!-- Click to Expand Action Bar -->
+          <div class="q-expand-action-bar">
+            <span class="expand-action-label" id="q6-expand-label">Click to view deep analysis ↓</span>
+            <span class="expand-action-chevron">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </span>
+          </div>
         </div>
 
         <div class="accordion-content">
@@ -4486,12 +4858,27 @@
               <span class="q-num-pill">07</span>
               <span class="q-category-text">Catalysts & Forensics</span>
             </div>
-            <div style="display:flex;align-items:center;gap:8px;">
+            <div class="q-status-wrap">
               <span class="q-verdict-badge bullish" id="q7-pill">🟢 Clean Audit Track</span>
-              <span class="accordion-icon">▼</span>
             </div>
           </div>
           <h3 class="q-headline-question">What Are the Catalysts, News Sparks & Red Flags?</h3>
+
+          <!-- 1-Liner Answer Preview -->
+          <div class="q-answer-preview" id="q7-preview">
+            <span class="preview-sparkle">💡</span>
+            <span class="preview-text" id="q7-preview-text">Auditing forensic integrity, accounting red flags, and upcoming corporate catalysts...</span>
+          </div>
+
+          <!-- Click to Expand Action Bar -->
+          <div class="q-expand-action-bar">
+            <span class="expand-action-label" id="q7-expand-label">Click to view deep analysis ↓</span>
+            <span class="expand-action-chevron">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </span>
+          </div>
         </div>
 
         <div class="accordion-content">
@@ -4629,6 +5016,15 @@
           <div class="share-btn-text">
             <span class="share-btn-main" id="copy-btn-text">Copy Deep Link & Briefing</span>
             <span class="share-btn-sub">One-tap copy to clipboard</span>
+          </div>
+        </button>
+
+        <!-- 4. 1200x630 Setup Snapshot Card (Task 5.1) -->
+        <button class="share-action-btn" onclick="generateAndShareDnaSnapshotCard()" title="Generate 1200x630 HD Setup Snapshot Card" style="border-color:rgba(99,102,241,0.4);background:rgba(99,102,241,0.08)">
+          <span class="share-btn-emoji">🖼️</span>
+          <div class="share-btn-text">
+            <span class="share-btn-main">1200x630 Snapshot Card</span>
+            <span class="share-btn-sub">Branded institutional image for WhatsApp/X</span>
           </div>
         </button>
       </div>
@@ -5396,25 +5792,97 @@
         if (qBar) qBar.style.width = `${score}%`;
       }
 
-      // Task 2.1: Populate 30-Second Executive Verdict Card
-      const vBadgeEl = document.getElementById('verdict-badge');
-      if (vBadgeEl) {
-        vBadgeEl.textContent = data.quantVerdict || 'NEUTRAL';
-        vBadgeEl.className = `q-verdict-badge ${data.quantVerdictClass === 'verdict-good' ? 'bullish' : (data.quantVerdictClass === 'verdict-bad' ? 'bearish' : 'neutral')}`;
-      }
-      setTxt('verdict-action', data.tradeExecution?.tactical_action || data.quantVerdict || (data.dnaScore >= 65 ? 'BUY ON PULLBACK' : (data.dnaScore <= 35 ? 'AVOID' : 'RANGE TRADE')));
-      setTxt('verdict-entry', data.q1?.dipPrice || (data.currentMetrics?.ema20 ? '₹' + Number(data.currentMetrics.ema20).toFixed(1) : '₹0.00'));
-      setTxt('verdict-stop', data.q1?.stopPrice || (data.tradeExecution?.stop_loss ? '₹' + Number(data.tradeExecution.stop_loss).toFixed(2) : '₹0.00'));
-      setTxt('verdict-target', data.q2?.target1 || (data.tradeExecution?.target_1 ? '₹' + Number(data.tradeExecution.target_1).toFixed(1) : '₹0.00'));
+      // Task 2.1: Populate 30-Second Executive Verdict Card (Institutional Glassmorphic Terminal)
+      const isBearish = data.quantVerdictClass === 'verdict-bad' || 
+                        (data.dnaScore !== undefined && data.dnaScore <= 40) ||
+                        String(data.quantVerdict || '').toUpperCase().includes('EXIT') ||
+                        String(data.quantVerdict || '').toUpperCase().includes('AVOID') ||
+                        String(data.tradeExecution?.tactical_action || '').toUpperCase().includes('EXIT') ||
+                        String(data.tradeExecution?.tactical_action || '').toUpperCase().includes('AVOID') ||
+                        String(data.tradeExecution?.tactical_action || '').toUpperCase().includes('PROTECT');
+      
+      const isBullish = data.quantVerdictClass === 'verdict-good' || 
+                        (data.dnaScore !== undefined && data.dnaScore >= 65);
 
-      const vBulletsEl = document.getElementById('verdict-bullets');
-      if (vBulletsEl) {
-        const trendBullet = `• <strong>Trend:</strong> Price ${data.price} (${data.ema200Status}), ${data.change}.`;
-        const volBullet = data.currentMetrics?.acc_days_20d !== undefined
-          ? `• <strong>Institutional Flow:</strong> ${data.currentMetrics.acc_days_20d} accumulation vs ${data.currentMetrics.dist_days_20d || 0} distribution sessions (last 20 days).`
-          : `• <strong>Volume Conviction:</strong> Monitored vs 20-DMA volume footprint.`;
-        const stopBullet = `• <strong>Capital Protection:</strong> Hard stop pegged at ${data.q1?.stopPrice || '₹0.00'} (${data.q1?.stopSub || 'Risk Floor'}).`;
-        vBulletsEl.innerHTML = `<div>${trendBullet}</div><div>${volBullet}</div><div>${stopBullet}</div>`;
+      const vBadgeEl = document.getElementById('verdict-badge');
+      const vStanceText = document.getElementById('verdict-stance-text');
+      if (vBadgeEl && vStanceText) {
+        if (isBearish) {
+          vBadgeEl.className = 'verdict-stance-pill bearish';
+          vStanceText.textContent = 'DEFENSIVE · CAPITAL PROTECTION';
+        } else if (isBullish) {
+          vBadgeEl.className = 'verdict-stance-pill bullish';
+          vStanceText.textContent = data.quantVerdict || 'STRONG MOMENTUM BUY';
+        } else {
+          vBadgeEl.className = 'verdict-stance-pill warning';
+          vStanceText.textContent = data.quantVerdict || 'ACCUMULATE ON DIP';
+        }
+      }
+
+      // Executive Takeaway Headline
+      const vHeadlineEl = document.getElementById('verdict-headline');
+      const vIconEl = document.getElementById('verdict-takeaway-icon');
+      if (vHeadlineEl) {
+        if (isBearish) {
+          if (vIconEl) vIconEl.textContent = '🛡️';
+          vHeadlineEl.innerHTML = `Price is trading below key structural moving averages with defensive distribution. Capital protection protocol active — <strong>halt fresh long entries</strong> and protect capital at <strong>${data.q1?.stopPrice || data.tradeExecution?.stop_loss || 'support floor'}</strong>.`;
+        } else if (isBullish) {
+          if (vIconEl) vIconEl.textContent = '🚀';
+          vHeadlineEl.innerHTML = `High institutional sponsorship with strong price velocity. Favorable asymmetric risk-to-reward in the entry pocket <strong>${data.q1?.dipPrice || 'support zone'}</strong> targeting <strong>${data.q2?.target1 || 'higher liquidity'}</strong>.`;
+        } else {
+          if (vIconEl) vIconEl.textContent = '⚡';
+          vHeadlineEl.innerHTML = `Consolidating within structural bounds. Favorable setup for patient accumulation near <strong>${data.q1?.dipPrice || 'support'}</strong> with strictly defined capital stop at <strong>${data.q1?.stopPrice || 'floor'}</strong>.`;
+        }
+      }
+
+      // Tactical Action
+      setTxt('verdict-action', data.tradeExecution?.tactical_action || data.quantVerdict || (isBearish ? 'PROTECT PROFITS / EXIT' : (isBullish ? 'BUY ON BREAKOUT' : 'BUY ON DIP')));
+      setTxt('verdict-action-sub', isBearish ? 'Capital Preservation' : (isBullish ? 'High Velocity Expansion' : 'Optimal Risk:Reward'));
+
+      // Entry Pocket / Guidance
+      const entryLabelEl = document.getElementById('verdict-entry-label');
+      if (entryLabelEl) entryLabelEl.textContent = isBearish ? 'Entry Guidance' : 'Entry Pocket';
+      setTxt('verdict-entry', isBearish ? 'HALTED (WAIT)' : (data.q1?.dipPrice || (data.currentMetrics?.ema20 ? '₹' + Number(data.currentMetrics.ema20).toFixed(1) : '₹0.00')));
+      setTxt('verdict-entry-sub', isBearish ? 'Wait for 200 EMA Base' : '20-EMA Pullback Base');
+
+      // Capital Floor (Stop Loss)
+      const stopLabelEl = document.getElementById('verdict-stop-label');
+      if (stopLabelEl) stopLabelEl.textContent = isBearish ? 'Exit Level / Floor' : 'Capital Floor (Stop)';
+      setTxt('verdict-stop', data.q1?.stopPrice || (data.tradeExecution?.stop_loss ? '₹' + Number(data.tradeExecution.stop_loss).toFixed(2) : '₹0.00'));
+      setTxt('verdict-stop-sub', isBearish ? 'Preserve Capital' : 'Strict Invalidation');
+
+      // Primary Objective (Target)
+      const targetLabelEl = document.getElementById('verdict-target-label');
+      if (targetLabelEl) targetLabelEl.textContent = isBearish ? 'Downside Support' : 'Primary Objective';
+      setTxt('verdict-target', data.q2?.target1 || (data.tradeExecution?.target_1 ? '₹' + Number(data.tradeExecution.target_1).toFixed(1) : '₹0.00'));
+      setTxt('verdict-target-sub', isBearish ? 'Demand Floor Absorption' : 'Liquidity Target');
+
+      // Telemetry Strip
+      setTxt('tel-trend-text', `Trend: Price ${data.price} (${data.ema200Status}), ${data.change}.`);
+      setTxt('tel-vol-text', data.currentMetrics?.acc_days_20d !== undefined 
+        ? `Institutional Flow: ${data.currentMetrics.acc_days_20d} Acc vs ${data.currentMetrics.dist_days_20d || 0} Dist days (20-DMA).`
+        : `Institutional Flow: Monitored vs 20-DMA volume footprint.`);
+      setTxt('tel-cap-text', `Capital Protection: Risk strictly pegged at ${data.q1?.stopPrice || '₹0.00'} (${data.q1?.stopSub || 'Risk Floor'}).`);
+
+      function extractOneLinerAnswer(raw, defaultText) {
+        if (!raw) return defaultText || "Analysis ready. Tap below to inspect.";
+        const div = document.createElement('div');
+        div.innerHTML = raw;
+        let txt = (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim();
+        txt = txt.replace(/^✦\s*Plain-English Takeaway\s*/i, '').trim();
+        const m = txt.match(/^([^.?!]+[.?!])/);
+        if (m && m[1]) {
+          let s1 = m[1].trim();
+          if (s1.length < 35) {
+            const m2 = txt.match(/^([^.?!]+[.?!]\s*[^.?!]+[.?!])/);
+            if (m2 && m2[1] && m2[1].length <= 150) {
+              s1 = m2[1].trim();
+            }
+          }
+          if (s1.length <= 150) return s1;
+        }
+        if (txt.length > 135) return txt.substring(0, 132) + '...';
+        return txt || defaultText || "Analysis ready. Tap below to inspect.";
       }
 
       function setCardVerdict(qNum, qData) {
@@ -5436,6 +5904,10 @@
         if (calloutEl) {
           const tint = qData.type === 'bullish' ? 'good-tint' : (qData.type === 'bearish' ? 'danger-tint' : 'caution-tint');
           calloutEl.className = `q-insight-callout ${tint}`;
+        }
+        const previewEl = document.getElementById(`q${qNum}-preview-text`);
+        if (previewEl && qData.answer) {
+          previewEl.textContent = extractOneLinerAnswer(qData.answer);
         }
       }
 
@@ -5634,6 +6106,16 @@
       } catch (shareErr) {
         console.warn('[DNA] updateSharePreview warning:', shareErr);
       }
+
+      // Ensure accordion labels match current expansion state
+      ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7'].forEach(qid => {
+        const card = document.getElementById(`card-${qid}`);
+        const label = document.getElementById(`${qid}-expand-label`);
+        if (label && card) {
+          const isOpen = card.classList.contains('accordion-open');
+          label.textContent = isOpen ? 'Click to collapse analysis ↑' : 'Click to view deep analysis ↓';
+        }
+      });
     }
 
     async function selectStock(sym, skipScanAnimation = false, forceRefresh = false) {
@@ -5653,10 +6135,8 @@
       } catch (e) {}
 
       const topbarBackBtn = document.getElementById('qs-topbar-back-btn');
-      const topbarHomeBtn = document.getElementById('qs-topbar-home-btn');
       const topbarShareBtn = document.getElementById('qs-topbar-share-btn');
       if (topbarBackBtn) topbarBackBtn.style.display = 'inline-flex';
-      if (topbarHomeBtn) topbarHomeBtn.style.display = 'inline-flex';
       if (topbarShareBtn) topbarShareBtn.style.display = 'inline-flex';
 
       document.querySelectorAll('.chip-btn').forEach(btn => {
@@ -5786,7 +6266,12 @@
     function toggleAccordion(qId) {
       const card = document.getElementById(`card-${qId}`) || document.getElementById(qId);
       if (!card) return;
+      const isOpening = !card.classList.contains('accordion-open');
       card.classList.toggle('accordion-open');
+      const label = document.getElementById(`${qId}-expand-label`);
+      if (label) {
+        label.textContent = isOpening ? 'Click to collapse analysis ↑' : 'Click to view deep analysis ↓';
+      }
     }
 
     function filterAudience(qid) {
@@ -5918,7 +6403,6 @@
       const popover = document.getElementById('home-search-popover');
 
       const topbarBackBtn = document.getElementById('qs-topbar-back-btn');
-      const topbarHomeBtn = document.getElementById('qs-topbar-home-btn');
       const topbarShareBtn = document.getElementById('qs-topbar-share-btn');
 
       if (loadingView) loadingView.style.display = 'none';
@@ -5927,7 +6411,6 @@
       if (homeView) homeView.style.display = 'flex';
       if (popover) popover.style.display = 'none';
       if (topbarBackBtn) topbarBackBtn.style.display = 'none';
-      if (topbarHomeBtn) topbarHomeBtn.style.display = 'none';
       if (topbarShareBtn) topbarShareBtn.style.display = 'none';
 
       try {
@@ -6419,6 +6902,269 @@
         setTimeout(() => { shareSection.style.outline = 'none'; }, 1500);
       } else {
         shareToWhatsApp();
+      }
+    }
+
+    async function generateAndShareDnaSnapshotCard() {
+      const briefing = generateShareBriefing();
+      const sym = (briefing.sym || 'STOCK').toUpperCase();
+      const name = briefing.name || sym;
+      const priceStr = briefing.price || '₹0';
+      const stance = briefing.stance || 'QUANT VERDICT';
+      const entryStr = briefing.dip !== 'Wait for Dip' ? briefing.dip : (briefing.breakout !== 'Watch Level' ? briefing.breakout : priceStr);
+      const targetStr = briefing.target !== 'Target 1' ? briefing.target : '₹0';
+      const stopStr = briefing.stop !== 'Safety Floor' ? briefing.stop : '₹0';
+      const scoreStr = document.getElementById('health-score-val')?.textContent?.trim() || document.getElementById('exec-score-val')?.textContent?.trim() || '84';
+      const rsiStr = briefing.rsi || '54.8';
+
+      showShareToast('Rendering 1200x630 HD Snapshot Card...');
+
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1200;
+        canvas.height = 630;
+        const ctx = canvas.getContext('2d');
+
+        // 1. Dark Gradient Background
+        const bgGrad = ctx.createLinearGradient(0, 0, 1200, 630);
+        bgGrad.addColorStop(0, '#090D16');
+        bgGrad.addColorStop(0.5, '#0E1524');
+        bgGrad.addColorStop(1, '#080A11');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, 1200, 630);
+
+        // Ambient Glows
+        const glow1 = ctx.createRadialGradient(1050, 120, 10, 1050, 120, 280);
+        glow1.addColorStop(0, 'rgba(99, 102, 241, 0.22)');
+        glow1.addColorStop(1, 'rgba(99, 102, 241, 0)');
+        ctx.fillStyle = glow1;
+        ctx.fillRect(770, 0, 430, 400);
+
+        const glow2 = ctx.createRadialGradient(120, 520, 10, 120, 520, 240);
+        glow2.addColorStop(0, 'rgba(16, 185, 129, 0.16)');
+        glow2.addColorStop(1, 'rgba(16, 185, 129, 0)');
+        ctx.fillStyle = glow2;
+        ctx.fillRect(0, 280, 360, 350);
+
+        // Outer Border
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(16, 16, 1168, 598);
+
+        // 2. Top Header Bar
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 22px "Outfit", sans-serif';
+        ctx.fillText('🧬 QUANTSYNC DNA', 48, 58);
+
+        ctx.fillStyle = 'rgba(99, 102, 241, 0.25)';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(268, 38, 170, 28, 6);
+        else ctx.rect(268, 38, 170, 28);
+        ctx.fill();
+        ctx.fillStyle = '#A5B4FC';
+        ctx.font = 'bold 12px "JetBrains Mono", monospace';
+        ctx.fillText('INSTITUTIONAL RADAR', 282, 57);
+
+        ctx.fillStyle = '#10B981';
+        ctx.font = 'bold 13px "JetBrains Mono", monospace';
+        ctx.fillText('● AUDITED MULTI-FACTOR MODEL', 860, 57);
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.beginPath();
+        ctx.moveTo(48, 80);
+        ctx.lineTo(1152, 80);
+        ctx.stroke();
+
+        // 3. Hero Section
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 50px "Outfit", sans-serif';
+        ctx.fillText(sym, 48, 145);
+
+        const symW = ctx.measureText(sym).width;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(58 + symW, 110, 56, 26, 6);
+        else ctx.rect(58 + symW, 110, 56, 26);
+        ctx.fill();
+        ctx.fillStyle = '#94A3B8';
+        ctx.font = 'bold 12px "JetBrains Mono", monospace';
+        ctx.fillText('NSE', 68 + symW, 127);
+
+        ctx.fillStyle = '#94A3B8';
+        ctx.font = '500 17px sans-serif';
+        ctx.fillText(`${name}   ·   QuantSync DNA Analysis`, 48, 180);
+
+        ctx.fillStyle = '#38BDF8';
+        ctx.font = 'bold 44px "JetBrains Mono", monospace';
+        const priceW = ctx.measureText(priceStr).width;
+        ctx.fillText(priceStr, 1152 - priceW, 142);
+
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.35)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(1152 - 250, 160, 250, 28, 6);
+        else ctx.rect(1152 - 250, 160, 250, 28);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#34D399';
+        ctx.font = 'bold 12px "JetBrains Mono", monospace';
+        ctx.fillText(`● ${stance.toUpperCase()}`, 1152 - 238, 179);
+
+        // 4. Center 4-Card Grid
+        const cards = [
+          { label: 'ACTION ENTRY', val: entryStr, sub: 'Pivot Support Line', color: '#60A5FA', bg: 'rgba(59, 130, 246, 0.08)', border: 'rgba(59, 130, 246, 0.3)' },
+          { label: 'MOMENTUM TARGET', val: targetStr, sub: 'Quarterly Extension Goal', color: '#34D399', bg: 'rgba(16, 185, 129, 0.08)', border: 'rgba(16, 185, 129, 0.3)' },
+          { label: 'SAFETY STOP', val: stopStr, sub: 'Capital Protection Floor', color: '#F87171', bg: 'rgba(239, 68, 68, 0.08)', border: 'rgba(239, 68, 68, 0.3)' },
+          { label: 'HEALTH SCORE', val: `${scoreStr}/100`, sub: Number(scoreStr) >= 80 ? 'Elite Conviction Tier' : 'High Conviction', color: '#FBBF24', bg: 'rgba(245, 158, 11, 0.08)', border: 'rgba(245, 158, 11, 0.3)' }
+        ];
+
+        const cardW = 262;
+        const cardH = 138;
+        const startX = 48;
+        const gap = 20;
+        const startY = 222;
+
+        cards.forEach((c, idx) => {
+          const x = startX + idx * (cardW + gap);
+          ctx.fillStyle = c.bg;
+          ctx.strokeStyle = c.border;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(x, startY, cardW, cardH, 12);
+          else ctx.rect(x, startY, cardW, cardH);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#94A3B8';
+          ctx.font = 'bold 12px "JetBrains Mono", monospace';
+          ctx.fillText(c.label, x + 18, startY + 34);
+
+          ctx.fillStyle = c.color;
+          ctx.font = 'bold 28px "JetBrains Mono", monospace';
+          ctx.fillText(c.val, x + 18, startY + 76);
+
+          ctx.fillStyle = '#CBD5E1';
+          ctx.font = '500 13px sans-serif';
+          ctx.fillText(c.sub, x + 18, startY + 110);
+        });
+
+        // 5. Visual Risk-Reward Slider Bar
+        const barY = 390;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(48, barY, 1104, 136, 14);
+        else ctx.rect(48, barY, 1104, 136);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(100, barY + 54);
+        ctx.lineTo(1100, barY + 54);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.6)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(500, barY + 54);
+        ctx.lineTo(1100, barY + 54);
+        ctx.stroke();
+
+        // Stop Node
+        ctx.fillStyle = '#EF4444';
+        ctx.beginPath();
+        ctx.arc(100, barY + 54, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#F87171';
+        ctx.font = 'bold 13px "JetBrains Mono", monospace';
+        ctx.fillText(`STOP LOSS: ${stopStr}`, 60, barY + 90);
+        ctx.fillStyle = '#94A3B8';
+        ctx.font = '12px sans-serif';
+        ctx.fillText('Capital protection floor', 60, barY + 110);
+
+        // Entry Node
+        ctx.fillStyle = '#6366F1';
+        ctx.beginPath();
+        ctx.arc(500, barY + 54, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#A5B4FC';
+        ctx.font = 'bold 13px "JetBrains Mono", monospace';
+        ctx.fillText(`ENTRY: ${entryStr}`, 440, barY + 90);
+        ctx.fillStyle = '#94A3B8';
+        ctx.font = '12px sans-serif';
+        ctx.fillText('Actionable accumulation level', 440, barY + 110);
+
+        // Target Node
+        ctx.fillStyle = '#10B981';
+        ctx.beginPath();
+        ctx.arc(1100, barY + 54, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#34D399';
+        ctx.font = 'bold 13px "JetBrains Mono", monospace';
+        ctx.fillText(`TARGET: ${targetStr}`, 1000, barY + 90);
+        ctx.fillStyle = '#94A3B8';
+        ctx.font = '12px sans-serif';
+        ctx.fillText('Projected swing objective', 1000, barY + 110);
+
+        // 6. Bottom Footer Bar
+        const footerY = 554;
+        ctx.fillStyle = '#080C14';
+        ctx.fillRect(18, footerY, 1164, 58);
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.beginPath();
+        ctx.moveTo(18, footerY);
+        ctx.lineTo(1182, footerY);
+        ctx.stroke();
+
+        ctx.fillStyle = '#818CF8';
+        ctx.font = 'bold 13px "JetBrains Mono", monospace';
+        ctx.fillText(`🔗 quantsync.in/dna?symbol=${sym}`, 48, footerY + 36);
+
+        ctx.fillStyle = '#64748B';
+        ctx.font = '12px sans-serif';
+        const discStr = 'Quantitative DNA Architecture · Multi-Source Audited Data Only';
+        const discW = ctx.measureText(discStr).width;
+        ctx.fillText(discStr, 1152 - discW, footerY + 36);
+
+        const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+        if (!blob) throw new Error("Could not create canvas blob");
+
+        const fileName = `QuantSync_DNA_${sym}_1200x630.png`;
+        const file = new File([blob], fileName, { type: 'image/png' });
+
+        // Try Web Share API
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              title: `QuantSync DNA: ${sym}`,
+              text: briefing.text,
+              files: [file]
+            });
+            showShareToast('✓ Snapshot shared with chart photo!');
+            return;
+          } catch (e) {
+            if (e.name === 'AbortError') return;
+            console.log("Web Share fallback:", e);
+          }
+        }
+
+        // Direct Download Fallback
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showShareToast('✓ 1200x630 Snapshot Card downloaded!');
+      } catch (err) {
+        console.error("Error in generateAndShareDnaSnapshotCard:", err);
+        showShareToast('Could not generate snapshot card');
       }
     }
 
