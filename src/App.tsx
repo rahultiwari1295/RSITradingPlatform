@@ -1653,6 +1653,23 @@ export default function App() {
     }
   }, [activeTab, chartSymbol, engine]);
 
+  // Fetch real V3 patterns and breakouts on-demand when charts/scanner/portal tabs are active
+  useEffect(() => {
+    if (activeTab === "charts") {
+      quantsyncApi.getPatterns().then((res) => {
+        if (res && res.sections && res.sections.length > 0) {
+          setPatterns(res.sections);
+        }
+      }).catch((e) => console.warn("Failed to load live patterns:", e));
+
+      quantsyncApi.getBreakouts().then((res) => {
+        if (res && res.breakouts && res.breakouts.length > 0) {
+          setBreakouts(res.breakouts);
+        }
+      }).catch((e) => console.warn("Failed to load live breakouts:", e));
+    }
+  }, [activeTab, chartSub]);
+
   // Performance optimization: Lazy-mount offscreen tab components so unvisited tabs
   // do not trigger heavy backend queries, iframes, or chart rendering on initial home load
   const [hasOpenedLounge, setHasOpenedLounge] = useState<boolean>(() => {
@@ -4204,7 +4221,11 @@ export default function App() {
                         <span className="micro">{p.name} <span style={{ color: "var(--accent)" }}>({p.count} today)</span></span>
                       </div>
                       <div className="pattern-grid">
-                        {p.items.map((it, itIdx) => (
+                        {p.items.map((it, itIdx) => {
+                          const sym = (it.s || it.symbol || "").toUpperCase();
+                          const live = livePrices?.[sym]?.price;
+                          const currentCmp = live || it.currentPrice;
+                          return (
                           <div
                             key={itIdx}
                             className={`pcard ${it.tier}`}
@@ -4216,7 +4237,14 @@ export default function App() {
                           >
                             <div className="row between">
                               <span className="nm">{it.s || it.symbol}</span>
-                              <span className="sc">{it.score}</span>
+                              <div style={{ textAlign: "right" }}>
+                                <span className="sc">{it.score}</span>
+                                {currentCmp && (
+                                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--accent)", marginTop: 2 }}>
+                                    ₹{Number(currentCmp).toFixed(2)}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                             <div className="chartbox" style={{ margin: "10px 0 0", padding: "7px 6px" }}>
                               {renderCandlesSVG(it.miniCandles || [], { w: 140, h: 60, padT: 6, padB: 6, glowLast: 2 })}
@@ -4226,7 +4254,7 @@ export default function App() {
                               <span>Vol {it.vol}</span>
                             </div>
                           </div>
-                        ))}
+                        );})}
                       </div>
                     </div>
                   ))}
@@ -4252,7 +4280,10 @@ export default function App() {
                     </div>
                   </div>
 
-                  {breakouts.map((r, rIdx) => (
+                  {breakouts.map((r, rIdx) => {
+                    const live = livePrices?.[(r.symbol || "").toUpperCase()]?.price;
+                    const displayPrice = live || r.price;
+                    return (
                     <div
                       key={rIdx}
                       className="brow"
@@ -4271,7 +4302,7 @@ export default function App() {
                           <span className="num" style={{ fontSize: 10, color: "var(--ink3)" }}>Vol {r.volFormatted || `${r.volume_multiple}×`}</span>
                         </div>
                         <div className="t2">
-                          <span className="num">{r.priceFormatted || `₹${r.price.toFixed(2)}`}</span> · {r.notes}
+                          <span className="num">₹{Number(displayPrice).toFixed(2)}</span> · {r.notes}
                         </div>
                         <div style={{ marginTop: 9 }}>
                           {r.qualification_status === "AI_SELECTED" ? (
@@ -4284,7 +4315,8 @@ export default function App() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                  );
+                })}
 
                   <div style={{ textAlign: "center", fontSize: 10.5, color: "var(--ink3)", margin: "18px 0 4px", lineHeight: 1.7 }}>
                     Showing <b className="num" style={{ color: "var(--ink2)" }}>{breakouts.length}</b> candidates from live scan
