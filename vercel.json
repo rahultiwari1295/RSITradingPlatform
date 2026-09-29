@@ -38,6 +38,14 @@
       "destination": "https://quantsync-api.duckdns.org:8443/api/:match*"
     },
     {
+      "source": "/dna-v2",
+      "destination": "/dna-v2.html"
+    },
+    {
+      "source": "/dna-v2.html",
+      "destination": "/dna-v2.html"
+    },
+    {
       "source": "/dna-mobile-story.html",
       "destination": "/dna-mobile-story.html"
     },
