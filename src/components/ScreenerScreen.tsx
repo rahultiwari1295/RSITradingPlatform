@@ -232,7 +232,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
   // 1. Two-way primary switch: "near_breakout" vs "success" (Confirmed Breakout)
   const [activeTab, setActiveTab] = useState<"near_breakout" | "success">("near_breakout");
   const [selectedPattern, setSelectedPattern] = useState<string>("ALL");
-  const [actionFilter, setActionFilter] = useState<"ALL" | "BUY" | "MISSED" | "SKIP">("BUY");
+  const [actionFilter, setActionFilter] = useState<"ALL" | "BUY" | "MISSED" | "SKIP">("ALL");
   const [nearFilter, setNearFilter] = useState<"ALL" | "HOT" | "MID" | "FAR">("ALL");
   const [mcapFilter, setMcapFilter] = useState<string>("ALL");
   const [expandedOlder, setExpandedOlder] = useState<boolean>(false);
@@ -765,7 +765,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
           onClick={() => {
             setActiveTab("success");
             setSelectedPattern("ALL");
-            setActionFilter("BUY");
+            setActionFilter("ALL");
             setMcapFilter("ALL");
           }}
           className={`sc-segment-btn ${activeTab === "success" ? "active success" : ""}`}
