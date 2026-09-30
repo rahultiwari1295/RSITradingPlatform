@@ -1714,11 +1714,14 @@
     // Handle Form Submit from Big Home Search Box
     function submitHomeSearch() {
       const input = document.getElementById('homeSearchInput');
-      if (!input) return;
-      const val = input.value.trim();
-      if (!val) return;
-      selectStock(val);
-      input.value = '';
+      const val = input ? input.value.trim() : '';
+      if (val) {
+        selectStock(val);
+        input.value = '';
+      } else {
+        // If user clicks Decode without typing, decode featured stock TITAN
+        selectStock('TITAN');
+      }
       const popover = document.getElementById('homeSearchPopover');
       if (popover) popover.style.display = 'none';
     }
@@ -2204,7 +2207,7 @@
         ctx.fillStyle = '#94A3B8';
         ctx.font = '9.5px JetBrains Mono';
         ctx.textAlign = 'center';
-        ctx.fillText(item.label.replace(' ', '''), groupX, height - 6);
+        ctx.fillText(item.label, groupX, height - 6);
       });
     }
 
