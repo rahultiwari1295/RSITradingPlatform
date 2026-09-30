@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { TerminalSnapshot, quantsyncApi } from "../../api/quantsyncApi";
+import { liveMarketSocket } from "../../services/liveMarketSocket";
 
 interface IndexTick {
   n: string;
@@ -159,6 +160,9 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
         if (!isMounted) return;
         if (data && data.rows && data.rows.length > 0) {
           setLiveBreakouts(data.rows);
+          // Subscribe home screen breakout symbols to WebSocket for live prices
+          const syms = data.rows.map((r: any) => (r.symbol || "").toUpperCase()).filter(Boolean);
+          if (syms.length > 0) liveMarketSocket.subscribe(syms);
         } else {
           // Fallback to recent breakouts
           fetch("/api/screener?breakout_status=SUCCESS&recent_days=4&limit=5")
@@ -166,6 +170,9 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
             .then((fallbackData) => {
               if (isMounted && fallbackData && fallbackData.rows && fallbackData.rows.length > 0) {
                 setLiveBreakouts(fallbackData.rows);
+                // Subscribe fallback breakout symbols to WebSocket for live prices
+                const syms = fallbackData.rows.map((r: any) => (r.symbol || "").toUpperCase()).filter(Boolean);
+                if (syms.length > 0) liveMarketSocket.subscribe(syms);
               }
             })
             .catch(() => {});
