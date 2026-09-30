@@ -78,6 +78,14 @@
       "destination": "/chat.html"
     },
     {
+      "source": "/bagalur",
+      "destination": "/bagalur_community_3d.html"
+    },
+    {
+      "source": "/bagalur_community_3d.html",
+      "destination": "/bagalur_community_3d.html"
+    },
+    {
       "source": "/uploads/:match*",
       "destination": "https://quantsync-api.duckdns.org:8443/uploads/:match*"
     },
