@@ -593,9 +593,9 @@ async function startServer() {
       selected_count: selected,
       ai_note,
       top3: [
-        { symbol: engine === "v2" ? "STOCK_A" : "UNITEDPOLY", score: 94, stars: 5 },
-        { symbol: engine === "v2" ? "STOCK_B" : "AEGISLOG", score: 87, stars: 4.5 },
-        { symbol: engine === "v2" ? "STOCK_C" : "CAPLIPOINT", score: 81, stars: 4 },
+        { symbol: engine === "v2" ? "HAPPYFORGE" : "UNITEDPOLY", score: 94, stars: 5 },
+        { symbol: engine === "v2" ? "RKFORGE" : "AEGISLOG", score: 87, stars: 4.5 },
+        { symbol: engine === "v2" ? "SUNDRMFAST" : "CAPLIPOINT", score: 81, stars: 4 },
       ],
     });
   });
@@ -610,9 +610,9 @@ async function startServer() {
           count: 7,
           items: [
             { s: "UNITEDPOLY", base: "32d", vol: "3.2×", score: 94, tier: "gold", seed: 101 },
-            { s: "STOCK_B", base: "18d", vol: "2.8×", score: 87, tier: "silver", seed: 202 },
-            { s: "STOCK_C", base: "45d", vol: "4.1×", score: 72, tier: "", seed: 303 },
-            { s: "STOCK_D", base: "26d", vol: "2.1×", score: 68, tier: "", seed: 404 },
+            { s: "RKFORGE", base: "18d", vol: "2.8×", score: 87, tier: "silver", seed: 202 },
+            { s: "SUNDRMFAST", base: "45d", vol: "4.1×", score: 72, tier: "", seed: 303 },
+            { s: "DALMIASUG", base: "26d", vol: "2.1×", score: 68, tier: "", seed: 404 },
           ],
         },
         {
@@ -620,7 +620,7 @@ async function startServer() {
           count: 12,
           items: [
             { s: "AEGISLOG", base: "14d", vol: "2.8×", score: 91, tier: "gold", seed: 505 },
-            { s: "STOCK_E", base: "9d", vol: "3.0×", score: 78, tier: "", seed: 606 },
+            { s: "ENTERO", base: "9d", vol: "3.0×", score: 78, tier: "", seed: 606 },
           ],
         },
         {
@@ -628,7 +628,7 @@ async function startServer() {
           count: 3,
           items: [
             { s: "CAPLIPOINT", base: "21d", vol: "2.3×", score: 84, tier: "silver", seed: 707 },
-            { s: "STOCK_F", base: "33d", vol: "2.0×", score: 71, tier: "", seed: 808 },
+            { s: "MONARCH", base: "33d", vol: "2.0×", score: 71, tier: "", seed: 808 },
           ],
         },
       ],
@@ -682,7 +682,7 @@ async function startServer() {
         {
           rank: 4,
           rankIcon: "4",
-          symbol: "STOCK_D",
+          symbol: "DALMIASUG",
           pattern: "BASE",
           score: 68,
           volume_multiple: 1.8,
@@ -695,7 +695,7 @@ async function startServer() {
         {
           rank: 5,
           rankIcon: "5",
-          symbol: "STOCK_G",
+          symbol: "DIXON",
           pattern: "52W_HIGH",
           score: 64,
           volume_multiple: 1.6,
@@ -998,7 +998,7 @@ async function startServer() {
   const dnaScriptPath = path.resolve(process.cwd(), "../vps_data_live/dna_engine.py");
   let cachedDnaUniverse: Array<{ symbol: string; name: string; token: string; candleCount: number }> = [];
 
-  const loadDnaUniverse = () => {
+  const loadDnaUniverse = async () => {
     if (fs.existsSync(dnaScriptPath)) {
       execFile("python3", [dnaScriptPath, "search", "ALL"], { maxBuffer: 10 * 1024 * 1024 }, (err, stdout) => {
         if (!err && stdout) {
@@ -1010,6 +1010,22 @@ async function startServer() {
           }
         }
       });
+    } else {
+      try {
+        const vpsRes = await fetch("https://quantsync-api.duckdns.org:8443/api/dna/search?q=ALL", {
+          headers: { "Accept": "application/json" },
+          signal: AbortSignal.timeout(8000),
+        }).catch(() => null);
+        if (vpsRes && vpsRes.ok) {
+          const data = await vpsRes.json();
+          if (Array.isArray(data)) {
+            cachedDnaUniverse = data;
+            console.log(`[DNA Engine] Loaded ${cachedDnaUniverse.length} universe stocks from VPS into search index`);
+          }
+        }
+      } catch (err: any) {
+        console.warn("[DNA Engine] Could not pre-cache universe from VPS:", err.message);
+      }
     }
   };
   loadDnaUniverse();
@@ -1024,51 +1040,71 @@ async function startServer() {
       const contains = cachedDnaUniverse.filter(s => !s.symbol.startsWith(q) && s.symbol.includes(q));
       return res.json([...startsWith, ...contains].slice(0, 25));
     }
-    // Fallback directly to python script
-    execFile("python3", [dnaScriptPath, "search", q], { maxBuffer: 5 * 1024 * 1024 }, (err, stdout) => {
-      if (err) return res.status(500).json({ error: "Failed to search stocks" });
-      try {
-        return res.json(JSON.parse(stdout));
-      } catch {
-        return res.json([]);
-      }
+    // Attempt VPS first, fallback to local python script if available
+    return forwardToVps("/api/dna/search", req, res, () => {
+      return new Promise((resolve) => {
+        if (!fs.existsSync(dnaScriptPath)) return resolve([]);
+        execFile("python3", [dnaScriptPath, "search", q], { maxBuffer: 5 * 1024 * 1024 }, (err, stdout) => {
+          if (err) return resolve([]);
+          try {
+            resolve(JSON.parse(stdout));
+          } catch {
+            resolve([]);
+          }
+        });
+      });
     });
   });
 
   app.get("/api/dna/discovery", (req, res) => {
-    execFile("python3", [dnaScriptPath, "discovery"], { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
-      if (err) {
-        console.error("[DNA Engine] Error fetching discovery shelves:", stderr || err.message);
-        return res.status(500).json({ error: "Failed to load discovery shelves" });
-      }
-      try {
-        return res.json(JSON.parse(stdout));
-      } catch (e: any) {
-        return res.status(500).json({ error: "Invalid JSON from discovery engine" });
-      }
+    return forwardToVps("/api/dna/discovery", req, res, () => {
+      return new Promise((resolve, reject) => {
+        if (!fs.existsSync(dnaScriptPath)) {
+          return reject(new Error("DNA discovery engine not available locally and VPS unreachable"));
+        }
+        execFile("python3", [dnaScriptPath, "discovery"], { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+          if (err) {
+            console.error("[DNA Engine] Error fetching discovery shelves locally:", stderr || err.message);
+            return reject(err);
+          }
+          try {
+            resolve(JSON.parse(stdout));
+          } catch (e: any) {
+            reject(new Error("Invalid JSON from discovery engine"));
+          }
+        });
+      });
     });
   });
 
   app.get("/api/dna/report/:symbol", (req, res) => {
     const symbol = req.params.symbol.trim().toUpperCase();
     const force = req.query.force === "true";
-    const args = [dnaScriptPath, "report", symbol];
-    if (force) args.push("--force");
 
-    execFile("python3", args, { maxBuffer: 15 * 1024 * 1024 }, (err, stdout, stderr) => {
-      if (err) {
-        console.error(`[DNA Engine] Error computing report for ${symbol}:`, stderr || err.message);
-        return res.status(500).json({ error: `DNA analysis failed: ${err.message}` });
-      }
-      try {
-        const data = JSON.parse(stdout);
-        if (data.error) {
-          return res.status(404).json(data);
+    return forwardToVps(`/api/dna/report/${symbol}`, req, res, () => {
+      return new Promise((resolve, reject) => {
+        if (!fs.existsSync(dnaScriptPath)) {
+          return reject(new Error(`DNA report engine not available locally for ${symbol} and VPS unreachable`));
         }
-        return res.json(data);
-      } catch (e: any) {
-        return res.status(500).json({ error: "Invalid JSON from DNA engine" });
-      }
+        const args = [dnaScriptPath, "report", symbol];
+        if (force) args.push("--force");
+
+        execFile("python3", args, { maxBuffer: 15 * 1024 * 1024 }, (err, stdout, stderr) => {
+          if (err) {
+            console.error(`[DNA Engine] Error computing report for ${symbol} locally:`, stderr || err.message);
+            return reject(new Error(`DNA analysis failed: ${err.message}`));
+          }
+          try {
+            const data = JSON.parse(stdout);
+            if (data.error) {
+              return resolve(data);
+            }
+            resolve(data);
+          } catch (e: any) {
+            reject(new Error("Invalid JSON from DNA engine"));
+          }
+        });
+      });
     });
   });
 
@@ -1169,6 +1205,22 @@ async function startServer() {
       const pathPart = req.params[0] ? `/${req.params[0]}` : "";
       // Try local python server first on port 8000
       let backendUrl = `http://127.0.0.1:8000/api/screener${pathPart}${queryStr}`;
+      const filterHomeHero = (data: any) => {
+        if (req.query.setup === "home_hero" && data && Array.isArray(data.rows)) {
+          data.rows = data.rows.filter((r: any) => {
+            const cp = Number(r.curr_price || 0);
+            const brk = Number(r.breakout_level || 0);
+            const tgt = Number(r.target_1 || 0);
+            if (brk <= 0 || cp <= 0) return false;
+            const diffAbs = Math.abs(((cp - brk) / brk) * 100);
+            const tgtGain = tgt > 0 ? ((tgt - cp) / cp) * 100 : 0;
+            // Strictly Good to Buy: within 5.0% of breakout and >= 5.0% upside left
+            return diffAbs <= 5.0 && tgtGain >= 5.0;
+          });
+        }
+        return data;
+      };
+
       try {
         const localRes = await fetch(backendUrl, {
           method: req.method,
@@ -1177,7 +1229,7 @@ async function startServer() {
         });
         if (localRes.ok) {
           const data = await localRes.json();
-          return res.json(data);
+          return res.json(filterHomeHero(data));
         }
       } catch (e) {
         // Fallback to VPS endpoint
@@ -1189,7 +1241,7 @@ async function startServer() {
         });
         if (vpsRes.ok) {
           const data = await vpsRes.json();
-          return res.json(data);
+          return res.json(filterHomeHero(data));
         }
       }
       return res.status(502).json({ error: "Could not connect to screener backend service" });

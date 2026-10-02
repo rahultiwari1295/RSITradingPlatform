@@ -21,8 +21,8 @@ export default function TradingViewWidget({
   // Clean the symbol in case any BSE: or exchange prefix exists
   const cleanSymbol = (symbol || "").trim().toUpperCase().replace(/^(BSE|NSE):/i, "");
   
-  // TradingView embed URL with interval and indicator parameters (using NSE prefix so it never defaults to BSE)
-  const iframeSrc = `https://s.tradingview.com/widgetembed/?symbol=NSE:${cleanSymbol}&interval=${interval}&theme=${theme}&style=1&timezone=Asia/Kolkata&locale=en&hide_side_toolbar=0&studies=%5B%22RSI%40tv-basicstudies%22%2C%22MASimple%40tv-basicstudies%22%5D&toolbarbg=${theme === "dark" ? "0f172a" : "f8f9fb"}`;
+  // TradingView embed URL with interval and indicator parameters (using BSE prefix)
+  const iframeSrc = `https://s.tradingview.com/widgetembed/?symbol=BSE:${cleanSymbol}&interval=${interval}&theme=${theme}&style=1&timezone=Asia/Kolkata&locale=en&hide_side_toolbar=0&studies=%5B%22RSI%40tv-basicstudies%22%2C%22MASimple%40tv-basicstudies%22%5D&toolbarbg=${theme === "dark" ? "0f172a" : "f8f9fb"}`;
 
   return (
     <div className="flex flex-col w-full h-full bg-white dark:bg-slate-950 overflow-hidden">
@@ -31,11 +31,11 @@ export default function TradingViewWidget({
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="font-mono text-xs font-bold text-gray-700 dark:text-slate-200">
-              {symbol} &bull; {interval === "D" ? "Daily" : interval === "W" ? "Weekly" : interval === "M" ? "Monthly" : "60m"} Chart
+              BSE:{cleanSymbol} &bull; {interval === "D" ? "Daily" : interval === "W" ? "Weekly" : interval === "M" ? "Monthly" : "60m"} Chart
             </span>
           </div>
           <a
-            href={`https://www.tradingview.com/chart/qvyqZrhQ/?symbol=${cleanSymbol}`}
+            href={`https://www.tradingview.com/chart/qvyqZrhQ/?symbol=BSE:${cleanSymbol}`}
             target="_blank"
             rel="noreferrer"
             className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline font-semibold"

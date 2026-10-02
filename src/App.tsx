@@ -1512,7 +1512,7 @@ export default function App() {
       setTerminalIndices((prev) => {
         return wsIndices.map((idx, i) => ({
           ...idx,
-          spark: (idx.spark && idx.spark.length > 0) ? idx.spark : (prev[i]?.spark || [])
+          spark: (idx.spark && idx.spark.length > 0) ? idx.spark : ((prev[i] as any)?.spark || [])
         }));
       });
     }
@@ -3414,11 +3414,13 @@ export default function App() {
                   </div>
                 </div>
               ) : engine === "v2" ? (
-                // V2 ACTIVE CARDS (+ADD button, % ROI, Stars + Action tag, Signal Date, Stop/Entry/Current/Target sequence — NO ML/scores, NO chart)
+                // V2 ACTIVE CARDS (+ADD button, % ROI, Stars, 4-step sequence, Signal Date shifted below Stop Loss, and dark action tag exactly as requested)
                 sortedActiveTrades.map((t: any, i: number) => {
                   const pPct = t.pnlPct ?? t.roiPct ?? 0;
                   const daysHeld = t.days ?? t.holdingDays ?? 2;
                   const tagInfo = getActionTagInfo("active", daysHeld, pPct);
+                  const rawDate = t.entryDate || t.date || "2026-09-15";
+                  const dateStr = typeof rawDate === "string" && rawDate.includes("T") ? rawDate.split("T")[0] : rawDate;
 
                   return (
                     <div
@@ -3427,32 +3429,52 @@ export default function App() {
                       onClick={() => setSelectedSignalTrade(t)}
                       style={{ animationDelay: `${i * 70}ms` }}
                     >
+                      {/* Top Header Row: Monogram | Symbol, NSE, Stars, Strategy | +ADD & ROI */}
                       <div className="row gap12" style={{ alignItems: "flex-start" }}>
-                        <div className="av" style={{ background: t.grad || "linear-gradient(135deg,#6366F1,#8B5CF6)" }}>
-                          {t.ab || t.sym?.slice(0, 2) || "TR"}
+                        <div className="av" style={{ background: t.grad || "linear-gradient(135deg,#F59E0B,#D97706)", borderRadius: 13, flexShrink: 0 }}>
+                          {t.ab || t.sym?.slice(0, 2) || "EM"}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div className="row between" style={{ alignItems: "flex-start" }}>
                             <div>
                               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                                <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: "-.025em" }}>
+                                <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: "-.02em" }}>
                                   {t.sym || t.symbol}
                                 </span>
-                                <span className="stars" style={{ verticalAlign: "middle" }}>
-                                  ★★★★★
-                                  <i style={{ width: `${Math.min(100, Math.max(0, ((t.stars || 4.5) / 5) * 100))}%` }}>★★★★★</i>
+                                <span
+                                  style={{
+                                    fontSize: 9.5,
+                                    fontWeight: 700,
+                                    padding: "2px 5px",
+                                    borderRadius: 4,
+                                    background: "rgba(255, 255, 255, 0.08)",
+                                    color: "var(--ink3)"
+                                  }}
+                                >
+                                  {t.exchange || "BSE"}
+                                </span>
+                                <span style={{ color: "var(--apple-gold)", fontSize: 12, letterSpacing: "1px" }}>
+                                  {"★".repeat(Math.min(5, Math.max(1, Math.round(t.stars || 5))))}
                                 </span>
                               </div>
-                              <div style={{ fontSize: 10.5, color: "var(--ink3)", marginTop: 2 }}>
-                                {t.tag || t.strategyName || "Diversified · Breakout"}
+                              <div style={{ fontSize: 11, color: "var(--ink3)", marginTop: 2, fontWeight: 500 }}>
+                                {t.tag || t.strategyName || "Breakout"}
                               </div>
                             </div>
 
-                            {/* + ADD Button and clean percentage (R value and Rupee PnL removed) */}
+                            {/* + ADD Button and ROI Percentage */}
                             <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
                               <button
                                 className="btn-add-paper"
-                                style={{ padding: "3px 9px", fontSize: 10.5, fontWeight: 700 }}
+                                style={{
+                                  padding: "5px 12px",
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  background: "rgba(255, 255, 255, 0.08)",
+                                  border: "1px solid rgba(255, 255, 255, 0.14)",
+                                  borderRadius: 8,
+                                  color: "var(--ink1)"
+                                }}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleOpenBuyModal(
@@ -3464,63 +3486,91 @@ export default function App() {
                               >
                                 + ADD
                               </button>
-                              <div className={`num ${pPct >= 0 ? "up" : "down"}`} style={{ fontSize: 14, fontWeight: 800 }}>
+                              <div
+                                className="num"
+                                style={{
+                                  fontSize: 15,
+                                  fontWeight: 800,
+                                  color: pPct >= 0 ? "var(--apple-green)" : "var(--apple-red)"
+                                }}
+                              >
                                 {pPct >= 0 ? "+" : ""}{pPct.toFixed(2)}%
                               </div>
                             </div>
                           </div>
+                        </div>
+                      </div>
 
-                          {/* Clean Signal Date line with Status Tag */}
-                          <div style={{ fontSize: 10.5, color: "var(--ink2)", marginTop: 7, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                            <span>
-                              <span style={{ color: "var(--ink3)" }}>Signal Date : </span>
-                              <span className="num" style={{ fontWeight: 600, color: "var(--ink1)" }}>
-                                {formatSignalDate(t.entryDate || t.date)}
-                              </span>
-                              <span style={{ color: "var(--ink3)" }}>
-                                {" "}( {daysHeld} {Number(daysHeld) === 1 ? "Day" : "Days"} )
-                              </span>
-                            </span>
-                            <span
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                padding: "1.5px 6.5px",
-                                borderRadius: 5,
-                                fontSize: 9.5,
-                                fontWeight: 800,
-                                letterSpacing: "0.04em",
-                                textTransform: "uppercase",
-                                background: tagInfo.bg,
-                                color: tagInfo.color,
-                                border: `1px solid ${tagInfo.border}`,
-                                lineHeight: 1.3,
-                              }}
-                              title={tagInfo.tooltip}
-                            >
-                              {tagInfo.label}
-                            </span>
+                      {/* 4 Metric Sequence Trench: STOP LOSS | ENTRY | LIVE CMP | TARGET */}
+                      <div
+                        className="carved-trench"
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(4, 1fr)",
+                          padding: "8px 10px",
+                          margin: "14px 0 10px",
+                          textAlign: "center"
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontSize: 9.5, color: "var(--ink3)", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.04em" }}>
+                            STOP LOSS
+                          </div>
+                          <div className="num" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--apple-red)", marginTop: 2 }}>
+                            {INR(t.stop || t.stopLoss)}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 9.5, color: "var(--ink3)", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.04em" }}>
+                            ENTRY
+                          </div>
+                          <div className="num" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink1)", marginTop: 2 }}>
+                            {INR(t.entry || t.entryPrice)}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 9.5, color: "var(--ink3)", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.04em" }}>
+                            LIVE CMP
+                          </div>
+                          <div className="num" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--apple-blue)", marginTop: 2 }}>
+                            {INR2(t.now || t.currentPrice || t.price || t.entry)}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 9.5, color: "var(--ink3)", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.04em" }}>
+                            TARGET
+                          </div>
+                          <div className="num" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--apple-green)", marginTop: 2 }}>
+                            {INR(t.target || t.targetPrice)}
                           </div>
                         </div>
                       </div>
 
-                      {/* 4 Small Boxes in sequence: Stop | Entry | Current | Target */}
-                      <div className="mtiles" style={{ marginTop: 12 }}>
-                        <div className="mtile">
-                          <div className="k">Stop</div>
-                          <div className="v down">{INR(t.stop || t.stopLoss)}</div>
+                      {/* Footer: Signal Date (shifted below Stop Loss) on Left, HOLD / BUY Tag on Right */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, fontSize: 11 }}>
+                        <div style={{ color: "var(--ink3)" }}>
+                          <span>Signal: </span>
+                          <span className="num" style={{ fontWeight: 700, color: "var(--ink1)" }}>
+                            {dateStr}
+                          </span>
+                          <span> ({daysHeld} {Number(daysHeld) === 1 ? "day" : "days"})</span>
                         </div>
-                        <div className="mtile">
-                          <div className="k">Entry</div>
-                          <div className="v">{INR(t.entry || t.entryPrice)}</div>
-                        </div>
-                        <div className="mtile">
-                          <div className="k">Current</div>
-                          <div className="v" style={{ color: "var(--accent)" }}>{INR2(t.now || t.currentPrice || t.price || t.entry)}</div>
-                        </div>
-                        <div className="mtile">
-                          <div className="k">Target</div>
-                          <div className="v up">{INR(t.target || t.targetPrice)}</div>
+
+                        <div
+                          style={{
+                            padding: "3px 10px",
+                            borderRadius: 6,
+                            background: "rgba(255, 255, 255, 0.08)",
+                            border: "1px solid rgba(255, 255, 255, 0.14)",
+                            color: "var(--ink1)",
+                            fontSize: 10.5,
+                            fontWeight: 800,
+                            letterSpacing: "0.06em",
+                            textTransform: "uppercase",
+                            lineHeight: 1.3
+                          }}
+                        >
+                          {tagInfo.label || "HOLD"}
                         </div>
                       </div>
                     </div>
@@ -3965,7 +4015,7 @@ export default function App() {
               onOpenSellModal={(trade) => setSellModalItem(trade)}
               onOpenChart={(sym) => {
                 const cleanSym = String(sym).replace(/^(BSE:|NSE:)/i, "").trim().toUpperCase();
-                window.open(`https://www.tradingview.com/chart/qvyqZrhQ/?symbol=NSE:${cleanSym}`, "_blank");
+                window.open(`https://www.tradingview.com/chart/qvyqZrhQ/?symbol=BSE:${cleanSym}`, "_blank");
               }}
               onDeleteCompletedTrade={handleDeleteCompletedTrade}
               onDeleteTrade={(tradeId) => {

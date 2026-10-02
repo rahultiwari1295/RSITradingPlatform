@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { TerminalSnapshot, quantsyncApi } from "../../api/quantsyncApi";
 import { liveMarketSocket } from "../../services/liveMarketSocket";
+import { getBreakoutClassification } from "../ScreenerScreen";
 
 interface IndexTick {
   n: string;
@@ -147,44 +148,41 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
     };
   }, [searchQuery]);
 
-  // Fetch top 3 real confirmed breakout candidates from API with shimmer placeholder
+  // Fetch real confirmed breakout candidates from API with shimmer placeholder and auto-refresh
   useEffect(() => {
     let isMounted = true;
-    setIsBreakoutsLoading(true);
 
-    // Primary: setup=home_hero (strict last 3-4 days buying tag, top institutional ranking)
-    // Fallback: breakout_status=SUCCESS with recent_days=4
-    fetch("/api/screener?setup=home_hero&limit=5")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!isMounted) return;
-        if (data && data.rows && data.rows.length > 0) {
-          setLiveBreakouts(data.rows);
-          // Subscribe home screen breakout symbols to WebSocket for live prices
-          const syms = data.rows.map((r: any) => (r.symbol || "").toUpperCase()).filter(Boolean);
-          if (syms.length > 0) liveMarketSocket.subscribe(syms);
-        } else {
-          // Fallback to recent breakouts
-          fetch("/api/screener?breakout_status=SUCCESS&recent_days=4&limit=5")
-            .then((r) => (r.ok ? r.json() : null))
-            .then((fallbackData) => {
-              if (isMounted && fallbackData && fallbackData.rows && fallbackData.rows.length > 0) {
-                setLiveBreakouts(fallbackData.rows);
-                // Subscribe fallback breakout symbols to WebSocket for live prices
-                const syms = fallbackData.rows.map((r: any) => (r.symbol || "").toUpperCase()).filter(Boolean);
-                if (syms.length > 0) liveMarketSocket.subscribe(syms);
-              }
-            })
-            .catch(() => {});
-        }
-      })
-      .catch((err) => console.debug("Home breakouts fetch:", err))
-      .finally(() => {
-        if (isMounted) setIsBreakoutsLoading(false);
-      });
+    const fetchHomeBreakouts = (isInitial = false) => {
+      if (isInitial) setIsBreakoutsLoading(true);
+
+      // Fetch confirmed breakout candidates with enough depth to strictly filter verified buy-zone stocks
+      fetch("/api/screener?breakout_status=SUCCESS&recent_days=30&limit=50")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!isMounted) return;
+          if (data && data.rows && data.rows.length > 0) {
+            setLiveBreakouts(data.rows);
+            // Subscribe home screen breakout symbols to WebSocket for live prices
+            const syms = data.rows.map((r: any) => (r.symbol || "").toUpperCase()).filter(Boolean);
+            if (syms.length > 0) liveMarketSocket.subscribe(syms);
+          }
+        })
+        .catch((err) => console.debug("Home breakouts fetch:", err))
+        .finally(() => {
+          if (isMounted && isInitial) setIsBreakoutsLoading(false);
+        });
+    };
+
+    fetchHomeBreakouts(true);
+
+    // Auto-refresh top 3 breakouts every 10 minutes (600,000 ms)
+    const intervalId = setInterval(() => {
+      fetchHomeBreakouts(false);
+    }, 600000);
 
     return () => {
       isMounted = false;
+      clearInterval(intervalId);
     };
   }, []);
 
@@ -194,28 +192,56 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
     (s: any) => s.action === "BUY_NOW" || s.action === "BUY"
   ) || (terminalData?.active || []).find((t: any) => t.action === "BUY_NOW" || t.action === "BUY");
 
-  const baseList = useMemo(() => {
+  // Merge live prices & filter strictly to verified BUY ZONE candidates (diffAbs <= 5.0%, not extended/missed)
+  const featuredBreakouts = useMemo(() => {
     if (!liveBreakouts || liveBreakouts.length === 0) {
       return FEATURED_BREAKOUT_DATA;
     }
 
-    // Filter to strictly valid bullish breakout candidates with target > curr_price
-    const valid = liveBreakouts.filter((r: any) => {
-      const cp = Number(r.curr_price);
-      const t1 = Number(r.target_1);
-      const sl = Number(r.stop_loss);
-      const isAvoid = String(r.action || "").includes("AVOID") || r.action === "NO_TRADE_WAIT";
-      return cp > 0 && t1 > cp && (!sl || sl < cp) && !isAvoid;
+    // Filter strictly to verified BUY ZONE candidates:
+    // - NOT EXTENDED / NOT MISSED (diffAbs <= 5.0% from breakout)
+    // - Meaningful upside left to target (targetGainPct >= 5.0%, NOT SKIP)
+    // - Stance not AVOID or WAIT
+    const buyZoneList = liveBreakouts
+      .map((r: any) => {
+        const sym = (r.symbol || "").toUpperCase();
+        const live = livePrices[sym];
+        const cp = live && live.price > 0 ? live.price : Number(r.curr_price || 0);
+        const stockWithLive = { ...r, curr_price: cp };
+        const cls = getBreakoutClassification(stockWithLive);
+        const isAvoid = String(r.action || "").includes("AVOID") || r.action === "NO_TRADE_WAIT";
+        return { r, stockWithLive, cls, cp, live, isAvoid };
+      })
+      .filter(({ cls, isAvoid, cp }) => {
+        // MUST be strictly Good to Buy (diffAbs <= 5.0%, targetGainPct >= 5.0%)
+        return cls.isGoodToBuy && !isAvoid && cp > 0;
+      });
+
+    // Rank candidates by:
+    // 1. Recency: days_since_breakout ascending (today, yesterday, 2d, 3d...)
+    // 2. DNA Score descending
+    // 3. 20d Volume surge ratio descending
+    buyZoneList.sort((a, b) => {
+      const daysA = Number(a.r.days_since_breakout ?? 99);
+      const daysB = Number(b.r.days_since_breakout ?? 99);
+      if (daysA !== daysB) return daysA - daysB;
+      const dnaA = Number(a.r.dna_score ?? 0);
+      const dnaB = Number(b.r.dna_score ?? 0);
+      if (dnaA !== dnaB) return dnaB - dnaA;
+      const volA = Number(a.r.volume_ratio_20d ?? 0);
+      const volB = Number(b.r.volume_ratio_20d ?? 0);
+      return volB - volA;
     });
 
-    const candidates = (valid.length > 0 ? valid : liveBreakouts).slice(0, 3);
+    const candidates = buyZoneList.slice(0, 3);
+    if (candidates.length === 0) {
+      return FEATURED_BREAKOUT_DATA;
+    }
 
-    return candidates.map((r: any) => {
-      const cp = Number(r.curr_price) || 0;
+    return candidates.map(({ r, cls, cp, live }) => {
       const t1 = Number(r.target_1) || 0;
       const sl = Number(r.stop_loss) || 0;
 
-      // Realistic, non-zero volume surge ratio
       let volRatioStr = "2.2×";
       const rawVol = Number(r.volume_ratio_20d);
       if (!isNaN(rawVol) && rawVol > 0.05) {
@@ -224,11 +250,9 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
         volRatioStr = "2.8×";
       }
 
-      // Calculate strictly positive upside
       const upsidePct = cp > 0 && t1 > cp ? (((t1 - cp) / cp) * 100).toFixed(1) : "10.0";
       const pnlPotential = `+${upsidePct}%`;
 
-      // Risk : Reward ratio
       let rrStr = "1 : 1.8";
       const rawRR = Number(r.risk_reward_ratio);
       if (!isNaN(rawRR) && rawRR > 0) {
@@ -251,29 +275,12 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
         currPrice: cp > 0 ? cp : undefined,
         breakoutPrice: r.breakout_level,
         targetPrice: t1 > 0 ? t1 : undefined,
-        stopPrice: sl > 0 ? sl : undefined
+        stopPrice: sl > 0 ? sl : undefined,
+        chgPct: live && live.change_pct !== undefined ? live.change_pct : null,
+        cls
       };
     });
-  }, [liveBreakouts]);
-
-  // Merge live prices into featured breakouts (top 3 strictly)
-  const featuredBreakouts = useMemo(() => {
-    return baseList.slice(0, 3).map((item: any) => {
-      const live = livePrices[item.symbol];
-      const currPrice = live && live.price > 0 ? live.price : item.currPrice;
-      const chgPct = live && live.change_pct !== undefined ? live.change_pct : null;
-      let pnlPotential = item.pnlPotential;
-      if (currPrice && item.targetPrice && item.targetPrice > currPrice) {
-        pnlPotential = `+${(((item.targetPrice - currPrice) / currPrice) * 100).toFixed(1)}%`;
-      }
-      return {
-        ...item,
-        currPrice,
-        chgPct,
-        pnlPotential
-      };
-    });
-  }, [baseList, livePrices]);
+  }, [liveBreakouts, livePrices]);
 
   // Auto-peek nudge animation on load so user intuitively understands it's scrollable
   useEffect(() => {
@@ -484,10 +491,28 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
                 </div>
               </div>
 
-              {/* Pattern Banner */}
-              <div className="b-pattern-pill">
-                <span className="pattern-glow-dot" />
-                <span className="pattern-title">{b.stage}</span>
+              {/* Pattern Banner & Buy Zone Badge */}
+              <div className="b-pattern-pill" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", gap: "8px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
+                  <span className="pattern-glow-dot" />
+                  <span className="pattern-title" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.stage}</span>
+                </div>
+                {b.cls && b.cls.isGoodToBuy && (
+                  <span style={{
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    letterSpacing: "0.02em",
+                    color: "var(--profit, #10B981)",
+                    background: "rgba(16, 185, 129, 0.12)",
+                    border: "1px solid rgba(16, 185, 129, 0.3)",
+                    borderRadius: "6px",
+                    padding: "2px 8px",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0
+                  }}>
+                    🟢 BUY ZONE ({b.cls.diffPct >= 0 ? `+${b.cls.diffPct.toFixed(1)}%` : `${b.cls.diffPct.toFixed(1)}%`})
+                  </span>
+                )}
               </div>
 
               {/* Price Architecture Grid */}

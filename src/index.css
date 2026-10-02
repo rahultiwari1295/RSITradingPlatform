@@ -6590,8 +6590,482 @@ body::before{
   flex: 1;
 }
 
+/* ==========================================================================
+   Apple VisionOS 3D Physics Design System (Dark Obsidian & Ceramic Light)
+   ========================================================================== */
+:root,
+[data-theme="dark"] {
+  --base-canvas: #0A0A0C;
+  --recessed-trench: #0E0E12;
+  --elevated-slab-start: #22222B;
+  --elevated-slab-end: #17171C;
+  --active-pill-start: #3A3A44;
+  --active-pill-end: #282830;
+  --border-subtle: rgba(255, 255, 255, 0.07);
 
+  --apple-green: #30D158;
+  --apple-blue: #0A84FF;
+  --apple-red: #FF453A;
+  --apple-gold: #FFD60A;
+  --apple-purple: #BF5AF2;
 
+  --ink-primary: #FFFFFF;
+  --ink-secondary: rgba(255, 255, 255, 0.72);
+  --ink-muted: rgba(255, 255, 255, 0.44);
+  --ink-subtle: rgba(255, 255, 255, 0.22);
 
+  --ambient-glow: radial-gradient(circle, rgba(10, 132, 255, 0.12) 0%, rgba(48, 209, 88, 0.05) 45%, transparent 70%);
+  --glare-highlight: rgba(255, 255, 255, 0.22);
 
+  /* 4-Tier Optical Lighting Shadows (Dark Titanium) */
+  --shadow-slab:
+    0 1px 0 0 rgba(255, 255, 255, 0.16) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.6) inset,
+    0 14px 28px -6px rgba(0, 0, 0, 0.78),
+    0 4px 10px -2px rgba(0, 0, 0, 0.52);
 
+  --shadow-trench:
+    inset 0 2px 5px rgba(0, 0, 0, 0.8),
+    inset 0 1px 2px rgba(0, 0, 0, 0.9),
+    0 1px 0 rgba(255, 255, 255, 0.08);
+
+  --shadow-active-pill:
+    0 1px 0 0 rgba(255, 255, 255, 0.22) inset,
+    0 2px 8px rgba(0, 0, 0, 0.65);
+
+  --pill-bubble-bg: rgba(255, 255, 255, 0.12);
+  --modal-scrim: rgba(0, 0, 0, 0.82);
+}
+
+/* Light Theme (Frosted Ceramic Glass & Studio Titanium) */
+[data-theme="light"] {
+  --base-canvas: #F4F5F8;
+  --recessed-trench: #E5E7EB;
+  --elevated-slab-start: #FFFFFF;
+  --elevated-slab-end: #F9FAFB;
+  --active-pill-start: #FFFFFF;
+  --active-pill-end: #F3F4F6;
+  --border-subtle: rgba(0, 0, 0, 0.08);
+
+  --apple-green: #248A3D;
+  --apple-blue: #0071E3;
+  --apple-red: #E02020;
+  --apple-gold: #B48200;
+  --apple-purple: #8944AB;
+
+  --ink-primary: #111827;
+  --ink-secondary: #4B5563;
+  --ink-muted: #6B7280;
+  --ink-subtle: #9CA3AF;
+
+  --ambient-glow: radial-gradient(circle, rgba(0, 113, 227, 0.09) 0%, rgba(36, 138, 61, 0.05) 50%, transparent 70%);
+  --glare-highlight: rgba(255, 255, 255, 0.75);
+
+  /* 4-Tier Optical Lighting Shadows (Light Ceramic Glass) */
+  --shadow-slab:
+    0 1px 0 0 rgba(255, 255, 255, 0.9) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.04) inset,
+    0 12px 28px -6px rgba(15, 23, 42, 0.08),
+    0 2px 6px -1px rgba(15, 23, 42, 0.04);
+
+  --shadow-trench:
+    inset 0 2px 4px rgba(0, 0, 0, 0.08),
+    inset 0 1px 2px rgba(0, 0, 0, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.95);
+
+  --shadow-active-pill:
+    0 1px 0 0 rgba(255, 255, 255, 0.9) inset,
+    0 2px 8px rgba(0, 0, 0, 0.08);
+
+  --pill-bubble-bg: rgba(0, 0, 0, 0.08);
+  --modal-scrim: rgba(15, 23, 42, 0.45);
+}
+
+.vision-ambient-light {
+  position: absolute;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 760px;
+  max-width: 100vw;
+  height: 480px;
+  background: var(--ambient-glow);
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(50px);
+  transition: background 0.4s ease;
+}
+
+.ai-signals-canvas {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* 4-Tier Optical Lighting Depth Slabs */
+.depth-card {
+  background: linear-gradient(165deg, var(--elevated-slab-start), var(--elevated-slab-end));
+  border-radius: 20px;
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-slab);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.25s ease, background 0.3s ease;
+}
+
+/* Carved Concave Trenches */
+.carved-trench {
+  background: var(--recessed-trench);
+  border-radius: 14px;
+  box-shadow: var(--shadow-trench);
+  border: 1px solid var(--border-subtle);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* Floating Depth Pill */
+.depth-pill {
+  background: transparent;
+  color: var(--ink-muted);
+  border: none;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: all 0.22s cubic-bezier(0.3, 0, 0, 1);
+  user-select: none;
+}
+
+.depth-pill:hover {
+  color: var(--ink-secondary);
+}
+
+.depth-pill.active {
+  background: linear-gradient(165deg, var(--active-pill-start), var(--active-pill-end));
+  color: var(--ink-primary);
+  box-shadow: var(--shadow-active-pill);
+}
+
+.count-bubble {
+  padding: 1.5px 7.5px;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 999px;
+  background: var(--pill-bubble-bg);
+  color: var(--ink-primary);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.depth-pill.active .count-bubble {
+  background: var(--apple-blue);
+  color: #FFFFFF;
+}
+
+/* Interactive 3D Perspective Wrapper */
+.perspective-stage {
+  perspective: 1100px;
+  transform-style: preserve-3d;
+  margin-bottom: 16px;
+}
+
+.physics-card {
+  cursor: pointer;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.holographic-glare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  z-index: 4;
+  border-radius: 20px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Pulsing Green Status Beacon */
+.pulse-dot-green {
+  width: 9px;
+  height: 9px;
+  background-color: var(--apple-green);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--apple-green);
+  animation: pulse-ring 2s infinite ease-in-out;
+  flex-shrink: 0;
+}
+
+@keyframes pulse-ring {
+  0%, 100% { transform: scale(0.9); opacity: 0.85; }
+  50% { transform: scale(1.28); opacity: 1; box-shadow: 0 0 16px var(--apple-green); }
+}
+
+.accordion-arrow {
+  font-size: 10px;
+  color: var(--ink-muted);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.accordion-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+/* Top Utility Actions */
+.theme-toggle-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  background: linear-gradient(165deg, var(--elevated-slab-start), var(--elevated-slab-end));
+  color: var(--ink-primary);
+  box-shadow: var(--shadow-slab);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.theme-toggle-btn:hover {
+  transform: translateY(-2px);
+}
+
+.theme-toggle-btn:active {
+  transform: translateY(0);
+}
+
+/* ==========================================================================
+   Apple Human Interface & VisionOS 3D UI Extensions (from UI_3dApple)
+   ========================================================================== */
+
+/* A. The "Pass" Button (Electric Blue Pill with Colored Glow) */
+.btn-apple-pass {
+  background: linear-gradient(135deg, var(--apple-blue), #0066D6);
+  color: #FFFFFF !important;
+  border: none;
+  border-radius: 9999px; /* Complete pill */
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 122, 255, 0.35); /* Blue tinted glow shadow */
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  text-decoration: none;
+}
+
+.btn-apple-pass:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 122, 255, 0.45);
+}
+
+.btn-apple-pass:active {
+  transform: translateY(0);
+}
+
+/* Secondary Apple Glass Action Button */
+.btn-apple-secondary {
+  background: var(--pill-bubble-bg);
+  color: var(--ink-primary) !important;
+  border: 1px solid var(--border-subtle);
+  border-radius: 9999px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  text-decoration: none;
+}
+
+.btn-apple-secondary:hover {
+  background: rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
+}
+
+[data-theme="light"] .btn-apple-secondary:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* B. The Segmented Control Track */
+.ref-segmented-track {
+  background: var(--recessed-trench);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-trench);
+  border-radius: 18px;
+  padding: 4px;
+  display: flex;
+  gap: 4px;
+  user-select: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ref-segmented-track::-webkit-scrollbar {
+  display: none;
+}
+
+.ref-tab-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 9px 14px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ref-tab-btn:hover {
+  color: var(--ink-secondary);
+}
+
+.ref-tab-btn.active {
+  background: linear-gradient(165deg, var(--active-pill-start), var(--active-pill-end));
+  color: var(--ink-primary);
+  font-weight: 700;
+  box-shadow: var(--shadow-active-pill);
+}
+
+/* C. The Alert Card with Accent Strip */
+.alert-accent-card {
+  background: linear-gradient(165deg, var(--elevated-slab-start), var(--elevated-slab-end));
+  border-radius: 20px;
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-slab);
+  position: relative;
+  overflow: hidden;
+  padding: 18px 20px 18px 22px;
+}
+
+.alert-accent-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: linear-gradient(180deg, var(--apple-blue), #38BDF8);
+  border-radius: 6px 0 0 6px;
+}
+
+/* D. The 3-4 Column Status Mini-Cards */
+.mini-status-card {
+  background: linear-gradient(165deg, var(--elevated-slab-start), var(--elevated-slab-end));
+  border: 1px solid var(--border-subtle);
+  border-radius: 18px;
+  box-shadow: var(--shadow-slab);
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.mini-status-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.5);
+}
+
+/* LED Status Indicator with breathing glow */
+.status-dot-glow {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-bottom: 7px;
+  flex-shrink: 0;
+}
+
+.status-dot-glow.green {
+  background-color: var(--apple-green);
+  box-shadow: 0 0 10px var(--apple-green);
+  animation: pulse-ring 2.2s infinite ease-in-out;
+}
+
+.status-dot-glow.amber {
+  background-color: var(--apple-gold);
+  box-shadow: 0 0 10px var(--apple-gold);
+  animation: pulse-ring 2.2s infinite ease-in-out;
+}
+
+.status-dot-glow.red {
+  background-color: var(--apple-red);
+  box-shadow: 0 0 10px var(--apple-red);
+  animation: pulse-ring 1.8s infinite ease-in-out;
+}
+
+.status-dot-glow.blue {
+  background-color: var(--apple-blue);
+  box-shadow: 0 0 10px var(--apple-blue);
+}
+
+/* Suspended Floating VisionOS Top Navigation Bar */
+.suspended-vision-nav {
+  position: sticky;
+  top: 10px;
+  z-index: 50;
+  background: rgba(14, 16, 24, 0.78);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.12) inset;
+  border-radius: 9999px;
+  padding: 8px 14px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: all 0.25s ease;
+}
+
+[data-theme="light"] .suspended-vision-nav {
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08), 0 1px 0 rgba(255, 255, 255, 0.95) inset;
+}
+
+.vision-back-btn {
+  background: var(--pill-bubble-bg);
+  border: 1px solid var(--border-subtle);
+  color: var(--ink-primary);
+  border-radius: 9999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.18s ease;
+}
+
+.vision-back-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(-2px);
+}
+
+[data-theme="light"] .vision-back-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
