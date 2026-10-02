@@ -114,9 +114,9 @@
 
 .dna-analyst-scroll-citadel {
   width: 100%;
-  max-width: 780px; /* Spacious, terminal-grade layout */
-  margin: 0 auto;
-  padding: 16px 16px 80px;
+  max-width: 100%;
+  margin: 0;
+  padding: 12px 14px 80px;
   box-sizing: border-box;
 }
 

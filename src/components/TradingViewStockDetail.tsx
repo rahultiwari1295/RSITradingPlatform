@@ -760,7 +760,7 @@ export default function TradingViewStockDetail({
       </nav>
 
       {/* 1. Stock Identity & Quick Actions Hero (Depth Card) */}
-      <div className="depth-card" style={{ padding: "20px 22px" }}>
+      <div className="depth-card" style={{ padding: "16px 16px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div
@@ -1020,7 +1020,7 @@ export default function TradingViewStockDetail({
 
       {/* 4. Strategy Trigger Intelligence (Depth Card) */}
       {(activeDetailTab === "all" || activeDetailTab === "intel") && (
-        <div className="depth-card" style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className="depth-card" style={{ padding: "16px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
             <div style={{ fontSize: 13.5, fontWeight: 800, color: "var(--ink-primary)", display: "flex", alignItems: "center", gap: 6, letterSpacing: "-0.01em" }}>
               <span>🧠</span>
@@ -1095,7 +1095,7 @@ export default function TradingViewStockDetail({
 
       {/* 5. 4-Stage Trade Management Playbook (Depth Card) */}
       {(activeDetailTab === "all" || activeDetailTab === "playbook") && (
-        <div className="depth-card" style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className="depth-card" style={{ padding: "16px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
             <div style={{ fontSize: 13.5, fontWeight: 800, color: "var(--ink-primary)", display: "flex", alignItems: "center", gap: 6, letterSpacing: "-0.01em" }}>
               <span>📋</span>
@@ -1203,7 +1203,7 @@ export default function TradingViewStockDetail({
 
       {/* 6. Daily Situation Check Panel (Depth Card + Mini Status Cards with Glowing LEDs) */}
       {(activeDetailTab === "all" || activeDetailTab === "situation") && (
-        <div className="depth-card" style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className="depth-card" style={{ padding: "16px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
             <div style={{ fontSize: 13.5, fontWeight: 800, color: "var(--ink-primary)", display: "flex", alignItems: "center", gap: 6, letterSpacing: "-0.01em" }}>
               <span>🩺</span>

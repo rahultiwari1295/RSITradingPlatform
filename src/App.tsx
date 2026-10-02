@@ -3128,9 +3128,13 @@ export default function App() {
         )}
 
         {/* ===== SIGNALS SCREEN (AI CALLS) ===== */}
-        <section className={`screen ${activeTab === "signals" ? "active" : ""}`} id="screen-signals">
+        <section
+          className={`screen ${activeTab === "signals" ? "active" : ""}`}
+          id="screen-signals"
+          style={selectedSignalTrade ? { padding: "6px 8px 80px" } : undefined}
+        >
           {selectedSignalTrade ? (
-            <div className="signal-page-container">
+            <div className="signal-page-container" style={{ width: "100%", maxWidth: "100%", padding: 0 }}>
               <TradingViewStockDetail
                 trade={selectedSignalTrade}
                 theme={theme}
@@ -3529,18 +3533,39 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* Footer: Signal Date (shifted below Stop Loss) on Left, Status Tag & + ADD Button on Right */}
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, gap: 10, flexWrap: "wrap" }}>
-                        <div style={{ color: "var(--ink3)", fontSize: 11 }}>
+                      {/* Footer: Signal Date (shifted below Stop Loss) on Left, Status Tag & + ADD Button on Right — strictly single line */}
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginTop: 10,
+                          gap: 6,
+                          flexWrap: "nowrap",
+                          width: "100%",
+                          minWidth: 0,
+                        }}
+                      >
+                        <div
+                          style={{
+                            color: "var(--ink3)",
+                            fontSize: 10,
+                            whiteSpace: "nowrap",
+                            flexShrink: 1,
+                            minWidth: 0,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
                           <span>Signal: </span>
                           <span className="num" style={{ fontWeight: 700, color: "var(--ink1)" }}>
                             {dateStr}
                           </span>
-                          <span> ({daysHeld} {Number(daysHeld) === 1 ? "day" : "days"})</span>
+                          <span> ({daysHeld}d)</span>
                         </div>
 
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                          {/* 1. Status Tag: GOOD TO BUY | DONT ENTER NOW | SKIP OLD CALL (Not a button) */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                          {/* 1. Status Tag: GOOD TO BUY | DONT ENTER NOW | CALL EXPIRED · SKIP (Not a button) */}
                           <div
                             className="signal-status-pill"
                             style={{
@@ -3548,6 +3573,9 @@ export default function App() {
                               border: `1px solid ${tagInfo.border}`,
                               color: tagInfo.color,
                               boxShadow: `0 1px 4px ${tagInfo.bg}`,
+                              fontSize: 9,
+                              padding: "2px 7px",
+                              letterSpacing: "0.02em",
                             }}
                             title={tagInfo.tooltip}
                           >
@@ -3558,6 +3586,7 @@ export default function App() {
                           <button
                             type="button"
                             className="btn-signal-add"
+                            style={{ padding: "3px 9px", fontSize: 10, gap: 2.5 }}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleOpenBuyModal(
@@ -3568,7 +3597,7 @@ export default function App() {
                             }}
                             title={`Add ${t.sym || t.symbol} to Paper Trade`}
                           >
-                            <span style={{ fontSize: 13, lineHeight: 1, fontWeight: 900 }}>+</span>
+                            <span style={{ fontSize: 11, lineHeight: 1, fontWeight: 900 }}>+</span>
                             <span>ADD</span>
                           </button>
                         </div>
@@ -3625,26 +3654,48 @@ export default function App() {
                             </div>
                           </div>
 
-                          {/* Clean Signal Date line with Status Tag and Tactile + ADD Button */}
-                          <div style={{ fontSize: 10.5, color: "var(--ink2)", marginTop: 7, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                            <div>
-                              <span style={{ color: "var(--ink3)" }}>Signal Date : </span>
+                          {/* Clean Signal Date line with Status Tag and Tactile + ADD Button — strictly single line */}
+                          <div
+                            style={{
+                              fontSize: 10,
+                              color: "var(--ink2)",
+                              marginTop: 7,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: 6,
+                              flexWrap: "nowrap",
+                              width: "100%",
+                              minWidth: 0,
+                            }}
+                          >
+                            <div
+                              style={{
+                                whiteSpace: "nowrap",
+                                flexShrink: 1,
+                                minWidth: 0,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              <span style={{ color: "var(--ink3)" }}>Signal: </span>
                               <span className="num" style={{ fontWeight: 600, color: "var(--ink1)" }}>
                                 {formatSignalDate(t.entryDate || t.date)}
                               </span>
                               <span style={{ color: "var(--ink3)" }}>
-                                {" "}( {daysHeld} {Number(daysHeld) === 1 ? "Day" : "Days"} )
+                                {" "}({daysHeld}d)
                               </span>
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
                               <span
                                 className="signal-status-pill"
                                 style={{
                                   background: tagInfo.bg,
                                   color: tagInfo.color,
                                   border: `1px solid ${tagInfo.border}`,
-                                  fontSize: 9.5,
-                                  padding: "3px 9px",
+                                  fontSize: 9,
+                                  padding: "2px 7px",
+                                  letterSpacing: "0.02em",
                                 }}
                                 title={tagInfo.tooltip}
                               >
@@ -3653,7 +3704,7 @@ export default function App() {
                               <button
                                 type="button"
                                 className="btn-signal-add"
-                                style={{ padding: "3.5px 11px", fontSize: 10.5 }}
+                                style={{ padding: "3px 9px", fontSize: 10, gap: 2.5 }}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleOpenBuyModal(
@@ -3664,7 +3715,7 @@ export default function App() {
                                 }}
                                 title={`Add ${t.sym || t.symbol} to Paper Trade`}
                               >
-                                <span style={{ fontSize: 12, lineHeight: 1, fontWeight: 900 }}>+</span>
+                                <span style={{ fontSize: 11, lineHeight: 1, fontWeight: 900 }}>+</span>
                                 <span>ADD</span>
                               </button>
                             </div>
