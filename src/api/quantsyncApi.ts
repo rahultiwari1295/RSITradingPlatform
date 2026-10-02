@@ -222,10 +222,10 @@ export interface ChartData {
 }
 
 export const quantsyncApi = {
-  getTerminalData: (version: "v2" | "v3" = "v2") =>
+  getTerminalData: (version: "v2" | "v3" | "v4" = "v2") =>
     apiFetch<TerminalSnapshot>(`/api/terminalData?version=${version}`),
 
-  getEquityCurve: (version: "v2" | "v3" = "v2", days: number = 90) =>
+  getEquityCurve: (version: "v2" | "v3" | "v4" = "v2", days: number = 90) =>
     apiFetch<EquityCurveData>(`/api/equity-curve?version=${version}&days=${days}`),
 
   getActivityFeed: (version?: string, limit: number = 10) =>
@@ -262,7 +262,7 @@ export const quantsyncApi = {
   getSystemConfig: () =>
     apiFetch<any>(`/api/system/config`),
 
-  getChartData: (symbol: string, limit: number = 250, engine: "v2" | "v3" = "v3") =>
+  getChartData: (symbol: string, limit: number = 250, engine: "v2" | "v3" | "v4" = "v3") =>
     apiFetch<ChartData>(`/api/chart/${encodeURIComponent(symbol)}?limit=${limit}&engine=${engine}`),
 
   getSectors: (period: string = "day") =>

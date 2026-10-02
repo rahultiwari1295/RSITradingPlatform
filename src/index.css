@@ -6262,9 +6262,133 @@ body::before{
   background: #A855F7;
 }
 
+.segment-dot.v4 {
+  background: #10B981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
+}
+
 .ios-segment-btn.active .segment-dot {
   opacity: 1;
   transform: scale(1.2);
+}
+
+/* Interactive Engine Selector Pill & Dropdown */
+.engine-select-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink1);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  font-family: inherit;
+}
+
+.engine-select-pill-btn:hover {
+  border-color: var(--accent);
+  box-shadow: 0 3px 12px rgba(99, 102, 241, 0.2);
+  transform: translateY(-1px);
+}
+
+.engine-select-pill-btn.active {
+  border-color: var(--accent);
+}
+
+.engine-select-pill-label {
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.engine-select-caret {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  color: var(--ink3);
+}
+
+.engine-select-caret.open {
+  transform: rotate(180deg);
+  color: var(--accent);
+}
+
+.engine-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 220px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 6px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: slideDownFade 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.engine-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.engine-dropdown-item:hover {
+  background: var(--s2);
+}
+
+.engine-dropdown-item.active {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.engine-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+.engine-item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.engine-item-name {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--ink1);
+}
+
+.engine-active-tick {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.engine-item-desc {
+  font-size: 10px;
+  color: var(--ink3);
+  padding-left: 14px;
 }
 
 /* Expandable Step Drawer */
@@ -6304,6 +6428,12 @@ body::before{
   background: rgba(168, 85, 247, 0.15);
   color: #a855f7;
   border: 1px solid rgba(168, 85, 247, 0.28);
+}
+
+.engine-drawer-badge.v4 {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.32);
 }
 
 .engine-drawer-summary {

@@ -669,22 +669,112 @@ ChartAnalysis : ${websiteLink}`;
           </div>
         </section>
 
-        {/* ── 6. AI PROBABILITY ON SUCCESS: "COMING SOON" ───────────────────── */}
-        <section className="dna-ai-probability-card">
-          <div className="ai-prob-left">
-            <div className="ai-prob-kicker">
-              <span className="neural-spin">✦</span>
-              <span>MACHINE LEARNING PREDICTION ENGINE</span>
+        {/* ── 6. V4 AI PATTERN FINGERPRINT & CONVICTION ENGINE ────────────── */}
+        <section className={`dna-ai-probability-card ${apiData?.ml_decision ? "active-engine" : ""}`} style={apiData?.ml_decision ? { display: "block", borderStyle: "solid", borderColor: "rgba(59, 130, 246, 0.3)" } : {}}>
+          {apiData?.ml_decision ? (
+            <div className="v4-ai-live-container" style={{ width: "100%" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 6 }}>
+                <div className="ai-prob-kicker" style={{ margin: 0 }}>
+                  <span className="neural-spin">✦</span>
+                  <span>QUANT ML CONVICTION ENGINE · 98,340 HISTORICAL SETUPS</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 800,
+                      letterSpacing: "0.06em",
+                      padding: "3px 8px",
+                      borderRadius: 6,
+                      background: apiData.ml_decision.conviction_grade === "ELITE" ? "rgba(16, 185, 129, 0.2)" : apiData.ml_decision.conviction_grade === "STRONG" ? "rgba(59, 130, 246, 0.2)" : apiData.ml_decision.conviction_grade === "NEUTRAL" ? "rgba(245, 158, 11, 0.2)" : "rgba(239, 68, 68, 0.2)",
+                      color: apiData.ml_decision.conviction_grade === "ELITE" ? "#10B981" : apiData.ml_decision.conviction_grade === "STRONG" ? "#38BDF8" : apiData.ml_decision.conviction_grade === "NEUTRAL" ? "#F59E0B" : "#EF4444",
+                      border: `1px solid ${apiData.ml_decision.conviction_grade === "ELITE" ? "#10B981" : apiData.ml_decision.conviction_grade === "STRONG" ? "#38BDF8" : apiData.ml_decision.conviction_grade === "NEUTRAL" ? "#F59E0B" : "#EF4444"}`
+                    }}
+                  >
+                    GRADE: {apiData.ml_decision.conviction_grade}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: "3px 8px",
+                      borderRadius: 6,
+                      background: "rgba(255, 255, 255, 0.06)",
+                      color: "var(--an-text-sub)"
+                    }}
+                  >
+                    Size: {apiData.ml_decision.kelly_size_multiplier}×
+                  </span>
+                </div>
+              </div>
+
+              {/* Stats Bar */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8, margin: "10px 0" }}>
+                <div style={{ background: "rgba(0,0,0,0.2)", padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div style={{ fontSize: 9, color: "var(--an-text-sub)", fontWeight: 700 }}>WIN PROBABILITY</div>
+                  <div style={{ fontSize: 15, fontWeight: 900, color: "#10B981", marginTop: 2 }}>{apiData.ml_decision.win_probability_pct}</div>
+                </div>
+                <div style={{ background: "rgba(0,0,0,0.2)", padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div style={{ fontSize: 9, color: "var(--an-text-sub)", fontWeight: 700 }}>EXPECTED VALUE (EV)</div>
+                  <div style={{ fontSize: 15, fontWeight: 900, color: apiData.ml_decision.expected_value_pct >= 0 ? "#10B981" : "#EF4444", marginTop: 2 }}>
+                    {apiData.ml_decision.expected_value_pct > 0 ? `+${apiData.ml_decision.expected_value_pct}%` : `${apiData.ml_decision.expected_value_pct}%`}
+                  </div>
+                </div>
+                <div style={{ background: "rgba(0,0,0,0.2)", padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div style={{ fontSize: 9, color: "var(--an-text-sub)", fontWeight: 700 }}>PATTERN DNA MATCH</div>
+                  <div style={{ fontSize: 15, fontWeight: 900, color: "#38BDF8", marginTop: 2 }}>{apiData.fingerprint_analysis?.top_similarity_pct || "—"}</div>
+                </div>
+                <div style={{ background: "rgba(0,0,0,0.2)", padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div style={{ fontSize: 9, color: "var(--an-text-sub)", fontWeight: 700 }}>HISTORICAL TWIN WINS</div>
+                  <div style={{ fontSize: 15, fontWeight: 900, color: "#F59E0B", marginTop: 2 }}>{apiData.fingerprint_analysis?.twin_historical_win_rate_pct != null ? `${apiData.fingerprint_analysis.twin_historical_win_rate_pct}%` : "—"}</div>
+                </div>
+              </div>
+
+              {/* Historical Twins Chips */}
+              {apiData.fingerprint_analysis?.top_historical_twins && apiData.fingerprint_analysis.top_historical_twins.length > 0 && (
+                <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px dashed rgba(255,255,255,0.08)" }}>
+                  <div style={{ fontSize: 9, color: "var(--an-text-sub)", fontWeight: 700, marginBottom: 5 }}>
+                    CLOSEST HISTORICAL TWINS (2019–2024 MEMORY BANK):
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {apiData.fingerprint_analysis.top_historical_twins.slice(0, 3).map((tw: any, idx: number) => (
+                      <span
+                        key={idx}
+                        style={{
+                          fontSize: 9.5,
+                          padding: "3px 8px",
+                          borderRadius: 6,
+                          background: tw.realized_win ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                          border: `1px solid ${tw.realized_win ? "rgba(16, 185, 129, 0.3)" : "rgba(239, 68, 68, 0.3)"}`,
+                          color: tw.realized_win ? "#10B981" : "#EF4444",
+                          fontWeight: 700
+                        }}
+                      >
+                        {tw.symbol} ({tw.date.slice(0, 7)}) · {tw.similarity_pct} match · {tw.mfe_gain_pct > 0 ? `+${tw.mfe_gain_pct}% peak` : `${tw.mfe_gain_pct}%`}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="ai-prob-title">AI Probability of Trade Success</div>
-            <div className="ai-prob-desc">Monte Carlo multi-regime statistical backtest simulation.</div>
-          </div>
-          <div className="ai-prob-right">
-            <div className="coming-soon-badge">
-              <span className="pulse-sparkle" />
-              <span>Coming Soon</span>
-            </div>
-          </div>
+          ) : (
+            <>
+              <div className="ai-prob-left">
+                <div className="ai-prob-kicker">
+                  <span className="neural-spin">✦</span>
+                  <span>MACHINE LEARNING PREDICTION ENGINE</span>
+                </div>
+                <div className="ai-prob-title">AI Probability of Trade Success</div>
+                <div className="ai-prob-desc">Monte Carlo multi-regime statistical backtest simulation.</div>
+              </div>
+              <div className="ai-prob-right">
+                <div className="coming-soon-badge">
+                  <span className="pulse-sparkle" />
+                  <span>Coming Soon</span>
+                </div>
+              </div>
+            </>
+          )}
         </section>
 
         {/* ── 7. TECHNICAL OVERVIEW CITADEL (THE WOW FACTOR) ────────────────── */}

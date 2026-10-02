@@ -993,7 +993,7 @@ const INITIAL_EQUITY_DATA: EquityCurveData = {
   })),
 };
 
-function normalizeActiveTrade(t: any, idx: number, eng: "v2" | "v3") {
+function normalizeActiveTrade(t: any, idx: number, eng: "v2" | "v3" | "v4") {
   const sym = t.sym || t.symbol || `STOCK_${idx + 1}`;
   const ab = t.ab || sym.slice(0, 2).toUpperCase();
   const entry = Number(t.entry ?? t.entryPrice ?? 100);
@@ -1019,14 +1019,21 @@ function normalizeActiveTrade(t: any, idx: number, eng: "v2" | "v3") {
   const comp = Number(t.comp ?? t.compositeScore ?? 75);
   const risk = t.risk || (t.riskScore != null ? (t.riskScore < 30 ? "Low" : t.riskScore < 60 ? "Medium" : "High") : "Low");
 
-  const tag = t.tag || `${t.sector || "Diversified"} · ${t.strategyName || (eng === "v2" ? "Breakout" : "Stage 2 Base")}`;
-  const stage = t.stage || (t.strategyName ? `${t.strategyName} 📐` : (eng === "v3" ? "Stage 2 Base 📐" : "Breakout Setup"));
+  const tag = t.tag || `${t.sector || "Diversified"} · ${t.strategyName || (eng === "v4" ? "AI Ultra V4" : eng === "v2" ? "Breakout" : "Stage 2 Base")}`;
+  const stage = t.stage || (t.strategyName ? `${t.strategyName} 📐` : (eng === "v4" ? "Stage 2 Moonbag 🚀" : eng === "v3" ? "Stage 2 Base 📐" : "Breakout Setup"));
   const grad = t.grad || GRADIENTS[idx % GRADIENTS.length];
   const seed = t.seed ?? stringSeed(sym);
 
   let why = t.why;
   if (!why) {
-    if (eng === "v2") {
+    if (eng === "v4") {
+      why = [
+        "Stage 2 Structural Uptrend confirmed (Price > 50 > 200 EMA)",
+        `V4 AI Pattern: ${t.strategyName || "Breakout Setup"} with ${ml}% conviction`,
+        `Dual-Tranche Infinity Moonbag (50% banked at ₹${target.toFixed(2)}, 50% runner)`,
+        "Volume Distribution Alert active to detect institutional selling",
+      ];
+    } else if (eng === "v2") {
       why = [
         `Breakout above ${days + 15}-day consolidation`,
         "Relative strength rank: Top 5% of universe",
@@ -1178,10 +1185,23 @@ export default function App() {
      STATE & AUTH
      ============================================================ */
   const { user } = useAuth();
-  const [engine, setEngine] = useState<"v2" | "v3">(() => {
-    // V3 is disabled — always use V2 for maximum performance
-    return "v2";
+  const [engine, setEngine] = useState<"v2" | "v3" | "v4">(() => {
+    return (localStorage.getItem("engine") as "v2" | "v3" | "v4") || "v2";
   });
+  const [isEngineDropdownOpen, setIsEngineDropdownOpen] = useState(false);
+  const engineDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close engine dropdown on click outside
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      if (engineDropdownRef.current && !engineDropdownRef.current.contains(e.target as Node)) {
+        setIsEngineDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
+
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     return (localStorage.getItem("theme") as "dark" | "light") || "light";
   });
@@ -1338,7 +1358,7 @@ export default function App() {
 
   // Transitional Animation State (Rocket hitting bulls eye)
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [transitionEngine, setTransitionEngine] = useState<"v2" | "v3">("v2");
+  const [transitionEngine, setTransitionEngine] = useState<"v2" | "v3" | "v4">("v2");
 
   // User Paper Trading Portfolio State & Cloud Sync
   const [portfolio, setPortfolio] = useState<ManualPortfolioTrade[]>(() => {
@@ -1451,7 +1471,7 @@ export default function App() {
 
   // Bottom Sheet state
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [sheetPayload, setSheetPayload] = useState<{ kind: "v2" | "v3" | "closed" | "screener_detail"; trade: any } | null>(null);
+  const [sheetPayload, setSheetPayload] = useState<{ kind: "v2" | "v3" | "v4" | "closed" | "screener_detail"; trade: any } | null>(null);
 
   // Live Data States — initialized from fast session cache so first frame render is 0ms instant
   const [terminalData, setTerminalData] = useState<TerminalSnapshot | null>(() => {
@@ -1576,7 +1596,7 @@ export default function App() {
     if (!appRef.current) return;
     const pulse = document.createElement("div");
     pulse.className = "engine-pulse";
-    const color = engine === "v2" ? "rgba(139,92,246,.48)" : "rgba(99,102,241,.42)";
+    const color = engine === "v4" ? "rgba(16,185,129,.55)" : engine === "v2" ? "rgba(139,92,246,.48)" : "rgba(99,102,241,.42)";
     pulse.style.background = `radial-gradient(circle at 85% 5%, ${color} 0%, transparent 55%)`;
     appRef.current.appendChild(pulse);
     setTimeout(() => pulse.remove(), 1000);
@@ -1587,7 +1607,7 @@ export default function App() {
     setTimeout(() => sweep.remove(), 950);
   };
 
-  const switchEngine = (next: "v2" | "v3") => {
+  const switchEngine = (next: "v2" | "v3" | "v4") => {
     if (next === engine) return;
     setIsTransitioning(true);
     setTransitionEngine(next);
@@ -1604,7 +1624,7 @@ export default function App() {
   /* ============================================================
      DATA FETCHING
      ============================================================ */
-  const fetchAllData = useCallback(async (currentEngine: "v2" | "v3") => {
+  const fetchAllData = useCallback(async (currentEngine: "v2" | "v3" | "v4") => {
     // Only show full loading spinner if we don't already have live data in memory
     setTerminalData(prev => {
       if (!prev) setIsTerminalLoading(true);
@@ -1617,7 +1637,11 @@ export default function App() {
 
       if (termRes) {
         setTerminalData(termRes);
-        setTerminalDataV2(termRes);
+        if (currentEngine === "v2") {
+          setTerminalDataV2(termRes);
+        } else if (currentEngine === "v3") {
+          setTerminalDataV3(termRes);
+        }
         try {
           sessionStorage.setItem(`quantsync_cached_terminal_${currentEngine}`, JSON.stringify(termRes));
         } catch {}
@@ -1637,7 +1661,7 @@ export default function App() {
     }
   }, []);
 
-  const fetchEquity = async (v: "v2" | "v3", days: number) => {
+  const fetchEquity = async (v: "v2" | "v3" | "v4", days: number) => {
     try {
       const eq = await quantsyncApi.getEquityCurve(v, days);
       if (eq) setEquityData(eq);
@@ -1646,7 +1670,7 @@ export default function App() {
     }
   };
 
-  const fetchChart = async (sym: string, eng: "v2" | "v3") => {
+  const fetchChart = async (sym: string, eng: "v2" | "v3" | "v4") => {
     try {
       const c = await quantsyncApi.getChartData(sym, 250, eng);
       if (c) setLiveChartData(c);
@@ -1930,7 +1954,7 @@ export default function App() {
   /* ============================================================
      BOTTOM SHEET OPEN / CLOSE
      ============================================================ */
-  const openSheet = (kind: "v2" | "v3" | "closed" | "screener_detail", trade: any) => {
+  const openSheet = (kind: "v2" | "v3" | "v4" | "closed" | "screener_detail", trade: any) => {
     setSheetPayload({ kind, trade });
     setSheetOpen(true);
   };
@@ -2109,7 +2133,7 @@ export default function App() {
     const list: any[] = [];
     const seen = new Set<string>();
 
-    const getRaw = (data: TerminalSnapshot | null, eng: "v2" | "v3") => {
+    const getRaw = (data: TerminalSnapshot | null, eng: "v2" | "v3" | "v4") => {
       if (!data) return [];
       if (data.active && data.active.length > 0) return data.active;
       if (data.inTradeTrades && data.inTradeTrades.length > 0) return data.inTradeTrades;
@@ -2118,6 +2142,7 @@ export default function App() {
 
     const v2Raw = getRaw(terminalDataV2 || (engine === "v2" ? terminalData : null), "v2");
     const v3Raw = getRaw(terminalDataV3 || (engine === "v3" ? terminalData : null), "v3");
+    const v4Raw = getRaw(engine === "v4" ? terminalData : null, "v4");
 
     v2Raw.forEach((t: any, idx: number) => {
       const sym = (t.symbol || t.title || t.sym || "").toUpperCase().trim();
@@ -2142,6 +2167,19 @@ export default function App() {
       if (sym && !seen.has(`${sym}_v3`)) {
         seen.add(`${sym}_v3`);
         list.push({ ...norm, engine: "v3" });
+      }
+    });
+
+    v4Raw.forEach((t: any, idx: number) => {
+      const sym = (t.symbol || t.title || t.sym || "").toUpperCase().trim();
+      const live = livePrices && sym ? livePrices[sym] : undefined;
+      const tradeData = live && live.price > 0 
+        ? { ...t, currentPrice: live.price, price: live.price, ltp: live.price, now: live.price, isLivePrice: true }
+        : t;
+      const norm = normalizeActiveTrade(tradeData, idx, "v4");
+      if (sym && !seen.has(`${sym}_v4`)) {
+        seen.add(`${sym}_v4`);
+        list.push({ ...norm, engine: "v4" });
       }
     });
 
@@ -3183,15 +3221,72 @@ export default function App() {
                 </svg>
               </button>
 
-              {/* V3 disabled — single engine mode for maximum performance */}
-              <div className="ios-segmented-control" data-sel="v2" style={{ pointerEvents: "none", opacity: 0.85 }}>
+              {/* Interactive Engine Selector Pill & Dropdown */}
+              <div className="engine-dropdown-container" ref={engineDropdownRef} style={{ position: "relative" }}>
                 <button
                   type="button"
-                  className="ios-segment-btn active"
+                  className={`engine-select-pill-btn ${isEngineDropdownOpen ? "active" : ""}`}
+                  onClick={() => setIsEngineDropdownOpen(prev => !prev)}
+                  aria-expanded={isEngineDropdownOpen}
+                  title="Click to Switch Engine"
                 >
-                  <span className="segment-dot v2" />
-                  <span>AI Pro</span>
+                  <span className={`segment-dot ${engine}`} />
+                  <span className="engine-select-pill-label">
+                    {engine === "v4" ? "AI ULTRA" : "AI PRO"}
+                  </span>
+                  <svg
+                    className={`engine-select-caret ${isEngineDropdownOpen ? "open" : ""}`}
+                    width="12"
+                    height="12"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                  >
+                    <path d="M4 6l4 4 4-4" />
+                  </svg>
                 </button>
+
+                {isEngineDropdownOpen && (
+                  <div className="engine-dropdown-menu">
+                    <button
+                      type="button"
+                      className={`engine-dropdown-item ${engine === "v2" ? "active" : ""}`}
+                      onClick={() => {
+                        switchEngine("v2");
+                        setIsEngineDropdownOpen(false);
+                      }}
+                    >
+                      <div className="engine-item-info">
+                        <div className="engine-item-title-row">
+                          <span className="segment-dot v2" />
+                          <span className="engine-item-name">AI PRO</span>
+                          {engine === "v2" && <span className="engine-active-tick">✓</span>}
+                        </div>
+                        <div className="engine-item-desc">High Conviction · Swing Engine</div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`engine-dropdown-item ${engine === "v4" ? "active" : ""}`}
+                      onClick={() => {
+                        switchEngine("v4");
+                        setIsEngineDropdownOpen(false);
+                      }}
+                    >
+                      <div className="engine-item-info">
+                        <div className="engine-item-title-row">
+                          <span className="segment-dot v4" />
+                          <span className="engine-item-name">AI ULTRA</span>
+                          {engine === "v4" && <span className="engine-active-tick">✓</span>}
+                        </div>
+                        <div className="engine-item-desc">Institutional Alpha · 2026 Engine</div>
+                      </div>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -3199,18 +3294,72 @@ export default function App() {
             {isEngineInfoOpen && (
               <div className="signals-engine-drawer">
                 <div className="engine-drawer-header">
-                  <div className={`engine-drawer-badge ${engine === "v2" ? "v2" : "v3"}`}>
-                    {engine === "v2" ? "AI PRO ENGINE" : "CHART + AI ENGINE"}
+                  <div className={`engine-drawer-badge ${engine}`}>
+                    {engine === "v4" ? "AI ULTRA V4 ENGINE" : engine === "v2" ? "AI PRO ENGINE" : "CHART + AI ENGINE"}
                   </div>
                   <div className="engine-drawer-summary">
-                    {engine === "v2"
+                    {engine === "v4"
+                      ? "In simple words: AI Ultra monitors 2,500+ Indian stocks with 64-D Pattern DNA & Twin Search, secures 50% profit at Target 1, runs the rest wild with Moonbag & Volume Distribution alerts, while parking idle cash in Liquid BeES yield."
+                      : engine === "v2"
                       ? "In simple words: The AI scans 500+ stocks every day and picks the top 1 to 3 trades with the highest chance to win."
                       : "In simple words: Finds famous breakout chart patterns, and the AI double-checks them so you don't get caught in fake traps."}
                   </div>
                 </div>
 
                 <div className="engine-flow-steps">
-                  {engine === "v2" ? (
+                  {engine === "v4" ? (
+                    <>
+                      <div className="engine-flow-step">
+                        <div className="step-badge">1</div>
+                        <div className="step-content">
+                          <div className="step-title">2,500+ Stock Full Universe Scan</div>
+                          <div className="step-desc">
+                            Scans all liquid NSE/BSE stocks with Stage 2 structural uptrend filter (Price &gt; 50 EMA &gt; 200 EMA) and 90-day institutional liquidity screening.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="engine-flow-step">
+                        <div className="step-badge">2</div>
+                        <div className="step-content">
+                          <div className="step-title">64-D Pattern DNA & 98K Historical Twin Search</div>
+                          <div className="step-desc">
+                            Encodes each candidate into mathematical DNA and searches 98,000 historical market regimes to verify statistical edge before entry.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="engine-flow-step">
+                        <div className="step-badge">3</div>
+                        <div className="step-content">
+                          <div className="step-title">Dual-Tranche 50/50 Infinity Moonbag</div>
+                          <div className="step-desc">
+                            Locks in half position at initial Target (+8% to +15%) to bank risk-free profit, and immediately moves stop loss to break-even.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="engine-flow-step">
+                        <div className="step-badge">4</div>
+                        <div className="step-content">
+                          <div className="step-title">Volume Distribution Alert & Chandelier Runner</div>
+                          <div className="step-desc">
+                            The remaining 50% runner rides huge multi-month trends, exiting only when smart money dumps volume (Distribution Alert) or breaks trailing 3.0× ATR.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="engine-flow-step">
+                        <div className="step-badge">5</div>
+                        <div className="step-content">
+                          <div className="step-title">Automatic Liquid BeES Yield Drag Elimination</div>
+                          <div className="step-desc">
+                            Every unallocated rupee earns daily risk-free overnight yields (~6.5% p.a.), compounding total portfolio return during sideways markets.
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : engine === "v2" ? (
                     <>
                       <div className="engine-flow-step">
                         <div className="step-badge">1</div>
@@ -3417,7 +3566,7 @@ export default function App() {
                     }}
                   />
                   <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink1)" }}>
-                    Loading Live {engine === "v2" ? "AI Pro" : "Chart + AI"} Setups...
+                    Loading Live {engine === "v4" ? "AI Ultra" : engine === "v2" ? "AI Pro" : "Chart + AI"} Setups...
                   </div>
                   <div style={{ fontSize: 11, color: "var(--ink3)", marginTop: 4 }}>
                     Fetching verified exchange signals from VPS master ledger
@@ -3433,7 +3582,7 @@ export default function App() {
                     Current market conditions do not meet strict institutional risk criteria · Preserving Capital
                   </div>
                 </div>
-              ) : engine === "v2" ? (
+              ) : (engine === "v2" || engine === "v4") ? (
                 // V2 ACTIVE CARDS (+ADD button, % ROI, Stars, 4-step sequence, Signal Date shifted below Stop Loss, and dark action tag exactly as requested)
                 sortedActiveTrades.map((t: any, i: number) => {
                   const pPct = t.pnlPct ?? t.roiPct ?? 0;
@@ -3782,8 +3931,12 @@ export default function App() {
               <div className="return-curve-card">
                 <div className="row between" style={{ marginBottom: 13 }}>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 800 }}>Closed Signals · 2026 Engine Record</div>
-                    <div className="micro dim" style={{ marginTop: 2 }}>Verified Institutional Signal Output</div>
+                    <div style={{ fontSize: 13, fontWeight: 800 }}>
+                      {engine === "v4" ? "Closed Signals · 2026 AI Ultra Engine Record" : "Closed Signals · 2026 Engine Record"}
+                    </div>
+                    <div className="micro dim" style={{ marginTop: 2 }}>
+                      {engine === "v4" ? "Verified Institutional Strategy F3 Signal Output (105 Total 2026 Trades)" : "Verified Institutional Signal Output"}
+                    </div>
                   </div>
                   <span className="pill accent">{closedStats.totalTrades} Closed</span>
                 </div>
@@ -3894,7 +4047,7 @@ export default function App() {
                     No Closed Positions Logged
                   </div>
                 </div>
-              ) : engine === "v2" ? (
+              ) : (engine === "v2" || engine === "v4") ? (
                 // V2 Closed Rows (Sorted latest exit first, clear return %, no arbitrary rupee P&L)
                 sortedClosedTrades.map((t: any, i: number) => {
                   const pPct = t.pnlPct ?? t.roiPct ?? 0;
@@ -4092,8 +4245,8 @@ export default function App() {
 
         {/* ===== CHARTS SCREEN ===== */}
         <section className={`screen ${activeTab === "charts" ? "active" : ""}`} id="screen-charts">
-          {engine === "v2" ? (
-            // V2 LIVE POSITION CHART
+          {(engine === "v2" || engine === "v4") ? (
+            // V2 / V4 LIVE POSITION CHART
             <div id="chartV2">
               <div className="card" style={{ padding: "14px 15px", marginBottom: 14 }}>
                 <div className="row between">
@@ -4108,7 +4261,7 @@ export default function App() {
                       onClick={() => {
                         setV2ChartSel(i);
                         setChartSymbol(a.sym || a.symbol);
-                        fetchChart(a.sym || a.symbol, "v2");
+                        fetchChart(a.sym || a.symbol, engine);
                       }}
                     >
                       {a.sym || a.symbol}
@@ -4672,7 +4825,7 @@ export default function App() {
       />
       <div
         ref={sheetRef}
-        className={`sheet ${sheetOpen ? "on" : ""} ${sheetPayload?.kind === "v2" || sheetPayload?.kind === "v3" ? "sheet-fullscreen" : ""} ${sheetPayload?.kind === "closed" ? ((sheetPayload?.trade?.pnl || 0) >= 0 ? "win" : "lose") : ""}`}
+        className={`sheet ${sheetOpen ? "on" : ""} ${sheetPayload?.kind === "v2" || sheetPayload?.kind === "v3" || sheetPayload?.kind === "v4" ? "sheet-fullscreen" : ""} ${sheetPayload?.kind === "closed" ? ((sheetPayload?.trade?.pnl || 0) >= 0 ? "win" : "lose") : ""}`}
         id="sheet"
       >
         <div className="sheet-grip" onClick={closeSheet}>
@@ -4697,7 +4850,7 @@ export default function App() {
               );
             }
 
-            if (kind === "v2" || kind === "v3") {
+            if (kind === "v2" || kind === "v3" || kind === "v4") {
               return (
                 <TradingViewStockDetail
                   trade={t}
@@ -4963,13 +5116,13 @@ export default function App() {
                 <div className={`switch ${theme === "dark" ? "on" : ""}`} />
               </div>
             </div>
-            <div className="setrow" onClick={() => switchEngine(engine === "v2" ? "v3" : "v2")}>
+            <div className="setrow" onClick={() => switchEngine(engine === "v4" ? "v2" : "v4")}>
               <div className="l">
                 <svg viewBox="0 0 24 24"><path d="M3 17V7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v10" /><path d="M8 20h8" /></svg>
                 Primary Trading Engine
               </div>
               <div className="r" id="defaultEngineMore">
-                {engine === "v2" ? "V2 · AI Trading" : "V3 · Chart Engine"}
+                {engine === "v4" ? "V4 · AI Ultra Engine" : "V2 · AI Pro Engine"}
               </div>
             </div>
           </div>
