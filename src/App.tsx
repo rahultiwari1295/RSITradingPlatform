@@ -3441,18 +3441,7 @@ export default function App() {
                                 <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: "-.02em" }}>
                                   {t.sym || t.symbol}
                                 </span>
-                                <span
-                                  style={{
-                                    fontSize: 9.5,
-                                    fontWeight: 700,
-                                    padding: "2px 5px",
-                                    borderRadius: 4,
-                                    background: "rgba(255, 255, 255, 0.08)",
-                                    color: "var(--ink3)"
-                                  }}
-                                >
-                                  {t.exchange || "BSE"}
-                                </span>
+
                                 <span style={{ color: "var(--apple-gold)", fontSize: 12, letterSpacing: "1px" }}>
                                   {"★".repeat(Math.min(5, Math.max(1, Math.round(t.stars || 5))))}
                                 </span>
@@ -3462,30 +3451,8 @@ export default function App() {
                               </div>
                             </div>
 
-                            {/* + ADD Button and ROI Percentage */}
-                            <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-                              <button
-                                className="btn-add-paper"
-                                style={{
-                                  padding: "5px 12px",
-                                  fontSize: 11,
-                                  fontWeight: 700,
-                                  background: "rgba(255, 255, 255, 0.08)",
-                                  border: "1px solid rgba(255, 255, 255, 0.14)",
-                                  borderRadius: 8,
-                                  color: "var(--ink1)"
-                                }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenBuyModal(
-                                    t.sym || t.symbol,
-                                    Number(t.now || t.currentPrice || t.price || t.entry || 100),
-                                    t.tag || t.strategyName || "Breakout Setup"
-                                  );
-                                }}
-                              >
-                                + ADD
-                              </button>
+                            {/* ROI Percentage */}
+                            <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
                               <div
                                 className="num"
                                 style={{
@@ -3546,9 +3513,9 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* Footer: Signal Date (shifted below Stop Loss) on Left, HOLD / BUY Tag on Right */}
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, fontSize: 11 }}>
-                        <div style={{ color: "var(--ink3)" }}>
+                      {/* Footer: Signal Date (shifted below Stop Loss) on Left, Status Tag & + ADD Button on Right */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, gap: 10, flexWrap: "wrap" }}>
+                        <div style={{ color: "var(--ink3)", fontSize: 11 }}>
                           <span>Signal: </span>
                           <span className="num" style={{ fontWeight: 700, color: "var(--ink1)" }}>
                             {dateStr}
@@ -3556,28 +3523,45 @@ export default function App() {
                           <span> ({daysHeld} {Number(daysHeld) === 1 ? "day" : "days"})</span>
                         </div>
 
-                        <div
-                          style={{
-                            padding: "3px 10px",
-                            borderRadius: 6,
-                            background: "rgba(255, 255, 255, 0.08)",
-                            border: "1px solid rgba(255, 255, 255, 0.14)",
-                            color: "var(--ink1)",
-                            fontSize: 10.5,
-                            fontWeight: 800,
-                            letterSpacing: "0.06em",
-                            textTransform: "uppercase",
-                            lineHeight: 1.3
-                          }}
-                        >
-                          {tagInfo.label || "HOLD"}
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                          {/* 1. Status Tag: GOOD TO BUY | DONT ENTER NOW | SKIP OLD CALL (Not a button) */}
+                          <div
+                            className="signal-status-pill"
+                            style={{
+                              background: tagInfo.bg,
+                              border: `1px solid ${tagInfo.border}`,
+                              color: tagInfo.color,
+                              boxShadow: `0 1px 4px ${tagInfo.bg}`,
+                            }}
+                            title={tagInfo.tooltip}
+                          >
+                            {tagInfo.label}
+                          </div>
+
+                          {/* 2. Tactile Apple + ADD Button */}
+                          <button
+                            type="button"
+                            className="btn-signal-add"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenBuyModal(
+                                t.sym || t.symbol,
+                                Number(t.now || t.currentPrice || t.price || t.entry || 100),
+                                t.tag || t.strategyName || "Breakout Setup"
+                              );
+                            }}
+                            title={`Add ${t.sym || t.symbol} to Paper Trade`}
+                          >
+                            <span style={{ fontSize: 13, lineHeight: 1, fontWeight: 900 }}>+</span>
+                            <span>ADD</span>
+                          </button>
                         </div>
                       </div>
                     </div>
                   );
                 })
               ) : (
-                // V3 CARDS (Stop Entry Current Target sequence, stars after name, +ADD shifted right before %, clean Signal Date)
+                // V3 CARDS (Stop Entry Current Target sequence, stars after name, clean Signal Date)
                 sortedActiveTrades.map((t: any, i: number) => {
                   const chg = t.chg ?? t.roiPct ?? 0;
                   const daysHeld = t.days ?? t.holdingDays ?? 1;
@@ -3617,11 +3601,43 @@ export default function App() {
                               </div>
                             </div>
 
-                            {/* + ADD Button and clean percentage (R value removed) */}
-                            <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                            {/* ROI Percentage only */}
+                            <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+                              <div className={`num ${chg >= 0 ? "up" : "down"}`} style={{ fontSize: 14, fontWeight: 800 }}>
+                                {chg >= 0 ? "+" : ""}{chg.toFixed(2)}%
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Clean Signal Date line with Status Tag and Tactile + ADD Button */}
+                          <div style={{ fontSize: 10.5, color: "var(--ink2)", marginTop: 7, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                            <div>
+                              <span style={{ color: "var(--ink3)" }}>Signal Date : </span>
+                              <span className="num" style={{ fontWeight: 600, color: "var(--ink1)" }}>
+                                {formatSignalDate(t.entryDate || t.date)}
+                              </span>
+                              <span style={{ color: "var(--ink3)" }}>
+                                {" "}( {daysHeld} {Number(daysHeld) === 1 ? "Day" : "Days"} )
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
+                              <span
+                                className="signal-status-pill"
+                                style={{
+                                  background: tagInfo.bg,
+                                  color: tagInfo.color,
+                                  border: `1px solid ${tagInfo.border}`,
+                                  fontSize: 9.5,
+                                  padding: "3px 9px",
+                                }}
+                                title={tagInfo.tooltip}
+                              >
+                                {tagInfo.label}
+                              </span>
                               <button
-                                className="btn-add-paper"
-                                style={{ padding: "3px 9px", fontSize: 10.5, fontWeight: 700 }}
+                                type="button"
+                                className="btn-signal-add"
+                                style={{ padding: "3.5px 11px", fontSize: 10.5 }}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleOpenBuyModal(
@@ -3630,45 +3646,12 @@ export default function App() {
                                     t.stage || "Stage 2 Base"
                                   );
                                 }}
+                                title={`Add ${t.sym || t.symbol} to Paper Trade`}
                               >
-                                + ADD
+                                <span style={{ fontSize: 12, lineHeight: 1, fontWeight: 900 }}>+</span>
+                                <span>ADD</span>
                               </button>
-                              <div className={`num ${chg >= 0 ? "up" : "down"}`} style={{ fontSize: 14, fontWeight: 800 }}>
-                                {chg >= 0 ? "+" : ""}{chg.toFixed(2)}%
-                              </div>
                             </div>
-                          </div>
-
-                          {/* Clean Signal Date line with Status Tag */}
-                          <div style={{ fontSize: 10.5, color: "var(--ink2)", marginTop: 7, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                            <span>
-                              <span style={{ color: "var(--ink3)" }}>Signal Date : </span>
-                              <span className="num" style={{ fontWeight: 600, color: "var(--ink1)" }}>
-                                {formatSignalDate(t.entryDate || t.date)}
-                              </span>
-                              <span style={{ color: "var(--ink3)" }}>
-                                {" "}( {daysHeld} {Number(daysHeld) === 1 ? "Day" : "Days"} )
-                              </span>
-                            </span>
-                            <span
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                padding: "1.5px 6.5px",
-                                borderRadius: 5,
-                                fontSize: 9.5,
-                                fontWeight: 800,
-                                letterSpacing: "0.04em",
-                                textTransform: "uppercase",
-                                background: tagInfo.bg,
-                                color: tagInfo.color,
-                                border: `1px solid ${tagInfo.border}`,
-                                lineHeight: 1.3,
-                              }}
-                              title={tagInfo.tooltip}
-                            >
-                              {tagInfo.label}
-                            </span>
                           </div>
                         </div>
                       </div>

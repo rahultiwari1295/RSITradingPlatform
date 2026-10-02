@@ -785,20 +785,6 @@ export default function TradingViewStockDetail({
                 <span style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.03em", color: "var(--ink-primary)" }}>
                   {cleanSym}
                 </span>
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 800,
-                    letterSpacing: "0.06em",
-                    padding: "2px 7px",
-                    borderRadius: 6,
-                    background: "rgba(10, 132, 255, 0.12)",
-                    color: "var(--apple-blue)",
-                    border: "1px solid rgba(10, 132, 255, 0.25)",
-                  }}
-                >
-                  BSE EQ
-                </span>
               </div>
               <div style={{ fontSize: 12, color: "var(--ink-secondary)", marginTop: 3, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                 <span>{t.tag || t.stage || "Diversified · Breakout"}</span>
