@@ -73,6 +73,22 @@ function formatSignalDate(d: any): string {
   return str;
 }
 
+function getTradeDaysHeld(t: any): number {
+  const explicitDays = Number(t?.days ?? t?.holdingDays ?? 0);
+  const rawDate = t?.entryDate || t?.date || t?.created_at;
+  let calDays = 0;
+  if (rawDate) {
+    const dt = parseTradeDate(rawDate);
+    if (!isNaN(dt.getTime())) {
+      const diffMs = Date.now() - dt.getTime();
+      if (diffMs > 0) {
+        calDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      }
+    }
+  }
+  return Math.max(calDays, explicitDays || 2);
+}
+
 function generateWhyThisTradeV2(t: any): string[] {
   const sym = t.sym || t.symbol || "Asset";
   const tag = (t.tag || t.strategyName || t.strategyId || "").toLowerCase();
@@ -3417,7 +3433,7 @@ export default function App() {
                 // V2 ACTIVE CARDS (+ADD button, % ROI, Stars, 4-step sequence, Signal Date shifted below Stop Loss, and dark action tag exactly as requested)
                 sortedActiveTrades.map((t: any, i: number) => {
                   const pPct = t.pnlPct ?? t.roiPct ?? 0;
-                  const daysHeld = t.days ?? t.holdingDays ?? 2;
+                  const daysHeld = getTradeDaysHeld(t);
                   const tagInfo = getActionTagInfo("active", daysHeld, pPct);
                   const rawDate = t.entryDate || t.date || "2026-09-15";
                   const dateStr = typeof rawDate === "string" && rawDate.includes("T") ? rawDate.split("T")[0] : rawDate;
@@ -3564,7 +3580,7 @@ export default function App() {
                 // V3 CARDS (Stop Entry Current Target sequence, stars after name, clean Signal Date)
                 sortedActiveTrades.map((t: any, i: number) => {
                   const chg = t.chg ?? t.roiPct ?? 0;
-                  const daysHeld = t.days ?? t.holdingDays ?? 1;
+                  const daysHeld = getTradeDaysHeld(t);
                   const tagInfo = getActionTagInfo("active", daysHeld, chg);
                   const overlays = t.overlays || [
                     { price: t.pivot || t.pivotPrice || 45.05, color: "var(--gold)", label: `PIVOT ₹${t.pivot || 45.05}` },
