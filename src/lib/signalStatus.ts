@@ -56,17 +56,17 @@ export function getSignalStatus(
     };
   }
 
-  // 2. SKIP: Old signal (6+ days) that is stagnant (<2%), or deep pullback
-  if ((holdingDays >= 6 && returnPct < 2.0) || returnPct <= -3.5) {
+  // 2. SKIP: Signal is > 15 days old, or stagnant (6+ days with <2%), or deep pullback
+  if (holdingDays > 15 || (holdingDays >= 6 && returnPct < 2.0) || returnPct <= -3.5) {
     return {
       key: "skip",
       label: "SKIP",
       badgeClass:
         "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700",
       dotColor: "bg-slate-500",
-      actionGuidance: "Do NOT enter. Stagnant or testing stop loss.",
-      tooltip: "Signal is too old (6+ days) or stagnant. Better to skip.",
-      conditionDescription: "Days ≥ 6 with gain < 2%, or near stop loss",
+      actionGuidance: "Do NOT enter. Setup expired (>15 days) or stagnant.",
+      tooltip: holdingDays > 15 ? "Signal is more than 15 days old (> 15d). Expired call." : "Signal is too old or stagnant. Better to skip.",
+      conditionDescription: "Days > 15, or Days ≥ 6 with gain < 2%, or near stop loss",
     };
   }
 
@@ -139,7 +139,7 @@ export function getSignalStatus(
 }
 
 export interface ActionTagInfo {
-  label: "GOOD TO BUY" | "DONT ENTER NOW" | "SKIP OLD CALL";
+  label: "GOOD TO BUY" | "DONT ENTER NOW" | "CALL EXPIRED · SKIP";
   bg: string;
   color: string;
   border: string;
@@ -153,14 +153,16 @@ export function getActionTagInfo(
   returnPct: number = 0
 ): ActionTagInfo {
   const status = getSignalStatus(mode, holdingDays, returnPct);
-  // Stagnant old call (6+ days) or near stop loss -> SKIP OLD CALL
-  if (status.key === "skip") {
+  // More than 15 days old, or stagnant old call, or near stop loss -> CALL EXPIRED · SKIP
+  if (holdingDays > 15 || status.key === "skip") {
     return {
-      label: "SKIP OLD CALL",
+      label: "CALL EXPIRED · SKIP",
       bg: "rgba(239, 68, 68, 0.12)",
       color: "var(--apple-red, #F87171)",
       border: "rgba(239, 68, 68, 0.32)",
-      tooltip: "Signal is stagnant (6+ days) or testing stop loss. Skip this old call.",
+      tooltip: holdingDays > 15
+        ? `Signal is ${holdingDays} days old (> 15 days validity limit). Setup has expired; skip this call.`
+        : "Signal is stagnant or testing stop loss. Setup has expired; skip this call.",
       badgeClass: "tag-skip-call",
     };
   }
