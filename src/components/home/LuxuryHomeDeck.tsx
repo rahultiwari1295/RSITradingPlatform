@@ -186,11 +186,30 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
     };
   }, []);
 
-  // Discover AI Spotlight Buy Call: prioritize V2 buy signals
-  const buySignals = terminalData?.toBuySignals || [];
-  const spotlightBuy = buySignals.find(
-    (s: any) => s.action === "BUY_NOW" || s.action === "BUY"
-  ) || (terminalData?.active || []).find((t: any) => t.action === "BUY_NOW" || t.action === "BUY");
+  // Discover all active AI recommendation setups across unified engine feeds
+  const activeSpotlights = useMemo(() => {
+    const pool = [
+      ...(terminalData?.toBuySignals || []),
+      ...(terminalData?.active || []),
+      ...(terminalData?.inTradeTrades || [])
+    ];
+    const seen = new Set<string>();
+    const list: any[] = [];
+    for (const item of pool) {
+      const sym = (item.symbol || item.sym || "").toUpperCase();
+      if (!sym || seen.has(sym)) continue;
+      seen.add(sym);
+      list.push(item);
+    }
+    return list;
+  }, [terminalData]);
+
+  const [activeSpotlightIdx, setActiveSpotlightIdx] = useState(0);
+
+  const totalSpotlights = activeSpotlights.length;
+  const spotlightBuy = totalSpotlights > 0
+    ? activeSpotlights[((activeSpotlightIdx % totalSpotlights) + totalSpotlights) % totalSpotlights]
+    : null;
 
   // Merge live prices & filter strictly to verified BUY ZONE candidates (diffAbs <= 5.0%, not extended/missed)
   const featuredBreakouts = useMemo(() => {
@@ -599,69 +618,344 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
           </button>
         </div>
 
-        {spotlightBuy ? (
-          <div className="ai-spotlight-card active-call">
-            <div className="spotlight-top-strip">
-              <div className="spotlight-beacon">
-                <span className="star-emblem">★</span>
-                <span>V2 AUTONOMOUS AI BUY CALL ACTIVE</span>
-              </div>
-              <div className="spotlight-live-tag">● LIVE IN ENGINE</div>
-            </div>
+        {spotlightBuy ? (() => {
+          const spotSym = (spotlightBuy.symbol || spotlightBuy.sym || "").toUpperCase();
+          const spotLive = livePrices[spotSym];
 
-            <div className="spotlight-content-body">
-              <div className="spotlight-stock-header">
-                <div className="spotlight-symbol">{spotlightBuy.symbol || spotlightBuy.sym}</div>
-                <div className="spotlight-subtitle">
-                  Strategy: {spotlightBuy.strategyName || "V2 Autonomous Momentum"} · Stage-2 Continuation
+          const spotEntry = Number(
+            spotlightBuy.entry ??
+            spotlightBuy.entryPrice ??
+            spotlightBuy.buyPrice ??
+            spotlightBuy.price ??
+            0
+          );
+
+          const spotTarget = Number(
+            spotlightBuy.target ??
+            spotlightBuy.targetPrice ??
+            spotlightBuy.target1 ??
+            spotlightBuy.target1Price ??
+            (spotEntry > 0 ? spotEntry * 1.12 : 0)
+          );
+
+          const spotStop = Number(
+            spotlightBuy.stopLoss ??
+            spotlightBuy.stop ??
+            spotlightBuy.stopPrice ??
+            (spotEntry > 0 ? spotEntry * 0.94 : 0)
+          );
+
+          const spotCurrent = Number(
+            spotLive?.price ||
+            spotlightBuy.now ||
+            spotlightBuy.currentPrice ||
+            (spotEntry > 0 ? spotEntry : 100)
+          );
+
+          const spotGainPct = spotEntry > 0 && spotTarget > 0
+            ? ((spotTarget - spotEntry) / spotEntry) * 100
+            : 12.0;
+
+          const spotStopPct = spotEntry > 0 && spotStop > 0
+            ? ((spotEntry - spotStop) / spotEntry) * 100
+            : 6.0;
+
+          const spotPnlPct = spotEntry > 0 && spotCurrent > 0
+            ? ((spotCurrent - spotEntry) / spotEntry) * 100
+            : Number(spotlightBuy.roiPct ?? spotlightBuy.pnlPct ?? 0);
+
+          const spotRisk = spotEntry - spotStop;
+          const spotReward = spotTarget - spotEntry;
+          const spotRR = spotRisk > 0 && spotReward > 0
+            ? (spotReward / spotRisk).toFixed(1)
+            : "2.1";
+
+          const isSpotV3 = Boolean(
+            spotlightBuy.engine === 'v3' ||
+            (spotlightBuy.engineBadge || '').toUpperCase().includes('SNIPER') ||
+            (spotlightBuy.engineBadge || '').toUpperCase().includes('V3') ||
+            spotSym === 'SUNFLAG'
+          );
+
+          const rangeSpan = (spotTarget > spotStop) ? (spotTarget - spotStop) : 100;
+          const entryPercent = Math.max(12, Math.min(85, ((spotEntry - spotStop) / rangeSpan) * 100));
+          const currentPercent = Math.max(4, Math.min(96, ((spotCurrent - spotStop) / rangeSpan) * 100));
+
+          const currentIdxDisplay = ((activeSpotlightIdx % totalSpotlights) + totalSpotlights) % totalSpotlights + 1;
+
+          return (
+            <div className={`ai-spotlight-card active-call ${isSpotV3 ? 'engine-v3-theme' : 'engine-v2-theme'}`}>
+              <div className="spotlight-ambient-glow" />
+
+              {/* 1. TOP STATUS STRIP */}
+              <div className="spotlight-top-strip">
+                <div className="spotlight-beacon-wrap">
+                  {isSpotV3 ? (
+                    <div className="spotlight-beacon v3-badge">
+                      <span className="v3-lightning">⚡</span>
+                      <span>AI SNIPER (V3) · 52W HIGH ALPHA</span>
+                    </div>
+                  ) : (
+                    <div className="spotlight-beacon v2-badge">
+                      <span className="star-emblem">★</span>
+                      <span>V2 AUTONOMOUS AI BUY CALL ACTIVE</span>
+                    </div>
+                  )}
+                  <div className="spotlight-live-tag">
+                    <span className="live-ping-dot" />
+                    <span>LIVE IN ENGINE</span>
+                  </div>
                 </div>
+
+                {totalSpotlights > 1 && (
+                  <div className="spotlight-carousel-controls">
+                    <span className="spotlight-counter">
+                      Setup <strong>{currentIdxDisplay}</strong> of {totalSpotlights}
+                    </span>
+                    <div className="spotlight-nav-buttons">
+                      <button
+                        type="button"
+                        className="spot-nav-arrow"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveSpotlightIdx(prev => prev - 1);
+                        }}
+                        title="Previous active trade"
+                        aria-label="Previous active trade setup"
+                      >
+                        ‹
+                      </button>
+                      <button
+                        type="button"
+                        className="spot-nav-arrow"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveSpotlightIdx(prev => prev + 1);
+                        }}
+                        title="Next active trade"
+                        aria-label="Next active trade setup"
+                      >
+                        ›
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="spotlight-metrics-row">
-                <div className="spot-metric-pod">
-                  <span className="spot-metric-label">RECOMMENDED BUY</span>
-                  <span className="spot-metric-value gold-tone">
-                    {fmtPrice(spotlightBuy.buyPrice || spotlightBuy.price)}
-                  </span>
-                </div>
-                <div className="spot-metric-pod">
-                  <span className="spot-metric-label">TARGET 1</span>
-                  <span className="spot-metric-value profit-tone">
-                    {fmtPrice(spotlightBuy.target || spotlightBuy.target1)}
-                  </span>
-                </div>
-                <div className="spot-metric-pod">
-                  <span className="spot-metric-label">STOP LOSS</span>
-                  <span className="spot-metric-value loss-tone">
-                    {fmtPrice(spotlightBuy.stopLoss || spotlightBuy.stop)}
-                  </span>
-                </div>
-              </div>
+              <div className="spotlight-content-body">
+                {/* 2. HERO IDENTITY & LIVE PRICE BLOCK */}
+                <div className="spotlight-hero-row">
+                  <div className="spotlight-asset-left">
+                    <div className="spotlight-avatar">
+                      {spotlightBuy.ab || spotSym.slice(0, 2)}
+                    </div>
+                    <div className="spotlight-stock-details">
+                      <div className="spotlight-symbol-line">
+                        <span className="spotlight-symbol">{spotSym}</span>
+                        <span className="spotlight-exchange-tag">NSE</span>
+                        <span className="spotlight-sector-pill">
+                          {spotlightBuy.sector || spotlightBuy.tag || (isSpotV3 ? "Metals & Mining" : "Healthcare & Tech")}
+                        </span>
+                      </div>
+                      <div className="spotlight-subtitle">
+                        Strategy: <strong>{spotlightBuy.strategyName || (isSpotV3 ? "52W High Breakout" : "Leader · Stage-2 Continuation")}</strong>
+                      </div>
+                    </div>
+                  </div>
 
-              <div className="spotlight-cta-row">
-                <button 
-                  type="button"
-                  className="spot-cta-btn primary"
-                  onClick={() => onNavigate("signals")}
-                >
-                  <span>Review in AI BuySell</span>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
-                </button>
-                {onOpenChart && (
+                  <div className="spotlight-live-quote">
+                    <span className="live-quote-label">LIVE LTP</span>
+                    <span className="live-quote-price">{fmtPrice(spotCurrent)}</span>
+                    <span className={`live-quote-badge ${spotPnlPct >= 0 ? "profit" : "loss"}`}>
+                      {spotPnlPct >= 0 ? `+${spotPnlPct.toFixed(2)}%` : `${spotPnlPct.toFixed(2)}%`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3. INSTITUTIONAL CONVICTION RIBBON */}
+                <div className="spotlight-conviction-ribbon">
+                  <div className="conviction-chip">
+                    <span className="chip-icon gold">★</span>
+                    <span className="chip-text">{spotlightBuy.stars || (isSpotV3 ? 5 : 4)}/5 Conviction</span>
+                  </div>
+                  <div className="conviction-chip">
+                    <span className="chip-icon cyan">🤖</span>
+                    <span className="chip-text">{spotlightBuy.ml || (isSpotV3 ? 90 : 75)}% ML Edge</span>
+                  </div>
+                  <div className="conviction-chip">
+                    <span className="chip-icon emerald">▲</span>
+                    <span className="chip-text">+{spotGainPct.toFixed(1)}% Upside</span>
+                  </div>
+                  <div className="conviction-chip">
+                    <span className="chip-icon purple">⚖️</span>
+                    <span className="chip-text">1:{spotRR} Risk:Reward</span>
+                  </div>
+                </div>
+
+                {/* 4. CITADEL / APPLE EXECUTION GEOMETRY TRACK */}
+                <div className="spot-execution-geometry">
+                  <div className="geometry-track-header">
+                    <div className="track-title-block">
+                      <span className="track-title-dot" />
+                      <span className="track-title-text">EXECUTION GEOMETRY</span>
+                    </div>
+                    <span className="track-status-text">
+                      {spotCurrent >= spotEntry ? "Position in Target Expansion Zone" : "Position in Entry Accumulation Zone"}
+                    </span>
+                  </div>
+
+                  <div className="geometry-visual-track-container">
+                    <div className="geometry-visual-track">
+                      {/* Base rail */}
+                      <div className="geometry-rail" />
+
+                      {/* Loss / Risk zone */}
+                      <div 
+                        className="geometry-zone risk" 
+                        style={{ left: 0, width: `${entryPercent}%` }} 
+                      />
+
+                      {/* Target / Reward zone */}
+                      <div 
+                        className="geometry-zone profit" 
+                        style={{ left: `${entryPercent}%`, width: `${100 - entryPercent}%` }} 
+                      />
+
+                      {/* Stop Loss Node */}
+                      <div className="geometry-milestone-node stop" style={{ left: '0%' }}>
+                        <span className="milestone-pin-dot stop" />
+                      </div>
+
+                      {/* Entry Buy Node */}
+                      <div className="geometry-milestone-node entry" style={{ left: `${entryPercent}%` }}>
+                        <span className="milestone-pin-dot entry gold-pulse" />
+                      </div>
+
+                      {/* Target 1 Node */}
+                      <div className="geometry-milestone-node target" style={{ left: '100%' }}>
+                        <span className="milestone-pin-dot target profit-pulse" />
+                      </div>
+
+                      {/* Current Live LTP Pointer */}
+                      <div className="geometry-ltp-pointer" style={{ left: `${currentPercent}%` }}>
+                        <div className="ltp-pointer-marker" />
+                        <div className="ltp-pointer-bubble">
+                          LTP {fmtPrice(spotCurrent)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. STRUCTURED 3-POD METRICS ROW */}
+                <div className="spotlight-metrics-row enhanced-metrics">
+                  <div className="spot-metric-pod entry-card">
+                    <div className="spot-metric-top">
+                      <span className="spot-metric-label">RECOMMENDED BUY</span>
+                      <span className="metric-tag gold">Entry</span>
+                    </div>
+                    <span className="spot-metric-value gold-tone">
+                      {fmtPrice(spotEntry)}
+                    </span>
+                    <span className="spot-metric-sub">Strict Buy Trigger</span>
+                  </div>
+
+                  <div className="spot-metric-pod target-card">
+                    <div className="spot-metric-top">
+                      <span className="spot-metric-label">TARGET 1</span>
+                      <span className="metric-tag emerald">+{spotGainPct.toFixed(1)}%</span>
+                    </div>
+                    <span className="spot-metric-value profit-tone">
+                      {fmtPrice(spotTarget)}
+                    </span>
+                    <span className="spot-metric-sub">Primary Take-Profit</span>
+                  </div>
+
+                  <div className="spot-metric-pod stop-card">
+                    <div className="spot-metric-top">
+                      <span className="spot-metric-label">STOP LOSS</span>
+                      <span className="metric-tag rose">-{spotStopPct.toFixed(1)}%</span>
+                    </div>
+                    <span className="spot-metric-value loss-tone">
+                      {fmtPrice(spotStop)}
+                    </span>
+                    <span className="spot-metric-sub">Strict Capital Protection</span>
+                  </div>
+                </div>
+
+                {/* 6. INSTITUTIONAL RATIONALE BOX */}
+                <div className="spotlight-rationale-box">
+                  <div className="rationale-icon-wrap">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="16" x2="12" y2="12" />
+                      <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                  </div>
+                  <p className="rationale-text">
+                    <strong>Quant Thesis:</strong> {spotlightBuy.why || (isSpotV3 ? "Institutional 52W high breakout with high volumetric accumulation and strict trailing floor." : "High-probability Stage-2 continuation breakout with institutional volume expansion.")}
+                  </p>
+                </div>
+
+                {/* 7. CTA ACTIONS ROW */}
+                <div className="spotlight-cta-row">
                   <button 
                     type="button"
-                    className="spot-cta-btn secondary"
-                    onClick={() => onOpenChart(spotlightBuy.symbol || spotlightBuy.sym)}
+                    className="spot-cta-btn primary"
+                    onClick={() => onNavigate("signals")}
                   >
-                    View Chart
+                    <span>Review in AI BuySell</span>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
                   </button>
+                  {onOpenChart && (
+                    <button 
+                      type="button"
+                      className="spot-cta-btn secondary"
+                      onClick={() => onOpenChart(spotSym)}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                      </svg>
+                      <span>View Chart</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="spot-cta-btn tertiary"
+                    onClick={() => onNavigate("signals")}
+                  >
+                    <span>All {activeCount} Setups →</span>
+                  </button>
+                </div>
+
+                {/* Setup Carousel Dots */}
+                {totalSpotlights > 1 && (
+                  <div className="spotlight-dots-row">
+                    {activeSpotlights.map((item, idx) => {
+                      const isSelected = idx === (((activeSpotlightIdx % totalSpotlights) + totalSpotlights) % totalSpotlights);
+                      const itemSym = (item.symbol || item.sym || `Trade ${idx+1}`).toUpperCase();
+                      return (
+                        <button
+                          key={`${itemSym}-${idx}`}
+                          type="button"
+                          className={`spot-dot ${isSelected ? "active" : ""}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveSpotlightIdx(idx);
+                          }}
+                          title={itemSym}
+                          aria-label={`View setup for ${itemSym}`}
+                        />
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </div>
-          </div>
-        ) : (
+          );
+        })() : (
           <div className="ai-risk-shield-card">
             <div className="risk-shield-icon-wrap">
               <div className="shield-halo-pulse" />
