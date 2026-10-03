@@ -280,18 +280,6 @@ const TERMINAL_INDICES = [
 
 const TERMINAL_BRIEFS: any[] = [];
 
-const V4_DEFAULT_MONTHLY_SUMMARY = [
-  { month: "2026-01", trades: 12, wins: 8, losses: 4, winRate: 66.7, tradingPnl: 29070, cashYield: 746, netPnl: 29816, monthlyPct: 2.98, cumulPnl: 29816, status: "GREEN" },
-  { month: "2026-02", trades: 8, wins: 4, losses: 4, winRate: 50.0, tradingPnl: 3980, cashYield: 785, netPnl: 4765, monthlyPct: 0.48, cumulPnl: 34581, status: "GREEN" },
-  { month: "2026-03", trades: 7, wins: 3, losses: 4, winRate: 42.9, tradingPnl: -3900, cashYield: 947, netPnl: -2953, monthlyPct: -0.30, cumulPnl: 31629, status: "RED" },
-  { month: "2026-04", trades: 11, wins: 5, losses: 6, winRate: 45.5, tradingPnl: -10530, cashYield: 1151, netPnl: -9379, monthlyPct: -0.94, cumulPnl: 22250, status: "RED" },
-  { month: "2026-05", trades: 13, wins: 9, losses: 4, winRate: 69.2, tradingPnl: 40620, cashYield: 607, netPnl: 41227, monthlyPct: 4.12, cumulPnl: 63476, status: "GREEN" },
-  { month: "2026-06", trades: 11, wins: 6, losses: 5, winRate: 54.5, tradingPnl: 100520, cashYield: 1101, netPnl: 101621, monthlyPct: 10.16, cumulPnl: 165097, status: "GREEN" },
-  { month: "2026-07", trades: 18, wins: 8, losses: 10, winRate: 44.4, tradingPnl: 57140, cashYield: 1361, netPnl: 58501, monthlyPct: 5.85, cumulPnl: 223598, status: "GREEN" },
-  { month: "2026-08", trades: 12, wins: 4, losses: 8, winRate: 33.3, tradingPnl: -16270, cashYield: 1124, netPnl: -15146, monthlyPct: -1.51, cumulPnl: 208452, status: "RED" },
-  { month: "2026-09", trades: 11, wins: 9, losses: 2, winRate: 81.8, tradingPnl: 125250, cashYield: 659, netPnl: 125909, monthlyPct: 12.59, cumulPnl: 334361, status: "GREEN" }
-];
-
 
 const TERMINAL_SECTORS = [
   { n: 'Banking', p: 1.17 },
@@ -1006,7 +994,7 @@ const INITIAL_EQUITY_DATA: EquityCurveData = {
   })),
 };
 
-function normalizeActiveTrade(t: any, idx: number, eng: "v2" | "v3" | "v4") {
+function normalizeActiveTrade(t: any, idx: number, eng: "v2" | "v3") {
   const sym = t.sym || t.symbol || `STOCK_${idx + 1}`;
   const ab = t.ab || sym.slice(0, 2).toUpperCase();
   const entry = Number(t.entry ?? t.entryPrice ?? 100);
@@ -1032,21 +1020,14 @@ function normalizeActiveTrade(t: any, idx: number, eng: "v2" | "v3" | "v4") {
   const comp = Number(t.comp ?? t.compositeScore ?? 75);
   const risk = t.risk || (t.riskScore != null ? (t.riskScore < 30 ? "Low" : t.riskScore < 60 ? "Medium" : "High") : "Low");
 
-  const tag = t.tag || `${t.sector || "Diversified"} · ${t.strategyName || (eng === "v4" ? "AI Ultra V4" : eng === "v2" ? "Breakout" : "Stage 2 Base")}`;
-  const stage = t.stage || (t.strategyName ? `${t.strategyName} 📐` : (eng === "v4" ? "Stage 2 Moonbag 🚀" : eng === "v3" ? "Stage 2 Base 📐" : "Breakout Setup"));
+  const tag = t.tag || `${t.sector || "Diversified"} · ${t.strategyName || (eng === "v2" ? "Breakout" : "Stage 2 Base")}`;
+  const stage = t.stage || (t.strategyName ? `${t.strategyName} 📐` : (eng === "v3" ? "Stage 2 Base 📐" : "Breakout Setup"));
   const grad = t.grad || GRADIENTS[idx % GRADIENTS.length];
   const seed = t.seed ?? stringSeed(sym);
 
   let why = t.why;
   if (!why) {
-    if (eng === "v4") {
-      why = [
-        "Stage 2 Structural Uptrend confirmed (Price > 50 > 200 EMA)",
-        `V4 AI Pattern: ${t.strategyName || "Breakout Setup"} with ${ml}% conviction`,
-        `Dual-Tranche Infinity Moonbag (50% banked at ₹${target.toFixed(2)}, 50% runner)`,
-        "Volume Distribution Alert active to detect institutional selling",
-      ];
-    } else if (eng === "v2") {
+    if (eng === "v2") {
       why = [
         `Breakout above ${days + 15}-day consolidation`,
         "Relative strength rank: Top 5% of universe",
@@ -1198,8 +1179,8 @@ export default function App() {
      STATE & AUTH
      ============================================================ */
   const { user } = useAuth();
-  const [engine, setEngine] = useState<"v2" | "v3" | "v4">(() => {
-    return (localStorage.getItem("engine") as "v2" | "v3" | "v4") || "v2";
+  const [engine, setEngine] = useState<"v2" | "v3">(() => {
+    return ((localStorage.getItem("engine") as any) === "v3" ? "v3" : "v2");
   });
   const [isEngineDropdownOpen, setIsEngineDropdownOpen] = useState(false);
   const engineDropdownRef = useRef<HTMLDivElement>(null);
@@ -1371,7 +1352,7 @@ export default function App() {
 
   // Transitional Animation State (Rocket hitting bulls eye)
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [transitionEngine, setTransitionEngine] = useState<"v2" | "v3" | "v4">("v2");
+  const [transitionEngine, setTransitionEngine] = useState<"v2" | "v3">("v2");
 
   // User Paper Trading Portfolio State & Cloud Sync
   const [portfolio, setPortfolio] = useState<ManualPortfolioTrade[]>(() => {
@@ -1484,7 +1465,7 @@ export default function App() {
 
   // Bottom Sheet state
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [sheetPayload, setSheetPayload] = useState<{ kind: "v2" | "v3" | "v4" | "closed" | "screener_detail"; trade: any } | null>(null);
+  const [sheetPayload, setSheetPayload] = useState<{ kind: "v2" | "v3" | "closed" | "screener_detail"; trade: any } | null>(null);
 
   // Live Data States — initialized from fast session cache so first frame render is 0ms instant
   const [terminalData, setTerminalData] = useState<TerminalSnapshot | null>(() => {
@@ -1609,7 +1590,7 @@ export default function App() {
     if (!appRef.current) return;
     const pulse = document.createElement("div");
     pulse.className = "engine-pulse";
-    const color = engine === "v4" ? "rgba(16,185,129,.55)" : engine === "v2" ? "rgba(139,92,246,.48)" : "rgba(99,102,241,.42)";
+    const color = engine === "v2" ? "rgba(139,92,246,.48)" : "rgba(99,102,241,.42)";
     pulse.style.background = `radial-gradient(circle at 85% 5%, ${color} 0%, transparent 55%)`;
     appRef.current.appendChild(pulse);
     setTimeout(() => pulse.remove(), 1000);
@@ -1620,7 +1601,7 @@ export default function App() {
     setTimeout(() => sweep.remove(), 950);
   };
 
-  const switchEngine = (next: "v2" | "v3" | "v4") => {
+  const switchEngine = (next: "v2" | "v3") => {
     if (next === engine) return;
     setIsTransitioning(true);
     setTransitionEngine(next);
@@ -1637,7 +1618,7 @@ export default function App() {
   /* ============================================================
      DATA FETCHING
      ============================================================ */
-  const fetchAllData = useCallback(async (currentEngine: "v2" | "v3" | "v4") => {
+  const fetchAllData = useCallback(async (currentEngine: "v2" | "v3") => {
     // Only show full loading spinner if we don't already have live data in memory
     setTerminalData(prev => {
       if (!prev) setIsTerminalLoading(true);
@@ -1674,7 +1655,7 @@ export default function App() {
     }
   }, []);
 
-  const fetchEquity = async (v: "v2" | "v3" | "v4", days: number) => {
+  const fetchEquity = async (v: "v2" | "v3", days: number) => {
     try {
       const eq = await quantsyncApi.getEquityCurve(v, days);
       if (eq) setEquityData(eq);
@@ -1683,7 +1664,7 @@ export default function App() {
     }
   };
 
-  const fetchChart = async (sym: string, eng: "v2" | "v3" | "v4") => {
+  const fetchChart = async (sym: string, eng: "v2" | "v3") => {
     try {
       const c = await quantsyncApi.getChartData(sym, 250, eng);
       if (c) setLiveChartData(c);
@@ -1967,7 +1948,7 @@ export default function App() {
   /* ============================================================
      BOTTOM SHEET OPEN / CLOSE
      ============================================================ */
-  const openSheet = (kind: "v2" | "v3" | "v4" | "closed" | "screener_detail", trade: any) => {
+  const openSheet = (kind: "v2" | "v3" | "closed" | "screener_detail", trade: any) => {
     setSheetPayload({ kind, trade });
     setSheetOpen(true);
   };
@@ -2146,7 +2127,7 @@ export default function App() {
     const list: any[] = [];
     const seen = new Set<string>();
 
-    const getRaw = (data: TerminalSnapshot | null, eng: "v2" | "v3" | "v4") => {
+    const getRaw = (data: TerminalSnapshot | null, eng: "v2" | "v3") => {
       if (!data) return [];
       if (data.active && data.active.length > 0) return data.active;
       if (data.inTradeTrades && data.inTradeTrades.length > 0) return data.inTradeTrades;
@@ -2155,7 +2136,6 @@ export default function App() {
 
     const v2Raw = getRaw(terminalDataV2 || (engine === "v2" ? terminalData : null), "v2");
     const v3Raw = getRaw(terminalDataV3 || (engine === "v3" ? terminalData : null), "v3");
-    const v4Raw = getRaw(engine === "v4" ? terminalData : null, "v4");
 
     v2Raw.forEach((t: any, idx: number) => {
       const sym = (t.symbol || t.title || t.sym || "").toUpperCase().trim();
@@ -2180,19 +2160,6 @@ export default function App() {
       if (sym && !seen.has(`${sym}_v3`)) {
         seen.add(`${sym}_v3`);
         list.push({ ...norm, engine: "v3" });
-      }
-    });
-
-    v4Raw.forEach((t: any, idx: number) => {
-      const sym = (t.symbol || t.title || t.sym || "").toUpperCase().trim();
-      const live = livePrices && sym ? livePrices[sym] : undefined;
-      const tradeData = live && live.price > 0 
-        ? { ...t, currentPrice: live.price, price: live.price, ltp: live.price, now: live.price, isLivePrice: true }
-        : t;
-      const norm = normalizeActiveTrade(tradeData, idx, "v4");
-      if (sym && !seen.has(`${sym}_v4`)) {
-        seen.add(`${sym}_v4`);
-        list.push({ ...norm, engine: "v4" });
       }
     });
 
@@ -2491,19 +2458,6 @@ export default function App() {
 
   // Closed Signals Stats (Win Rate, Profit Factor, Avg Return, Avg R, Wins/Losses)
   const closedStats = useMemo(() => {
-    if (engine === "v4" && (terminalData as any)?.kpis?.totalTrades) {
-      const k = (terminalData as any).kpis;
-      return {
-        totalTrades: k.totalTrades || 103,
-        wins: k.wins || 56,
-        losses: k.losses || 47,
-        winRate: k.winRate || 54.4,
-        profitFactor: k.profitFactor || 2.14,
-        avgReturn: k.avgReturn || 3.16,
-        avgR: 1.95,
-      };
-    }
-
     let wins = 0;
     let losses = 0;
     let grossWinReturn = 0;
@@ -3247,72 +3201,15 @@ export default function App() {
                 </svg>
               </button>
 
-              {/* Interactive Engine Selector Pill & Dropdown */}
-              <div className="engine-dropdown-container" ref={engineDropdownRef} style={{ position: "relative" }}>
+              {/* V3 disabled — single engine mode for maximum performance */}
+              <div className="ios-segmented-control" data-sel="v2" style={{ pointerEvents: "none", opacity: 0.85 }}>
                 <button
                   type="button"
-                  className={`engine-select-pill-btn ${isEngineDropdownOpen ? "active" : ""}`}
-                  onClick={() => setIsEngineDropdownOpen(prev => !prev)}
-                  aria-expanded={isEngineDropdownOpen}
-                  title="Click to Switch Engine"
+                  className="ios-segment-btn active"
                 >
-                  <span className={`segment-dot ${engine}`} />
-                  <span className="engine-select-pill-label">
-                    {engine === "v4" ? "AI ULTRA" : "AI PRO"}
-                  </span>
-                  <svg
-                    className={`engine-select-caret ${isEngineDropdownOpen ? "open" : ""}`}
-                    width="12"
-                    height="12"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                  >
-                    <path d="M4 6l4 4 4-4" />
-                  </svg>
+                  <span className="segment-dot v2" />
+                  <span>AI Pro</span>
                 </button>
-
-                {isEngineDropdownOpen && (
-                  <div className="engine-dropdown-menu">
-                    <button
-                      type="button"
-                      className={`engine-dropdown-item ${engine === "v2" ? "active" : ""}`}
-                      onClick={() => {
-                        switchEngine("v2");
-                        setIsEngineDropdownOpen(false);
-                      }}
-                    >
-                      <div className="engine-item-info">
-                        <div className="engine-item-title-row">
-                          <span className="segment-dot v2" />
-                          <span className="engine-item-name">AI PRO</span>
-                          {engine === "v2" && <span className="engine-active-tick">✓</span>}
-                        </div>
-                        <div className="engine-item-desc">High Conviction · Swing Engine</div>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      className={`engine-dropdown-item ${engine === "v4" ? "active" : ""}`}
-                      onClick={() => {
-                        switchEngine("v4");
-                        setIsEngineDropdownOpen(false);
-                      }}
-                    >
-                      <div className="engine-item-info">
-                        <div className="engine-item-title-row">
-                          <span className="segment-dot v4" />
-                          <span className="engine-item-name">AI ULTRA</span>
-                          {engine === "v4" && <span className="engine-active-tick">✓</span>}
-                        </div>
-                        <div className="engine-item-desc">Institutional Alpha · 2026 Engine</div>
-                      </div>
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -3320,176 +3217,64 @@ export default function App() {
             {isEngineInfoOpen && (
               <div className="signals-engine-drawer">
                 <div className="engine-drawer-header">
-                  <div className={`engine-drawer-badge ${engine}`}>
-                    {engine === "v4" ? "AI ULTRA V4 ENGINE" : engine === "v2" ? "AI PRO ENGINE" : "CHART + AI ENGINE"}
+                  <div className="engine-drawer-badge v2">
+                    AI PRO ENGINE
                   </div>
                   <div className="engine-drawer-summary">
-                    {engine === "v4"
-                      ? "In simple words: AI Ultra monitors 2,500+ Indian stocks with 64-D Pattern DNA & Twin Search, secures 50% profit at Target 1, runs the rest wild with Moonbag & Volume Distribution alerts, while parking idle cash in Liquid BeES yield."
-                      : engine === "v2"
-                      ? "In simple words: The AI scans 500+ stocks every day and picks the top 1 to 3 trades with the highest chance to win."
-                      : "In simple words: Finds famous breakout chart patterns, and the AI double-checks them so you don't get caught in fake traps."}
+                    In simple words: The AI scans 500+ stocks every day and picks the top 1 to 3 trades with the highest chance to win.
                   </div>
                 </div>
 
                 <div className="engine-flow-steps">
-                  {engine === "v4" ? (
-                    <>
-                      <div className="engine-flow-step">
-                        <div className="step-badge">1</div>
-                        <div className="step-content">
-                          <div className="step-title">2,500+ Stock Full Universe Scan</div>
-                          <div className="step-desc">
-                            Scans all liquid NSE/BSE stocks with Stage 2 structural uptrend filter (Price &gt; 50 EMA &gt; 200 EMA) and 90-day institutional liquidity screening.
-                          </div>
-                        </div>
+                  <div className="engine-flow-step">
+                    <div className="step-badge">1</div>
+                    <div className="step-content">
+                      <div className="step-title">Scans 500+ Stocks</div>
+                      <div className="step-desc">
+                        Every morning, our system scans all major Indian stocks to see where big institutions and funds are quietly buying.
                       </div>
+                    </div>
+                  </div>
 
-                      <div className="engine-flow-step">
-                        <div className="step-badge">2</div>
-                        <div className="step-content">
-                          <div className="step-title">64-D Pattern DNA & 98K Historical Twin Search</div>
-                          <div className="step-desc">
-                            Encodes each candidate into mathematical DNA and searches 98,000 historical market regimes to verify statistical edge before entry.
-                          </div>
-                        </div>
+                  <div className="engine-flow-step">
+                    <div className="step-badge">2</div>
+                    <div className="step-content">
+                      <div className="step-title">Calculates Win Probability</div>
+                      <div className="step-desc">
+                        The AI calculates the mathematical chances of the stock going up vs falling down, rejecting risky trades.
                       </div>
+                    </div>
+                  </div>
 
-                      <div className="engine-flow-step">
-                        <div className="step-badge">3</div>
-                        <div className="step-content">
-                          <div className="step-title">Dual-Tranche 50/50 Infinity Moonbag</div>
-                          <div className="step-desc">
-                            Locks in half position at initial Target (+8% to +15%) to bank risk-free profit, and immediately moves stop loss to break-even.
-                          </div>
-                        </div>
+                  <div className="engine-flow-step">
+                    <div className="step-badge">3</div>
+                    <div className="step-content">
+                      <div className="step-title">Checks 5 Years of Past History</div>
+                      <div className="step-desc">
+                        The AI looks back at thousands of similar setups in past market history to decide the most realistic profit target.
                       </div>
+                    </div>
+                  </div>
 
-                      <div className="engine-flow-step">
-                        <div className="step-badge">4</div>
-                        <div className="step-content">
-                          <div className="step-title">Volume Distribution Alert & Chandelier Runner</div>
-                          <div className="step-desc">
-                            The remaining 50% runner rides huge multi-month trends, exiting only when smart money dumps volume (Distribution Alert) or breaks trailing 3.0× ATR.
-                          </div>
-                        </div>
+                  <div className="engine-flow-step">
+                    <div className="step-badge">4</div>
+                    <div className="step-content">
+                      <div className="step-title">Selects Only the Best 1–3 Trades</div>
+                      <div className="step-desc">
+                        Out of hundreds of stocks, only the top 1 to 3 setups with the highest conviction are given as Buy signals.
                       </div>
+                    </div>
+                  </div>
 
-                      <div className="engine-flow-step">
-                        <div className="step-badge">5</div>
-                        <div className="step-content">
-                          <div className="step-title">Automatic Liquid BeES Yield Drag Elimination</div>
-                          <div className="step-desc">
-                            Every unallocated rupee earns daily risk-free overnight yields (~6.5% p.a.), compounding total portfolio return during sideways markets.
-                          </div>
-                        </div>
+                  <div className="engine-flow-step">
+                    <div className="step-badge">5</div>
+                    <div className="step-content">
+                      <div className="step-title">Tells You Exactly When to Exit</div>
+                      <div className="step-desc">
+                        You never have to guess when to sell. The AI tracks the stock live, moves your safety stop up to protect profits, and tells you when to book profit.
                       </div>
-                    </>
-                  ) : engine === "v2" ? (
-                    <>
-                      <div className="engine-flow-step">
-                        <div className="step-badge">1</div>
-                        <div className="step-content">
-                          <div className="step-title">Scans 500+ Stocks</div>
-                          <div className="step-desc">
-                            Every morning, our system scans all major Indian stocks to see where big institutions and funds are quietly buying.
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="engine-flow-step">
-                        <div className="step-badge">2</div>
-                        <div className="step-content">
-                          <div className="step-title">Calculates Win Probability</div>
-                          <div className="step-desc">
-                            The AI calculates the mathematical chances of the stock going up vs falling down, rejecting risky trades.
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="engine-flow-step">
-                        <div className="step-badge">3</div>
-                        <div className="step-content">
-                          <div className="step-title">Checks 5 Years of Past History</div>
-                          <div className="step-desc">
-                            The AI looks back at thousands of similar setups in past market history to decide the most realistic profit target.
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="engine-flow-step">
-                        <div className="step-badge">4</div>
-                        <div className="step-content">
-                          <div className="step-title">Selects Only the Best 1–3 Trades</div>
-                          <div className="step-desc">
-                            Out of hundreds of stocks, only the top 1 to 3 setups with the highest conviction are given as Buy signals.
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="engine-flow-step">
-                        <div className="step-badge">5</div>
-                        <div className="step-content">
-                          <div className="step-title">Tells You Exactly When to Exit</div>
-                          <div className="step-desc">
-                            You never have to guess when to sell. The AI tracks the stock live, moves your safety stop up to protect profits, and tells you when to book profit.
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="engine-flow-step">
-                        <div className="step-badge">1</div>
-                        <div className="step-content">
-                          <div className="step-title">Spots Famous Chart Shapes</div>
-                          <div className="step-desc">
-                            The system automatically draws and spots famous chart shapes like Triangles, Base Breakouts, and Cup &amp; Handles.
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="engine-flow-step">
-                        <div className="step-badge">2</div>
-                        <div className="step-content">
-                          <div className="step-title">AI Filters Out Fake Breakouts</div>
-                          <div className="step-desc">
-                            Most chart breakouts are fake traps where normal traders lose money. Our AI checks real buying volume to filter out fake moves.
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="engine-flow-step">
-                        <div className="step-badge">3</div>
-                        <div className="step-content">
-                          <div className="step-title">Sets Clear Target &amp; Safety Level</div>
-                          <div className="step-desc">
-                            Before you even enter, it gives you an exact Target price to take profit and a Stop Loss price to protect your capital.
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="engine-flow-step">
-                        <div className="step-badge">4</div>
-                        <div className="step-content">
-                          <div className="step-title">Signals at the Perfect Entry Moment</div>
-                          <div className="step-desc">
-                            Alerts you the moment the stock breaks out cleanly, so you never buy too early or chase too late.
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="engine-flow-step">
-                        <div className="step-badge">5</div>
-                        <div className="step-content">
-                          <div className="step-title">Automatically Locks In Your Profits</div>
-                          <div className="step-desc">
-                            As the stock climbs higher, the system moves your safety stop up behind the price so your profit stays protected until the target is hit.
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -3592,7 +3377,7 @@ export default function App() {
                     }}
                   />
                   <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink1)" }}>
-                    Loading Live {engine === "v4" ? "AI Ultra" : engine === "v2" ? "AI Pro" : "Chart + AI"} Setups...
+                    Loading Live {engine === "v2" ? "AI Pro" : "Chart + AI"} Setups...
                   </div>
                   <div style={{ fontSize: 11, color: "var(--ink3)", marginTop: 4 }}>
                     Fetching verified exchange signals from VPS master ledger
@@ -3608,7 +3393,7 @@ export default function App() {
                     Current market conditions do not meet strict institutional risk criteria · Preserving Capital
                   </div>
                 </div>
-              ) : (engine === "v2" || engine === "v4") ? (
+              ) : engine === "v2" ? (
                 // V2 ACTIVE CARDS (+ADD button, % ROI, Stars, 4-step sequence, Signal Date shifted below Stop Loss, and dark action tag exactly as requested)
                 sortedActiveTrades.map((t: any, i: number) => {
                   const pPct = t.pnlPct ?? t.roiPct ?? 0;
@@ -3636,6 +3421,19 @@ export default function App() {
                                 <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: "-.02em" }}>
                                   {t.sym || t.symbol}
                                 </span>
+                                {t.engineBadge && (
+                                  <span style={{
+                                    fontSize: 9.5,
+                                    padding: "2px 6px",
+                                    borderRadius: 5,
+                                    fontWeight: 800,
+                                    background: t.engine === "v3" ? "rgba(245, 158, 11, 0.15)" : "rgba(56, 189, 248, 0.15)",
+                                    color: t.engine === "v3" ? "#F59E0B" : "#38BDF8",
+                                    border: `1px solid ${t.engine === "v3" ? "rgba(245, 158, 11, 0.3)" : "rgba(56, 189, 248, 0.3)"}`
+                                  }}>
+                                    {t.engineBadge}
+                                  </span>
+                                )}
 
                                 <span style={{ color: "var(--apple-gold)", fontSize: 12, letterSpacing: "1px" }}>
                                   {"★".repeat(Math.min(5, Math.max(1, Math.round(t.stars || 5))))}
@@ -3958,10 +3756,10 @@ export default function App() {
                 <div className="row between" style={{ marginBottom: 13 }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 800 }}>
-                      {engine === "v4" ? "Closed Signals · 2026 AI Ultra Engine Record" : "Closed Signals · 2026 Engine Record"}
+                      Closed Signals · 2026 Engine Record
                     </div>
                     <div className="micro dim" style={{ marginTop: 2 }}>
-                      {engine === "v4" ? "Verified Institutional Enhanced Multi-Strategy Ensemble (103 Total 2026 Trades)" : "Verified Institutional Signal Output"}
+                      Verified Institutional Signal Output
                     </div>
                   </div>
                   <span className="pill accent">{closedStats.totalTrades} Closed</span>
@@ -4049,157 +3847,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* V4 EXECUTIVE AUDIT & 2026 MONTH-BY-MONTH BREAKDOWN */}
-              {engine === "v4" && (
-                <>
-                  <div className="v4-executive-banner">
-                    <div className="v4-exec-header">
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ink1)" }}>
-                          2026 Institutional Audit · Enhanced Multi-Strategy Ensemble
-                        </div>
-                        <div className="micro dim" style={{ marginTop: 2 }}>
-                          5-Strategy Ensemble (Apex Base, Flag, RS Leader, Earnings Gap & Stage 2) on ₹10L NAV
-                        </div>
-                      </div>
-                      <div className="v4-exec-badge">
-                        <span>🏆</span> +44.3% Alpha vs Nifty 50
-                      </div>
-                    </div>
-
-                    <div className="v4-exec-kpis">
-                      <div className="v4-exec-stat">
-                        <div className="v4-exec-stat-label">Net Profit (2026)</div>
-                        <div className="v4-exec-stat-val up">+₹3,35,186</div>
-                        <div className="v4-exec-stat-sub">+33.52% on ₹10L NAV</div>
-                      </div>
-                      <div className="v4-exec-stat">
-                        <div className="v4-exec-stat-label">Total Trades</div>
-                        <div className="v4-exec-stat-val">103</div>
-                        <div className="v4-exec-stat-sub">56 Wins / 47 Losses</div>
-                      </div>
-                      <div className="v4-exec-stat">
-                        <div className="v4-exec-stat-label">Win Rate</div>
-                        <div className="v4-exec-stat-val">54.4%</div>
-                        <div className="v4-exec-stat-sub">Avg Return: +3.16%</div>
-                      </div>
-                      <div className="v4-exec-stat">
-                        <div className="v4-exec-stat-label">Trading PnL</div>
-                        <div className="v4-exec-stat-val up">+₹3,25,880</div>
-                        <div className="v4-exec-stat-sub">Realized Ensemble PnL</div>
-                      </div>
-                      <div className="v4-exec-stat">
-                        <div className="v4-exec-stat-label">Liquid BeES Yield</div>
-                        <div className="v4-exec-stat-val up">+₹9,306</div>
-                        <div className="v4-exec-stat-sub">7% p.a. on idle cash</div>
-                      </div>
-                      <div className="v4-exec-stat">
-                        <div className="v4-exec-stat-label">Profit Factor</div>
-                        <div className="v4-exec-stat-val up">2.14</div>
-                        <div className="v4-exec-stat-sub">Max DD: 6.42%</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 2026 MONTH-BY-MONTH VERIFIED TABLE */}
-                  <div className="v4-monthly-table-card">
-                    <div className="v4-table-header-row">
-                      <div>
-                        <div style={{ fontSize: 12.5, fontWeight: 800 }}>
-                          📅 2026 Month-by-Month Verified Performance Breakdown
-                        </div>
-                        <div className="micro dim" style={{ marginTop: 2 }}>
-                          Full accounting across 2026 bear correction (Nifty -10.76% drawdown)
-                        </div>
-                      </div>
-                      <span className="pill green" style={{ fontSize: 9 }}>PROFITABLE YTD</span>
-                    </div>
-
-                    <div className="v4-monthly-table-wrap">
-                      <table className="v4-monthly-table">
-                        <thead>
-                          <tr>
-                            <th>Month</th>
-                            <th style={{ textAlign: "right" }}>Trades</th>
-                            <th style={{ textAlign: "right" }}>Wins</th>
-                            <th style={{ textAlign: "right" }}>Loss</th>
-                            <th style={{ textAlign: "right" }}>Win%</th>
-                            <th style={{ textAlign: "right" }}>Trading PnL</th>
-                            <th style={{ textAlign: "right" }}>Cash Yield</th>
-                            <th style={{ textAlign: "right" }}>Net PnL ₹</th>
-                            <th style={{ textAlign: "right" }}>Monthly%</th>
-                            <th style={{ textAlign: "center" }}>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {((terminalData as any)?.monthly_summary || V4_DEFAULT_MONTHLY_SUMMARY).map((m: any) => {
-                            const netVal = m.netPnl ?? m.net_pnl ?? 0;
-                            const isGreen = netVal >= 0;
-                            const tradeVal = m.tradingPnl ?? m.trade_pnl ?? 0;
-                            const yieldVal = m.cashYield ?? m.yield ?? 0;
-                            const mPct = m.monthlyPct ?? m.monthly_ret ?? 0;
-                            const wrVal = m.winRate ?? m.win_rate ?? 0;
-                            const tradesCount = m.trades;
-                            const winsCount = m.wins;
-                            const lossCount = m.losses;
-
-                            return (
-                              <tr key={m.month}>
-                                <td style={{ fontWeight: 700, fontFamily: "var(--font-mono, monospace)" }}>{m.month}</td>
-                                <td style={{ textAlign: "right" }} className="num">{tradesCount}</td>
-                                <td style={{ textAlign: "right", color: "var(--profit)" }} className="num">{winsCount}</td>
-                                <td style={{ textAlign: "right", color: "var(--loss)" }} className="num">{lossCount}</td>
-                                <td style={{ textAlign: "right", fontWeight: 700 }} className="num">{wrVal.toFixed(1)}%</td>
-                                <td style={{ textAlign: "right", color: tradeVal >= 0 ? "var(--profit)" : "var(--loss)" }} className="num">
-                                  {tradeVal >= 0 ? "+" : ""}₹{Math.round(tradeVal).toLocaleString("en-IN")}
-                                </td>
-                                <td style={{ textAlign: "right", color: "var(--profit)" }} className="num">
-                                  +₹{Math.round(yieldVal).toLocaleString("en-IN")}
-                                </td>
-                                <td style={{ textAlign: "right", fontWeight: 800, color: isGreen ? "var(--profit)" : "var(--loss)" }} className="num">
-                                  {netVal >= 0 ? "+" : ""}₹{Math.round(netVal).toLocaleString("en-IN")}
-                                </td>
-                                <td style={{ textAlign: "right", fontWeight: 700, color: mPct >= 0 ? "var(--profit)" : "var(--loss)" }} className="num">
-                                  {mPct >= 0 ? "+" : ""}{mPct.toFixed(2)}%
-                                </td>
-                                <td style={{ textAlign: "center" }}>
-                                  <span className={`pill ${isGreen ? "green" : "red"}`} style={{ fontSize: 8.5, padding: "2px 7px" }}>
-                                    {isGreen ? "✅ PROFIT" : "❌ LOSS"}
-                                  </span>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                          <tr className="total-row">
-                            <td>2026 TOTAL</td>
-                            <td style={{ textAlign: "right" }} className="num">103</td>
-                            <td style={{ textAlign: "right", color: "var(--profit)" }} className="num">56</td>
-                            <td style={{ textAlign: "right", color: "var(--loss)" }} className="num">47</td>
-                            <td style={{ textAlign: "right" }} className="num">54.4%</td>
-                            <td style={{ textAlign: "right", color: "var(--profit)" }} className="num">+₹3,25,880</td>
-                            <td style={{ textAlign: "right", color: "var(--profit)" }} className="num">+₹9,306</td>
-                            <td style={{ textAlign: "right", color: "var(--profit)" }} className="num">+₹3,35,186</td>
-                            <td style={{ textAlign: "right", color: "var(--profit)" }} className="num">+33.52%</td>
-                            <td style={{ textAlign: "center" }}>
-                              <span className="pill green" style={{ fontSize: 8.5, padding: "2px 7px", fontWeight: 800 }}>
-                                ✅ PROFITABLE
-                              </span>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  <div className="row between" style={{ alignItems: "center", marginBottom: 12 }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: "var(--ink2)" }}>
-                      All 103 Closed Trade Records (Chronological Ledger)
-                    </div>
-                    <span className="micro dim">Click any trade for full execution breakdown</span>
-                  </div>
-                </>
-              )}
-
               {isTerminalLoading ? (
                 <div style={{ textAlign: "center", padding: "48px 16px", color: "var(--ink3)" }}>
                   <div
@@ -4224,7 +3871,7 @@ export default function App() {
                     No Closed Positions Logged
                   </div>
                 </div>
-              ) : (engine === "v2" || engine === "v4") ? (
+              ) : engine === "v2" ? (
                 // V2 Closed Rows (Sorted latest exit first, clear return %, no arbitrary rupee P&L)
                 sortedClosedTrades.map((t: any, i: number) => {
                   const pPct = t.pnlPct ?? t.roiPct ?? 0;
@@ -4240,7 +3887,21 @@ export default function App() {
                           {t.ab || t.sym?.slice(0, 2) || "CL"}
                         </div>
                         <div className="cr-info">
-                          <div className="cr-sym">{t.sym || t.symbol}</div>
+                          <div className="cr-sym" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span>{t.sym || t.symbol}</span>
+                            {t.engineBadge && (
+                              <span style={{
+                                fontSize: 8.5,
+                                padding: "1px 5px",
+                                borderRadius: 4,
+                                fontWeight: 800,
+                                background: t.engine === "v3" ? "rgba(245, 158, 11, 0.15)" : "rgba(56, 189, 248, 0.15)",
+                                color: t.engine === "v3" ? "#F59E0B" : "#38BDF8"
+                              }}>
+                                {t.engineBadge}
+                              </span>
+                            )}
+                          </div>
                           <div className="cr-path num">{INR(t.entry || t.entryPrice)} <span className="dim">→</span> {INR(t.exit || t.exitPrice)}</div>
                         </div>
                         <div className="cr-pnl">
@@ -4422,8 +4083,8 @@ export default function App() {
 
         {/* ===== CHARTS SCREEN ===== */}
         <section className={`screen ${activeTab === "charts" ? "active" : ""}`} id="screen-charts">
-          {(engine === "v2" || engine === "v4") ? (
-            // V2 / V4 LIVE POSITION CHART
+          {engine === "v2" ? (
+            // V2 LIVE POSITION CHART
             <div id="chartV2">
               <div className="card" style={{ padding: "14px 15px", marginBottom: 14 }}>
                 <div className="row between">
@@ -5002,7 +4663,7 @@ export default function App() {
       />
       <div
         ref={sheetRef}
-        className={`sheet ${sheetOpen ? "on" : ""} ${sheetPayload?.kind === "v2" || sheetPayload?.kind === "v3" || sheetPayload?.kind === "v4" ? "sheet-fullscreen" : ""} ${sheetPayload?.kind === "closed" ? ((sheetPayload?.trade?.pnl || 0) >= 0 ? "win" : "lose") : ""}`}
+        className={`sheet ${sheetOpen ? "on" : ""} ${sheetPayload?.kind === "v2" || sheetPayload?.kind === "v3" ? "sheet-fullscreen" : ""} ${sheetPayload?.kind === "closed" ? ((sheetPayload?.trade?.pnl || 0) >= 0 ? "win" : "lose") : ""}`}
         id="sheet"
       >
         <div className="sheet-grip" onClick={closeSheet}>
@@ -5027,7 +4688,7 @@ export default function App() {
               );
             }
 
-            if (kind === "v2" || kind === "v3" || kind === "v4") {
+            if (kind === "v2" || kind === "v3") {
               return (
                 <TradingViewStockDetail
                   trade={t}
@@ -5293,13 +4954,13 @@ export default function App() {
                 <div className={`switch ${theme === "dark" ? "on" : ""}`} />
               </div>
             </div>
-            <div className="setrow" onClick={() => switchEngine(engine === "v4" ? "v2" : "v4")}>
+            <div className="setrow" onClick={() => switchEngine(engine === "v3" ? "v2" : "v3")}>
               <div className="l">
                 <svg viewBox="0 0 24 24"><path d="M3 17V7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v10" /><path d="M8 20h8" /></svg>
                 Primary Trading Engine
               </div>
               <div className="r" id="defaultEngineMore">
-                {engine === "v4" ? "V4 · AI Ultra Engine" : "V2 · AI Pro Engine"}
+                {engine === "v3" ? "V3 · Chart Engine" : "V2 · AI Pro Engine"}
               </div>
             </div>
           </div>
