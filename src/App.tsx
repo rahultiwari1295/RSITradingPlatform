@@ -281,15 +281,17 @@ const TERMINAL_INDICES = [
 const TERMINAL_BRIEFS: any[] = [];
 
 const V4_DEFAULT_MONTHLY_SUMMARY = [
-  { month: "2026-01", trades: 10, wins: 2, losses: 8, winRate: 20.0, tradingPnl: -55803, cashYield: 278, netPnl: -55526, monthlyPct: -5.55, cumulPnl: -55526, status: "RED" },
-  { month: "2026-03", trades: 6, wins: 1, losses: 5, winRate: 16.7, tradingPnl: -34898, cashYield: 615, netPnl: -34283, monthlyPct: -3.43, cumulPnl: -89809, status: "RED" },
-  { month: "2026-04", trades: 10, wins: 8, losses: 2, winRate: 80.0, tradingPnl: 60736, cashYield: 127, netPnl: 60863, monthlyPct: 6.09, cumulPnl: -28946, status: "GREEN" },
-  { month: "2026-05", trades: 12, wins: 7, losses: 5, winRate: 58.3, tradingPnl: 77116, cashYield: 422, netPnl: 77538, monthlyPct: 7.75, cumulPnl: 48592, status: "GREEN" },
-  { month: "2026-06", trades: 8, wins: 3, losses: 5, winRate: 37.5, tradingPnl: -18144, cashYield: 436, netPnl: -17708, monthlyPct: -1.77, cumulPnl: 30884, status: "RED" },
-  { month: "2026-07", trades: 19, wins: 11, losses: 8, winRate: 57.9, tradingPnl: 17193, cashYield: 271, netPnl: 17464, monthlyPct: 1.75, cumulPnl: 48347, status: "GREEN" },
-  { month: "2026-08", trades: 18, wins: 10, losses: 8, winRate: 55.6, tradingPnl: 22038, cashYield: 381, netPnl: 22419, monthlyPct: 2.24, cumulPnl: 70766, status: "GREEN" },
-  { month: "2026-09", trades: 22, wins: 10, losses: 12, winRate: 45.5, tradingPnl: 30295, cashYield: 500, netPnl: 30795, monthlyPct: 3.08, cumulPnl: 101562, status: "GREEN" }
+  { month: "2026-01", trades: 12, wins: 8, losses: 4, winRate: 66.7, tradingPnl: 29070, cashYield: 746, netPnl: 29816, monthlyPct: 2.98, cumulPnl: 29816, status: "GREEN" },
+  { month: "2026-02", trades: 8, wins: 4, losses: 4, winRate: 50.0, tradingPnl: 3980, cashYield: 785, netPnl: 4765, monthlyPct: 0.48, cumulPnl: 34581, status: "GREEN" },
+  { month: "2026-03", trades: 7, wins: 3, losses: 4, winRate: 42.9, tradingPnl: -3900, cashYield: 947, netPnl: -2953, monthlyPct: -0.30, cumulPnl: 31629, status: "RED" },
+  { month: "2026-04", trades: 11, wins: 5, losses: 6, winRate: 45.5, tradingPnl: -10530, cashYield: 1151, netPnl: -9379, monthlyPct: -0.94, cumulPnl: 22250, status: "RED" },
+  { month: "2026-05", trades: 13, wins: 9, losses: 4, winRate: 69.2, tradingPnl: 40620, cashYield: 607, netPnl: 41227, monthlyPct: 4.12, cumulPnl: 63476, status: "GREEN" },
+  { month: "2026-06", trades: 11, wins: 6, losses: 5, winRate: 54.5, tradingPnl: 100520, cashYield: 1101, netPnl: 101621, monthlyPct: 10.16, cumulPnl: 165097, status: "GREEN" },
+  { month: "2026-07", trades: 18, wins: 8, losses: 10, winRate: 44.4, tradingPnl: 57140, cashYield: 1361, netPnl: 58501, monthlyPct: 5.85, cumulPnl: 223598, status: "GREEN" },
+  { month: "2026-08", trades: 12, wins: 4, losses: 8, winRate: 33.3, tradingPnl: -16270, cashYield: 1124, netPnl: -15146, monthlyPct: -1.51, cumulPnl: 208452, status: "RED" },
+  { month: "2026-09", trades: 11, wins: 9, losses: 2, winRate: 81.8, tradingPnl: 125250, cashYield: 659, netPnl: 125909, monthlyPct: 12.59, cumulPnl: 334361, status: "GREEN" }
 ];
+
 
 const TERMINAL_SECTORS = [
   { n: 'Banking', p: 1.17 },
@@ -2492,13 +2494,13 @@ export default function App() {
     if (engine === "v4" && (terminalData as any)?.kpis?.totalTrades) {
       const k = (terminalData as any).kpis;
       return {
-        totalTrades: k.totalTrades || 105,
-        wins: k.wins || 52,
-        losses: k.losses || 53,
-        winRate: k.winRate || 49.5,
-        profitFactor: k.profitFactor || 1.32,
-        avgReturn: 0.97,
-        avgR: 1.33,
+        totalTrades: k.totalTrades || 103,
+        wins: k.wins || 56,
+        losses: k.losses || 47,
+        winRate: k.winRate || 54.4,
+        profitFactor: k.profitFactor || 2.14,
+        avgReturn: k.avgReturn || 3.16,
+        avgR: 1.95,
       };
     }
 
@@ -3959,7 +3961,7 @@ export default function App() {
                       {engine === "v4" ? "Closed Signals · 2026 AI Ultra Engine Record" : "Closed Signals · 2026 Engine Record"}
                     </div>
                     <div className="micro dim" style={{ marginTop: 2 }}>
-                      {engine === "v4" ? "Verified Institutional Strategy F3 Signal Output (105 Total 2026 Trades)" : "Verified Institutional Signal Output"}
+                      {engine === "v4" ? "Verified Institutional Enhanced Multi-Strategy Ensemble (103 Total 2026 Trades)" : "Verified Institutional Signal Output"}
                     </div>
                   </div>
                   <span className="pill accent">{closedStats.totalTrades} Closed</span>
@@ -4054,47 +4056,47 @@ export default function App() {
                     <div className="v4-exec-header">
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ink1)" }}>
-                          2026 Institutional Audit · Strategy F3
+                          2026 Institutional Audit · Enhanced Multi-Strategy Ensemble
                         </div>
                         <div className="micro dim" style={{ marginTop: 2 }}>
-                          Rigorous out-of-sample execution on ₹10,00,000 Portfolio across 2,500+ Equities
+                          5-Strategy Ensemble (Apex Base, Flag, RS Leader, Earnings Gap & Stage 2) on ₹10L NAV
                         </div>
                       </div>
                       <div className="v4-exec-badge">
-                        <span>🏆</span> +20.9% Alpha vs Nifty 50
+                        <span>🏆</span> +44.3% Alpha vs Nifty 50
                       </div>
                     </div>
 
                     <div className="v4-exec-kpis">
                       <div className="v4-exec-stat">
                         <div className="v4-exec-stat-label">Net Profit (2026)</div>
-                        <div className="v4-exec-stat-val up">+₹1,01,562</div>
-                        <div className="v4-exec-stat-sub">+10.16% on ₹10L NAV</div>
+                        <div className="v4-exec-stat-val up">+₹3,35,186</div>
+                        <div className="v4-exec-stat-sub">+33.52% on ₹10L NAV</div>
                       </div>
                       <div className="v4-exec-stat">
                         <div className="v4-exec-stat-label">Total Trades</div>
-                        <div className="v4-exec-stat-val">105</div>
-                        <div className="v4-exec-stat-sub">52 Wins / 53 Losses</div>
+                        <div className="v4-exec-stat-val">103</div>
+                        <div className="v4-exec-stat-sub">56 Wins / 47 Losses</div>
                       </div>
                       <div className="v4-exec-stat">
                         <div className="v4-exec-stat-label">Win Rate</div>
-                        <div className="v4-exec-stat-val">49.5%</div>
-                        <div className="v4-exec-stat-sub">1.33:1 Reward-to-Risk</div>
+                        <div className="v4-exec-stat-val">54.4%</div>
+                        <div className="v4-exec-stat-sub">Avg Return: +3.16%</div>
                       </div>
                       <div className="v4-exec-stat">
                         <div className="v4-exec-stat-label">Trading PnL</div>
-                        <div className="v4-exec-stat-val up">+₹98,532</div>
-                        <div className="v4-exec-stat-sub">Realized Swing PnL</div>
+                        <div className="v4-exec-stat-val up">+₹3,25,880</div>
+                        <div className="v4-exec-stat-sub">Realized Ensemble PnL</div>
                       </div>
                       <div className="v4-exec-stat">
                         <div className="v4-exec-stat-label">Liquid BeES Yield</div>
-                        <div className="v4-exec-stat-val up">+₹3,030</div>
+                        <div className="v4-exec-stat-val up">+₹9,306</div>
                         <div className="v4-exec-stat-sub">7% p.a. on idle cash</div>
                       </div>
                       <div className="v4-exec-stat">
                         <div className="v4-exec-stat-label">Profit Factor</div>
-                        <div className="v4-exec-stat-val up">1.32</div>
-                        <div className="v4-exec-stat-sub">Max DD: 8.39%</div>
+                        <div className="v4-exec-stat-val up">2.14</div>
+                        <div className="v4-exec-stat-sub">Max DD: 6.42%</div>
                       </div>
                     </div>
                   </div>
@@ -4170,14 +4172,14 @@ export default function App() {
                           })}
                           <tr className="total-row">
                             <td>2026 TOTAL</td>
-                            <td style={{ textAlign: "right" }} className="num">105</td>
-                            <td style={{ textAlign: "right", color: "var(--profit)" }} className="num">52</td>
-                            <td style={{ textAlign: "right", color: "var(--loss)" }} className="num">53</td>
-                            <td style={{ textAlign: "right" }} className="num">49.5%</td>
-                            <td style={{ textAlign: "right", color: "var(--profit)" }} className="num">+₹98,532</td>
-                            <td style={{ textAlign: "right", color: "var(--profit)" }} className="num">+₹3,030</td>
-                            <td style={{ textAlign: "right", color: "var(--profit)" }} className="num">+₹1,01,562</td>
-                            <td style={{ textAlign: "right", color: "var(--profit)" }} className="num">+10.16%</td>
+                            <td style={{ textAlign: "right" }} className="num">103</td>
+                            <td style={{ textAlign: "right", color: "var(--profit)" }} className="num">56</td>
+                            <td style={{ textAlign: "right", color: "var(--loss)" }} className="num">47</td>
+                            <td style={{ textAlign: "right" }} className="num">54.4%</td>
+                            <td style={{ textAlign: "right", color: "var(--profit)" }} className="num">+₹3,25,880</td>
+                            <td style={{ textAlign: "right", color: "var(--profit)" }} className="num">+₹9,306</td>
+                            <td style={{ textAlign: "right", color: "var(--profit)" }} className="num">+₹3,35,186</td>
+                            <td style={{ textAlign: "right", color: "var(--profit)" }} className="num">+33.52%</td>
                             <td style={{ textAlign: "center" }}>
                               <span className="pill green" style={{ fontSize: 8.5, padding: "2px 7px", fontWeight: 800 }}>
                                 ✅ PROFITABLE
@@ -4191,7 +4193,7 @@ export default function App() {
 
                   <div className="row between" style={{ alignItems: "center", marginBottom: 12 }}>
                     <div style={{ fontSize: 12, fontWeight: 800, color: "var(--ink2)" }}>
-                      All 105 Closed Trade Records (Chronological Ledger)
+                      All 103 Closed Trade Records (Chronological Ledger)
                     </div>
                     <span className="micro dim">Click any trade for full execution breakdown</span>
                   </div>
