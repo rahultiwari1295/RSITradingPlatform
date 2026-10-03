@@ -139,7 +139,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       closedCount: closedTrades.length,
       source: rawData.source || "quantsync-unified-live"
     });
-    }
   } catch (error: any) {
     console.error(`Terminal API Sync Failure (${requestedVersion}):`, error.message);
     return res.status(502).json({
