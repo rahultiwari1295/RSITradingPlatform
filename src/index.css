@@ -6449,6 +6449,147 @@ body::before{
   gap: 11px;
 }
 
+/* 2026 Executive Performance Ledger & Month-by-Month Breakdown */
+.v4-executive-banner {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(6, 182, 212, 0.08), rgba(99, 102, 241, 0.05));
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(12px);
+}
+
+.v4-exec-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.v4-exec-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.18);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.v4-exec-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.v4-exec-stat {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.v4-exec-stat-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink3);
+}
+
+.v4-exec-stat-val {
+  font-size: 15px;
+  font-weight: 800;
+  font-family: var(--font-mono, monospace);
+  color: var(--ink1);
+}
+
+.v4-exec-stat-val.up {
+  color: #10b981;
+}
+
+.v4-exec-stat-sub {
+  font-size: 9px;
+  color: var(--ink3);
+}
+
+.v4-monthly-table-card {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+
+.v4-table-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.v4-monthly-table-wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.v4-monthly-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  text-align: left;
+}
+
+.v4-monthly-table th {
+  padding: 9px 12px;
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink3);
+  border-bottom: 1px solid var(--line);
+  background: var(--s2);
+  white-space: nowrap;
+}
+
+.v4-monthly-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink1);
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.v4-monthly-table tr:hover td {
+  background: var(--s1);
+}
+
+.v4-monthly-table tr.total-row {
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+}
+
+.v4-monthly-table tr.total-row td {
+  border-top: 2px solid var(--line);
+  border-bottom: none;
+  font-weight: 800;
+  font-size: 11.5px;
+}
+
+
 .engine-flow-step {
   display: flex;
   gap: 11px;
