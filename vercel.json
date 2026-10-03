@@ -15,11 +15,11 @@
     },
     {
       "source": "/api/terminalData",
-      "destination": "/api/terminal-data"
+      "destination": "/api/terminalData"
     },
     {
       "source": "/api/terminalDataV3",
-      "destination": "/api/terminal-data?version=v3"
+      "destination": "/api/terminalDataV3"
     },
     {
       "source": "/api/chart",
