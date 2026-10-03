@@ -14,6 +14,14 @@
       "destination": "/api/terminal-data"
     },
     {
+      "source": "/api/terminalData",
+      "destination": "/api/terminal-data"
+    },
+    {
+      "source": "/api/terminalDataV3",
+      "destination": "/api/terminal-data?version=v3"
+    },
+    {
       "source": "/api/chart",
       "destination": "/api/chart"
     },

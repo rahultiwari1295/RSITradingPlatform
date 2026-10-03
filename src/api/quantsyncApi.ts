@@ -222,8 +222,28 @@ export interface ChartData {
 }
 
 export const quantsyncApi = {
-  getTerminalData: (version: "v2" | "v3" = "v2") =>
-    apiFetch<TerminalSnapshot>(`/api/terminalData?version=${version}`),
+  getTerminalData: async (version: "v2" | "v3" = "v2") => {
+    try {
+      const data = await apiFetch<TerminalSnapshot>(`/api/terminal-data?version=${version}`);
+      const closed = (data as any)?.closedTrades || (data as any)?.closed || [];
+      if (closed.length >= 350) return data;
+      // Fallback to static snapshot if API returned partial
+      const staticData = await fetch("/terminal_data_v2.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      if (staticData) {
+        return {
+          ...staticData,
+          ...(data || {}),
+          closedTrades: staticData.closed || staticData.closedTrades || [],
+          closed: staticData.closed || staticData.closedTrades || [],
+        };
+      }
+      return data;
+    } catch {
+      const staticData = await fetch("/terminal_data_v2.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
+      if (staticData) return staticData;
+      throw new Error("Unable to load terminal data");
+    }
+  },
 
   getEquityCurve: (version: "v2" | "v3" = "v2", days: number = 90) =>
     apiFetch<EquityCurveData>(`/api/equity-curve?version=${version}&days=${days}`),

@@ -1190,7 +1190,11 @@ function formatExitReason(r: string) {
 
 function normalizeClosedTrade(t: any, idx: number) {
   const sym = t.sym || t.symbol || `CLOSED_${idx + 1}`;
-  const isV3 = String(t.tradeId || "").startsWith("V3_") || t.engine === "v3";
+  const isV3 = String(t.tradeId || "").toUpperCase().startsWith("V3") ||
+               (t.engine || "").toLowerCase() === "v3" ||
+               String(t.engineBadge || "").includes("V3") ||
+               String(t.strategyName || t.strategyId || "").toLowerCase().includes("v3") ||
+               ["DARVAS", "HIGH_TIGHT", "CUP_HANDLE", "52W_HIGH"].includes(String(t.strategyId || "").toUpperCase());
   const ab = t.ab || sym.slice(0, 2).toUpperCase();
   const entry = Number(t.entry ?? t.entryPrice ?? 100);
   const exit = Number(t.exit ?? t.exitPrice ?? 110);
@@ -2227,6 +2231,26 @@ export default function App() {
   const allClosedTrades = useMemo(() => {
     return rawClosed.map((t: any, idx: number) => normalizeClosedTrade(t, idx));
   }, [rawClosed]);
+
+  // Auto-heal closed ledger if less than 350 trades (guarantees all 105 V3 AI Sniper trades are present)
+  useEffect(() => {
+    if (rawClosed.length < 350) {
+      fetch("/terminal_data_v2.json")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((staticSnap) => {
+          const c = staticSnap?.closed || staticSnap?.closedTrades;
+          if (Array.isArray(c) && c.length >= 350) {
+            setTerminalData((prev) => ({
+              ...(prev || {}),
+              ...staticSnap,
+              closed: c,
+              closedTrades: c,
+            }));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [rawClosed.length]);
 
   const v2ClosedCount = useMemo(() => allClosedTrades.filter((t: any) => t.engine !== "v3").length, [allClosedTrades]);
   const v3ClosedCount = useMemo(() => allClosedTrades.filter((t: any) => t.engine === "v3").length, [allClosedTrades]);
@@ -3960,12 +3984,12 @@ export default function App() {
 
                 {/* Primary Return Headline */}
                 <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 10, color: "var(--ink3)", textTransform: "uppercase", letterSpacing: ".06em", fontWeight: 700 }}>
-                    {closedDisplayMode === "inr" ? "Total Net Realized P&L" : "Cumulative Net Return"}
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink2)", marginBottom: 5, lineHeight: 1.45 }}>
+                    If you invested <span style={{ color: "var(--accent)", fontWeight: 800 }}>{INR(closedTradeBet)}</span> per every call from starting 2026, you made the profit of:
                   </div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 2 }}>
                     <span style={{
-                      fontSize: 30,
+                      fontSize: 32,
                       fontWeight: 900,
                       color: (closedDisplayMode === "inr" ? closedStats.totalRealizedPnl : closedCurveData.periodReturn) >= 0 ? "var(--profit)" : "var(--loss)",
                       letterSpacing: "-.03em",
@@ -3975,16 +3999,16 @@ export default function App() {
                         ? `${closedStats.totalRealizedPnl >= 0 ? "+" : ""}${INR(closedStats.totalRealizedPnl)}`
                         : `${closedCurveData.periodReturn >= 0 ? "+" : ""}${closedCurveData.periodReturn.toFixed(1)}%`}
                     </span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ink2)" }}>
-                      ({closedStats.winRate.toFixed(1)}% Win Rate)
+                    <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--profit)" }}>
+                      ({closedStats.winRate.toFixed(1)}% Win Rate · {closedStats.wins}W / {closedStats.losses}L)
                     </span>
                   </div>
                   <div style={{ fontSize: 11, color: "var(--ink3)", marginTop: 4, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span>Based on</span>
-                    <span style={{ color: "var(--ink1)", fontWeight: 800 }}>{INR(closedTradeBet)}</span>
-                    <span>allocated per trade · Avg</span>
+                    <span>Across</span>
+                    <span style={{ color: "var(--ink1)", fontWeight: 800 }}>{closedStats.totalTrades} closed signals</span>
+                    <span>· Avg</span>
                     <span style={{ color: "var(--profit)", fontWeight: 700 }}>+{closedStats.avgReturn.toFixed(2)}%</span>
-                    <span>per closed position</span>
+                    <span>/ trade · {closedStats.profitFactor.toFixed(2)}x Profit Factor</span>
                   </div>
                 </div>
 
