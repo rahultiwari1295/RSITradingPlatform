@@ -30,6 +30,25 @@ const fmtPrice = (val: any): string => {
   return `₹${Number(val).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
+// Formats raw concatenated reason strings into clean, elegant institutional bullet insights
+const formatThesisItems = (raw: string): string[] => {
+  if (!raw) return ["Institutional quantitative setup validated through strict risk-reward criteria."];
+  const formatted = raw
+    .replace(/risk-rewardRelative/gi, "risk-reward. Relative")
+    .replace(/universeSector/gi, "universe. Sector")
+    .replace(/inflowsML/gi, "inflows. ML")
+    .replace(/continuationRelative/gi, "continuation. Relative")
+    .replace(/breakoutRelative/gi, "breakout. Relative")
+    .replace(/highRelative/gi, "high. Relative");
+
+  const sentences = formatted
+    .split(/(?<=[.!?])\s+/)
+    .map(s => s.trim().replace(/^[-•*]\s*/, ""))
+    .filter(s => s.length > 5);
+
+  return sentences.length > 0 ? sentences : [raw];
+};
+
 // Curated breakout setups (zero fake hardcoded prices)
 const FEATURED_BREAKOUT_DATA = [
   {
@@ -689,168 +708,161 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
 
         {aiBuyCalls.length > 0 ? (
           <>
-            {/* Stock selector chips & dots when multiple buy calls */}
+            {/* Elegant Segmented Stock Selector Pill */}
             {aiBuyCalls.length > 1 && (
-              <div className="breakout-selector-bar">
-                <div className="breakout-chips-group">
-                  {aiBuyCalls.map((b, i) => (
-                    <button
-                      key={b.symbol}
-                      type="button"
-                      className={`stock-tab-chip ${activeAiCardIdx === i ? "active" : ""}`}
-                      onClick={() => scrollToAiCard(i)}
-                    >
-                      <span className="chip-sym">{b.symbol}</span>
-                      <span className="chip-score" style={{ color: b.isV3 ? "#38BDF8" : "#F59E0B" }}>
-                        {b.isV3 ? "AI SNIPER" : "AI PRO"}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                <div className="carousel-pagination-dots">
-                  {aiBuyCalls.map((_, i) => (
-                    <span 
-                      key={i} 
-                      className={`pag-dot ${activeAiCardIdx === i ? "active" : ""}`}
-                      onClick={() => scrollToAiCard(i)}
-                    />
-                  ))}
+              <div className="ai-luxury-selector-bar">
+                <div className="ai-luxury-segmented-control">
+                  {aiBuyCalls.map((b, i) => {
+                    const isSelected = activeAiCardIdx === i;
+                    return (
+                      <button
+                        key={b.symbol}
+                        type="button"
+                        className={`ai-luxury-seg-btn ${isSelected ? "active" : ""}`}
+                        onClick={() => scrollToAiCard(i)}
+                      >
+                        <span 
+                          className="seg-indicator-dot" 
+                          style={{ background: b.isV3 ? "#38BDF8" : "#F59E0B" }} 
+                        />
+                        <span className="seg-symbol">{b.symbol}</span>
+                        <span className={`seg-engine-badge ${b.isV3 ? "v3" : "v2"}`}>
+                          {b.isV3 ? "SNIPER V3" : "PRO V2"}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {/* Clean, simple card per stock matching "What to buy today" */}
+            {/* Luxury Executive Cards Snap Track */}
             <div 
               className="featured-breakouts-carousel" 
               ref={aiCarouselRef}
               onScroll={handleAiCarouselScroll}
             >
               {aiBuyCalls.map((b) => (
-                <div key={b.symbol} className="breakout-master-card">
-                  {/* Card Header */}
-                  <div className="b-card-header">
-                    <div className="b-sym-info">
-                      <div className="b-ticker-row">
-                        <span className="b-ticker-name">{b.symbol}</span>
-                        <span className="b-exchange-tag">NSE EQ</span>
-                        <span 
-                          className="b-exchange-tag" 
-                          style={{ 
-                            color: b.isV3 ? "#38BDF8" : "#F59E0B", 
-                            fontWeight: 800,
-                            background: b.isV3 ? "rgba(56, 189, 248, 0.12)" : "rgba(245, 158, 11, 0.12)",
-                            border: b.isV3 ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid rgba(245, 158, 11, 0.3)"
-                          }}
-                        >
+                <div key={b.symbol} className="ai-luxury-card">
+                  {/* Atmospheric Glow */}
+                  <div className={`ai-luxury-ambient-aura ${b.isV3 ? "v3" : "v2"}`} />
+
+                  {/* 1. Header: Symbol, Identity & Conviction Emblem */}
+                  <div className="ai-luxury-head">
+                    <div className="ai-luxury-head-left">
+                      <div className="ai-luxury-ticker-row">
+                        <span className="ai-luxury-sym">{b.symbol}</span>
+                        <span className="ai-luxury-market-tag">NSE EQ</span>
+                        <span className={`ai-luxury-engine-badge ${b.isV3 ? "v3" : "v2"}`}>
                           {b.isV3 ? "⚡ AI SNIPER (V3)" : "★ AI PRO (V2)"}
                         </span>
                       </div>
-                      <div className="b-company-name">{b.name} · {b.sector}</div>
+                      <div className="ai-luxury-company">{b.name} · {b.sector}</div>
                     </div>
 
-                    <div className="b-dna-badge">
-                      <div 
-                        className="dna-score-ring"
-                        style={{
-                          borderColor: b.isV3 ? "rgba(56, 189, 248, 0.35)" : undefined,
-                          background: b.isV3 ? "rgba(56, 189, 248, 0.12)" : undefined
-                        }}
-                      >
-                        <span 
-                          className="dna-number"
-                          style={{ color: b.isV3 ? "#38BDF8" : undefined }}
-                        >
-                          {b.score}
-                        </span>
+                    <div className="ai-luxury-conviction-badge">
+                      <div className={`ai-conviction-ring ${b.isV3 ? "v3" : "v2"}`}>
+                        <span className="ai-conviction-score">{b.score}</span>
                       </div>
-                      <div 
-                        className="dna-badge-label"
-                        style={{ color: b.isV3 ? "#7DD3FC" : undefined }}
-                      >
-                        AI SCORE
-                      </div>
+                      <span className="ai-conviction-label">AI CONVICTION</span>
+                      <span className="ai-conviction-stars">{b.starsDisplay}</span>
                     </div>
                   </div>
 
-                  {/* Pattern Banner & Buy Zone Badge */}
-                  <div className="b-pattern-pill" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", gap: "8px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
-                      <span className="pattern-glow-dot" />
-                      <span className="pattern-title" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        Strategy: {b.strategy}
+                  {/* 2. Strategy & Live Status Row */}
+                  <div className="ai-luxury-status-row">
+                    <div className="ai-lux-strategy-block">
+                      <span className="ai-lux-strategy-lead">Strategy:</span>
+                      <span className="ai-lux-strategy-name">{b.strategy}</span>
+                    </div>
+                    <div className="ai-lux-live-block">
+                      <span className="ai-lux-live-dot" />
+                      <span className="ai-lux-live-text">
+                        AI BUY CALL ACTIVE {b.diffPct ? `(${Number(b.diffPct) >= 0 ? `+${b.diffPct}%` : `${b.diffPct}%`} from Entry)` : "• PRIME BUY ZONE"}
                       </span>
                     </div>
-                    <span style={{
-                      fontSize: "0.72rem",
-                      fontWeight: 700,
-                      letterSpacing: "0.02em",
-                      color: "var(--profit, #10B981)",
-                      background: "rgba(16, 185, 129, 0.12)",
-                      border: "1px solid rgba(16, 185, 129, 0.3)",
-                      borderRadius: "6px",
-                      padding: "2px 8px",
-                      whiteSpace: "nowrap",
-                      flexShrink: 0
-                    }}>
-                      🟢 AI BUY CALL ACTIVE {b.diffPct ? `(${Number(b.diffPct) >= 0 ? `+${b.diffPct}%` : `${b.diffPct}%`})` : ""}
-                    </span>
                   </div>
 
-                  {/* Price Architecture Grid */}
-                  <div className="b-pricing-architecture">
-                    <div className="b-price-col">
-                      <span className="b-label">RECOMMENDED BUY</span>
-                      <span className="b-val gold-accent">{fmtPrice(b.entryPrice)}</span>
+                  {/* 3. 4-Pillar Financial Architecture Grid */}
+                  <div className="ai-luxury-grid">
+                    <div className="ai-lux-col entry">
+                      <span className="lux-col-label">RECOMMENDED BUY</span>
+                      <span className="lux-col-val gold">{fmtPrice(b.entryPrice)}</span>
+                      <span className="lux-col-tag gold">Strict Entry Trigger</span>
                     </div>
-                    <div className="b-price-col">
-                      <span className="b-label">CURRENT CMP</span>
-                      <span className="b-val live-cmp">{fmtPrice(b.currentPrice)}</span>
+                    <div className="ai-lux-col cmp">
+                      <span className="lux-col-label">CURRENT CMP</span>
+                      <span className="lux-col-val">{fmtPrice(b.currentPrice)}</span>
+                      <span className="lux-col-tag neutral">
+                        {b.diffPct ? `${Number(b.diffPct) >= 0 ? `+${b.diffPct}%` : `${b.diffPct}%`} Live Diff` : "Live Price"}
+                      </span>
                     </div>
-                    <div className="b-price-col">
-                      <span className="b-label">TARGET 1 (+{b.gainPct}%)</span>
-                      <span className="b-val profit-val">{fmtPrice(b.targetPrice)}</span>
+                    <div className="ai-lux-col target">
+                      <span className="lux-col-label">TARGET 1</span>
+                      <span className="lux-col-val profit">{fmtPrice(b.targetPrice)}</span>
+                      <span className="lux-col-tag profit">+{b.gainPct}% Upside Potential</span>
                     </div>
-                    <div className="b-price-col">
-                      <span className="b-label">STOP LOSS (-{b.stopPct}%)</span>
-                      <span className="b-val stop-val">{fmtPrice(b.stopPrice)}</span>
+                    <div className="ai-lux-col stop">
+                      <span className="lux-col-label">STOP LOSS</span>
+                      <span className="lux-col-val loss">{fmtPrice(b.stopPrice)}</span>
+                      <span className="lux-col-tag loss">-{b.stopPct}% Capital Shield</span>
                     </div>
                   </div>
 
-                  {/* Institutional Rationale Note */}
-                  <div className="b-rationale-box">
-                    <span className="rationale-lead">Setup Thesis:</span> {b.why}
+                  {/* 4. Institutional Quant Thesis (Parsed clean bullet points) */}
+                  <div className="ai-luxury-thesis-box">
+                    <div className="thesis-title-bar">
+                      <span className="thesis-star">✦</span>
+                      <span className="thesis-heading">INSTITUTIONAL QUANT THESIS</span>
+                    </div>
+                    <div className="thesis-bullet-list">
+                      {formatThesisItems(b.why).map((sentence, sIdx) => (
+                        <div key={sIdx} className="thesis-bullet-row">
+                          <span className="thesis-marker">›</span>
+                          <span className="thesis-sentence">{sentence}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Card Footer Actions */}
-                  <div className="b-card-footer">
-                    <div className="b-volume-indicator">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 20V10M12 20V4M6 20v-6"/>
-                      </svg>
-                      <span>R:R 1 : {b.rrRatio} · {b.ml}% ML Edge · {b.starsDisplay}</span>
+                  {/* 5. Card Bottom Command Deck */}
+                  <div className="ai-luxury-footer">
+                    <div className="ai-luxury-stats">
+                      <span className="lux-stat-pill">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <path d="M18 20V10M12 20V4M6 20v-6"/>
+                        </svg>
+                        <span>Risk:Reward 1 : {b.rrRatio}</span>
+                      </span>
+                      <span className="lux-stat-pill">
+                        <span>🤖 {b.ml}% ML Probability</span>
+                      </span>
                     </div>
 
-                    <div className="b-action-buttons">
-                      <button 
+                    <div className="ai-luxury-buttons">
+                      {onOpenChart && (
+                        <button
+                          type="button"
+                          className="lux-btn secondary"
+                          onClick={() => onOpenChart(b.symbol)}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                          </svg>
+                          <span>View Chart</span>
+                        </button>
+                      )}
+
+                      <button
                         type="button"
-                        className="b-btn-primary"
+                        className="lux-btn primary"
                         onClick={() => onNavigate("signals")}
                       >
                         <span>Review in AI BuySell</span>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                           <path d="M5 12h14M12 5l7 7-7 7"/>
                         </svg>
                       </button>
-
-                      {onOpenChart && (
-                        <button 
-                          type="button"
-                          className="b-btn-secondary"
-                          onClick={() => onOpenChart(b.symbol)}
-                        >
-                          View Chart
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>
