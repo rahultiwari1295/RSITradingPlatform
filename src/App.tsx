@@ -1177,6 +1177,17 @@ function normalizeActiveTrade(t: any, idx: number, eng: "v2" | "v3") {
   };
 }
 
+function formatExitReason(r: string) {
+  if (!r) return "Target Hit";
+  const s = String(r).toUpperCase();
+  if (s.includes("VOL_DIST")) return "Vol Guard 🛡️";
+  if (s.includes("RATCHET") || s.includes("BREAKEVEN")) return "Ratchet 🔒";
+  if (s.includes("TARGET")) return "Target Hit 🎯";
+  if (s.includes("STOP")) return "Stop Loss 🛑";
+  if (s.includes("TRAIL")) return "Trailing Stop 📈";
+  return r.replace(/_/g, " ");
+}
+
 function normalizeClosedTrade(t: any, idx: number) {
   const sym = t.sym || t.symbol || `CLOSED_${idx + 1}`;
   const isV3 = String(t.tradeId || "").startsWith("V3_") || t.engine === "v3";
@@ -1533,13 +1544,16 @@ export default function App() {
       const cached = sessionStorage.getItem("quantsync_cached_terminal_v2");
       if (cached) {
         const parsed = JSON.parse(cached);
-        const act = parsed?.active || parsed?.inTradeTrades;
-        if (Array.isArray(act) && !act.some((t: any) => (t.sym || t.symbol || "").toUpperCase() === "SUNFLAG")) {
-          parsed.active = [SUNFLAG_V3_FALLBACK, ...act];
-          parsed.inTradeTrades = parsed.active;
-          parsed.activeCount = parsed.active.length;
+        const closedCount = (parsed?.closedTrades || parsed?.closed || []).length;
+        if (closedCount >= 350) {
+          const act = parsed?.active || parsed?.inTradeTrades;
+          if (Array.isArray(act) && !act.some((t: any) => (t.sym || t.symbol || "").toUpperCase() === "SUNFLAG")) {
+            parsed.active = [SUNFLAG_V3_FALLBACK, ...act];
+            parsed.inTradeTrades = parsed.active;
+            parsed.activeCount = parsed.active.length;
+          }
+          return parsed;
         }
-        return parsed;
       }
       return null;
     } catch {
@@ -1551,13 +1565,16 @@ export default function App() {
       const cached = sessionStorage.getItem("quantsync_cached_terminal_v2");
       if (cached) {
         const parsed = JSON.parse(cached);
-        const act = parsed?.active || parsed?.inTradeTrades;
-        if (Array.isArray(act) && !act.some((t: any) => (t.sym || t.symbol || "").toUpperCase() === "SUNFLAG")) {
-          parsed.active = [SUNFLAG_V3_FALLBACK, ...act];
-          parsed.inTradeTrades = parsed.active;
-          parsed.activeCount = parsed.active.length;
+        const closedCount = (parsed?.closedTrades || parsed?.closed || []).length;
+        if (closedCount >= 350) {
+          const act = parsed?.active || parsed?.inTradeTrades;
+          if (Array.isArray(act) && !act.some((t: any) => (t.sym || t.symbol || "").toUpperCase() === "SUNFLAG")) {
+            parsed.active = [SUNFLAG_V3_FALLBACK, ...act];
+            parsed.inTradeTrades = parsed.active;
+            parsed.activeCount = parsed.active.length;
+          }
+          return parsed;
         }
-        return parsed;
       }
       return null;
     } catch {
@@ -1567,7 +1584,10 @@ export default function App() {
   const [terminalDataV3, setTerminalDataV3] = useState<TerminalSnapshot | null>(null);
   const [isTerminalLoading, setIsTerminalLoading] = useState<boolean>(() => {
     try {
-      return !sessionStorage.getItem("quantsync_cached_terminal_v2");
+      const c = sessionStorage.getItem("quantsync_cached_terminal_v2");
+      if (!c) return true;
+      const p = JSON.parse(c);
+      return ((p?.closedTrades || p?.closed || []).length) < 350;
     } catch {
       return true;
     }
@@ -3905,25 +3925,28 @@ export default function App() {
           {/* CLOSED TRADES TAB */}
           {sigSub === "closed" && (
             <div id="sigClosed">
-              {/* CAPITAL ALLOCATION SIMULATOR CARD */}
-              <div className="capital-alloc-card">
-                <div className="row between" style={{ alignItems: "center", marginBottom: 10 }}>
+              {/* UNIFIED LUXURY CLOSED PERFORMANCE COMMAND CARD */}
+              <div className="closed-hero-card">
+                {/* Top Header: Live Badge & Mode Switcher */}
+                <div className="row between" style={{ alignItems: "center", marginBottom: 12 }}>
                   <div className="row gap6" style={{ alignItems: "center" }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".06em", color: "var(--accent)" }}>
-                      💰 CAPITAL ALLOCATION SIMULATOR
+                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--profit)", boxShadow: "0 0 8px var(--profit)" }} />
+                    <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--accent)", textTransform: "uppercase" }}>
+                      Verified Closed Record
                     </span>
-                    <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, background: "rgba(56, 189, 248, 0.12)", color: "var(--accent)", fontWeight: 700 }}>
-                      REAL MONEY
+                    <span style={{ fontSize: 9.5, padding: "2px 7px", borderRadius: 6, background: "rgba(56, 189, 248, 0.12)", color: "var(--accent)", fontWeight: 800 }}>
+                      {closedStats.totalTrades} Signals
                     </span>
                   </div>
-                  {/* Mode switcher: ₹ vs % */}
-                  <div className="rt-curve-tabs" style={{ background: "var(--s3)" }}>
+
+                  {/* Unit switcher: ₹ Net Profit vs % ROI */}
+                  <div className="rt-curve-tabs">
                     <button
                       className={`rt-curve-btn ${closedDisplayMode === "inr" ? "on" : ""}`}
                       onClick={() => setClosedDisplayMode("inr")}
                       title="View in Real Net ₹ INR Profit"
                     >
-                      ₹ Realized P&L
+                      ₹ Net Profit
                     </button>
                     <button
                       className={`rt-curve-btn ${closedDisplayMode === "pct" ? "on" : ""}`}
@@ -3935,191 +3958,197 @@ export default function App() {
                   </div>
                 </div>
 
-                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink1)", marginBottom: 8 }}>
-                  "If I invested <span style={{ color: "var(--accent)", fontWeight: 800 }}>{INR(closedTradeBet)}</span> per verified signal..."
-                </div>
-
-                {/* Sizing Pills */}
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
-                  {[10000, 25000, 50000, 100000].map((amt) => (
-                    <button
-                      key={amt}
-                      className={`alloc-pill-btn ${!isCustomBetInput && closedTradeBet === amt ? "active" : ""}`}
-                      onClick={() => {
-                        setIsCustomBetInput(false);
-                        setClosedTradeBet(amt);
-                        setCustomBetValue(String(amt));
-                      }}
-                    >
-                      {INR(amt)} {amt === 10000 ? "(Default)" : ""}
-                    </button>
-                  ))}
-                  <button
-                    className={`alloc-pill-btn ${isCustomBetInput ? "active" : ""}`}
-                    onClick={() => setIsCustomBetInput(true)}
-                  >
-                    Custom ✎
-                  </button>
-
-                  {isCustomBetInput && (
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--s2)", border: "1px solid var(--accent)", borderRadius: 8, padding: "2px 8px" }}>
-                      <span style={{ fontSize: 11, color: "var(--ink2)", fontWeight: 700 }}>₹</span>
-                      <input
-                        type="number"
-                        value={customBetValue}
-                        onChange={(e) => {
-                          setCustomBetValue(e.target.value);
-                          const num = Number(e.target.value);
-                          if (num > 0) setClosedTradeBet(num);
-                        }}
-                        style={{
-                          background: "transparent",
-                          border: "none",
-                          color: "var(--ink1)",
-                          fontSize: 12,
-                          fontWeight: 800,
-                          width: 80,
-                          outline: "none"
-                        }}
-                        placeholder="Amount"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Engine scope filter (All 373, AI Pro, AI Sniper) */}
-                <div className="row between" style={{ alignItems: "center", paddingTop: 8, borderTop: "1px solid var(--line)" }}>
-                  <div style={{ fontSize: 10, color: "var(--ink3)", fontWeight: 600 }}>
-                    Engine Filter:
+                {/* Primary Return Headline */}
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 10, color: "var(--ink3)", textTransform: "uppercase", letterSpacing: ".06em", fontWeight: 700 }}>
+                    {closedDisplayMode === "inr" ? "Total Net Realized P&L" : "Cumulative Net Return"}
                   </div>
-                  <div className="rt-curve-tabs">
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 2 }}>
+                    <span style={{
+                      fontSize: 30,
+                      fontWeight: 900,
+                      color: (closedDisplayMode === "inr" ? closedStats.totalRealizedPnl : closedCurveData.periodReturn) >= 0 ? "var(--profit)" : "var(--loss)",
+                      letterSpacing: "-.03em",
+                      fontVariantNumeric: "tabular-nums"
+                    }}>
+                      {closedDisplayMode === "inr"
+                        ? `${closedStats.totalRealizedPnl >= 0 ? "+" : ""}${INR(closedStats.totalRealizedPnl)}`
+                        : `${closedCurveData.periodReturn >= 0 ? "+" : ""}${closedCurveData.periodReturn.toFixed(1)}%`}
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ink2)" }}>
+                      ({closedStats.winRate.toFixed(1)}% Win Rate)
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--ink3)", marginTop: 4, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <span>Based on</span>
+                    <span style={{ color: "var(--ink1)", fontWeight: 800 }}>{INR(closedTradeBet)}</span>
+                    <span>allocated per trade · Avg</span>
+                    <span style={{ color: "var(--profit)", fontWeight: 700 }}>+{closedStats.avgReturn.toFixed(2)}%</span>
+                    <span>per closed position</span>
+                  </div>
+                </div>
+
+                {/* Streamlined Capital Sizing & Engine Segments Bar */}
+                <div className="alloc-control-bar">
+                  <div className="row between" style={{ alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--ink2)" }}>
+                      Position Size:
+                    </div>
+                    <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" }}>
+                      {[
+                        { label: "₹10K", val: 10000 },
+                        { label: "₹25K", val: 25000 },
+                        { label: "₹50K", val: 50000 },
+                        { label: "₹1L", val: 100000 }
+                      ].map((item) => (
+                        <button
+                          key={item.val}
+                          className={`alloc-chip ${!isCustomBetInput && closedTradeBet === item.val ? "active" : ""}`}
+                          onClick={() => {
+                            setIsCustomBetInput(false);
+                            setClosedTradeBet(item.val);
+                            setCustomBetValue(String(item.val));
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                      <button
+                        className={`alloc-chip ${isCustomBetInput ? "active" : ""}`}
+                        onClick={() => setIsCustomBetInput(true)}
+                      >
+                        Custom ✎
+                      </button>
+
+                      {isCustomBetInput && (
+                        <div className="custom-alloc-input">
+                          <span>₹</span>
+                          <input
+                            type="number"
+                            value={customBetValue}
+                            onChange={(e) => {
+                              setCustomBetValue(e.target.value);
+                              const num = Number(e.target.value);
+                              if (num > 0) setClosedTradeBet(num);
+                            }}
+                            placeholder="10000"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Engine segment switcher (All 373, AI Pro 268, AI Sniper 105) */}
+                  <div className="engine-segment-strip">
                     <button
-                      className={`rt-curve-btn ${closedEngineFilter === "all" ? "on" : ""}`}
+                      className={`engine-seg-btn ${closedEngineFilter === "all" ? "active" : ""}`}
                       onClick={() => setClosedEngineFilter("all")}
                     >
                       All Signals ({allClosedTrades.length})
                     </button>
                     <button
-                      className={`rt-curve-btn ${closedEngineFilter === "v2" ? "on" : ""}`}
+                      className={`engine-seg-btn ${closedEngineFilter === "v2" ? "active" : ""}`}
                       onClick={() => setClosedEngineFilter("v2")}
                     >
                       AI Pro ({v2ClosedCount})
                     </button>
                     <button
-                      className={`rt-curve-btn ${closedEngineFilter === "v3" ? "on" : ""}`}
+                      className={`engine-seg-btn ${closedEngineFilter === "v3" ? "active" : ""}`}
                       onClick={() => setClosedEngineFilter("v3")}
                     >
                       AI Sniper ({v3ClosedCount})
                     </button>
                   </div>
                 </div>
-              </div>
 
-              {/* Summary card & Interactive Return / Realized P&L Curve */}
-              <div className="return-curve-card">
-                <div className="row between" style={{ marginBottom: 12, alignItems: "flex-start" }}>
-                  <div>
-                    <div className="micro dim" style={{ textTransform: "uppercase", letterSpacing: ".06em", color: "var(--ink3)" }}>
-                      {closedDisplayMode === "inr" ? "Total Realized Net Profit" : "Total Return"} · {closedStats.totalTrades} Closed Signals
-                    </div>
-                    <div style={{ fontSize: 24, fontWeight: 900, color: "var(--profit)", marginTop: 2, letterSpacing: "-.02em" }}>
-                      {closedStats.totalRealizedPnl >= 0 ? "+" : ""}{closedDisplayMode === "inr" ? INR(closedStats.totalRealizedPnl) : `+${closedStats.avgReturn.toFixed(1)}%`}
-                    </div>
-                    <div className="micro" style={{ color: "var(--ink3)", marginTop: 2 }}>
-                      Based on {INR(closedTradeBet)} capital deployed per verified signal
-                    </div>
-                  </div>
-                  <span className="pill accent" style={{ padding: "4px 10px", fontSize: 10, fontWeight: 800 }}>
-                    {closedStats.totalTrades} Closed
-                  </span>
-                </div>
-
-                {/* 6 Real-Money Impact Stats */}
-                <div className="rt-stat-grid">
-                  <div className="rt-stat-box">
-                    <div className="micro" style={{ marginBottom: 4 }}>Win Rate</div>
-                    <div className="num" style={{ fontSize: 15, fontWeight: 800 }}>
+                {/* 6 Real-Money Impact Stats Grid */}
+                <div className="closed-kpi-grid">
+                  <div className="kpi-cell">
+                    <div className="kpi-lbl">Win Rate</div>
+                    <div className="kpi-val" style={{ color: "var(--ink1)" }}>
                       {closedStats.winRate.toFixed(1)}%
                     </div>
-                    <div style={{ fontSize: 9.5, color: "var(--profit)", marginTop: 2, fontWeight: 600 }}>
-                      {closedStats.wins}W / {closedStats.losses}L
+                    <div className="kpi-sub" style={{ color: "var(--profit)", fontWeight: 600 }}>
+                      {closedStats.wins}W <span className="dim">/</span> {closedStats.losses}L
                     </div>
                   </div>
 
-                  <div className="rt-stat-box">
-                    <div className="micro" style={{ marginBottom: 4 }}>Avg Winner</div>
-                    <div className="num up" style={{ fontSize: 15, fontWeight: 800 }}>
+                  <div className="kpi-cell">
+                    <div className="kpi-lbl">Avg Winner</div>
+                    <div className="kpi-val up">
                       {closedDisplayMode === "inr" ? `+${INR(closedStats.avgWinInr)}` : `+${(closedStats.grossWinInr / (closedStats.wins || 1) / (closedTradeBet / 100)).toFixed(1)}%`}
                     </div>
-                    <div style={{ fontSize: 9.5, color: "var(--ink3)", marginTop: 2 }}>
+                    <div className="kpi-sub">
                       Per winning trade
                     </div>
                   </div>
 
-                  <div className="rt-stat-box">
-                    <div className="micro" style={{ marginBottom: 4 }}>Avg Loser</div>
-                    <div className="num down" style={{ fontSize: 15, fontWeight: 800 }}>
+                  <div className="kpi-cell">
+                    <div className="kpi-lbl">Avg Loser</div>
+                    <div className="kpi-val down">
                       {closedDisplayMode === "inr" ? `-${INR(closedStats.avgLossInr)}` : `-${(closedStats.grossLossInr / (closedStats.losses || 1) / (closedTradeBet / 100)).toFixed(1)}%`}
                     </div>
-                    <div style={{ fontSize: 9.5, color: "var(--ink3)", marginTop: 2 }}>
+                    <div className="kpi-sub">
                       Stop loss capped
                     </div>
                   </div>
 
-                  <div className="rt-stat-box">
-                    <div className="micro" style={{ marginBottom: 4 }}>Profit Factor</div>
-                    <div className="num up" style={{ fontSize: 15, fontWeight: 800 }}>
+                  <div className="kpi-cell">
+                    <div className="kpi-lbl">Profit Factor</div>
+                    <div className="kpi-val up">
                       {closedStats.profitFactor.toFixed(2)}x
                     </div>
-                    <div style={{ fontSize: 9.5, color: "var(--ink3)", marginTop: 2 }}>
+                    <div className="kpi-sub">
                       Gross wins / losses
                     </div>
                   </div>
 
-                  <div className="rt-stat-box">
-                    <div className="micro" style={{ marginBottom: 4 }}>Best Single Trade</div>
-                    <div className="num up" style={{ fontSize: 15, fontWeight: 800 }}>
+                  <div className="kpi-cell">
+                    <div className="kpi-lbl">Best Trade</div>
+                    <div className="kpi-val up">
                       {closedDisplayMode === "inr" ? `+${INR(closedStats.bestWinInr)}` : `+${closedStats.bestWinPct.toFixed(1)}%`}
                     </div>
-                    <div style={{ fontSize: 9.5, color: "var(--ink3)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div className="kpi-sub" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {closedStats.bestWinSym} (+{closedStats.bestWinPct.toFixed(1)}%)
                     </div>
                   </div>
 
-                  <div className="rt-stat-box">
-                    <div className="micro" style={{ marginBottom: 4 }}>Period Gain ({closedTf})</div>
-                    <div className="num up" style={{ fontSize: 15, fontWeight: 800 }}>
+                  <div className="kpi-cell">
+                    <div className="kpi-lbl">Period Gain ({closedTf})</div>
+                    <div className="kpi-val up">
                       {closedDisplayMode === "inr" 
                         ? `${closedCurveData.periodPnlInr >= 0 ? "+" : ""}${INR(closedCurveData.periodPnlInr)}`
                         : `${closedCurveData.periodReturn >= 0 ? "+" : ""}${closedCurveData.periodReturn.toFixed(1)}%`}
                     </div>
-                    <div style={{ fontSize: 9.5, color: "var(--ink3)", marginTop: 2 }}>
-                      {closedCurveData.periodTrades.length} trades
+                    <div className="kpi-sub">
+                      {closedCurveData.periodTrades.length} trades in view
                     </div>
                   </div>
                 </div>
 
                 {/* Return Curve Header & Timeframe Filter */}
-                <div className="row between" style={{ alignItems: "center", marginBottom: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ink2)" }}>
-                    {closedDisplayMode === "inr" ? "Cumulative Realized Profit (₹)" : "Cumulative Return (%)"} ({closedTf})
+                <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
+                  <div className="row between" style={{ alignItems: "center", marginBottom: 8 }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--ink2)" }}>
+                      {closedDisplayMode === "inr" ? "Cumulative Realized P&L (₹)" : "Cumulative ROI (%)"} ({closedTf})
+                    </div>
+                    <div className="rt-curve-tabs">
+                      {(["1M", "3M", "6M", "ALL"] as const).map((tf) => (
+                        <button
+                          key={tf}
+                          className={`rt-curve-btn ${closedTf === tf ? "on" : ""}`}
+                          onClick={() => setClosedTf(tf)}
+                        >
+                          {tf}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="rt-curve-tabs">
-                    {(["1M", "3M", "6M", "ALL"] as const).map((tf) => (
-                      <button
-                        key={tf}
-                        className={`rt-curve-btn ${closedTf === tf ? "on" : ""}`}
-                        onClick={() => setClosedTf(tf)}
-                      >
-                        {tf}
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
-                {/* SVG Curve Canvas */}
-                <div style={{ height: 130, position: "relative", marginBottom: 8 }}>
-                  {renderClosedCurveSVG()}
+                  {/* SVG Curve Canvas */}
+                  <div style={{ height: 125, position: "relative" }}>
+                    {renderClosedCurveSVG()}
+                  </div>
                 </div>
               </div>
 
@@ -4203,9 +4232,9 @@ export default function App() {
                       </div>
                       <div className="cr-footer">
                         <span className={`pill ${pPct >= 0 ? "green" : "red"}`} style={{ fontSize: 8.5, padding: "2px 8px", letterSpacing: ".04em" }}>
-                          {t.reason || t.exitReason || "TARGET_HIT"}
+                          {formatExitReason(t.reason || t.exitReason)}
                         </span>
-                        <span className="cr-meta num">{t.days || 30}d · {t.date || formatDisplayDate(t.exitDate)}</span>
+                        <span className="cr-meta num">{t.days || 30}d · {formatDisplayDate(t.exitDate || t.date)}</span>
                       </div>
                     </div>
                   );
@@ -4266,9 +4295,9 @@ export default function App() {
 
                       <div className="cr-footer" style={{ marginTop: 11, borderTop: "1px solid var(--line)", paddingTop: 10 }}>
                         <span className={`pill ${pPct >= 0 ? "green" : "red"}`} style={{ fontSize: 8.5, padding: "2px 8px" }}>
-                          {t.reason || t.exitReason || "TARGET_HIT"}
+                          {formatExitReason(t.reason || t.exitReason)}
                         </span>
-                        <span className="cr-meta num">Closed on {t.date || formatDisplayDate(t.exitDate)}</span>
+                        <span className="cr-meta num">Closed on {formatDisplayDate(t.exitDate || t.date)}</span>
                       </div>
                     </div>
                   );
