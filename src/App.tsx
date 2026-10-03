@@ -1429,8 +1429,12 @@ export default function App() {
   });
   const [isCloudLoaded, setIsCloudLoaded] = useState(false);
   const [isAddPositionOpen, setIsAddPositionOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [closedTf, setClosedTf] = useState<"1M" | "3M" | "6M" | "ALL">("ALL");
+  const [closedTradeBet, setClosedTradeBet] = useState<number>(10000); // Default ₹10,000 per signal
+  const [isCustomBetInput, setIsCustomBetInput] = useState<boolean>(false);
+  const [customBetValue, setCustomBetValue] = useState<string>("10000");
+  const [closedEngineFilter, setClosedEngineFilter] = useState<"all" | "v2" | "v3">("all");
+  const [closedDisplayMode, setClosedDisplayMode] = useState<"inr" | "pct">("inr"); // Default ₹ Rupee Realized P&L!
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -2187,12 +2191,36 @@ export default function App() {
     return normalizeActiveTrade(tradeData, idx, engine);
   });
 
-  const rawClosed = (terminalData?.closed && terminalData.closed.length > 0)
+  let rawClosed = (terminalData?.closed && terminalData.closed.length > 0)
     ? terminalData.closed
     : ((terminalData?.closedTrades && terminalData.closedTrades.length > 0)
       ? terminalData.closedTrades
       : []);
-  const closedTrades = rawClosed.map((t: any, idx: number) => normalizeClosedTrade(t, idx));
+
+  // Merge V3 closed trades if rawClosed only has V2
+  if (rawClosed.length > 0 && rawClosed.length < 300 && terminalDataV3?.closed?.length) {
+    const seenClosedIds = new Set(rawClosed.map((t: any) => t.tradeId || `${t.sym || t.symbol}_${t.exitDate}`));
+    const extraV3 = terminalDataV3.closed.filter((t: any) => !seenClosedIds.has(t.tradeId || `${t.sym || t.symbol}_${t.exitDate}`));
+    rawClosed = [...rawClosed, ...extraV3];
+  }
+
+  const allClosedTrades = useMemo(() => {
+    return rawClosed.map((t: any, idx: number) => normalizeClosedTrade(t, idx));
+  }, [rawClosed]);
+
+  const v2ClosedCount = useMemo(() => allClosedTrades.filter((t: any) => t.engine !== "v3").length, [allClosedTrades]);
+  const v3ClosedCount = useMemo(() => allClosedTrades.filter((t: any) => t.engine === "v3").length, [allClosedTrades]);
+
+  // Filter by engine (All, AI Pro v2, AI Sniper v3)
+  const closedTrades = useMemo(() => {
+    if (closedEngineFilter === "v2") {
+      return allClosedTrades.filter((t: any) => t.engine !== "v3");
+    }
+    if (closedEngineFilter === "v3") {
+      return allClosedTrades.filter((t: any) => t.engine === "v3");
+    }
+    return allClosedTrades;
+  }, [allClosedTrades, closedEngineFilter]);
 
   // Sort active trades: latest record first
   const sortedActiveTrades = useMemo(() => {
@@ -2546,7 +2574,7 @@ export default function App() {
     showToast("Completed trade record deleted");
   };
 
-  // Closed Signals Stats (Win Rate, Profit Factor, Avg Return, Avg R, Wins/Losses)
+  // Closed Signals Stats (Win Rate, Profit Factor, Avg Return, Avg R, Wins/Losses, Real-Rupee P&L)
   const closedStats = useMemo(() => {
     let wins = 0;
     let losses = 0;
@@ -2554,18 +2582,35 @@ export default function App() {
     let grossLossReturn = 0;
     let totalRoi = 0;
     let totalR = 0;
+    let totalRealizedPnl = 0;
+    let grossWinInr = 0;
+    let grossLossInr = 0;
+    let bestWinInr = 0;
+    let bestWinSym = "";
+    let bestWinPct = 0;
 
     closedTrades.forEach((t: any) => {
       const rPct = Number(t.pnlPct ?? t.roiPct ?? 0);
       const rVal = Number(t.r ?? 1.5);
       totalRoi += rPct;
       totalR += rVal;
+
+      const pnlInr = Math.round(closedTradeBet * (rPct / 100));
+      totalRealizedPnl += pnlInr;
+
       if (rPct >= 0) {
         wins++;
         grossWinReturn += rPct;
+        grossWinInr += pnlInr;
+        if (pnlInr > bestWinInr) {
+          bestWinInr = pnlInr;
+          bestWinSym = t.sym || t.symbol || "";
+          bestWinPct = rPct;
+        }
       } else {
         losses++;
         grossLossReturn += Math.abs(rPct);
+        grossLossInr += Math.abs(pnlInr);
       }
     });
 
@@ -2574,6 +2619,8 @@ export default function App() {
     const profitFactor = grossLossReturn > 0 ? grossWinReturn / grossLossReturn : (grossWinReturn > 0 ? 3.5 : 1.0);
     const avgReturn = totalRoi / total;
     const avgR = totalR / total;
+    const avgWinInr = wins > 0 ? Math.round(grossWinInr / wins) : 0;
+    const avgLossInr = losses > 0 ? Math.round(grossLossInr / losses) : 0;
 
     return {
       totalTrades: closedTrades.length,
@@ -2583,10 +2630,18 @@ export default function App() {
       profitFactor,
       avgReturn,
       avgR,
+      totalRealizedPnl,
+      grossWinInr,
+      grossLossInr,
+      avgWinInr,
+      avgLossInr,
+      bestWinInr,
+      bestWinSym,
+      bestWinPct,
     };
-  }, [closedTrades, engine, terminalData]);
+  }, [closedTrades, closedTradeBet, engine, terminalData]);
 
-  // Closed Trades Cumulative Return % Curve
+  // Closed Trades Cumulative Return % Curve / Realized INR Growth
   const closedCurveData = useMemo(() => {
     const sorted = [...closedTrades].sort((a, b) => {
       const da = parseTradeDate(a.exitDate || a.date || a.exit_date || "2026-01-01").getTime();
@@ -2594,7 +2649,7 @@ export default function App() {
       return da - db;
     });
 
-    if (sorted.length === 0) return { periodTrades: [], periodReturn: 0, points: [] };
+    if (sorted.length === 0) return { periodTrades: [], periodReturn: 0, periodPnlInr: 0, points: [] };
 
     const lastDate = parseTradeDate(sorted[sorted.length - 1].exitDate || sorted[sorted.length - 1].date || "2026-09-18").getTime();
 
@@ -2614,14 +2669,19 @@ export default function App() {
     const tradesToUse = filtered.length > 0 ? filtered : sorted.slice(-15);
 
     let runningReturn = 0;
+    let runningPnlInr = 0;
     const points = tradesToUse.map((t: any) => {
       const rPct = Number(t.pnlPct ?? t.roiPct ?? 0);
+      const pnlInr = Math.round(closedTradeBet * (rPct / 100));
       runningReturn += rPct;
+      runningPnlInr += pnlInr;
       return {
         date: t.date || formatDisplayDate(t.exitDate),
         symbol: t.sym || t.symbol,
         roi: rPct,
+        pnlInr,
         cumReturn: runningReturn,
+        cumPnlInr: runningPnlInr,
         reason: t.reason || t.exitReason || "TARGET_HIT",
       };
     });
@@ -2629,14 +2689,16 @@ export default function App() {
     return {
       periodTrades: tradesToUse,
       periodReturn: runningReturn,
+      periodPnlInr: runningPnlInr,
       points,
     };
-  }, [closedTrades, closedTf]);
+  }, [closedTrades, closedTf, closedTradeBet]);
 
   const renderClosedCurveSVG = () => {
     const { points } = closedCurveData;
     if (!points || points.length === 0) return null;
 
+    const isPnlMode = closedDisplayMode === "inr";
     const w = 360;
     const h = 130;
     const padTop = 15;
@@ -2646,25 +2708,27 @@ export default function App() {
     const chartW = w - padLeft - padRight;
     const chartH = h - padTop - padBottom;
 
-    const values = points.map(p => p.cumReturn);
+    const values = points.map(p => isPnlMode ? p.cumPnlInr : p.cumReturn);
     const minVal = Math.min(0, ...values);
-    const maxVal = Math.max(5, ...values);
+    const maxVal = Math.max(isPnlMode ? 1000 : 5, ...values);
     const range = maxVal - minVal || 1;
 
     const coords = points.map((p, i) => {
+      const val = isPnlMode ? p.cumPnlInr : p.cumReturn;
       const x = padLeft + (i / (points.length - 1 || 1)) * chartW;
-      const y = padTop + chartH - ((p.cumReturn - minVal) / range) * chartH;
-      return { x, y, ...p };
+      const y = padTop + chartH - ((val - minVal) / range) * chartH;
+      return { x, y, ...p, val };
     });
 
     const polylinePts = coords.map(c => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(" ");
     const fillPath = `M${coords[0].x.toFixed(1)},${(padTop + chartH).toFixed(1)} L${coords.map(c => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(" L")} L${coords[coords.length - 1].x.toFixed(1)},${(padTop + chartH).toFixed(1)} Z`;
+    const lastPoint = coords[coords.length - 1];
 
     return (
       <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} style={{ overflow: "visible" }}>
         <defs>
           <linearGradient id="rtCurveGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--profit)" stopOpacity="0.30" />
+            <stop offset="0%" stopColor="var(--profit)" stopOpacity="0.32" />
             <stop offset="100%" stopColor="var(--profit)" stopOpacity="0.0" />
           </linearGradient>
         </defs>
@@ -2690,8 +2754,8 @@ export default function App() {
         />
         {coords.length > 0 && (
           <circle
-            cx={coords[coords.length - 1].x}
-            cy={coords[coords.length - 1].y}
+            cx={lastPoint.x}
+            cy={lastPoint.y}
             r="4.5"
             fill="#FFF"
             stroke="var(--profit)"
@@ -3841,74 +3905,196 @@ export default function App() {
           {/* CLOSED TRADES TAB */}
           {sigSub === "closed" && (
             <div id="sigClosed">
-              {/* Summary card & Interactive Return % Curve */}
-              <div className="return-curve-card">
-                <div className="row between" style={{ marginBottom: 13 }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 800 }}>
-                      Closed Signals · 2026 Engine Record
-                    </div>
-                    <div className="micro dim" style={{ marginTop: 2 }}>
-                      Verified Institutional Signal Output
-                    </div>
+              {/* CAPITAL ALLOCATION SIMULATOR CARD */}
+              <div className="capital-alloc-card">
+                <div className="row between" style={{ alignItems: "center", marginBottom: 10 }}>
+                  <div className="row gap6" style={{ alignItems: "center" }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".06em", color: "var(--accent)" }}>
+                      💰 CAPITAL ALLOCATION SIMULATOR
+                    </span>
+                    <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, background: "rgba(56, 189, 248, 0.12)", color: "var(--accent)", fontWeight: 700 }}>
+                      REAL MONEY
+                    </span>
                   </div>
-                  <span className="pill accent">{closedStats.totalTrades} Closed</span>
+                  {/* Mode switcher: ₹ vs % */}
+                  <div className="rt-curve-tabs" style={{ background: "var(--s3)" }}>
+                    <button
+                      className={`rt-curve-btn ${closedDisplayMode === "inr" ? "on" : ""}`}
+                      onClick={() => setClosedDisplayMode("inr")}
+                      title="View in Real Net ₹ INR Profit"
+                    >
+                      ₹ Realized P&L
+                    </button>
+                    <button
+                      className={`rt-curve-btn ${closedDisplayMode === "pct" ? "on" : ""}`}
+                      onClick={() => setClosedDisplayMode("pct")}
+                      title="View in % ROI"
+                    >
+                      % ROI
+                    </button>
+                  </div>
                 </div>
 
-                {/* 6 Core Signal Stats */}
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink1)", marginBottom: 8 }}>
+                  "If I invested <span style={{ color: "var(--accent)", fontWeight: 800 }}>{INR(closedTradeBet)}</span> per verified signal..."
+                </div>
+
+                {/* Sizing Pills */}
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
+                  {[10000, 25000, 50000, 100000].map((amt) => (
+                    <button
+                      key={amt}
+                      className={`alloc-pill-btn ${!isCustomBetInput && closedTradeBet === amt ? "active" : ""}`}
+                      onClick={() => {
+                        setIsCustomBetInput(false);
+                        setClosedTradeBet(amt);
+                        setCustomBetValue(String(amt));
+                      }}
+                    >
+                      {INR(amt)} {amt === 10000 ? "(Default)" : ""}
+                    </button>
+                  ))}
+                  <button
+                    className={`alloc-pill-btn ${isCustomBetInput ? "active" : ""}`}
+                    onClick={() => setIsCustomBetInput(true)}
+                  >
+                    Custom ✎
+                  </button>
+
+                  {isCustomBetInput && (
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--s2)", border: "1px solid var(--accent)", borderRadius: 8, padding: "2px 8px" }}>
+                      <span style={{ fontSize: 11, color: "var(--ink2)", fontWeight: 700 }}>₹</span>
+                      <input
+                        type="number"
+                        value={customBetValue}
+                        onChange={(e) => {
+                          setCustomBetValue(e.target.value);
+                          const num = Number(e.target.value);
+                          if (num > 0) setClosedTradeBet(num);
+                        }}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          color: "var(--ink1)",
+                          fontSize: 12,
+                          fontWeight: 800,
+                          width: 80,
+                          outline: "none"
+                        }}
+                        placeholder="Amount"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Engine scope filter (All 373, AI Pro, AI Sniper) */}
+                <div className="row between" style={{ alignItems: "center", paddingTop: 8, borderTop: "1px solid var(--line)" }}>
+                  <div style={{ fontSize: 10, color: "var(--ink3)", fontWeight: 600 }}>
+                    Engine Filter:
+                  </div>
+                  <div className="rt-curve-tabs">
+                    <button
+                      className={`rt-curve-btn ${closedEngineFilter === "all" ? "on" : ""}`}
+                      onClick={() => setClosedEngineFilter("all")}
+                    >
+                      All Signals ({allClosedTrades.length})
+                    </button>
+                    <button
+                      className={`rt-curve-btn ${closedEngineFilter === "v2" ? "on" : ""}`}
+                      onClick={() => setClosedEngineFilter("v2")}
+                    >
+                      AI Pro ({v2ClosedCount})
+                    </button>
+                    <button
+                      className={`rt-curve-btn ${closedEngineFilter === "v3" ? "on" : ""}`}
+                      onClick={() => setClosedEngineFilter("v3")}
+                    >
+                      AI Sniper ({v3ClosedCount})
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Summary card & Interactive Return / Realized P&L Curve */}
+              <div className="return-curve-card">
+                <div className="row between" style={{ marginBottom: 12, alignItems: "flex-start" }}>
+                  <div>
+                    <div className="micro dim" style={{ textTransform: "uppercase", letterSpacing: ".06em", color: "var(--ink3)" }}>
+                      {closedDisplayMode === "inr" ? "Total Realized Net Profit" : "Total Return"} · {closedStats.totalTrades} Closed Signals
+                    </div>
+                    <div style={{ fontSize: 24, fontWeight: 900, color: "var(--profit)", marginTop: 2, letterSpacing: "-.02em" }}>
+                      {closedStats.totalRealizedPnl >= 0 ? "+" : ""}{closedDisplayMode === "inr" ? INR(closedStats.totalRealizedPnl) : `+${closedStats.avgReturn.toFixed(1)}%`}
+                    </div>
+                    <div className="micro" style={{ color: "var(--ink3)", marginTop: 2 }}>
+                      Based on {INR(closedTradeBet)} capital deployed per verified signal
+                    </div>
+                  </div>
+                  <span className="pill accent" style={{ padding: "4px 10px", fontSize: 10, fontWeight: 800 }}>
+                    {closedStats.totalTrades} Closed
+                  </span>
+                </div>
+
+                {/* 6 Real-Money Impact Stats */}
                 <div className="rt-stat-grid">
                   <div className="rt-stat-box">
                     <div className="micro" style={{ marginBottom: 4 }}>Win Rate</div>
-                    <div className="num" style={{ fontSize: 14.5, fontWeight: 800 }}>
+                    <div className="num" style={{ fontSize: 15, fontWeight: 800 }}>
                       {closedStats.winRate.toFixed(1)}%
                     </div>
-                    <div style={{ fontSize: 9.5, color: "var(--ink3)", marginTop: 2 }}>
+                    <div style={{ fontSize: 9.5, color: "var(--profit)", marginTop: 2, fontWeight: 600 }}>
                       {closedStats.wins}W / {closedStats.losses}L
                     </div>
                   </div>
+
+                  <div className="rt-stat-box">
+                    <div className="micro" style={{ marginBottom: 4 }}>Avg Winner</div>
+                    <div className="num up" style={{ fontSize: 15, fontWeight: 800 }}>
+                      {closedDisplayMode === "inr" ? `+${INR(closedStats.avgWinInr)}` : `+${(closedStats.grossWinInr / (closedStats.wins || 1) / (closedTradeBet / 100)).toFixed(1)}%`}
+                    </div>
+                    <div style={{ fontSize: 9.5, color: "var(--ink3)", marginTop: 2 }}>
+                      Per winning trade
+                    </div>
+                  </div>
+
+                  <div className="rt-stat-box">
+                    <div className="micro" style={{ marginBottom: 4 }}>Avg Loser</div>
+                    <div className="num down" style={{ fontSize: 15, fontWeight: 800 }}>
+                      {closedDisplayMode === "inr" ? `-${INR(closedStats.avgLossInr)}` : `-${(closedStats.grossLossInr / (closedStats.losses || 1) / (closedTradeBet / 100)).toFixed(1)}%`}
+                    </div>
+                    <div style={{ fontSize: 9.5, color: "var(--ink3)", marginTop: 2 }}>
+                      Stop loss capped
+                    </div>
+                  </div>
+
                   <div className="rt-stat-box">
                     <div className="micro" style={{ marginBottom: 4 }}>Profit Factor</div>
-                    <div className="num up" style={{ fontSize: 14.5, fontWeight: 800 }}>
-                      {closedStats.profitFactor.toFixed(2)}
+                    <div className="num up" style={{ fontSize: 15, fontWeight: 800 }}>
+                      {closedStats.profitFactor.toFixed(2)}x
                     </div>
                     <div style={{ fontSize: 9.5, color: "var(--ink3)", marginTop: 2 }}>
-                      Gross Ratio
+                      Gross wins / losses
                     </div>
                   </div>
+
                   <div className="rt-stat-box">
-                    <div className="micro" style={{ marginBottom: 4 }}>Avg Return</div>
-                    <div className="num up" style={{ fontSize: 14.5, fontWeight: 800 }}>
-                      +{closedStats.avgReturn.toFixed(2)}%
+                    <div className="micro" style={{ marginBottom: 4 }}>Best Single Trade</div>
+                    <div className="num up" style={{ fontSize: 15, fontWeight: 800 }}>
+                      {closedDisplayMode === "inr" ? `+${INR(closedStats.bestWinInr)}` : `+${closedStats.bestWinPct.toFixed(1)}%`}
                     </div>
-                    <div style={{ fontSize: 9.5, color: "var(--ink3)", marginTop: 2 }}>
-                      Per Trade
+                    <div style={{ fontSize: 9.5, color: "var(--ink3)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {closedStats.bestWinSym} (+{closedStats.bestWinPct.toFixed(1)}%)
                     </div>
                   </div>
+
                   <div className="rt-stat-box">
-                    <div className="micro" style={{ marginBottom: 4 }}>Avg R Value</div>
-                    <div className="num up" style={{ fontSize: 14.5, fontWeight: 800 }}>
-                      {closedStats.avgR.toFixed(2)}R
+                    <div className="micro" style={{ marginBottom: 4 }}>Period Gain ({closedTf})</div>
+                    <div className="num up" style={{ fontSize: 15, fontWeight: 800 }}>
+                      {closedDisplayMode === "inr" 
+                        ? `${closedCurveData.periodPnlInr >= 0 ? "+" : ""}${INR(closedCurveData.periodPnlInr)}`
+                        : `${closedCurveData.periodReturn >= 0 ? "+" : ""}${closedCurveData.periodReturn.toFixed(1)}%`}
                     </div>
                     <div style={{ fontSize: 9.5, color: "var(--ink3)", marginTop: 2 }}>
-                      Risk-adjusted
-                    </div>
-                  </div>
-                  <div className="rt-stat-box">
-                    <div className="micro" style={{ marginBottom: 4 }}>Period Gain</div>
-                    <div className="num up" style={{ fontSize: 14.5, fontWeight: 800 }}>
-                      {closedCurveData.periodReturn >= 0 ? "+" : ""}{closedCurveData.periodReturn.toFixed(1)}%
-                    </div>
-                    <div style={{ fontSize: 9.5, color: "var(--ink3)", marginTop: 2 }}>
-                      In {closedTf}
-                    </div>
-                  </div>
-                  <div className="rt-stat-box">
-                    <div className="micro" style={{ marginBottom: 4 }}>Trades in View</div>
-                    <div className="num" style={{ fontSize: 14.5, fontWeight: 800 }}>
-                      {closedCurveData.periodTrades.length}
-                    </div>
-                    <div style={{ fontSize: 9.5, color: "var(--ink3)", marginTop: 2 }}>
-                      Filtered
+                      {closedCurveData.periodTrades.length} trades
                     </div>
                   </div>
                 </div>
@@ -3916,7 +4102,7 @@ export default function App() {
                 {/* Return Curve Header & Timeframe Filter */}
                 <div className="row between" style={{ alignItems: "center", marginBottom: 10 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ink2)" }}>
-                    Cumulative Return Curve ({closedTf})
+                    {closedDisplayMode === "inr" ? "Cumulative Realized Profit (₹)" : "Cumulative Return (%)"} ({closedTf})
                   </div>
                   <div className="rt-curve-tabs">
                     {(["1M", "3M", "6M", "ALL"] as const).map((tf) => (
@@ -3962,15 +4148,21 @@ export default function App() {
                   </div>
                 </div>
               ) : engine === "v2" ? (
-                // V2 Closed Rows (Sorted latest exit first, clear return %, no arbitrary rupee P&L)
+                // V2 Closed Rows with Real Rupee Impact Breakdown
                 sortedClosedTrades.map((t: any, i: number) => {
-                  const pPct = t.pnlPct ?? t.roiPct ?? 0;
+                  const pPct = Number(t.pnlPct ?? t.roiPct ?? 0);
+                  const entryP = Number(t.entry || t.entryPrice || 1);
+                  const exitP = Number(t.exit || t.exitPrice || entryP);
+                  const shares = Math.max(1, Math.floor(closedTradeBet / entryP));
+                  const pnlInr = Math.round(closedTradeBet * (pPct / 100));
+                  const returnedVal = closedTradeBet + pnlInr;
+
                   return (
                     <div
                       key={i}
                       className={`closed-row ${pPct >= 0 ? "win" : "lose"}`}
                       onClick={() => openSheet("closed", t)}
-                      style={{ animationDelay: `${i * 55}ms` }}
+                      style={{ animationDelay: `${Math.min(i, 20) * 40}ms` }}
                     >
                       <div className="cr-top">
                         <div className="av sm" style={{ background: "linear-gradient(135deg,var(--s3),var(--s2))", color: "var(--ink2)" }}>
@@ -3992,14 +4184,20 @@ export default function App() {
                               </span>
                             )}
                           </div>
-                          <div className="cr-path num">{INR(t.entry || t.entryPrice)} <span className="dim">→</span> {INR(t.exit || t.exitPrice)}</div>
+                          <div className="cr-path num">{INR(entryP)} <span className="dim">→</span> {INR(exitP)}</div>
+                          <div className="cr-invest-breakdown">
+                            <span>{INR(closedTradeBet)} invested</span>
+                            <span className="dim">→</span>
+                            <span className="bold-ret">{INR(returnedVal)} returned</span>
+                            <span className="dim">({shares} shs)</span>
+                          </div>
                         </div>
                         <div className="cr-pnl">
-                          <div className={`cr-pct num ${pPct >= 0 ? "up" : "down"}`} style={{ fontSize: 13.5, fontWeight: 700 }}>
-                            {pPct >= 0 ? "+" : ""}{pPct.toFixed(2)}%
+                          <div className={`num ${pPct >= 0 ? "up" : "down"}`} style={{ fontSize: 14.5, fontWeight: 800 }}>
+                            {pnlInr >= 0 ? "+" : ""}{INR(pnlInr)}
                           </div>
-                          <div className="num" style={{ fontSize: 10, color: "var(--ink3)", marginTop: 2 }}>
-                            {(t.r || 1.5).toFixed(2)}R
+                          <div className="num" style={{ fontSize: 10.5, color: pPct >= 0 ? "var(--profit)" : "var(--loss)", marginTop: 2, fontWeight: 700 }}>
+                            {pPct >= 0 ? "+" : ""}{pPct.toFixed(2)}% · {(t.r || 1.5).toFixed(1)}R
                           </div>
                         </div>
                       </div>
@@ -4013,19 +4211,25 @@ export default function App() {
                   );
                 })
               ) : (
-                // V3 Closed Cards
+                // V3 Closed Cards with Real Rupee Impact Breakdown
                 sortedClosedTrades.map((t: any, i: number) => {
-                  const pPct = t.pnlPct ?? t.roiPct ?? 0;
+                  const pPct = Number(t.pnlPct ?? t.roiPct ?? 0);
+                  const entryP = Number(t.entry || 120);
+                  const exitP = Number(t.exit || 148);
+                  const shares = Math.max(1, Math.floor(closedTradeBet / entryP));
+                  const pnlInr = Math.round(closedTradeBet * (pPct / 100));
+                  const returnedVal = closedTradeBet + pnlInr;
+
                   const overlays = [
-                    { price: t.entry || 120, color: "var(--profit)", label: "ENTRY", dash: "3 3" },
-                    { price: t.exit || 148, color: "var(--loss)", label: "EXIT", dash: "3 3" },
+                    { price: entryP, color: "var(--profit)", label: "ENTRY", dash: "3 3" },
+                    { price: exitP, color: "var(--loss)", label: "EXIT", dash: "3 3" },
                   ];
                   return (
                     <div
                       key={i}
                       className="trade-v"
                       onClick={() => openSheet("closed", t)}
-                      style={{ animationDelay: `${i * 70}ms`, padding: 16 }}
+                      style={{ animationDelay: `${Math.min(i, 20) * 40}ms`, padding: 16 }}
                     >
                       <div className="row between" style={{ alignItems: "flex-start" }}>
                         <div className="row gap10">
@@ -4035,16 +4239,22 @@ export default function App() {
                           <div>
                             <div style={{ fontSize: 13.5, fontWeight: 800 }}>{t.sym || t.symbol}</div>
                             <div className="num" style={{ fontSize: 10.5, color: "var(--ink2)", marginTop: 3 }}>
-                              {INR(t.entry || t.entryPrice)} → {INR(t.exit || t.exitPrice)}
+                              {INR(entryP)} → {INR(exitP)}
+                            </div>
+                            <div className="cr-invest-breakdown">
+                              <span>{INR(closedTradeBet)} invested</span>
+                              <span className="dim">→</span>
+                              <span className="bold-ret">{INR(returnedVal)} returned</span>
+                              <span className="dim">({shares} shs)</span>
                             </div>
                           </div>
                         </div>
                         <div style={{ textAlign: "right" }}>
-                          <div className={`num ${pPct >= 0 ? "up" : "down"}`} style={{ fontSize: 14, fontWeight: 700 }}>
-                            {pPct >= 0 ? "+" : ""}{pPct.toFixed(2)}%
+                          <div className={`num ${pPct >= 0 ? "up" : "down"}`} style={{ fontSize: 14.5, fontWeight: 800 }}>
+                            {pnlInr >= 0 ? "+" : ""}{INR(pnlInr)}
                           </div>
-                          <div className="num" style={{ fontSize: 10, color: "var(--ink3)", marginTop: 3 }}>
-                            {(t.r || 1.8).toFixed(2)}R · {t.days || 30}d
+                          <div className="num" style={{ fontSize: 10.5, color: pPct >= 0 ? "var(--profit)" : "var(--loss)", marginTop: 2, fontWeight: 700 }}>
+                            {pPct >= 0 ? "+" : ""}{pPct.toFixed(2)}% · {(t.r || 1.8).toFixed(1)}R
                           </div>
                         </div>
                       </div>
