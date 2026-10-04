@@ -37,6 +37,19 @@ const INR2 = (n: number) =>
   "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const pct = (n: number) => ((n || 0) >= 0 ? "+" : "−") + Math.abs(n || 0).toFixed(2) + "%";
 
+// Formats closed trade PnL with crore support (e.g. +₹1.25 Cr) without breaking layout
+const fmtClosedPnl = (val: number): string => {
+  const num = Number(val || 0);
+  const abs = Math.abs(num);
+  const sign = num >= 0 ? "+" : "−";
+  if (abs >= 10000000) {
+    const cr = abs / 10000000;
+    return `${sign}₹${cr.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr`;
+  }
+  return `${sign}₹${Math.round(abs).toLocaleString("en-IN")}`;
+};
+
+
 function parseTradeDate(d: any): Date {
   if (!d) return new Date("2026-09-18");
   if (d instanceof Date) return d;
@@ -3982,33 +3995,49 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Primary Return Headline */}
-                <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink2)", marginBottom: 5, lineHeight: 1.45 }}>
+                {/* Primary Return Headline (100% Unbreakable, Crore-Safe Layout) */}
+                <div className="closed-pnl-headline-block">
+                  <div className="closed-pnl-lead-text">
                     If you invested <span style={{ color: "var(--accent)", fontWeight: 800 }}>{INR(closedTradeBet)}</span> per every call from starting 2026, you made the profit of:
                   </div>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 2 }}>
-                    <span style={{
-                      fontSize: 32,
-                      fontWeight: 900,
-                      color: (closedDisplayMode === "inr" ? closedStats.totalRealizedPnl : closedCurveData.periodReturn) >= 0 ? "var(--profit)" : "var(--loss)",
-                      letterSpacing: "-.03em",
-                      fontVariantNumeric: "tabular-nums"
-                    }}>
-                      {closedDisplayMode === "inr"
-                        ? `${closedStats.totalRealizedPnl >= 0 ? "+" : ""}${INR(closedStats.totalRealizedPnl)}`
-                        : `${closedCurveData.periodReturn >= 0 ? "+" : ""}${closedCurveData.periodReturn.toFixed(1)}%`}
-                    </span>
-                    <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--profit)" }}>
-                      ({closedStats.winRate.toFixed(1)}% Win Rate · {closedStats.wins}W / {closedStats.losses}L)
-                    </span>
+
+                  <div className="closed-pnl-main-row">
+                    <div className="closed-pnl-val-wrap">
+                      <span className={`closed-pnl-val ${(closedDisplayMode === "inr" ? closedStats.totalRealizedPnl : closedCurveData.periodReturn) >= 0 ? "profit" : "loss"}`}>
+                        {closedDisplayMode === "inr"
+                          ? fmtClosedPnl(closedStats.totalRealizedPnl)
+                          : `${closedCurveData.periodReturn >= 0 ? "+" : "−"}${Math.abs(closedCurveData.periodReturn).toFixed(1)}%`}
+                      </span>
+                      {closedDisplayMode === "inr" && Math.abs(closedStats.totalRealizedPnl) >= 10000000 && (
+                        <span className="closed-pnl-exact-sub">
+                          ({closedStats.totalRealizedPnl >= 0 ? "+" : "−"}{INR(Math.abs(closedStats.totalRealizedPnl))})
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="closed-pnl-badge-wrap">
+                      <span className="closed-winrate-pill">
+                        <span className="closed-winrate-dot" />
+                        {closedStats.winRate.toFixed(1)}% Win Rate
+                      </span>
+                      <span className="closed-wl-pill">
+                        {closedStats.wins}W / {closedStats.losses}L
+                      </span>
+                    </div>
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--ink3)", marginTop: 4, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span>Across</span>
-                    <span style={{ color: "var(--ink1)", fontWeight: 800 }}>{closedStats.totalTrades} closed signals</span>
-                    <span>· Avg</span>
-                    <span style={{ color: "var(--profit)", fontWeight: 700 }}>+{closedStats.avgReturn.toFixed(2)}%</span>
-                    <span>/ trade · {closedStats.profitFactor.toFixed(2)}x Profit Factor</span>
+
+                  <div className="closed-pnl-metrics-strip">
+                    <span className="closed-pnl-metric-item">
+                      Across <b>{closedStats.totalTrades} closed signals</b>
+                    </span>
+                    <span className="closed-pnl-metric-sep">•</span>
+                    <span className="closed-pnl-metric-item">
+                      Avg <b className="text-profit">+{closedStats.avgReturn.toFixed(2)}%</b> / trade
+                    </span>
+                    <span className="closed-pnl-metric-sep">•</span>
+                    <span className="closed-pnl-metric-item">
+                      <b>{closedStats.profitFactor.toFixed(2)}x</b> Profit Factor
+                    </span>
                   </div>
                 </div>
 
