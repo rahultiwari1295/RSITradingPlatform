@@ -537,19 +537,25 @@
 /* ── FULL-WIDTH HORIZONTAL SNAP CAROUSEL ─────────────────────────────────── */
 .featured-breakouts-carousel {
   display: flex;
-  gap: 12px;
+  gap: 14px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  padding: 2px 1px 8px;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
+  padding: 4px 2px 14px;
 }
 .featured-breakouts-carousel::-webkit-scrollbar { display: none; }
 
 .breakout-master-card {
   flex: 0 0 100%;
+  width: 100%;
+  min-width: 100%;
   max-width: 100%;
-  scroll-snap-align: center;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
   box-sizing: border-box;
   border-radius: 20px;
   padding: 18px;
@@ -1258,8 +1264,11 @@
 /* ── The Master Luxury Card ──────────────────────────────────────────────── */
 .ai-luxury-card {
   flex: 0 0 100%;
+  width: 100%;
+  min-width: 100%;
   max-width: 100%;
-  scroll-snap-align: center;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
   box-sizing: border-box;
   border-radius: 24px;
   padding: 24px;
@@ -1812,6 +1821,31 @@
   box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
 }
 
+.ai-luxury-footer.clean {
+  display: flex;
+  align-items: center;
+  justify-content: stretch;
+  padding-top: 14px;
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+[data-theme="dark"] .ai-luxury-footer.clean {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.lux-btn.full-width {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 20px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  border-radius: 12px;
+}
+
 /* ── Responsive Adaptations ──────────────────────────────────────────────── */
 @media (max-width: 680px) {
   .ai-luxury-card {
@@ -1821,31 +1855,12 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
   }
-  .ai-luxury-footer {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-  .ai-luxury-stats {
-    justify-content: flex-start;
-  }
-  .ai-luxury-buttons {
-    width: 100%;
-    display: grid;
-    grid-template-columns: 1fr 1.3fr;
-  }
-  .lux-btn {
-    width: 100%;
-    padding: 10px 8px;
-    font-size: 11px;
+  .lux-btn.full-width {
+    padding: 12px 16px;
+    font-size: 12px;
   }
 }
 
-@media (max-width: 420px) {
-  .ai-luxury-buttons {
-    grid-template-columns: 1fr;
-  }
-}
 
 /* ── 5. INSTITUTIONAL STOCK DNA PR HERO SEARCH ───────────────────────── */
 .stock-dna-pr-hero {

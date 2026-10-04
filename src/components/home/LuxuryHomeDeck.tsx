@@ -407,26 +407,6 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
     });
   }, [liveBreakouts, livePrices]);
 
-  // Auto-peek nudge animation on load so user intuitively understands it's scrollable
-  useEffect(() => {
-    if (!isBreakoutsLoading && featuredBreakouts.length > 1 && carouselRef.current) {
-      const el = carouselRef.current;
-      const nudgeTimer = setTimeout(() => {
-        const cardWidth = el.offsetWidth;
-        const nudgeDist = Math.min(95, Math.round(cardWidth * 0.18));
-        el.scrollTo({ left: nudgeDist, behavior: "smooth" });
-
-        const returnTimer = setTimeout(() => {
-          el.scrollTo({ left: 0, behavior: "smooth" });
-        }, 600);
-
-        return () => clearTimeout(returnTimer);
-      }, 450);
-
-      return () => clearTimeout(nudgeTimer);
-    }
-  }, [isBreakoutsLoading, featuredBreakouts.length]);
-
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const clean = searchQuery.trim().toUpperCase();
@@ -439,9 +419,10 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
   const scrollToCard = (index: number) => {
     setActiveCardIdx(index);
     if (carouselRef.current) {
-      const card = carouselRef.current.children[index] as HTMLElement;
+      const el = carouselRef.current;
+      const card = el.children[index] as HTMLElement;
       if (card) {
-        card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        el.scrollTo({ left: card.offsetLeft - el.offsetLeft, behavior: "smooth" });
       }
     }
   };
@@ -450,11 +431,15 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
     if (!carouselRef.current) return;
     const el = carouselRef.current;
     const scrollLeft = el.scrollLeft;
-    const cardWidth = el.offsetWidth;
-    if (cardWidth > 0) {
-      const idx = Math.round(scrollLeft / cardWidth);
-      if (idx >= 0 && idx < featuredBreakouts.length && idx !== activeCardIdx) {
-        setActiveCardIdx(idx);
+    if (el.children.length > 1) {
+      const firstCard = el.children[0] as HTMLElement;
+      const secondCard = el.children[1] as HTMLElement;
+      const step = secondCard ? (secondCard.offsetLeft - firstCard.offsetLeft) : el.offsetWidth;
+      if (step > 0) {
+        const idx = Math.min(featuredBreakouts.length - 1, Math.max(0, Math.round(scrollLeft / step)));
+        if (idx !== activeCardIdx) {
+          setActiveCardIdx(idx);
+        }
       }
     }
   };
@@ -462,9 +447,10 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
   const scrollToAiCard = (index: number) => {
     setActiveAiCardIdx(index);
     if (aiCarouselRef.current) {
-      const card = aiCarouselRef.current.children[index] as HTMLElement;
+      const el = aiCarouselRef.current;
+      const card = el.children[index] as HTMLElement;
       if (card) {
-        card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        el.scrollTo({ left: card.offsetLeft - el.offsetLeft, behavior: "smooth" });
       }
     }
   };
@@ -473,11 +459,15 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
     if (!aiCarouselRef.current) return;
     const el = aiCarouselRef.current;
     const scrollLeft = el.scrollLeft;
-    const cardWidth = el.offsetWidth;
-    if (cardWidth > 0) {
-      const idx = Math.round(scrollLeft / cardWidth);
-      if (idx >= 0 && idx < aiBuyCalls.length && idx !== activeAiCardIdx) {
-        setActiveAiCardIdx(idx);
+    if (el.children.length > 1) {
+      const firstCard = el.children[0] as HTMLElement;
+      const secondCard = el.children[1] as HTMLElement;
+      const step = secondCard ? (secondCard.offsetLeft - firstCard.offsetLeft) : el.offsetWidth;
+      if (step > 0) {
+        const idx = Math.min(aiBuyCalls.length - 1, Math.max(0, Math.round(scrollLeft / step)));
+        if (idx !== activeAiCardIdx) {
+          setActiveAiCardIdx(idx);
+        }
       }
     }
   };
@@ -798,7 +788,6 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
                           {b.isV3 ? "⚡ AI SNIPER (V3)" : "★ AI PRO (V2)"}
                         </span>
                       </div>
-                      <div className="ai-luxury-company">{b.name} · {b.sector}</div>
                     </div>
 
                     <div className="ai-luxury-conviction-badge">
@@ -810,21 +799,7 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
                     </div>
                   </div>
 
-                  {/* 2. Strategy & Live Status Row */}
-                  <div className="ai-luxury-status-row">
-                    <div className="ai-lux-strategy-block">
-                      <span className="ai-lux-strategy-lead">Strategy:</span>
-                      <span className="ai-lux-strategy-name">{b.strategy}</span>
-                    </div>
-                    <div className="ai-lux-live-block">
-                      <span className="ai-lux-live-dot" />
-                      <span className="ai-lux-live-text">
-                        AI BUY CALL ACTIVE {b.diffPct ? `(${Number(b.diffPct) >= 0 ? `+${b.diffPct}%` : `${b.diffPct}%`} from Entry)` : "• PRIME BUY ZONE"}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* 3. 4-Pillar Financial Architecture Grid */}
+                  {/* 2. 4-Pillar Financial Architecture Grid */}
                   <div className="ai-luxury-grid">
                     <div className="ai-lux-col entry">
                       <span className="lux-col-label">RECOMMENDED BUY</span>
@@ -850,7 +825,7 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
                     </div>
                   </div>
 
-                  {/* 4. Institutional Quant Thesis (Parsed clean bullet points) */}
+                  {/* 3. Institutional Quant Thesis (Parsed clean bullet points) */}
                   <div className="ai-luxury-thesis-box">
                     <div className="thesis-title-bar">
                       <span className="thesis-star">✦</span>
@@ -866,45 +841,18 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
                     </div>
                   </div>
 
-                  {/* 5. Card Bottom Command Deck */}
-                  <div className="ai-luxury-footer">
-                    <div className="ai-luxury-stats">
-                      <span className="lux-stat-pill">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <path d="M18 20V10M12 20V4M6 20v-6"/>
-                        </svg>
-                        <span>Risk:Reward 1 : {b.rrRatio}</span>
-                      </span>
-                      <span className="lux-stat-pill">
-                        <span>🤖 {b.ml}% ML Probability</span>
-                      </span>
-                    </div>
-
-                    <div className="ai-luxury-buttons">
-                      {onOpenChart && (
-                        <button
-                          type="button"
-                          className="lux-btn secondary"
-                          onClick={() => onOpenChart(b.symbol)}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                          </svg>
-                          <span>View Chart</span>
-                        </button>
-                      )}
-
-                      <button
-                        type="button"
-                        className="lux-btn primary"
-                        onClick={() => onNavigate("signals")}
-                      >
-                        <span>Review in AI BuySell</span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
-                      </button>
-                    </div>
+                  {/* 4. Card Bottom Command Action */}
+                  <div className="ai-luxury-footer clean">
+                    <button
+                      type="button"
+                      className="lux-btn primary full-width"
+                      onClick={() => onNavigate("signals")}
+                    >
+                      <span>Review in AI BuySell</span>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                      </svg>
+                    </button>
                   </div>
                 </div>
               ))}
