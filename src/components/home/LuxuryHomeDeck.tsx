@@ -30,10 +30,34 @@ const fmtPrice = (val: any): string => {
   return `₹${Number(val).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
-// Formats raw concatenated reason strings into clean, elegant institutional bullet insights
-const formatThesisItems = (raw: string): string[] => {
-  if (!raw) return ["Institutional quantitative setup validated through strict risk-reward criteria."];
-  const formatted = raw
+// Formats raw reason strings into clean, elegant institutional bullet insights (100% crash-proof)
+const formatThesisItems = (raw: any): string[] => {
+  const fallback = ["Institutional quantitative setup validated through strict risk-reward criteria."];
+  if (raw == null) return fallback;
+
+  // If already an array, flatten and format each element safely
+  if (Array.isArray(raw)) {
+    const list = raw
+      .map(item => (typeof item === "string" ? item.trim() : typeof item === "object" && item !== null ? (item.text || item.desc || JSON.stringify(item)) : String(item || "")))
+      .filter(s => s && s.trim().length > 0);
+    return list.length > 0 ? list : fallback;
+  }
+
+  // Convert to string safely if object, number, or boolean
+  let text = "";
+  if (typeof raw === "string") {
+    text = raw;
+  } else if (typeof raw === "object") {
+    text = raw.text || raw.thesis || raw.why || raw.reason || raw.summary || JSON.stringify(raw);
+  } else {
+    text = String(raw);
+  }
+
+  text = text.trim();
+  if (!text || text === "{}" || text === "[]") return fallback;
+
+  // Clean raw concatenated sentence joins safely
+  const formatted = text
     .replace(/risk-rewardRelative/gi, "risk-reward. Relative")
     .replace(/universeSector/gi, "universe. Sector")
     .replace(/inflowsML/gi, "inflows. ML")
@@ -42,12 +66,13 @@ const formatThesisItems = (raw: string): string[] => {
     .replace(/highRelative/gi, "high. Relative");
 
   const sentences = formatted
-    .split(/(?<=[.!?])\s+/)
-    .map(s => s.trim().replace(/^[-•*]\s*/, ""))
-    .filter(s => s.length > 5);
+    .split(/(?<=[.!?])\s+|(?=[A-Z][a-z]+:)/)
+    .map(s => String(s || "").trim().replace(/^[-•*›\s]+/, ""))
+    .filter(s => s.length > 4);
 
-  return sentences.length > 0 ? sentences : [raw];
+  return sentences.length > 0 ? sentences : [text];
 };
+
 
 // Curated breakout setups (zero fake hardcoded prices)
 const FEATURED_BREAKOUT_DATA = [
@@ -251,6 +276,22 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
         const score = Number(item.compositeScore || item.comp || item.dnaScore || item.ml || (isV3 ? 92 : 88));
         const ml = Number(item.ml || item.mlProbability || (isV3 ? 90 : 75));
         
+        // Safely extract institutional rationale (always a safe string)
+        let safeWhy = "";
+        if (typeof item.why === "string" && item.why.trim().length > 0) {
+          safeWhy = item.why;
+        } else if (Array.isArray(item.why) && item.why.length > 0) {
+          safeWhy = item.why.map((w: any) => typeof w === "string" ? w : JSON.stringify(w)).join(". ");
+        } else if (typeof item.thesis === "string" && item.thesis.trim().length > 0) {
+          safeWhy = item.thesis;
+        } else if (typeof item.rationale === "string" && item.rationale.trim().length > 0) {
+          safeWhy = item.rationale;
+        } else {
+          safeWhy = isV3 
+            ? "Institutional 52W high breakout with high volumetric accumulation and strict trailing floor." 
+            : "High-probability Stage-2 continuation breakout with institutional volume expansion.";
+        }
+
         list.push({
           symbol: sym,
           name: item.name || item.companyName || sym,
@@ -268,7 +309,7 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
           score,
           ml,
           starsDisplay: item.starsDisplay || (isV3 ? "★★★★★" : "★★★★☆"),
-          why: item.why || (isV3 ? "Institutional 52W high breakout with high volumetric accumulation and strict trailing floor." : "High-probability Stage-2 continuation breakout with institutional volume expansion."),
+          why: safeWhy,
           raw: item
         });
       }

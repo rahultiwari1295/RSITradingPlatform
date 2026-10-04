@@ -298,7 +298,7 @@ export default function ClosedTradesLedger({
                         </span>
                       </td>
                       <td className="py-3 px-3 text-[11px] text-slate-600 dark:text-slate-300 font-medium">
-                        {(trade.exitReason || "TARGET_HIT").replace(/_/g, " ")}
+                        {String(trade.exitReason || "TARGET_HIT").replace(/_/g, " ")}
                       </td>
                       <td className="py-3 px-3 font-mono text-xs font-semibold text-slate-600 dark:text-slate-300">
                         {days}d

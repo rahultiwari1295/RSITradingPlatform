@@ -1177,7 +1177,7 @@ function normalizeActiveTrade(t: any, idx: number, eng: "v2" | "v3") {
   };
 }
 
-function formatExitReason(r: string) {
+function formatExitReason(r: any) {
   if (!r) return "Target Hit";
   const s = String(r).toUpperCase();
   if (s.includes("VOL_DIST")) return "Vol Guard 🛡️";
@@ -1185,7 +1185,7 @@ function formatExitReason(r: string) {
   if (s.includes("TARGET")) return "Target Hit 🎯";
   if (s.includes("STOP")) return "Stop Loss 🛑";
   if (s.includes("TRAIL")) return "Trailing Stop 📈";
-  return r.replace(/_/g, " ");
+  return String(r).replace(/_/g, " ");
 }
 
 function normalizeClosedTrade(t: any, idx: number) {

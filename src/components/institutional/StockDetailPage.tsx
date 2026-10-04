@@ -153,7 +153,7 @@ export default function StockDetailPage({
     actionDesc = item.exitReason && reasonMap[item.exitReason]
       ? reasonMap[item.exitReason]
       : item.exitReason
-      ? `Exit triggered due to: ${item.exitReason.replace(/_/g, " ")}`
+      ? `Exit triggered due to: ${String(item.exitReason).replace(/_/g, " ")}`
       : isRoiPositive
       ? "Position closed at target exit price."
       : "Position closed to protect principal capital.";

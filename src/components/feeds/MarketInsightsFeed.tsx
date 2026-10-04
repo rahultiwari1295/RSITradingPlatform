@@ -171,7 +171,7 @@ export const MarketInsightsFeed: React.FC<MarketInsightsFeedProps> = ({
                       }`}
                     >
                       <TrendingUp className="w-3 h-3" />
-                      <span>{item.sentiment.replace("_", " ")}</span>
+                      <span>{String(item.sentiment || "").replace("_", " ")}</span>
                     </span>
 
                     {/* Impact Estimate */}
