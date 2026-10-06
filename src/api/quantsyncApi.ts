@@ -258,9 +258,9 @@ export const quantsyncApi = {
       `/api/scanner-report?version=${version}${date ? `&date=${date}` : ""}`
     ),
 
-  getPatterns: (date?: string, patternType: string = "all") =>
+  getPatterns: (date?: string, patternType: string = "all", timeframe: string = "all") =>
     apiFetch<{ date: string; total: number; sections: PatternSection[] }>(
-      `/api/v3/patterns?pattern_type=${patternType}${date ? `&date=${date}` : ""}`
+      `/api/v3/patterns?pattern_type=${patternType}&timeframe=${timeframe}${date ? `&date=${date}` : ""}`
     ),
 
   getBreakouts: (date?: string, sort: string = "score") =>

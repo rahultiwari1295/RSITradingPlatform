@@ -1614,6 +1614,7 @@ export default function App() {
   const [feedItems, setFeedItems] = useState<ActivityFeedItem[]>(DEMO_FEED as any);
   const [scannerReport, setScannerReport] = useState<ScannerReport | null>(null);
   const [patterns, setPatterns] = useState<PatternSection[]>(DEMO_PATTERNS as any);
+  const [patternTimeframe, setPatternTimeframe] = useState<string>("all");
   const [breakouts, setBreakouts] = useState<BreakoutItem[]>(DEMO_BREAKOUTS as any);
   const [marketPulse, setMarketPulse] = useState<MarketPulseData | null>(null);
   const [sectorsData, setSectorsData] = useState<Array<{ name: string; disp_value?: string; change_pct: number; color?: string }>>([]);
@@ -1815,7 +1816,7 @@ export default function App() {
   // Fetch real V3 patterns and breakouts on-demand when charts/scanner/portal tabs are active
   useEffect(() => {
     if (activeTab === "charts") {
-      quantsyncApi.getPatterns().then((res) => {
+      quantsyncApi.getPatterns(undefined, "all", patternTimeframe).then((res) => {
         if (res && res.sections && res.sections.length > 0) {
           setPatterns(res.sections);
         }
@@ -1827,7 +1828,7 @@ export default function App() {
         }
       }).catch((e) => console.warn("Failed to load live breakouts:", e));
     }
-  }, [activeTab, chartSub]);
+  }, [activeTab, chartSub, patternTimeframe]);
 
   // Performance optimization: Lazy-mount offscreen tab components so unvisited tabs
   // do not trigger heavy backend queries, iframes, or chart rendering on initial home load
@@ -4676,28 +4677,28 @@ export default function App() {
                   <div className="card" style={{ padding: "14px 15px", marginBottom: 16 }}>
                     <div className="row between">
                       <div className="micro">📐 Pattern Scanner</div>
-                      <span className="pill green" style={{ fontSize: 9 }}>Live · 1,318</span>
+                      <span className="pill green" style={{ fontSize: 9 }}>Live · Multi-Timeframe</span>
                     </div>
                     <div className="chips" style={{ marginTop: 12 }}>
-                      <button className="chip on">All</button>
-                      <button className="chip">Base</button>
-                      <button className="chip">52W High</button>
-                      <button className="chip">Darvas</button>
-                      <button className="chip">HTF</button>
-                      <button className="chip">Cup</button>
+                      <button className={`chip ${patternTimeframe === "all" ? "on" : ""}`} onClick={() => setPatternTimeframe("all")}>All Timeframes</button>
+                      <button className={`chip ${patternTimeframe === "daily" ? "on" : ""}`} onClick={() => setPatternTimeframe("daily")}>⚡ 1D Daily</button>
+                      <button className={`chip ${patternTimeframe === "weekly" ? "on" : ""}`} onClick={() => setPatternTimeframe("weekly")}>🏛️ 1W Weekly (1-2Y)</button>
+                      <button className={`chip ${patternTimeframe === "monthly" ? "on" : ""}`} onClick={() => setPatternTimeframe("monthly")}>👑 1M Monthly (3-5Y)</button>
                     </div>
                   </div>
 
                   {patterns.map((p, pidx) => (
                     <div key={pidx}>
                       <div className="sec-head" style={{ marginTop: 20 }}>
-                        <span className="micro">{p.name} <span style={{ color: "var(--accent)" }}>({p.count} today)</span></span>
+                        <span className="micro">{p.name} <span style={{ color: "var(--accent)" }}>({p.count} setups)</span></span>
                       </div>
                       <div className="pattern-grid">
                         {p.items.map((it, itIdx) => {
                           const sym = (it.s || it.symbol || "").toUpperCase();
                           const live = livePrices?.[sym]?.price;
                           const currentCmp = live || it.currentPrice;
+                          const tfBadge = it.timeframe === "MONTHLY" ? "1M" : it.timeframe === "WEEKLY" ? "1W" : "1D";
+                          const baseYears = it.base_duration_years ? `${Number(it.base_duration_years).toFixed(1)}y` : it.base;
                           return (
                           <div
                             key={itIdx}
@@ -4709,7 +4710,12 @@ export default function App() {
                             }}
                           >
                             <div className="row between">
-                              <span className="nm">{it.s || it.symbol}</span>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <span className="nm">{it.s || it.symbol}</span>
+                                <span className="pill" style={{ fontSize: 8.5, padding: "2px 5px", background: it.timeframe === "MONTHLY" ? "rgba(6,182,212,0.18)" : it.timeframe === "WEEKLY" ? "rgba(139,92,246,0.18)" : "var(--s3)" }}>
+                                  {tfBadge}
+                                </span>
+                              </div>
                               <div style={{ textAlign: "right" }}>
                                 <span className="sc">{it.score}</span>
                                 {currentCmp && (
@@ -4723,7 +4729,7 @@ export default function App() {
                               {renderCandlesSVG(it.miniCandles || [], { w: 140, h: 60, padT: 6, padB: 6, glowLast: 2 })}
                             </div>
                             <div className="mt">
-                              <span>Base {it.base}</span>
+                              <span>Base {baseYears}</span>
                               <span>Vol {it.vol}</span>
                             </div>
                           </div>

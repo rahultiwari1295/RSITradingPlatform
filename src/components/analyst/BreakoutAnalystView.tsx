@@ -23,6 +23,11 @@ export interface BreakoutStockData {
   why?: string;
   w52Low?: number;
   w52High?: number;
+  timeframe?: string;
+  baseDurationYears?: number;
+  base_duration_years?: number;
+  lifecycleState?: string;
+  lifecycle_state?: string;
 }
 
 interface BreakoutAnalystViewProps {
@@ -38,7 +43,12 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
   onClose,
   onNavigateDna
 }) => {
-  const [dnaTimeframe, setDnaTimeframe] = useState<"tactical" | "macro">("tactical");
+  const initialTf = (stock.timeframe || "").toUpperCase() === "MONTHLY"
+    ? "monthly"
+    : (stock.timeframe || "").toUpperCase() === "WEEKLY"
+    ? "macro"
+    : "tactical";
+  const [dnaTimeframe, setDnaTimeframe] = useState<"tactical" | "macro" | "monthly">(initialTf);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [apiData, setApiData] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -186,6 +196,18 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
     ? `+${(((targetPrice - entryPrice) / entryPrice) * 100).toFixed(1)}% Potential`
     : "";
 
+  const isTargetAchieved = apiData?.lifecycle_state === "TARGET_ACHIEVED" ||
+    stock.lifecycle_state === "TARGET_ACHIEVED" ||
+    stock.lifecycleState === "TARGET_ACHIEVED" ||
+    String(stock.stage || "").includes("Target Achieved") ||
+    String(apiData?.action_title || "").includes("Target Achieved");
+
+  const rawTf = (apiData?.timeframe || stock.timeframe || "").toUpperCase();
+  const timeframeTag = rawTf === "MONTHLY" ? "👑 1M Generational" : rawTf === "WEEKLY" ? "🏛️ 1W Structural" : rawTf === "DAILY" ? "⚡ 1D Tactical" : null;
+
+  const rawBaseYears = Number(apiData?.base_duration_years ?? stock.base_duration_years ?? stock.baseDurationYears ?? 0);
+  const baseDurationStr = rawBaseYears >= 0.5 ? `${rawBaseYears.toFixed(1)}y Base` : null;
+
   // Dynamic Good & Bad Points strictly from engine or factual metrics
   const apiGood: string[] = apiData?.why_buy_reasons && Array.isArray(apiData.why_buy_reasons) ? apiData.why_buy_reasons : [];
   const apiBad: string[] = apiData?.why_avoid_reasons && Array.isArray(apiData.why_avoid_reasons) ? apiData.why_avoid_reasons : [];
@@ -317,6 +339,8 @@ ChartAnalysis : ${websiteLink}`;
     const script = document.createElement("script");
     script.type = "text/javascript";
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+    const tvInterval = dnaTimeframe === "monthly" ? "M" : dnaTimeframe === "macro" ? "W" : "D";
+
     script.async = true;
     script.innerHTML = JSON.stringify({
       allow_symbol_change: true,
@@ -327,7 +351,7 @@ ChartAnalysis : ${websiteLink}`;
       hide_legend: false,
       hide_volume: false,
       hotlist: false,
-      interval: "D",
+      interval: tvInterval,
       locale: "en",
       save_image: true,
       style: "1",
@@ -346,7 +370,7 @@ ChartAnalysis : ${websiteLink}`;
 
     widgetWrap.appendChild(script);
     tvContainerRef.current.appendChild(widgetWrap);
-  }, [loading, cleanSymbol, theme]);
+  }, [loading, cleanSymbol, theme, dnaTimeframe]);
 
   // ── 2. ENGAGING RADAR LOADING SCREEN (From Signal / Breakout Page) ─────────
   if (loading) {
@@ -485,11 +509,26 @@ ChartAnalysis : ${websiteLink}`;
             <span className="dna-pill bse-pill">BSE Equities</span>
             <span className="dna-pill pattern-pill">{patternName}</span>
             <span className="dna-pill cap-pill">{sector}</span>
+            {timeframeTag && (
+              <span className="dna-pill tf-pill" style={{ background: "rgba(139,92,246,0.18)", color: "#A78BFA", border: "1px solid rgba(139,92,246,0.3)", fontWeight: 700 }}>
+                {timeframeTag}
+              </span>
+            )}
+            {baseDurationStr && (
+              <span className="dna-pill duration-pill" style={{ background: "rgba(6,182,212,0.18)", color: "#22D3EE", border: "1px solid rgba(6,182,212,0.3)", fontWeight: 700 }}>
+                ⏳ {baseDurationStr}
+              </span>
+            )}
+            {isTargetAchieved && (
+              <span className="dna-pill target-hit-pill" style={{ background: "rgba(16,185,129,0.2)", color: "#10B981", border: "1px solid rgba(16,185,129,0.4)", fontWeight: 700 }}>
+                🎯 Target Achieved · Profit Booked
+              </span>
+            )}
           </div>
 
           <div className="dna-verified-strip">
-            <span className="spark-bolt">⚡</span>
-            <span>Live Analysis · {new Date().toLocaleDateString("en-CA")}</span>
+            <span className="spark-bolt">{isTargetAchieved ? "🎯" : "⚡"}</span>
+            <span>{isTargetAchieved ? "Completed Setup · Target Reached & Profit Booked" : `Live Analysis · ${new Date().toLocaleDateString("en-CA")}`}</span>
           </div>
 
           <h1 className="dna-stock-massive-title">{cleanSymbol}</h1>
@@ -527,7 +566,7 @@ ChartAnalysis : ${websiteLink}`;
               <span className="level-val gold">{fmtCurrency(entryPrice)}</span>
             </div>
             <div className="level-pod target-pod">
-              <span className="level-lbl">TARGET</span>
+              <span className="level-lbl">{isTargetAchieved ? "TARGET (REACHED ✓)" : "TARGET"}</span>
               <span className="level-val profit">{fmtCurrency(targetPrice)}</span>
             </div>
             <div className="level-pod sl-pod">
@@ -550,14 +589,21 @@ ChartAnalysis : ${websiteLink}`;
                 className={`chart-tf-btn ${dnaTimeframe === "tactical" ? "active" : ""}`}
                 onClick={() => setDnaTimeframe("tactical")}
               >
-                4M Tactical
+                1D Tactical
               </button>
               <button
                 type="button"
                 className={`chart-tf-btn ${dnaTimeframe === "macro" ? "active" : ""}`}
                 onClick={() => setDnaTimeframe("macro")}
               >
-                1Y Macro
+                1W Structural
+              </button>
+              <button
+                type="button"
+                className={`chart-tf-btn ${dnaTimeframe === "monthly" ? "active" : ""}`}
+                onClick={() => setDnaTimeframe("monthly")}
+              >
+                1M Generational (3-5Y)
               </button>
             </div>
           </div>

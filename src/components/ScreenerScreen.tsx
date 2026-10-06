@@ -183,12 +183,19 @@ export function getBreakoutClassification(s: any) {
   const diffAbs = Math.abs(diffPct);
   const targetGainPct = (tgt > 0 && cmp > 0) ? ((tgt - cmp) / cmp * 100) : null;
 
-  const isMissed = diffAbs > 5.0;
-  const isSkip = !isMissed && targetGainPct !== null && targetGainPct < 5.0;
-  const isGoodToBuy = !isMissed && !isSkip;
+  const isTargetHit = s.lifecycle_state === "TARGET_ACHIEVED" ||
+    String(s.action_title || "").includes("Target Achieved") ||
+    String(s.stage || "").includes("Target Achieved") ||
+    s.stance === "NEUTRAL" ||
+    (tgt > 0 && cmp >= tgt && brk > 0 && tgt > brk);
 
-  let status: "BUY" | "MISSED" | "SKIP" = "BUY";
-  if (isMissed) status = "MISSED";
+  const isMissed = diffAbs > 5.0 || isTargetHit;
+  const isSkip = !isMissed && targetGainPct !== null && targetGainPct < 5.0;
+  const isGoodToBuy = !isMissed && !isSkip && !isTargetHit;
+
+  let status: "BUY" | "MISSED" | "SKIP" | "TARGET_ACHIEVED" = "BUY";
+  if (isTargetHit) status = "TARGET_ACHIEVED";
+  else if (isMissed) status = "MISSED";
   else if (isSkip) status = "SKIP";
 
   return {
@@ -202,7 +209,8 @@ export function getBreakoutClassification(s: any) {
     status,
     isGoodToBuy,
     isMissed,
-    isSkip
+    isSkip,
+    isTargetHit
   };
 }
 
@@ -235,6 +243,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
   const [actionFilter, setActionFilter] = useState<"ALL" | "BUY" | "MISSED" | "SKIP">("ALL");
   const [nearFilter, setNearFilter] = useState<"ALL" | "HOT" | "MID" | "FAR">("ALL");
   const [mcapFilter, setMcapFilter] = useState<string>("ALL");
+  const [timeframeFilter, setTimeframeFilter] = useState<"ALL" | "DAILY" | "WEEKLY" | "MONTHLY">("ALL");
   const [expandedOlder, setExpandedOlder] = useState<boolean>(false);
 
   const [loading, setLoading] = useState<boolean>(() => {
@@ -474,6 +483,19 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
     return counts;
   }, [patternFilteredStocks, activeTab, actionFilter, nearFilter]);
 
+  // Dynamic Timeframe counts across filtered set
+  const timeframeCounts = useMemo(() => {
+    const counts: Record<string, number> = { ALL: 0, DAILY: 0, WEEKLY: 0, MONTHLY: 0 };
+    patternFilteredStocks.forEach((s) => {
+      counts.ALL++;
+      const tf = (s.timeframe || "DAILY").toUpperCase();
+      if (tf === "MONTHLY") counts.MONTHLY++;
+      else if (tf === "WEEKLY") counts.WEEKLY++;
+      else counts.DAILY++;
+    });
+    return counts;
+  }, [patternFilteredStocks]);
+
   // Timeline grouping for Confirmed Breakout: Latest Day -> Oldest Day within 1 week, and collapsed older section
   const { timelineGroups, olderSetups } = useMemo(() => {
     if (activeTab !== "success") {
@@ -481,6 +503,9 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
     }
 
     let list = [...patternFilteredStocks];
+    if (timeframeFilter !== "ALL") {
+      list = list.filter((s) => (s.timeframe || "DAILY").toUpperCase() === timeframeFilter);
+    }
     if (actionFilter !== "ALL") {
       list = list.filter((s) => getBreakoutClassification(s).status === actionFilter);
     }
@@ -545,6 +570,10 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
   const nearBreakoutFiltered = useMemo(() => {
     if (activeTab !== "near_breakout") return [];
     let list = [...patternFilteredStocks];
+
+    if (timeframeFilter !== "ALL") {
+      list = list.filter((s) => (s.timeframe || "DAILY").toUpperCase() === timeframeFilter);
+    }
 
     if (nearFilter === "HOT") {
       list = list.filter((s) => ((Number(s.breakout_level) - Number(s.curr_price)) / Number(s.breakout_level) * 100) < 1.0);
@@ -618,6 +647,16 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
                     📐 {s.pattern_type.split("·")[0].trim()}
                   </span>
                 )}
+                {s.timeframe && (
+                  <span className="sc-pill tf" style={{ background: "rgba(139,92,246,0.18)", color: "#A78BFA", border: "1px solid rgba(139,92,246,0.3)", fontWeight: 700 }}>
+                    {s.timeframe === "MONTHLY" ? "👑 1M" : s.timeframe === "WEEKLY" ? "🏛️ 1W" : "⚡ 1D"}
+                  </span>
+                )}
+                {s.base_duration_years && Number(s.base_duration_years) >= 0.5 && (
+                  <span className="sc-pill dur" style={{ background: "rgba(6,182,212,0.18)", color: "#22D3EE", border: "1px solid rgba(6,182,212,0.3)", fontWeight: 700 }}>
+                    ⏳ {Number(s.base_duration_years).toFixed(1)}y Base
+                  </span>
+                )}
                 {s.mcap_tier && (
                   <span className="sc-pill mcap">{s.mcap_tier}</span>
                 )}
@@ -641,7 +680,20 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
         {/* Precision Action Strip Banner */}
         {activeTab === "success" && cls.hasPivot && (
           <>
-            {cls.isGoodToBuy && (
+            {cls.isTargetHit && (
+              <div className="sc-action-banner target-achieved" style={{ background: "rgba(16,185,129,0.14)", border: "1px solid rgba(16,185,129,0.35)" }}>
+                <div className="sc-banner-left">
+                  <span className="sc-banner-tag" style={{ background: "#10B981", color: "#fff", fontWeight: 700 }}>🎯 TARGET ACHIEVED</span>
+                  <span className="sc-banner-desc">
+                    Target Met (<b className="num">₹{cls.tgt.toFixed(1)}</b>) · Profit Booked
+                  </span>
+                </div>
+                <div className="sc-banner-right">
+                  <span className="sc-dist-badge" style={{ color: "#10B981", fontWeight: 700 }}>Complete ✓</span>
+                </div>
+              </div>
+            )}
+            {!cls.isTargetHit && cls.isGoodToBuy && (
               <div className="sc-action-banner buy">
                 <div className="sc-banner-left">
                   <span className="sc-banner-tag buy">🟢 BUY ZONE</span>
@@ -658,7 +710,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
                 )}
               </div>
             )}
-            {cls.isMissed && (
+            {!cls.isTargetHit && cls.isMissed && (
               <div className="sc-action-banner missed">
                 <div className="sc-banner-left">
                   <span className="sc-banner-tag missed">🛑 EXTENDED</span>
@@ -888,6 +940,39 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
           </button>
         </div>
       )}
+
+      {/* ─── 4C. TIMEFRAME HORIZONTAL FILTER BAR ─── */}
+      <div className="sc-mcap-filter-bar" style={{ marginTop: 6, marginBottom: 8 }}>
+        <span className="sc-mcap-label">TIMEFRAME:</span>
+        <button
+          onClick={() => setTimeframeFilter("ALL")}
+          className={`sc-mcap-chip ${timeframeFilter === "ALL" ? "active" : ""}`}
+        >
+          <span>All</span>
+          <span className="sc-mcap-count">{timeframeCounts.ALL}</span>
+        </button>
+        <button
+          onClick={() => setTimeframeFilter("DAILY")}
+          className={`sc-mcap-chip ${timeframeFilter === "DAILY" ? "active" : ""}`}
+        >
+          <span>⚡ Daily</span>
+          <span className="sc-mcap-count">{timeframeCounts.DAILY}</span>
+        </button>
+        <button
+          onClick={() => setTimeframeFilter("WEEKLY")}
+          className={`sc-mcap-chip ${timeframeFilter === "WEEKLY" ? "active" : ""}`}
+        >
+          <span>🏛️ Weekly (1-2Y)</span>
+          <span className="sc-mcap-count">{timeframeCounts.WEEKLY}</span>
+        </button>
+        <button
+          onClick={() => setTimeframeFilter("MONTHLY")}
+          className={`sc-mcap-chip ${timeframeFilter === "MONTHLY" ? "active" : ""}`}
+        >
+          <span>👑 Monthly (3-5Y)</span>
+          <span className="sc-mcap-count">{timeframeCounts.MONTHLY}</span>
+        </button>
+      </div>
 
       {/* ─── 4B. MARKET CAP FILTER BAR (Large-Cap, Mid-Cap, Small-Cap, Micro-Cap) ─── */}
       <div className="sc-mcap-filter-bar">
