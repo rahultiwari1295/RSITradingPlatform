@@ -43,12 +43,24 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
   onClose,
   onNavigateDna
 }) => {
-  const initialTf = (stock.timeframe || "").toUpperCase() === "MONTHLY"
+  const rawInputTf = (stock.timeframe || (stock as any).timeframe_type || "").toUpperCase();
+  const initialTf = (rawInputTf === "MONTHLY" || rawInputTf === "1M")
     ? "monthly"
-    : (stock.timeframe || "").toUpperCase() === "WEEKLY"
+    : (rawInputTf === "WEEKLY" || rawInputTf === "1W")
     ? "macro"
     : "tactical";
   const [dnaTimeframe, setDnaTimeframe] = useState<"tactical" | "macro" | "monthly">(initialTf);
+
+  // Sync state if stock prop changes
+  useEffect(() => {
+    const nextTf = (rawInputTf === "MONTHLY" || rawInputTf === "1M")
+      ? "monthly"
+      : (rawInputTf === "WEEKLY" || rawInputTf === "1W")
+      ? "macro"
+      : "tactical";
+    setDnaTimeframe(nextTf);
+  }, [stock.symbol, rawInputTf]);
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [apiData, setApiData] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -156,10 +168,10 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
   const sector = apiData?.sector || stock.sector || "Equities";
   const patternName = apiData?.pattern_type || stock.stage || stock.pattern || "Breakout Setup";
 
-  const cmp: number | null = apiData?.curr_price ?? null;
-  const entryPrice: number | null = apiData?.breakout_level ?? null;
-  const targetPrice: number | null = apiData?.target_1 ?? null;
-  const stopLossPrice: number | null = apiData?.stop_loss ?? null;
+  const cmp: number | null = apiData?.curr_price ?? stock.currentPrice ?? (stock as any).curr_price ?? (stock as any).price ?? null;
+  const entryPrice: number | null = stock.breakoutPrice ?? (stock as any).pivot_price ?? (stock as any).breakout_level ?? apiData?.breakout_level ?? null;
+  const targetPrice: number | null = stock.targetPrice ?? (stock as any).target_1 ?? apiData?.target_1 ?? null;
+  const stopLossPrice: number | null = stock.stopLossPrice ?? (stock as any).stop_loss ?? apiData?.stop_loss ?? null;
 
   const low52: number | null = apiData?.w52_low ?? null;
   const high52: number | null = apiData?.w52_high ?? null;

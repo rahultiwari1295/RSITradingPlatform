@@ -116,7 +116,7 @@
   width: 100%;
   max-width: 100%;
   margin: 0;
-  padding: 12px 14px 80px;
+  padding: max(16px, env(safe-area-inset-top, 16px)) 14px 80px;
   box-sizing: border-box;
 }
 
