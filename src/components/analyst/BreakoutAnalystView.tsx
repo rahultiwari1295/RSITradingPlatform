@@ -66,7 +66,12 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [loadingStep, setLoadingStep] = useState<number>(1);
   const [loadingProgress, setLoadingProgress] = useState<number>(20);
+
+  // Independent Chart Loading & Failover States (Never blocks full page)
   const [loadedChartSrc, setLoadedChartSrc] = useState<string>("");
+  const [chartLoading, setChartLoading] = useState<boolean>(true);
+  const [chartError, setChartError] = useState<boolean>(false);
+  const [chartReloadKey, setChartReloadKey] = useState<number>(0);
   const tvContainerRef = useRef<HTMLDivElement>(null);
 
   const cleanSymbol = (stock.symbol || "").trim().toUpperCase().replace(/^(BSE:|NSE:)/i, "");
@@ -93,49 +98,27 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
     }
   };
 
-  // ── 1. Fetch Live Stock Details & Preload Chart Image (Zero Hardcoding) ──
+  // ── 1. Fetch Live Stock Details (Runs ONLY when symbol changes, never on timeframe toggle) ──
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
     setLoadingStep(1);
     setLoadingProgress(20);
 
-    // Step 2 & 3 visual progress timer
     const t1 = setTimeout(() => {
       if (isMounted) {
         setLoadingStep(2);
         setLoadingProgress(45);
       }
-    }, 320);
+    }, 250);
 
     const t2 = setTimeout(() => {
       if (isMounted) {
         setLoadingStep(3);
         setLoadingProgress(75);
       }
-    }, 700);
+    }, 550);
 
-    // Preload the Analysed Chart Image so it never flashes white or blank
-    const primaryChartUrl = `/api/dna/chart/${cleanSymbol}?view=${dnaTimeframe}&theme=${theme}&t=${Date.now()}`;
-    const fallbackChartUrl = `https://quantsync-api.duckdns.org:8443/api/dna/chart/${cleanSymbol}?view=${dnaTimeframe}&theme=${theme}&t=${Date.now()}`;
-
-    const chartImg = new Image();
-    chartImg.src = primaryChartUrl;
-    chartImg.onload = () => {
-      if (isMounted) setLoadedChartSrc(primaryChartUrl);
-    };
-    chartImg.onerror = () => {
-      const fbImg = new Image();
-      fbImg.src = fallbackChartUrl;
-      fbImg.onload = () => {
-        if (isMounted) setLoadedChartSrc(fallbackChartUrl);
-      };
-      fbImg.onerror = () => {
-        if (isMounted) setLoadedChartSrc(fallbackChartUrl);
-      };
-    };
-
-    // Pull 100% genuine data from API
     quantsyncApi
       .getStockDetail(cleanSymbol)
       .then((detail) => {
@@ -152,7 +135,7 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
           setLoadingProgress(100);
           setTimeout(() => {
             if (isMounted) setLoading(false);
-          }, 280);
+          }, 200);
         }
       });
 
@@ -161,7 +144,72 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, [cleanSymbol, dnaTimeframe, theme]);
+  }, [cleanSymbol]);
+
+  // ── 2. Independent Chart Generation & Preload (Runs smoothly when timeframe or reload key changes) ──
+  useEffect(() => {
+    let isCancelled = false;
+    setChartLoading(true);
+    setChartError(false);
+
+    const ts = Date.now();
+    const forceParam = chartReloadKey > 0 ? "&force=true" : "";
+    const primaryChartUrl = `/api/dna/chart/${cleanSymbol}?view=${dnaTimeframe}&theme=${theme}${forceParam}&t=${ts}`;
+    const fallbackChartUrl = `https://quantsync-api.duckdns.org:8443/api/dna/chart/${cleanSymbol}?view=${dnaTimeframe}&theme=${theme}${forceParam}&t=${ts}`;
+
+    const chartImg = new Image();
+    chartImg.src = primaryChartUrl;
+
+    const timeoutTimer = setTimeout(() => {
+      if (!isCancelled) {
+        const fbImg = new Image();
+        fbImg.src = fallbackChartUrl;
+        fbImg.onload = () => {
+          if (!isCancelled) {
+            setLoadedChartSrc(fallbackChartUrl);
+            setChartLoading(false);
+          }
+        };
+        fbImg.onerror = () => {
+          if (!isCancelled) {
+            setChartError(true);
+            setChartLoading(false);
+          }
+        };
+      }
+    }, 4500);
+
+    chartImg.onload = () => {
+      if (!isCancelled) {
+        clearTimeout(timeoutTimer);
+        setLoadedChartSrc(primaryChartUrl);
+        setChartLoading(false);
+      }
+    };
+
+    chartImg.onerror = () => {
+      clearTimeout(timeoutTimer);
+      const fbImg = new Image();
+      fbImg.src = fallbackChartUrl;
+      fbImg.onload = () => {
+        if (!isCancelled) {
+          setLoadedChartSrc(fallbackChartUrl);
+          setChartLoading(false);
+        }
+      };
+      fbImg.onerror = () => {
+        if (!isCancelled) {
+          setChartError(true);
+          setChartLoading(false);
+        }
+      };
+    };
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timeoutTimer);
+    };
+  }, [cleanSymbol, dnaTimeframe, theme, chartReloadKey]);
 
   // Dynamic Factual Fields strictly from API response (ZERO hardcoded fallback numbers)
   const stockName = apiData?.company_name || stock.name || cleanSymbol;
@@ -594,6 +642,16 @@ ChartAnalysis : ${websiteLink}`;
             <div className="chart-header-left">
               <span className="chart-icon-flair">📈</span>
               <span className="chart-card-heading">QuantSync Analysed DNA Chart</span>
+              <button
+                type="button"
+                className="chart-refresh-icon-btn"
+                title="Reload Chart"
+                onClick={() => setChartReloadKey((k) => k + 1)}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className={chartLoading ? "spin-pulse" : ""}>
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+              </button>
             </div>
             <div className="chart-tf-toggle-capsule">
               <button
@@ -620,41 +678,51 @@ ChartAnalysis : ${websiteLink}`;
             </div>
           </div>
 
-          {/* Clean Image with NO TEXT on chart (Lines only) */}
+          {/* Clean Analysed Chart Stage with In-Chart Loading and Error Recovery */}
           <div className="dna-clean-chart-stage">
-            <img
-              src={loadedChartSrc || `/api/dna/chart/${cleanSymbol}?view=${dnaTimeframe}&theme=${theme}&t=${Date.now()}`}
-              alt={`${cleanSymbol} Analysed Chart`}
-              className="dna-rendered-chart-image"
-              onError={(e) => {
-                const target = e.currentTarget;
-                if (!target.src.startsWith("https://quantsync-api.duckdns.org:8443")) {
-                  target.src = `https://quantsync-api.duckdns.org:8443/api/dna/chart/${cleanSymbol}?view=${dnaTimeframe}&theme=${theme}&t=${Date.now()}`;
-                }
-              }}
-            />
+            {chartLoading && (
+              <div className="chart-stage-loading-overlay">
+                <div className="chart-stage-spinner-ring" />
+                <div className="chart-stage-loading-text">
+                  Generating Analysed DNA Chart...
+                </div>
+                <div className="chart-stage-loading-sub">
+                  {dnaTimeframe === "monthly"
+                    ? "Calculating 3-5Y Generational Base & Monthly Candlesticks"
+                    : dnaTimeframe === "macro"
+                    ? "Analyzing Multi-Year Structural Breakout & Weekly Levels"
+                    : "Computing 4-Month Tactical Swing Channel & VSA"}
+                </div>
+              </div>
+            )}
 
-            {/* Clean SVG Lines: Target, Pivot, SL (Strictly No Text on Chart) */}
-            <svg className="clean-chart-overlay-svg" viewBox="0 0 600 320" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="tLineGrad" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#10B981" stopOpacity="0.3"/>
-                  <stop offset="100%" stopColor="#10B981" stopOpacity="0.95"/>
-                </linearGradient>
-                <linearGradient id="pLineGrad" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.3"/>
-                  <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.95"/>
-                </linearGradient>
-                <linearGradient id="slLineGrad" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#EF4444" stopOpacity="0.3"/>
-                  <stop offset="100%" stopColor="#EF4444" stopOpacity="0.95"/>
-                </linearGradient>
-              </defs>
-
-              <line x1="15" y1="65" x2="585" y2="65" stroke="url(#tLineGrad)" strokeWidth="2.2" strokeDasharray="6 4"/>
-              <line x1="15" y1="160" x2="585" y2="160" stroke="url(#pLineGrad)" strokeWidth="2.2" strokeDasharray="6 4"/>
-              <line x1="15" y1="240" x2="585" y2="240" stroke="url(#slLineGrad)" strokeWidth="2.2" strokeDasharray="6 4"/>
-            </svg>
+            {chartError ? (
+              <div className="chart-stage-error-overlay">
+                <div className="chart-stage-error-icon">📊</div>
+                <div className="chart-stage-error-title">Chart Generation Pending</div>
+                <div className="chart-stage-error-sub">
+                  The institutional chart engine is preparing the {dnaTimeframe === "monthly" ? "Monthly Generational" : dnaTimeframe === "macro" ? "Weekly Structural" : "Tactical"} setup.
+                </div>
+                <button
+                  type="button"
+                  className="chart-stage-reload-btn"
+                  onClick={() => setChartReloadKey((k) => k + 1)}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                  </svg>
+                  Generate & Reload Chart
+                </button>
+              </div>
+            ) : (
+              loadedChartSrc && (
+                <img
+                  src={loadedChartSrc}
+                  alt={`${cleanSymbol} Analysed Chart`}
+                  className={`dna-rendered-chart-image ${chartLoading ? "is-reloading" : ""}`}
+                />
+              )
+            )}
           </div>
 
           {/* Clean Legend Bar BELOW the chart */}
