@@ -34,6 +34,7 @@ export default function AddPositionModal({
   const [quantity, setQuantity] = useState<number | "">(10);
   const [strategyName, setStrategyName] = useState("Manual");
   const [ltpPrice, setLtpPrice] = useState<number | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Autocomplete state
   const [searchResults, setSearchResults] = useState<StockSearchResult[]>([]);
@@ -60,6 +61,7 @@ export default function AddPositionModal({
       setBuyPrice("");
       setQuantity(10);
       setStrategyName("Manual");
+      setFormError(null);
       setSearchResults([]);
       setShowDropdown(false);
     }
@@ -130,7 +132,13 @@ export default function AddPositionModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!symbol || !buyPrice || !quantity) return;
+    if (!symbol.trim() || !Number(buyPrice) || !Number(quantity) || Number(buyPrice) < 0 || Number(quantity) <= 0) {
+      setFormError("Enter a stock, a valid buy price, and a quantity greater than zero.");
+      return;
+    }
+
+    const now = new Date();
+    const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
     onSubmit({
       symbol: symbol.toUpperCase().trim(),
@@ -138,13 +146,14 @@ export default function AddPositionModal({
       quantity: Number(quantity),
       strategyName: strategyName || "Manual",
       currentPrice: ltpPrice || Number(buyPrice),
-      date: new Date().toISOString().split("T")[0]
+      date: localDate
     });
 
     setSymbol("");
     setBuyPrice("");
     setQuantity(10);
     setLtpPrice(null);
+    setFormError(null);
     onClose();
   };
 
@@ -491,6 +500,12 @@ export default function AddPositionModal({
               {formatINR(total)}
             </span>
           </div>
+
+          {formError && (
+            <div role="alert" style={{ color: "var(--loss)", fontSize: 12, lineHeight: 1.45 }}>
+              {formError}
+            </div>
+          )}
 
           <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
             <button

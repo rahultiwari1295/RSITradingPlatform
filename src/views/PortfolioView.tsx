@@ -40,9 +40,19 @@ const avatarGradients = [
 ];
 
 function formatSignalDate(dateStr?: string): string {
-  if (!dateStr) return "Recent";
+  if (!dateStr) return "Today";
   try {
-    const d = new Date(dateStr);
+    const value = String(dateStr).trim();
+    let d: Date;
+    const isoDate = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    const yearlessDate = value.match(/^([A-Za-z]{3,9})\s+(\d{1,2})$/);
+    if (isoDate) {
+      d = new Date(Number(isoDate[1]), Number(isoDate[2]) - 1, Number(isoDate[3]));
+    } else if (yearlessDate) {
+      d = new Date(new Date().getFullYear(), new Date(`${yearlessDate[1]} 1, 2000`).getMonth(), Number(yearlessDate[2]));
+    } else {
+      d = new Date(value);
+    }
     if (isNaN(d.getTime())) return dateStr;
     return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
   } catch {
@@ -150,16 +160,17 @@ export default function PortfolioView({
     historyList.forEach((t: any) => {
       const pnl = t.pnl ?? ((Number(t.sellPrice || 0) - Number(t.buyPrice || 0)) * Number(t.quantity || 1));
       sumPnl += pnl;
-      if (pnl >= 0) wins++;
-      else losses++;
+      if (pnl > 0) wins++;
+      else if (pnl < 0) losses++;
     });
 
-    const rate = historyList.length > 0 ? Math.round((wins / historyList.length) * 100) : 100;
+    const resolvedTrades = wins + losses;
+    const rate = resolvedTrades > 0 ? Math.round((wins / resolvedTrades) * 100) : 0;
     return {
       totalRealizedPnL: sumPnl,
       winCount: wins,
       lossCount: losses,
-      winRate: historyList.length > 0 ? rate : 100
+      winRate: rate
     };
   }, [historyList]);
 
@@ -192,17 +203,16 @@ export default function PortfolioView({
   };
 
   return (
-    <div style={{ paddingBottom: 24 }}>
-      {/* 1. REFINED FINTECH HERO BANNER */}
+    <div className="pf-page" style={{ paddingBottom: 24 }}>
+      <header className="pf-page-heading">
+        <h1>Portfolio</h1>
+      </header>
+      {/* Portfolio value and performance */}
       <div className="pf-hero">
-        {/* Top Header: Cloud sync status & CTA */}
         <div className="pf-hero-head">
-          <div className="pf-hero-status">
-            <span className="pf-live-badge">
-              <span className="pf-live-dot" />
-              Live Ledger
-            </span>
-            <span className="pf-sync-tag">Cloud Synced</span>
+          <div className="pf-hero-kicker">
+            <div className="pf-hero-lbl">Total Portfolio Value</div>
+            <span className="pf-sync-tag">Live prices when available</span>
           </div>
 
           <button onClick={handleAddClick} className="pf-hero-add-btn">
@@ -211,9 +221,7 @@ export default function PortfolioView({
           </button>
         </div>
 
-        {/* Centerpiece: Full-width Portfolio Value & ROI pill */}
         <div className="pf-hero-body">
-          <div className="pf-hero-lbl">Total Portfolio Value</div>
           <div className="pf-hero-primary-row">
             <div className="pf-hero-main-val">
               {formatINR(totalCurrentValue)}
@@ -230,72 +238,59 @@ export default function PortfolioView({
           </div>
         </div>
 
-        {/* 3-Column Micro Metrics Strip */}
         <div className="pf-metric-strip">
           <div className="pf-strip-item">
             <div className="pf-strip-label">Invested</div>
             <div className="pf-strip-value">{formatINR(totalInvested)}</div>
           </div>
-          <div className="pf-strip-sep" />
           <div className="pf-strip-item">
-            <div className="pf-strip-label">Unrealized P&L</div>
-            <div className={`pf-strip-value ${totalUnrealizedPnL >= 0 ? "up" : "down"}`}>
-              {totalUnrealizedPnL >= 0 ? "+" : "−"}{formatINR(Math.abs(totalUnrealizedPnL))}
+            <div className="pf-strip-label">Realized P&L</div>
+            <div className={`pf-strip-value ${totalRealizedPnL >= 0 ? "up" : "down"}`}>
+              {totalRealizedPnL >= 0 ? "+" : "−"}{formatINR(Math.abs(totalRealizedPnL))}
             </div>
           </div>
-          <div className="pf-strip-sep" />
           <div className="pf-strip-item">
             <div className="pf-strip-label">Win Rate</div>
             <div className="pf-strip-value">
-              {historyList.length > 0 ? `${winRate}%` : "100%"}
-              <span className="pf-strip-sub"> ({winCount}W·{lossCount}L)</span>
+              {winCount + lossCount > 0 ? `${winRate}%` : "—"}
+              {winCount + lossCount > 0 && <span className="pf-strip-sub"> ({winCount}W·{lossCount}L)</span>}
             </div>
           </div>
         </div>
 
-        {/* Footnote */}
-        <div className="pf-hero-foot">
-          <span className="pf-foot-ico">⚡</span>
-          <span className="pf-foot-txt">
-            {activeHoldings.length > 0
-              ? `Tracking ${activeHoldings.length} open position${activeHoldings.length === 1 ? "" : "s"} with live price sync & trailing stops.`
-              : "Virtual paper ledger initialized. Log setups to simulate execution risk-free."}
-          </span>
-        </div>
       </div>
 
       {/* 2. SUBTABS SWITCHER */}
-      <div className="subtabs" style={{ marginBottom: 12 }}>
+      <div className="subtabs pf-subtabs" style={{ marginBottom: 12 }} role="tablist" aria-label="Portfolio positions">
         <button
+          role="tab"
+          aria-selected={activeTab === "active"}
           className={`subtab ${activeTab === "active" ? "on" : ""}`}
           onClick={() => setActiveTab("active")}
         >
-          Active Positions ({activeHoldings.length})
+          Open positions ({activeHoldings.length})
         </button>
         <button
+          role="tab"
+          aria-selected={activeTab === "history"}
           className={`subtab ${activeTab === "history" ? "on" : ""}`}
           onClick={() => setActiveTab("history")}
         >
-          Closed Realized ({historyList.length})
+          Closed trades ({historyList.length})
         </button>
       </div>
 
       {/* 3. ACTIVE POSITIONS VIEW */}
       {activeTab === "active" ? (
         <div>
-          <div className="sec-head" style={{ marginBottom: 10 }}>
-            <span className="micro">Open Holdings ({activeHoldings.length})</span>
-            <span
-              className="micro"
-              style={{ color: "var(--accent)", cursor: "pointer", fontWeight: 700 }}
-              onClick={handleAddClick}
-            >
-              + Add Custom Setup →
-            </span>
+          <div className="sec-head pf-section-head" style={{ marginBottom: 10 }}>
+            <div>
+              <span className="micro">Holdings</span>
+            </div>
           </div>
 
           {activeHoldings.length === 0 ? (
-            <div className="card" style={{ padding: "36px 20px", textAlign: "center", borderRadius: 20 }}>
+            <div className="card pf-empty-state" style={{ padding: "36px 20px", textAlign: "center", borderRadius: 20 }}>
               <div
                 style={{
                   width: 52,
@@ -334,7 +329,7 @@ export default function PortfolioView({
               </button>
             </div>
           ) : (
-            <div>
+            <div className="pf-holdings-list">
               {activeHoldings.map((holding: any, idx: number) => {
                 const sym = (holding.symbol || "").toUpperCase().trim();
                 const activeMatch = activeSignalMap.get(sym);
@@ -371,51 +366,52 @@ export default function PortfolioView({
                     style={{ animationDelay: `${idx * 45}ms` }}
                     onClick={() => handleCardClick(holding)}
                   >
-                    {/* Header Row: Monogram, Symbol, Badges & Live P&L */}
+                    {/* Identity and return stay aligned, with position details on their own line. */}
                     <div className="pf-card-head">
-                      <div className="pf-card-left">
-                        <div
-                          className="pf-avatar"
-                          style={{
-                            background: avatarGradients[idx % avatarGradients.length]
-                          }}
-                        >
-                          {sym.slice(0, 2) || "ST"}
-                        </div>
-                        <div className="pf-card-id-block">
-                          <div className="pf-sym-line">
+                      <div
+                        className="pf-avatar"
+                        style={{ background: avatarGradients[idx % avatarGradients.length] }}
+                        aria-hidden="true"
+                      >
+                        {sym.slice(0, 2) || "ST"}
+                      </div>
+                      <div className="pf-card-id-block">
+                        <div className="pf-card-title-row">
+                          <button
+                            type="button"
+                            className="pf-stock-open"
+                            aria-label={`View ${sym} stock details`}
+                            onClick={(event) => { event.stopPropagation(); handleCardClick(holding); }}
+                          >
                             <span className="pf-card-sym">{sym}</span>
-                            <span className="pf-tag qty">{qty} QTY</span>
+                            <ArrowUpRight aria-hidden="true" />
+                          </button>
+                          <div className={`pf-card-right ${isUp ? "up" : "down"}`}>
+                            <div className={`pf-card-pnl ${isUp ? "up" : "down"}`}>
+                              {isUp ? "+" : ""}{formatINR(pnl)}
+                            </div>
+                            <div className={`pf-card-roi ${isUp ? "up" : "down"}`}>
+                              {isUp ? "+" : ""}{roi.toFixed(2)}%
+                            </div>
+                          </div>
+                        </div>
+                        <div className="pf-card-context-row">
+                          <div className="pf-card-badges">
+                            <span className="pf-tag qty">{qty} shares</span>
                             {!isManual && (
-                              <span
-                                className={`pf-tag ${holdingEngine === "v2" ? "blue" : "purple"}`}
-                              >
+                              <span className={`pf-tag ${holdingEngine === "v2" ? "blue" : "purple"}`}>
                                 {holdingEngine === "v2" ? "V2 AI" : "V3 AI"}
                               </span>
                             )}
-                            {isManual ? (
-                              <span className="pf-tag manual">MANUAL</span>
-                            ) : isSignalActive ? (
-                              <span className="pf-tag active">
-                                <span className="pf-tag-dot" /> ACTIVE
-                              </span>
+                            {!isManual && (isSignalActive ? (
+                              <span className="pf-tag active"><span className="pf-tag-dot" /> Active</span>
                             ) : (
-                              <span className="pf-tag closed">EXITED</span>
-                            )}
+                              <span className="pf-tag closed">Ended</span>
+                            ))}
                           </div>
                           <div className="pf-card-meta">
-                            {stratName} • {formatSignalDate(holding.date || holding.buyDate)}
+                            {stratName} <span aria-hidden="true">·</span> {formatSignalDate(holding.date || holding.buyDate)}
                           </div>
-                        </div>
-                      </div>
-
-                      {/* Right side: Real-time P&L & % */}
-                      <div className="pf-card-right">
-                        <div className={`pf-card-pnl ${isUp ? "up" : "down"}`}>
-                          {isUp ? "+" : ""}{formatINR(pnl)}
-                        </div>
-                        <div className={`pf-card-roi ${isUp ? "up" : "down"}`}>
-                          {isUp ? "+" : ""}{roi.toFixed(2)}%
                         </div>
                       </div>
                     </div>
@@ -423,13 +419,12 @@ export default function PortfolioView({
                     {/* Compact 4-Column Data Strip */}
                     <div className="pf-data-row">
                       <div className="pf-data-cell">
-                        <span className="pf-data-k">Avg Buy</span>
+                        <span className="pf-data-k">Average buy</span>
                         <span className="pf-data-v">{formatINR(buy)}</span>
                       </div>
                       <div className="pf-data-cell">
                         <span className="pf-data-k">
-                          Live LTP
-                          {(isSignalActive || isManual) && <span className="pf-live-tick" />}
+                          Current price
                         </span>
                         <span className="pf-data-v">{cur ? formatINR(cur) : "—"}</span>
                       </div>
@@ -438,7 +433,7 @@ export default function PortfolioView({
                         <span className="pf-data-v">{formatINR(invested)}</span>
                       </div>
                       <div className="pf-data-cell">
-                        <span className="pf-data-k">Cur Value</span>
+                        <span className="pf-data-k">Current value</span>
                         <span className="pf-data-v">{currentVal ? formatINR(currentVal) : "—"}</span>
                       </div>
                     </div>
@@ -447,7 +442,7 @@ export default function PortfolioView({
                     {!isSignalActive && !isManual && (
                       <div className="pf-compact-alert">
                         <AlertTriangle style={{ width: 12, height: 12, flexShrink: 0 }} />
-                        <span>Setup exited in strategy engine. Consider reviewing chart or taking exit.</span>
+                        <span>Signal ended <span aria-hidden="true">·</span> Review this position</span>
                       </div>
                     )}
 
@@ -475,7 +470,7 @@ export default function PortfolioView({
                         }
                       >
                         <ArrowUpRight style={{ width: 13, height: 13 }} />
-                        <span>Log Exit / Sell</span>
+                        <span>Sell position</span>
                       </button>
 
                       {onDeleteTrade && (
@@ -501,18 +496,18 @@ export default function PortfolioView({
       ) : (
         /* 4. CLOSED REALIZED HISTORY VIEW */
         <div>
-          <div className="sec-head" style={{ marginBottom: 12 }}>
-            <span className="micro">Realized Performance History ({historyList.length})</span>
+          <div className="sec-head pf-closed-section-head" style={{ marginBottom: 12 }}>
+            <span className="micro">Trade outcomes</span>
             <span
               className={`num ${totalRealizedPnL >= 0 ? "up" : "down"}`}
               style={{ fontSize: 11.5, fontWeight: 700 }}
             >
-              Total Realized: {totalRealizedPnL >= 0 ? "+" : ""}{formatINR(totalRealizedPnL)}
+              Realized P&amp;L: {totalRealizedPnL >= 0 ? "+" : ""}{formatINR(totalRealizedPnL)}
             </span>
           </div>
 
           {historyList.length === 0 ? (
-            <div className="card" style={{ padding: "36px 20px", textAlign: "center", borderRadius: 20 }}>
+            <div className="card pf-empty-state" style={{ padding: "36px 20px", textAlign: "center", borderRadius: 20 }}>
               <div
                 style={{
                   width: 52,
@@ -548,7 +543,9 @@ export default function PortfolioView({
             <div>
               {historyList.map((c: any, idx: number) => {
                 const ret = c.pnlPct ?? c.returnPct ?? 0;
-                const isWin = ret >= 0;
+                const isWin = ret > 0;
+                const isLoss = ret < 0;
+                const isFlat = ret === 0;
                 const exitP = c.sellPrice || c.exitPrice || 0;
                 const buyP = c.buyPrice || c.entryPrice || 0;
                 const pnlVal =
@@ -557,7 +554,7 @@ export default function PortfolioView({
                 return (
                   <div
                     key={c.tradeId || idx}
-                    className={`closed-row ${isWin ? "win" : "lose"}`}
+                    className={`closed-row ${isWin ? "win" : isLoss ? "lose" : "flat"}`}
                     onClick={() => {
                       if (onSelectStock) onSelectStock(c);
                     }}
@@ -568,8 +565,8 @@ export default function PortfolioView({
                         style={{
                           background: isWin
                             ? "linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.4))"
-                            : "linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(220, 38, 38, 0.4))",
-                          color: isWin ? "var(--profit)" : "var(--loss)",
+                            : isLoss ? "linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(220, 38, 38, 0.4))" : "var(--s2)",
+                          color: isWin ? "var(--profit)" : isLoss ? "var(--loss)" : "var(--ink3)",
                           fontSize: 12,
                           fontWeight: 800
                         }}
@@ -580,10 +577,10 @@ export default function PortfolioView({
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span className="cr-sym">{c.symbol}</span>
                           <span
-                            className={`pill ${isWin ? "green" : "red"}`}
+                            className={`pill ${isWin ? "green" : isLoss ? "red" : ""}`}
                             style={{ fontSize: 9, padding: "2px 6px" }}
                           >
-                            {isWin ? "WIN" : "LOSS"}
+                            {isWin ? "WIN" : isLoss ? "LOSS" : "EVEN"}
                           </span>
                           {c.quantity && (
                             <span className="pill" style={{ fontSize: 9, padding: "2px 6px" }}>
@@ -596,10 +593,10 @@ export default function PortfolioView({
                         </div>
                       </div>
                       <div className="cr-pnl">
-                        <div className={`cr-amount num ${isWin ? "up" : "down"}`}>
+                        <div className={`cr-amount num ${isWin ? "up" : isLoss ? "down" : ""}`}>
                           {pnlVal >= 0 ? "+" : ""}{formatINR(pnlVal)}
                         </div>
-                        <div className={`cr-pct num ${isWin ? "up" : "down"}`}>
+                        <div className={`cr-pct num ${isWin ? "up" : isLoss ? "down" : ""}`}>
                           {ret >= 0 ? "+" : ""}{ret.toFixed(2)}%
                         </div>
                       </div>

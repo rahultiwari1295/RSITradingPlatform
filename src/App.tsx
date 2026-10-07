@@ -36,6 +36,10 @@ const INR = (n: number) => "₹" + Math.round(n || 0).toLocaleString("en-IN");
 const INR2 = (n: number) =>
   "₹" + (n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const pct = (n: number) => ((n || 0) >= 0 ? "+" : "−") + Math.abs(n || 0).toFixed(2) + "%";
+const localISODate = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+};
 
 // Formats closed trade PnL with crore support (e.g. +₹1.25 Cr) without breaking layout
 const fmtClosedPnl = (val: number): string => {
@@ -1457,6 +1461,8 @@ export default function App() {
   });
   const [isCloudLoaded, setIsCloudLoaded] = useState(false);
   const [isAddPositionOpen, setIsAddPositionOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [closedTf, setClosedTf] = useState<"1M" | "3M" | "6M" | "ALL">("ALL");
   const [closedTradeBet, setClosedTradeBet] = useState<number>(10000); // Default ₹10,000 per signal
   const [isCustomBetInput, setIsCustomBetInput] = useState<boolean>(false);
@@ -1465,8 +1471,9 @@ export default function App() {
   const [closedDisplayMode, setClosedDisplayMode] = useState<"inr" | "pct">("inr"); // Default ₹ Rupee Realized P&L!
 
   const showToast = (msg: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3200);
+    toastTimerRef.current = setTimeout(() => setToastMessage(null), 3200);
   };
 
   // Modals
@@ -2516,7 +2523,7 @@ export default function App() {
   }, [livePrices]);
 
   // Buy submission handler (Cloud synced via Firestore)
-  const handleBuySubmit = (data: { symbol: string; buyPrice: number; quantity: number; strategyName?: string; currentPrice?: number }) => {
+  const handleBuySubmit = (data: { symbol: string; buyPrice: number; quantity: number; strategyName?: string; currentPrice?: number; date?: string }) => {
     const symKey = (data.symbol || "").toUpperCase().trim();
     const activeMatch = allInTradeTrades.find((s: any) => (s.sym || s.symbol || "").toUpperCase().trim() === symKey);
     const ltp = activeMatch?.now || activeMatch?.currentPrice 
@@ -2532,7 +2539,7 @@ export default function App() {
       totalInvested: data.buyPrice * data.quantity,
       strategyName: data.strategyName || activeMatch?.strategyName || (engine === "v2" ? "V2 Pro AI" : "V3 Pattern AI"),
       engine: (activeMatch?.engine || engine) as "v2" | "v3",
-      date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      date: data.date || localISODate(),
       daysHeld: 1,
       isActiveInStrategy: isSignalActive,
       currentPrice: ltp,
@@ -2565,7 +2572,7 @@ export default function App() {
         .catch(() => {});
     }
 
-    showToast(`Added ${data.quantity} shares of ${data.symbol} to Portfolio`);
+    showToast(`${symKey} · ${data.quantity} shares added to your portfolio`);
     setBuyModalItem(null);
   };
 
@@ -2863,6 +2870,12 @@ export default function App() {
       {/* Ambient washes */}
       <div className="ambient ambient-v2" />
       <div className="ambient ambient-v3" />
+      {toastMessage && (
+        <div className="app-toast" role="status" aria-live="polite">
+          <span className="app-toast-mark" aria-hidden="true">✓</span>
+          {toastMessage}
+        </div>
+      )}
 
       {/* ============ TOP BAR ============ */}
       {activeTab !== "lounge" && (
@@ -4370,7 +4383,7 @@ export default function App() {
               className="card"
               style={{
                 padding: "12px 16px",
-                marginBottom: 14,
+                marginBottom: 8,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
