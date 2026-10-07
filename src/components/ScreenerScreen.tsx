@@ -398,7 +398,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
   // 1. Two-way primary switch: "near_breakout" vs "success" (Confirmed Breakout)
   const [activeTab, setActiveTab] = useState<"near_breakout" | "success">("near_breakout");
   const [selectedPattern, setSelectedPattern] = useState<string>("ALL");
-  const [actionFilter, setActionFilter] = useState<"ALL" | "BUY_ZONE" | "RETEST" | "EXTENDED" | "SUBMERGED">("ALL");
+  const [actionFilter, setActionFilter] = useState<"ALL" | "PRIME" | "BUY_ZONE" | "RETEST" | "EXTENDED" | "SUBMERGED">("BUY_ZONE");
   const [nearFilter, setNearFilter] = useState<"ALL" | "HOT" | "MID" | "FAR">("ALL");
   const [mcapFilter, setMcapFilter] = useState<string>("ALL");
   const [timeframeFilter, setTimeframeFilter] = useState<"ALL" | "DAILY" | "WEEKLY" | "MONTHLY">("ALL");
@@ -628,6 +628,25 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
     return list;
   }, [liveEnrichedStocks, selectedPattern, mlGateActive, mlGatesMap]);
 
+  // Curated Prime Alpha Setups: Highest institutional conviction
+  // (DNA Score >= 65, Volume >= 1.3x, within 0% to 4.5% of pivot, ML approved)
+  const primeAlphaStocks = useMemo(() => {
+    return patternFilteredStocks.filter((s) => {
+      const cls = getBreakoutClassification(s);
+      if (cls.executionState !== "BUY_ZONE" && cls.executionState !== "RETEST") return false;
+      const score = Number(s.dna_score || 0);
+      const vol = Number(s.volume_ratio_20d || 1.0);
+      const patCode = (s.pattern_type || "").split("·")[0].trim().toUpperCase().replace(/[\s\-&]+/g, "_");
+      const gate = mlGatesMap[patCode] || Object.values(mlGatesMap).find((g: any) => patCode.includes(g.pattern_type) || (g.pattern_type && g.pattern_type.includes(patCode)));
+      if (gate && gate.survival_verdict === "PURGE") return false;
+      return score >= 65 || vol >= 1.4;
+    }).sort((a, b) => {
+      const scoreA = (a.dna_score || 0) + (Number(a.volume_ratio_20d || 1) * 10);
+      const scoreB = (b.dna_score || 0) + (Number(b.volume_ratio_20d || 1) * 10);
+      return scoreB - scoreA;
+    });
+  }, [patternFilteredStocks, mlGatesMap]);
+
   // Option B Action status counts for Confirmed Breakout
   const { buyZoneCount, retestCount, extendedCount, submergedCount } = useMemo(() => {
     let bz = 0, rt = 0, ext = 0, sub = 0;
@@ -655,7 +674,9 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
 
     let baseList = patternFilteredStocks;
     if (activeTab === "success") {
-      if (actionFilter !== "ALL") {
+      if (actionFilter === "PRIME") {
+        baseList = primeAlphaStocks;
+      } else if (actionFilter !== "ALL") {
         baseList = baseList.filter((s) => getBreakoutClassification(s).executionState === actionFilter);
       }
     } else {
@@ -720,7 +741,9 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
     if (timeframeFilter !== "ALL") {
       list = list.filter((s) => (s.timeframe || "DAILY").toUpperCase() === timeframeFilter);
     }
-    if (actionFilter !== "ALL") {
+    if (actionFilter === "PRIME") {
+      list = primeAlphaStocks.filter((s) => (timeframeFilter === "ALL" || (s.timeframe || "DAILY").toUpperCase() === timeframeFilter));
+    } else if (actionFilter !== "ALL") {
       list = list.filter((s) => getBreakoutClassification(s).executionState === actionFilter);
     }
     if (mcapFilter !== "ALL") {
@@ -972,30 +995,26 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
 
           <div className="sc-matrix-compact">
             <div className="sc-mc-col">
-              <span className="sc-mc-lbl">TRIGGER</span>
+              <span className="sc-mc-lbl">ENTRY PIVOT</span>
               <span className="sc-mc-val amber">
                 {s.breakout_level ? `₹${Number(s.breakout_level).toFixed(1)}` : "—"}
-              </span>
-            </div>
-            <div className="sc-mc-col">
-              <span className="sc-mc-lbl">TARGET</span>
-              <span className="sc-mc-val green">
-                {s.target_1 ? `₹${Number(s.target_1).toFixed(0)}` : "—"}
-                {cls.targetGainPct !== null && <small> (+{cls.targetGainPct.toFixed(0)}%)</small>}
+                <small className="sc-mc-sub"> ({cls.diffPct >= 0 ? `+${cls.diffPct.toFixed(1)}%` : `${cls.diffPct.toFixed(1)}%`})</small>
               </span>
             </div>
             <div className="sc-mc-col">
               <span className="sc-mc-lbl">STOP LOSS</span>
               <span className="sc-mc-val red">
                 {s.stop_loss ? `₹${Number(s.stop_loss).toFixed(1)}` : "—"}
+                {currentPrice > 0 && Number(s.stop_loss || 0) > 0 && currentPrice > Number(s.stop_loss) && (
+                  <small className="sc-mc-sub"> (-{Math.abs((currentPrice - Number(s.stop_loss)) / currentPrice * 100).toFixed(1)}%)</small>
+                )}
               </span>
             </div>
-            <div className="sc-mc-col rr">
-              <span className="sc-mc-lbl">R:R RATIO</span>
-              <span className="sc-mc-val rr">
-                1:{(s.target_1 && s.stop_loss && currentPrice > Number(s.stop_loss))
-                  ? ((Number(s.target_1) - currentPrice) / (currentPrice - Number(s.stop_loss))).toFixed(1)
-                  : s.risk_reward_ratio ? Number(s.risk_reward_ratio).toFixed(1) : "2.8"}
+            <div className="sc-mc-col">
+              <span className="sc-mc-lbl">TARGET 1</span>
+              <span className="sc-mc-val green">
+                {s.target_1 ? `₹${Number(s.target_1).toFixed(0)}` : "—"}
+                {cls.targetGainPct !== null && <small className="sc-mc-sub"> (+{cls.targetGainPct.toFixed(0)}%)</small>}
               </span>
             </div>
           </div>
@@ -1038,6 +1057,36 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
         </p>
       </div>
 
+      {/* ─── 1B. EXECUTIVE HUD METRIC RIBBON ─── */}
+      <div className="sc-executive-hud">
+        <div className="sc-hud-tile gold">
+          <div className="sc-hud-lbl">⭐ Prime Alpha</div>
+          <div className="sc-hud-val">{primeAlphaStocks.length} Setups</div>
+          <div className="sc-hud-sub">DNA ≥65 · Vol Surge</div>
+        </div>
+        <div className="sc-hud-tile green">
+          <div className="sc-hud-lbl">🟢 Active Buy Zone</div>
+          <div className="sc-hud-val">{buyZoneCount} Setups</div>
+          <div className="sc-hud-sub">0% to +4.5% of Pivot</div>
+        </div>
+        <div className="sc-hud-tile indigo">
+          <div className="sc-hud-lbl">🤖 ML Edge Pass</div>
+          <div className="sc-hud-val">
+            {patternFilteredStocks.filter((s) => {
+              const patCode = (s.pattern_type || "").split("·")[0].trim().toUpperCase().replace(/[\s\-&]+/g, "_");
+              const g = mlGatesMap[patCode] || Object.values(mlGatesMap).find((item: any) => patCode.includes(item.pattern_type) || (item.pattern_type && item.pattern_type.includes(patCode)));
+              return g && g.survival_verdict !== "PURGE" && g.post_win_rate >= 60;
+            }).length} Setups
+          </div>
+          <div className="sc-hud-sub">Out-of-sample Edge</div>
+        </div>
+        <div className="sc-hud-tile muted">
+          <div className="sc-hud-lbl">🛑 Extended Moves</div>
+          <div className="sc-hud-val">{extendedCount} Stocks</div>
+          <div className="sc-hud-sub">Do Not Chase (&gt;4.5%)</div>
+        </div>
+      </div>
+
       {/* ─── 2. PRIMARY 2-WAY SWITCH BUTTON (NEAR BREAKOUT vs CONFIRMED BREAKOUT) ─── */}
       <div className="sc-segment-switch">
         <button
@@ -1059,7 +1108,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
           onClick={() => {
             setActiveTab("success");
             setSelectedPattern("ALL");
-            setActionFilter("ALL");
+            setActionFilter("BUY_ZONE");
             setMcapFilter("ALL");
           }}
           className={`sc-segment-btn ${activeTab === "success" ? "active success" : ""}`}
@@ -1067,7 +1116,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
           <span className="sc-seg-icon">🚀</span>
           <span className="sc-seg-label">Confirmed Breakout</span>
           <span className="sc-seg-badge">
-            {breakouts.success.length}
+            {buyZoneCount > 0 ? `${buyZoneCount} In Buy Zone` : breakouts.success.length}
           </span>
         </button>
       </div>
@@ -1127,34 +1176,39 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
       {activeTab === "success" && (
         <div className="sc-action-filter-bar">
           <button
-            onClick={() => setActionFilter("ALL")}
-            className={`sc-filter-chip all ${actionFilter === "ALL" ? "active" : ""}`}
-          >
-            All Breakouts ({patternFilteredStocks.length})
-          </button>
-          <button
             onClick={() => setActionFilter("BUY_ZONE")}
             className={`sc-filter-chip buy ${actionFilter === "BUY_ZONE" ? "active" : ""}`}
+            title="Actionable breakouts currently within 0% to 4.5% of breakout level"
           >
             🟢 Buy Zone ({buyZoneCount})
           </button>
           <button
+            onClick={() => setActionFilter("PRIME")}
+            className={`sc-filter-chip prime ${actionFilter === "PRIME" ? "active" : ""}`}
+            title="Curated Prime Alpha: DNA score ≥65, Volume surge ≥1.4x, and ML approved"
+          >
+            ⭐ Prime Alpha ({primeAlphaStocks.length})
+          </button>
+          <button
             onClick={() => setActionFilter("RETEST")}
             className={`sc-filter-chip retest ${actionFilter === "RETEST" ? "active" : ""}`}
+            title="Breakouts successfully retesting their breakout pivot floor"
           >
             🔄 Retest ({retestCount})
           </button>
           <button
             onClick={() => setActionFilter("EXTENDED")}
             className={`sc-filter-chip missed ${actionFilter === "EXTENDED" ? "active" : ""}`}
+            title="Extended moves already up >4.5% from breakout level (Do not chase)"
           >
             🛑 Extended ({extendedCount})
           </button>
           <button
-            onClick={() => setActionFilter("SUBMERGED")}
-            className={`sc-filter-chip submerged ${actionFilter === "SUBMERGED" ? "active" : ""}`}
+            onClick={() => setActionFilter("ALL")}
+            className={`sc-filter-chip all ${actionFilter === "ALL" ? "active" : ""}`}
+            title="View entire archive of breakouts"
           >
-            ⚠️ Submerged ({submergedCount})
+            All Breakouts ({patternFilteredStocks.length})
           </button>
           <button
             onClick={() => setMlGateActive(!mlGateActive)}

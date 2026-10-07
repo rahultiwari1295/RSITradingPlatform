@@ -3024,6 +3024,18 @@ body::before{
   color: #F59E0B;
   border-color: #F59E0B;
 }
+.sc-filter-chip.prime {
+  background: color-mix(in srgb, #F59E0B 12%, transparent);
+  color: #FBBF24;
+  border-color: color-mix(in srgb, #F59E0B 32%, transparent);
+}
+.sc-filter-chip.prime.active {
+  background: #F59E0B;
+  color: #111827;
+  font-weight: 800;
+  border-color: #F59E0B;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.45);
+}
 .sc-filter-chip.ml-gate {
   background: color-mix(in srgb, #6366F1 12%, transparent);
   color: #818CF8;
@@ -3609,8 +3621,8 @@ body::before{
   flex: 1;
   min-width: 0;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
 }
 .sc-mc-col {
   display: flex;
@@ -3619,32 +3631,97 @@ body::before{
 }
 .sc-mc-lbl {
   font-size: 7.5px;
-  font-weight: 750;
-  letter-spacing: 0.04em;
+  font-weight: 800;
+  letter-spacing: 0.05em;
   color: var(--ink3);
   text-transform: uppercase;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
 }
 .sc-mc-val {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 800;
   color: var(--ink1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.sc-mc-val small {
+.sc-mc-val small,
+.sc-mc-sub {
   font-size: 8.5px;
   font-weight: 700;
-  color: #10B981;
+  opacity: 0.9;
 }
 .sc-mc-val.green { color: #10B981; }
 .sc-mc-val.amber { color: #F59E0B; }
 .sc-mc-val.red { color: #EF4444; }
-.sc-mc-val.rr {
-  color: var(--ink1);
+
+/* EXECUTIVE HUD METRIC RIBBON */
+.sc-executive-hud {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+@media (max-width: 640px) {
+  .sc-executive-hud {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+}
+.sc-hud-tile {
+  background: var(--s1);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.sc-hud-tile:hover {
+  transform: translateY(-1px);
+}
+.sc-hud-tile.gold {
+  border-color: color-mix(in srgb, #F59E0B 35%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, #F59E0B 10%, transparent), var(--s1));
+}
+.sc-hud-tile.green {
+  border-color: color-mix(in srgb, #10B981 35%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, #10B981 10%, transparent), var(--s1));
+}
+.sc-hud-tile.indigo {
+  border-color: color-mix(in srgb, #6366F1 35%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, #6366F1 10%, transparent), var(--s1));
+}
+.sc-hud-tile.muted {
+  border-color: var(--line-2);
+  background: var(--s1);
+}
+.sc-hud-lbl {
+  font-size: 8.5px;
   font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-bottom: 2px;
+}
+.sc-hud-tile.gold .sc-hud-lbl { color: #F59E0B; }
+.sc-hud-tile.green .sc-hud-lbl { color: #10B981; }
+.sc-hud-tile.indigo .sc-hud-lbl { color: #818CF8; }
+.sc-hud-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13.5px;
+  font-weight: 850;
+  color: var(--ink1);
+  letter-spacing: -0.02em;
+}
+.sc-hud-sub {
+  font-size: 8px;
+  font-weight: 600;
+  color: var(--ink3);
+  margin-top: 1px;
 }
 
 /* Institutional Flow Tags Footer */
