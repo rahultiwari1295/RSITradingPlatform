@@ -8632,8 +8632,9 @@ body::before{
   --sc-shadow: 0 12px 28px rgba(0,0,0,.22), 0 2px 5px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.07);
   --sc-shadow-hover: 0 24px 48px rgba(0,0,0,.28), 0 8px 18px rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.16);
   max-width: 1240px !important; margin: 0 auto !important;
-  padding: 20px clamp(16px, 3vw, 38px) 56px !important;
+  padding: 20px clamp(12px, 2vw, 24px) 56px !important;
 }
+#screen-screener { padding: 0 !important; }
 @media (min-width: 900px) and (min-height: 861px) {
   .app:has(#screen-screener.active) {width:100vw;max-width:1440px;height:100dvh;max-height:100dvh;border-radius:0;}
   .app:has(#screen-screener.active) .topbar {padding-left:clamp(20px,3vw,48px);padding-right:clamp(20px,3vw,48px);}
@@ -8697,13 +8698,13 @@ body::before{
 .sc-action-badge,.sc-outcome-badge {max-width:100%;white-space:normal;line-height:1.3;}
 .screener-screen-root button {touch-action:manipulation;}
 @media (max-width:760px) {
-  .screener-screen-root {padding:12px 12px 42px !important;}
+  .screener-screen-root {padding:16px 12px 42px !important;}
   .apple-3d-perspective-grid {grid-template-columns:minmax(0,1fr);gap:12px;}
   .sc-hero {min-height:0;padding:22px 20px 20px;border-radius:22px;}
   .sc-hero::after {width:150px;height:150px;right:-35px;opacity:.7;}
 }
 @media (max-width:430px) {
-  .screener-screen-root {padding:10px 10px 38px !important;}
+  .screener-screen-root {padding:14px 10px 38px !important;}
   .sc-global-tf-left {width:100%;justify-content:space-between;}
   .sc-global-tf-select {flex:1;max-width:calc(100% - 62px);}
   .sc-global-tf-right {width:100%;}
@@ -8951,4 +8952,52 @@ body::before{
   .sc-master-tabs { gap: 6px; }
   .sc-master-tab-btn { min-height: 84px; padding-inline: 3px; }
   .sc-mt-title { font-size: 9px; }
+}
+
+/* Slight readability pass for the complete Pattern page (+1px on key copy). */
+.screener-screen-root .sc-hero-badge { font-size: 10px; }
+.screener-screen-root .sc-hero-title { font-size: clamp(26px, calc(4vw + 1px), 35px); }
+.screener-screen-root .sc-hero-sub { font-size: 14px; }
+.screener-screen-root .sc-hero-meta { font-size: 11px; }
+.screener-screen-root .sc-global-tf-lbl { font-size: 12px; }
+.screener-screen-root .sc-global-tf-select { font-size: 14px; }
+.screener-screen-root .sc-master-tab-btn { font-size: 12px; }
+.screener-screen-root .sc-mt-title { font-size: 14px; }
+.screener-screen-root .sc-mt-badge { font-size: 12px; }
+.screener-screen-root .sc-hud-lbl { font-size: 10px; }
+.screener-screen-root .sc-hud-val { font-size: 16px; }
+.screener-screen-root .sc-hud-sub { font-size: 10px; }
+.screener-screen-root .sc-pat-name { font-size: 12px; }
+.screener-screen-root .sc-pat-count-badge { font-size: 10px; }
+.screener-screen-root .sc-mcap-label { font-size: 10px; }
+.screener-screen-root .sc-mcap-chip { font-size: 11px; }
+.screener-screen-root .sc-mcap-count { font-size: 9.5px; }
+.screener-screen-root .sc-sym { font-size: 17px; }
+.screener-screen-root .sc-cmp { font-size: 16px !important; }
+.screener-screen-root .sc-company-line { font-size: 11px; }
+.screener-screen-root .sc-stock-pattern { font-size: 11px; }
+.screener-screen-root .sc-stock-cap,
+.screener-screen-root .sc-stock-history { font-size: 10px; }
+.screener-screen-root .sc-levels-panel .apple-metric-lbl { font-size: 9px; }
+.screener-screen-root .sc-levels-panel .apple-metric-val { font-size: 13px; }
+.screener-screen-root .apple-level-detail { font-size: 9px; }
+.screener-screen-root .apple-pill-badge { font-size: 10px; }
+.screener-screen-root .apple-inspect-pill { font-size: 11px; }
+@media (max-width: 600px) {
+  .screener-screen-root .sc-hero-title { font-size: 26px; }
+  .screener-screen-root .sc-hero-sub { font-size: 13px; }
+  .screener-screen-root .sc-master-tab-btn { font-size: 11px; }
+  .screener-screen-root .sc-mt-title { font-size: 11px; }
+  .screener-screen-root .sc-mt-badge { font-size: 11px; }
+  .screener-screen-root .sc-hud-val { font-size: 14px; }
+  .screener-screen-root .sc-hud-sub { font-size: 9px; }
+  .screener-screen-root .sc-sym { font-size: 15px; }
+  .screener-screen-root .sc-cmp { font-size: 14px !important; }
+  .screener-screen-root .sc-company-line { font-size: 11px; }
+  .screener-screen-root .sc-levels-panel .apple-metric-val { font-size: 12px; }
+  .screener-screen-root .apple-inspect-pill { font-size: 10px; }
+}
+@media (max-width: 360px) {
+  .screener-screen-root .sc-master-tab-btn { font-size: 10px; }
+  .screener-screen-root .sc-mt-title { font-size: 10px; }
 }
