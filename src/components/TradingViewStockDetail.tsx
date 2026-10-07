@@ -386,6 +386,7 @@ export function getConvictionTier(score: number | undefined) {
 
 interface TradingViewStockDetailProps {
   trade: any;
+  portfolioView?: boolean;
   theme?: "light" | "dark";
   onOpenChart?: (symbol: string) => void;
   onOpenDna?: (symbol: string) => void;
@@ -396,6 +397,7 @@ interface TradingViewStockDetailProps {
 
 export default function TradingViewStockDetail({
   trade: t,
+  portfolioView = false,
   theme = "dark",
   onOpenChart,
   onOpenDna,
@@ -702,7 +704,7 @@ export default function TradingViewStockDetail({
 
 
   return (
-    <div className="signal-terminal-modal stock-detail-common" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div className={`signal-terminal-modal stock-detail-common${portfolioView ? " portfolio-stock-detail" : ""}`} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* 0. Suspended Floating VisionOS Top Navigation Bar */}
       <nav className="suspended-vision-nav">
         {/* Left: Stock Identity & Live Price Quick Pill */}
@@ -760,7 +762,7 @@ export default function TradingViewStockDetail({
       </nav>
 
       {/* 1. Stock Identity & Quick Actions Hero (Depth Card) */}
-      <div className="depth-card" style={{ padding: "16px 16px" }}>
+      <div className="depth-card portfolio-stock-overview" style={{ padding: "16px 16px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div
@@ -953,6 +955,7 @@ export default function TradingViewStockDetail({
               marginTop: 12,
               fontFamily: "'JetBrains Mono', monospace",
             }}
+            className="portfolio-risk-nodes"
           >
             <div className="carved-trench" style={{ padding: "8px 10px", textAlign: "left" }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: "var(--apple-red)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Stop Loss</div>

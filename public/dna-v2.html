@@ -2006,6 +2006,38 @@
       .citadel-card { border-radius:16px; }
       .app-main-content { padding-bottom:84px; }
     }
+
+    /* Embedded DNA surfaces align to the native app's 14px screen gutter. */
+    html[data-embedded="true"] .app-frame-wrapper { max-width:none; }
+    html[data-embedded="true"] #dnaHomeView {
+      width:100%;
+      max-width:none;
+      margin-inline:0;
+      padding:14px 14px 40px !important;
+    }
+    html[data-embedded="true"] .search-hero-section { margin-inline:14px; }
+    html[data-embedded="true"][data-report-open="true"] .search-hero-section {
+      margin-inline:0;
+      padding-inline:14px;
+    }
+    html[data-embedded="true"] .stock-hero-card {
+      width:100%;
+      max-width:none;
+      margin:14px 0 10px;
+    }
+    html[data-embedded="true"] .report-welcome {
+      width:100%;
+      max-width:none;
+      margin-inline:0;
+      padding-inline:0;
+    }
+    html[data-embedded="true"] .report-subnav-sticky { padding-inline:14px; }
+    html[data-embedded="true"] .report-tab-pane {
+      width:100%;
+      max-width:none;
+      margin-inline:0;
+      padding-inline:0;
+    }
   </style>
 </head>
 <body>

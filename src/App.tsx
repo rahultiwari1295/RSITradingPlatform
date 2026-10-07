@@ -3380,6 +3380,7 @@ export default function App() {
             <div className="signal-page-container" style={{ width: "100%", maxWidth: "100%", padding: 0 }}>
               <TradingViewStockDetail
                 trade={selectedSignalTrade}
+                portfolioView={Boolean(selectedSignalTrade.portfolioDetail)}
                 theme={theme}
                 INR={INR}
                 INR2={INR2}
@@ -4380,7 +4381,7 @@ export default function App() {
         <section className={`screen ${activeTab === "portfolio" ? "active" : ""}`} id="screen-portfolio">
           {!user && (
             <div
-              className="card"
+              className="pf-guest-ledger"
               style={{
                 padding: "12px 16px",
                 marginBottom: 8,

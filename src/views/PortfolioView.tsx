@@ -189,6 +189,7 @@ export default function PortfolioView({
 
     const itemData = {
       ...holding,
+      portfolioDetail: true,
       symbol: sym,
       currentPrice: cur,
       entryPrice: buy,
@@ -205,13 +206,14 @@ export default function PortfolioView({
   return (
     <div className="pf-page" style={{ paddingBottom: 24 }}>
       <header className="pf-page-heading">
+        <span className="pf-page-kicker">Your capital</span>
         <h1>Portfolio</h1>
       </header>
       {/* Portfolio value and performance */}
       <div className="pf-hero">
         <div className="pf-hero-head">
           <div className="pf-hero-kicker">
-            <div className="pf-hero-lbl">Total Portfolio Value</div>
+            <div className="pf-hero-lbl">Net portfolio value</div>
             <span className="pf-sync-tag">Live prices when available</span>
           </div>
 
@@ -244,16 +246,16 @@ export default function PortfolioView({
             <div className="pf-strip-value">{formatINR(totalInvested)}</div>
           </div>
           <div className="pf-strip-item">
-            <div className="pf-strip-label">Realized P&L</div>
+            <div className="pf-strip-label">Realized</div>
             <div className={`pf-strip-value ${totalRealizedPnL >= 0 ? "up" : "down"}`}>
               {totalRealizedPnL >= 0 ? "+" : "−"}{formatINR(Math.abs(totalRealizedPnL))}
             </div>
           </div>
           <div className="pf-strip-item">
-            <div className="pf-strip-label">Win Rate</div>
+            <div className="pf-strip-label">Open positions</div>
             <div className="pf-strip-value">
-              {winCount + lossCount > 0 ? `${winRate}%` : "—"}
-              {winCount + lossCount > 0 && <span className="pf-strip-sub"> ({winCount}W·{lossCount}L)</span>}
+              {activeHoldings.length}
+              <span className="pf-strip-sub"> {activeHoldings.length === 1 ? "position" : "positions"}</span>
             </div>
           </div>
         </div>
@@ -395,24 +397,6 @@ export default function PortfolioView({
                             </div>
                           </div>
                         </div>
-                        <div className="pf-card-context-row">
-                          <div className="pf-card-badges">
-                            <span className="pf-tag qty">{qty} shares</span>
-                            {!isManual && (
-                              <span className={`pf-tag ${holdingEngine === "v2" ? "blue" : "purple"}`}>
-                                {holdingEngine === "v2" ? "V2 AI" : "V3 AI"}
-                              </span>
-                            )}
-                            {!isManual && (isSignalActive ? (
-                              <span className="pf-tag active"><span className="pf-tag-dot" /> Active</span>
-                            ) : (
-                              <span className="pf-tag closed">Ended</span>
-                            ))}
-                          </div>
-                          <div className="pf-card-meta">
-                            {stratName} <span aria-hidden="true">·</span> {formatSignalDate(holding.date || holding.buyDate)}
-                          </div>
-                        </div>
                       </div>
                     </div>
 
@@ -424,7 +408,7 @@ export default function PortfolioView({
                       </div>
                       <div className="pf-data-cell">
                         <span className="pf-data-k">
-                          Current price
+                          Current
                         </span>
                         <span className="pf-data-v">{cur ? formatINR(cur) : "—"}</span>
                       </div>
@@ -433,7 +417,7 @@ export default function PortfolioView({
                         <span className="pf-data-v">{formatINR(invested)}</span>
                       </div>
                       <div className="pf-data-cell">
-                        <span className="pf-data-k">Current value</span>
+                        <span className="pf-data-k">Value now</span>
                         <span className="pf-data-v">{currentVal ? formatINR(currentVal) : "—"}</span>
                       </div>
                     </div>
@@ -445,6 +429,14 @@ export default function PortfolioView({
                         <span>Signal ended <span aria-hidden="true">·</span> Review this position</span>
                       </div>
                     )}
+
+                    <div className="pf-card-summary" aria-label="Position details">
+                      <span className="pf-card-summary-qty">{qty} shares</span>
+                      <span className="pf-card-summary-separator" aria-hidden="true">·</span>
+                      <span className="pf-card-summary-strategy">{isManual ? "Manual" : stratName}</span>
+                      <span className="pf-card-summary-separator" aria-hidden="true">·</span>
+                      <span className="pf-card-summary-date">{formatSignalDate(holding.date || holding.buyDate)}</span>
+                    </div>
 
                     {/* Compact Action Toolbar */}
                     <div className="pf-card-actions" onClick={(e) => e.stopPropagation()}>
@@ -470,7 +462,7 @@ export default function PortfolioView({
                         }
                       >
                         <ArrowUpRight style={{ width: 13, height: 13 }} />
-                        <span>Sell position</span>
+                        <span>Exit</span>
                       </button>
 
                       {onDeleteTrade && (
@@ -482,6 +474,7 @@ export default function PortfolioView({
                             }
                           }}
                           title="Delete holding"
+                          aria-label={`Delete ${sym} holding`}
                         >
                           <Trash2 style={{ width: 13, height: 13 }} />
                         </button>
