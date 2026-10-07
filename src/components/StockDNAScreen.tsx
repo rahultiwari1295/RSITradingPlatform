@@ -9,15 +9,12 @@ interface StockDNAScreenProps {
 
 /**
  * StockDNAScreen
- * Embeds the ultra-premium mobile-first Stock DNA Story experience.
+ * Embeds the V2 audited Stock DNA report.
  * Features:
  *  - Dynamic Light & Dark Mode synchronization with top header toggle
- *  - 180° Speedometer Arc Gauge with animated needle & institutional verdict
- *  - 3-Card Tactical Action Plan (Buy The Dip, Momentum Breakout, Emergency Exit)
- *  - Interactive 4-Month Tactical & 1-Year Macro Candlestick Charts with Lightbox Modal
- *  - Sector Peer Alternatives Comparison Matrix
- *  - The 7 Plain-English Burning Questions with Smart Investor Compass
- *  - DNA Home Search Console with live autocomplete and discovery radar shelves
+ *  - Audited statements, ratios, ownership, dividends, and quarterly earnings
+ *  - Live search and stock report rendering from the existing DNA API
+ *  - Responsive report tabs with an in-app theme and navigation bridge
  */
 export default function StockDNAScreen({ theme, resetTrigger, selectedStock, onSwitchTab }: StockDNAScreenProps) {
   const [iframeLoaded, setIframeLoaded] = useState(false);
@@ -33,7 +30,8 @@ export default function StockDNAScreen({ theme, resetTrigger, selectedStock, onS
     const params = new URLSearchParams();
     if (s) params.set("stock", s);
     params.set("theme", th);
-    return `/dna-mobile-story.html?${params.toString()}`;
+    params.set("embed", "1");
+    return `/dna-v2.html?${params.toString()}`;
   };
 
   const [targetSrc, setTargetSrc] = useState(() => {
