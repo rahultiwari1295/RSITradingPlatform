@@ -163,14 +163,14 @@ const MASTER_PATTERNS = [
 export function normalizePatternId(rawType?: string): string {
   if (!rawType) return "OTHER";
   const s = rawType.toLowerCase();
-  if (s.includes("breakout rally") || s.includes("volume breakout")) return "BREAKOUT_RALLY";
-  if (s.includes("double bottom") || s.includes("w-reversal")) return "DOUBLE_BOTTOM";
-  if (s.includes("horizontal") || s.includes("rectangle") || s.includes("box")) return "HORIZONTAL_RANGE";
+  if (s.includes("breakout rally") || s.includes("volume breakout") || s.includes("flag")) return "BREAKOUT_RALLY";
+  if (s.includes("double bottom") || s.includes("double") || s.includes("w-reversal")) return "DOUBLE_BOTTOM";
+  if (s.includes("horizontal") || s.includes("rectangle") || s.includes("box") || s.includes("multi_year") || s.includes("multi-year") || s.includes("saucer") || s.includes("darvas")) return "HORIZONTAL_RANGE";
   if (s.includes("pullback") || s.includes("50-day") || s.includes("ema")) return "PULLBACK";
   if (s.includes("volatility") || s.includes("vcp") || s.includes("squeeze")) return "VCP_SQUEEZE";
   if (s.includes("triangle") || s.includes("wedge")) return "TRIANGLE";
   if (s.includes("cup") || s.includes("handle")) return "CUP_HANDLE";
-  if (s.includes("head & shoulders") || s.includes("inverse head")) return "INV_HEAD_SHOULDERS";
+  if (s.includes("head") || s.includes("ihns")) return "INV_HEAD_SHOULDERS";
   return "OTHER";
 }
 
@@ -626,13 +626,25 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
   // Dynamic Timeframe counts across filtered set
   const timeframeCounts = useMemo(() => {
     const counts: Record<string, number> = { ALL: 0, DAILY: 0, WEEKLY: 0, MONTHLY: 0 };
+    const seenM = new Set<string>();
+    const seenW = new Set<string>();
+    const seenD = new Set<string>();
+    const seenAll = new Set<string>();
+
     patternFilteredStocks.forEach((s) => {
-      counts.ALL++;
+      const sym = (s.symbol || "").toUpperCase();
+      if (!sym) return;
+      seenAll.add(sym);
       const tf = (s.timeframe || "DAILY").toUpperCase();
-      if (tf === "MONTHLY") counts.MONTHLY++;
-      else if (tf === "WEEKLY") counts.WEEKLY++;
-      else counts.DAILY++;
+      if (tf === "MONTHLY") seenM.add(sym);
+      else if (tf === "WEEKLY") seenW.add(sym);
+      else seenD.add(sym);
     });
+
+    counts.ALL = seenAll.size;
+    counts.MONTHLY = seenM.size;
+    counts.WEEKLY = seenW.size;
+    counts.DAILY = seenD.size;
     return counts;
   }, [patternFilteredStocks]);
 
@@ -653,7 +665,15 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
       list = list.filter((s) => matchesMcap(s, mcapFilter));
     }
 
-    // Defensive symbol deduplication in timeline view
+    // Prioritize highest timeframe structure (MONTHLY > WEEKLY > DAILY) and quality score
+    const tfWeight: Record<string, number> = { MONTHLY: 3, WEEKLY: 2, DAILY: 1 };
+    list.sort((a, b) => {
+      const wA = (tfWeight[(a.timeframe || "DAILY").toUpperCase()] || 1) * 1000 + (a.dna_score || 0);
+      const wB = (tfWeight[(b.timeframe || "DAILY").toUpperCase()] || 1) * 1000 + (b.dna_score || 0);
+      return wB - wA;
+    });
+
+    // Defensive symbol deduplication in timeline view (guarantees zero duplicate cards)
     const listSeen = new Set<string>();
     list = list.filter((s) => {
       const sym = (s.symbol || "").toUpperCase();
@@ -742,6 +762,14 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
       list = list.filter((s) => matchesMcap(s, mcapFilter));
     }
 
+    // Prioritize highest timeframe structure (MONTHLY > WEEKLY > DAILY)
+    const tfWeight: Record<string, number> = { MONTHLY: 3, WEEKLY: 2, DAILY: 1 };
+    list.sort((a: any, b: any) => {
+      const wA = (tfWeight[(a.timeframe || "DAILY").toUpperCase()] || 1) * 1000 + (a.dna_score || 0);
+      const wB = (tfWeight[(b.timeframe || "DAILY").toUpperCase()] || 1) * 1000 + (b.dna_score || 0);
+      return wB - wA;
+    });
+
     // Defensive symbol deduplication in near breakout list
     const nearSeen = new Set<string>();
     list = list.filter((s) => {
@@ -817,7 +845,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
                 </span>
                 {s.pattern_type && (
                   <span className="sc-pill pattern">
-                    {s.pattern_type.split("·")[0].replace("Multi-Year Base", "Base").trim()}
+                    {s.pattern_type.split("·")[0].trim()}
                   </span>
                 )}
               </div>
