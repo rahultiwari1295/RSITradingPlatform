@@ -337,8 +337,8 @@ export const quantsyncApi = {
       win_rate_pct: number;
     }>(`/api/screener/accuracy?days=${days}`),
 
-  getStockDetail: (symbol: string) =>
-    apiFetch<any>(`/api/stock/detail/${encodeURIComponent(symbol)}`),
+  getStockDetail: (symbol: string, timeframe?: string) =>
+    apiFetch<any>(`/api/stock/detail/${encodeURIComponent(symbol)}${timeframe ? `?timeframe=${encodeURIComponent(timeframe)}` : ""}`),
 
   searchSymbols: (query: string) =>
     apiFetch<Array<{ symbol: string; name?: string; token?: string; price?: number; candleCount?: number }>>(

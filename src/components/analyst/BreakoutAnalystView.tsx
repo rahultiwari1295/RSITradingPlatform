@@ -120,7 +120,7 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
     }, 550);
 
     quantsyncApi
-      .getStockDetail(cleanSymbol)
+      .getStockDetail(cleanSymbol, rawInputTf)
       .then((detail) => {
         if (isMounted && detail) {
           setApiData(detail);
@@ -144,7 +144,7 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, [cleanSymbol]);
+  }, [cleanSymbol, rawInputTf]);
 
   // ── 2. Independent Chart Generation & Preload (Runs smoothly when timeframe or reload key changes) ──
   useEffect(() => {
@@ -211,15 +211,21 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
     };
   }, [cleanSymbol, dnaTimeframe, theme, chartReloadKey]);
 
-  // Dynamic Factual Fields strictly from API response (ZERO hardcoded fallback numbers)
-  const stockName = apiData?.company_name || stock.name || cleanSymbol;
-  const sector = apiData?.sector || stock.sector || "Equities";
-  const patternName = apiData?.pattern_type || stock.stage || stock.pattern || "Breakout Setup";
+  // Dynamic Factual Fields strictly from Screener Candidate & API (ZERO contradictory overwrite)
+  const stockName = stock.company_name || apiData?.company_name || stock.name || cleanSymbol;
+  const sector = stock.sector || apiData?.sector || "Equities";
 
-  const cmp: number | null = apiData?.curr_price ?? stock.currentPrice ?? (stock as any).curr_price ?? (stock as any).price ?? null;
-  const entryPrice: number | null = stock.breakoutPrice ?? (stock as any).pivot_price ?? (stock as any).breakout_level ?? apiData?.breakout_level ?? null;
-  const targetPrice: number | null = stock.targetPrice ?? (stock as any).target_1 ?? apiData?.target_1 ?? null;
-  const stopLossPrice: number | null = stock.stopLossPrice ?? (stock as any).stop_loss ?? apiData?.stop_loss ?? null;
+  // Prioritize verified candidate pattern from screener row (e.g. Symmetrical Triangle, Cup & Handle, Multi-Year Base)
+  const rawCandidatePattern = stock.pattern_type || (stock as any).pattern_name || stock.pattern || stock.stage;
+  const isGeneric = (p: string) => !p || p.toLowerCase().includes("other") || p.toLowerCase().includes("breakout setup");
+  const patternName = (!isGeneric(rawCandidatePattern) && !rawCandidatePattern.toLowerCase().includes("double top"))
+    ? rawCandidatePattern
+    : (apiData?.pattern_type || rawCandidatePattern || "Breakout Setup");
+
+  const cmp: number | null = stock.curr_price ?? apiData?.curr_price ?? stock.currentPrice ?? (stock as any).price ?? null;
+  const entryPrice: number | null = stock.breakout_level ?? (stock as any).pivot_price ?? stock.breakoutPrice ?? apiData?.breakout_level ?? null;
+  const targetPrice: number | null = (stock as any).target_1 ?? stock.targetPrice ?? apiData?.target_1 ?? null;
+  const stopLossPrice: number | null = (stock as any).stop_loss ?? stock.stopLossPrice ?? apiData?.stop_loss ?? null;
 
   const low52: number | null = apiData?.w52_low ?? null;
   const high52: number | null = apiData?.w52_high ?? null;
