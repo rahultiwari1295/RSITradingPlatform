@@ -422,15 +422,9 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
   const [closedTotal, setClosedTotal] = useState<number>(0);
   const [closedLoading, setClosedLoading] = useState<boolean>(false);
 
-  const [loading, setLoading] = useState<boolean>(() => {
-    return !SCREENER_MEMORY_CACHE["near_breakout"];
-  });
-  const [rawStocks, setRawStocks] = useState<any[]>(() => {
-    return SCREENER_MEMORY_CACHE["near_breakout"]?.rows || [];
-  });
-  const [scanDate, setScanDate] = useState<string>(() => {
-    return SCREENER_MEMORY_CACHE["near_breakout"]?.scan_date || "";
-  });
+  const [loading, setLoading] = useState<boolean>(true);
+  const [rawStocks, setRawStocks] = useState<any[]>([]);
+  const [scanDate, setScanDate] = useState<string>("");
 
   const [breakouts, setBreakouts] = useState<{ success: any[]; near_breakout: any[] }>({
     success: [],
@@ -739,8 +733,8 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
     const stockWithLive = liveItem ? { ...s, curr_price: currentPrice } : s;
 
     const cls = getBreakoutClassification(stockWithLive);
-    const score = s.dna_score || 50;
-    const scoreColor = score >= 75 ? "var(--apple-green)" : score >= 50 ? "var(--apple-gold)" : "var(--apple-red)";
+    const score = s.dna_score === undefined || s.dna_score === null ? null : Number(s.dna_score);
+    const scoreColor = (score ?? 0) >= 75 ? "var(--apple-green)" : (score ?? 0) >= 50 ? "var(--apple-gold)" : "var(--apple-red)";
     const avatarGrad = AVATAR_GRADS[idx % AVATAR_GRADS.length];
 
     const isRetest = s._tradeType === "RETEST" || cls.executionState === "RETEST";
@@ -755,13 +749,13 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
       ? "runner-glow"
       : "buy-glow";
 
-    let actionBadge = { text: `🟢 Buy Zone (+${cls.diffPct.toFixed(1)}%)`, cls: "buy" };
+    let actionBadge = { text: "Near entry", cls: "buy" };
     if (isRetest) {
-      actionBadge = { text: `🔄 Retest (${cls.diffPct >= 0 ? "+" : ""}${cls.diffPct.toFixed(1)}%)`, cls: "retest" };
+      actionBadge = { text: "Retest", cls: "retest" };
     } else if (isRadar) {
-      actionBadge = { text: `🎯 Radar (${cls.diffAbs.toFixed(1)}% to Trigger)`, cls: "near" };
+      actionBadge = { text: "Near pivot", cls: "near" };
     } else if (isRunner) {
-      actionBadge = { text: `⚡ Runner (+${cls.diffPct.toFixed(1)}%)`, cls: "missed" };
+      actionBadge = { text: "In progress", cls: "missed" };
     }
 
     const patClean = (s.pattern_type || "Setup").split("·")[0].trim();
@@ -771,114 +765,89 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
     const acc = patternAccuracy?.matrix?.[accKey] || patternAccuracy?.by_pattern?.[patCode];
 
     return (
-      <div
+      <article
         key={`${sym}-${idx}`}
         onClick={() => handleStockClick(stockWithLive)}
         className={`apple-3d-card ${glowClass}`}
         role="button"
         tabIndex={0}
+        aria-label={`${sym}, ${patClean}, ${actionBadge.text}. Open setup details`}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            handleStockClick(stockWithLive);
+          }
+        }}
       >
-        {/* Row 1: Header with Symbol, Timeframe, CMP & Action Pill */}
-        <div className="sc-card-head" style={{ marginBottom: 4 }}>
+        <div className="sc-card-head sc-stock-head">
           <div className="sc-card-left" style={{ gap: 10 }}>
-            <div className="sc-avatar" style={{ background: avatarGrad, width: 36, height: 36, borderRadius: 10, fontSize: 13 }}>
+            <div className="sc-avatar sc-stock-avatar" style={{ background: avatarGrad }}>
               {sym.slice(0, 2) || "ST"}
             </div>
             <div className="sc-card-id-block">
-              <div className="sc-sym-row" style={{ gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                <span className="sc-sym" style={{ fontSize: 16 }}>{sym}</span>
-                <span className="sc-pill tf-dur">
-                  {s.timeframe === "MONTHLY" ? "👑 1M" : s.timeframe === "WEEKLY" ? "🏛️ 1W" : "⚡ 1D"}
-                  {s.base_duration_years ? ` · ${Number(s.base_duration_years).toFixed(1)}y Base` : ""}
-                </span>
-                {isRetest && (
-                  <span className="sc-pill retest-pill" title="Testing breakout pivot floor as confirmed support">
-                    🔄 RETEST
-                  </span>
-                )}
+              <div className="sc-sym-row sc-stock-identity">
+                <span className="sc-sym">{sym}</span>
+                <span className="sc-pill tf-dur">{s.timeframe === "MONTHLY" ? "1M" : s.timeframe === "WEEKLY" ? "1W" : "1D"}</span>
               </div>
+              <div className="sc-company-line">{s.company_name || s.sector || "NSE listed equity"}</div>
             </div>
           </div>
 
-          <div className="sc-card-right" style={{ textAlign: "right" }}>
-            <div className={`sc-cmp ${liveItem ? "live-tick" : ""}`} style={{ fontSize: 16, fontWeight: 800 }}>
+          <div className="sc-card-right sc-stock-quote">
+            <div className={`sc-cmp ${liveItem ? "live-tick" : ""}`}>
               ₹{Number(currentPrice || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <div className={`sc-action-badge ${actionBadge.cls}`} style={{ marginTop: 3 }}>
-              {actionBadge.text}
-            </div>
+            <span className={`sc-action-badge ${actionBadge.cls}`}>{actionBadge.text}</span>
           </div>
         </div>
 
-        {/* Row 2: Subtitle with Pattern name, Company & Cap */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 6, marginBottom: 10, padding: "0 2px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <span className="sc-pill pattern" style={{ fontSize: 10, fontWeight: 700 }}>
-              🏛️ {patClean}
-            </span>
-            <span style={{ fontSize: 11, color: "var(--ink-muted)" }}>
-              {s.company_name || s.sector || "NSE Equity"} · {s.mcap_tier || "Mid-Cap"}
-            </span>
-          </div>
+        <div className="sc-stock-context">
+          <span className="sc-stock-pattern">{patClean}</span>
+          {s.mcap_tier && <span className="sc-stock-cap">{s.mcap_tier}</span>}
           {acc && acc.win_rate_pct > 0 && (
-            <span className="sc-pill accuracy-pill" style={{ fontSize: 10 }}>
-              🏆 {acc.win_rate_pct}% Historical Edge
+            <span className="sc-stock-history" title="Historical win rate for this pattern and timeframe">
+              {acc.win_rate_pct}% historical win rate
             </span>
           )}
         </div>
 
-        {/* Row 3: 3-Column Execution Levels Trench */}
-        <div className="apple-metric-trench" style={{ margin: "0 0 10px" }}>
+        <div className="sc-levels-panel">
           <div className="apple-metric-col">
-            <span className="apple-metric-lbl">ENTRY PIVOT</span>
+            <span className="apple-metric-lbl">Pivot</span>
             <span className="apple-metric-val amber">
               {s.breakout_level ? `₹${Number(s.breakout_level).toFixed(1)}` : "—"}
-              <small className="apple-metric-sub">({cls.diffPct >= 0 ? `+${cls.diffPct.toFixed(1)}%` : `${cls.diffPct.toFixed(1)}%`})</small>
             </span>
+            <small className="apple-level-detail">{cls.diffPct >= 0 ? "+" : ""}{cls.diffPct.toFixed(1)}% from price</small>
           </div>
           <div className="apple-metric-col">
-            <span className="apple-metric-lbl">STOP LOSS</span>
+            <span className="apple-metric-lbl">Risk level</span>
             <span className="apple-metric-val red">
               {s.stop_loss ? `₹${Number(s.stop_loss).toFixed(1)}` : "—"}
-              {currentPrice > 0 && Number(s.stop_loss || 0) > 0 && currentPrice > Number(s.stop_loss) && (
-                <small className="apple-metric-sub">(-{Math.abs((currentPrice - Number(s.stop_loss)) / currentPrice * 100).toFixed(1)}%)</small>
-              )}
             </span>
+            <small className="apple-level-detail">Stop</small>
           </div>
           <div className="apple-metric-col">
-            <span className="apple-metric-lbl">TARGET 1</span>
+            <span className="apple-metric-lbl">Target</span>
             <span className="apple-metric-val green">
               {s.target_1 ? `₹${Number(s.target_1).toFixed(0)}` : "—"}
-              {cls.targetGainPct !== null && <small className="apple-metric-sub">(+{cls.targetGainPct.toFixed(0)}%)</small>}
             </span>
+            <small className="apple-level-detail">{cls.targetGainPct !== null ? `+${cls.targetGainPct.toFixed(0)}% potential` : "Strategy target"}</small>
           </div>
         </div>
 
-        {/* Row 4: Card Footer with Flow Badges + Inspect Trigger */}
         <div className="apple-card-footer">
           <div className="apple-tags-row">
-            <span className="apple-pill-badge">
-              ⚡ {s.volume_ratio_20d ? `${Number(s.volume_ratio_20d).toFixed(1)}×` : "1.8×"} Vol
-            </span>
-            <span className="apple-pill-badge">
-              RSI {s.rsi !== null && s.rsi !== undefined ? Number(s.rsi).toFixed(0) : "58"}
-            </span>
-            {s.mcap_tier && (
-              <span className="apple-pill-badge">
-                {s.mcap_tier}
-              </span>
-            )}
-            <span className="apple-pill-badge" style={{ color: scoreColor, fontWeight: 800 }}>
-              DNA {score}/100
-            </span>
+            {s.volume_ratio_20d != null && <span className="apple-pill-badge">Volume {Number(s.volume_ratio_20d).toFixed(1)}×</span>}
+            {s.rsi != null && <span className="apple-pill-badge">RSI {Number(s.rsi).toFixed(0)}</span>}
+            {score !== null && Number.isFinite(score) && <span className="apple-pill-badge" style={{ color: scoreColor }}>Quality {score}/100</span>}
           </div>
 
           <div className="apple-inspect-pill">
-            <span>Inspect 3D Chart</span>
+            <span>View setup</span>
             <span style={{ fontSize: 13 }}>↗</span>
           </div>
         </div>
-      </div>
+      </article>
     );
   };
 
@@ -897,10 +866,10 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
     const maxGain = Number(c.max_gain_pct || c.realized_pnl_pct || 0);
 
     const outcomeText = isWin
-      ? `🏆 Target Hit (+${pnl.toFixed(1)}%)`
+      ? `Target hit · ${pnl >= 0 ? "+" : ""}${pnl.toFixed(1)}%`
       : isLoss
-      ? `🛑 Stopped Out (${pnl.toFixed(1)}%)`
-      : `⏱️ Time-Stop (${pnl.toFixed(1)}%)`;
+      ? `Stop hit · ${pnl.toFixed(1)}%`
+      : `Time exit · ${pnl >= 0 ? "+" : ""}${pnl.toFixed(1)}%`;
 
     const pivot = Number(c.pivot_price || 0);
     const exitPrice = pivot > 0 && pnl !== 0 ? pivot * (1 + pnl / 100) : Number(c.target_price || pivot);
@@ -908,12 +877,19 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
     const patClean = (c.pattern_name || c.pattern_type || "Setup").split("·")[0].trim();
 
     return (
-      <div
+      <article
         key={c.id || `${sym}-${idx}`}
         onClick={() => handleStockClick(c)}
         className={`apple-3d-card ${glowClass}`}
         role="button"
         tabIndex={0}
+        aria-label={`${sym}, ${patClean}, ${outcomeText}. Inspect trade details`}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            handleStockClick(c);
+          }
+        }}
       >
         {/* Row 1: Header with Symbol, Timeframe, Pattern & Result Badge */}
         <div className="sc-card-head" style={{ marginBottom: 6 }}>
@@ -924,9 +900,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
             <div className="sc-card-id-block">
               <div className="sc-sym-row" style={{ gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                 <span className="sc-sym" style={{ fontSize: 16 }}>{sym}</span>
-                <span className="sc-pill tf-dur">
-                  {c.timeframe === "MONTHLY" ? "👑 1M" : c.timeframe === "WEEKLY" ? "🏛️ 1W" : "⚡ 1D"}
-                </span>
+                <span className="sc-pill tf-dur">{c.timeframe === "MONTHLY" ? "1M" : c.timeframe === "WEEKLY" ? "1W" : "1D"}</span>
                 <span className="sc-pill pattern">
                   {patClean}
                 </span>
@@ -941,19 +915,18 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
         </div>
 
         {/* Row 2: Clean Date Timeline Ribbon (Never Truncates!) */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 6, background: "rgba(255,255,255,0.03)", padding: "6px 12px", borderRadius: 8, fontSize: 11, color: "var(--ink-muted)", marginBottom: 10, border: "1px solid var(--border-subtle)" }}>
+        <div className="sc-closed-meta">
           <span style={{ display: "inline-flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
-            <span>📅 Entered:</span> <b style={{ color: "var(--ink-primary)" }}>{formatDateStr(c.breakout_date)}</b>
-            <span style={{ margin: "0 2px" }}>➔</span>
-            <span>Exited:</span> <b style={{ color: "var(--ink-primary)" }}>{formatDateStr(c.exit_date)}</b>
+            <span>Entry</span> <b>{formatDateStr(c.breakout_date)}</b>
+            <span className="sc-closed-arrow">→</span>
+            <span>Exit</span> <b>{formatDateStr(c.exit_date)}</b>
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <span>⏱️ Holding:</span> <b style={{ color: "var(--apple-blue)" }}>{c.holding_bars || 1} {Number(c.holding_bars || 1) === 1 ? "day" : "days"}</b>
+            <span>Held</span> <b>{c.holding_bars || 1} {Number(c.holding_bars || 1) === 1 ? "day" : "days"}</b>
           </span>
         </div>
 
-        {/* Row 3: 4-Column Apple Inset Metric Trench */}
-        <div className="apple-metric-trench" style={{ gridTemplateColumns: "repeat(4, 1fr)", margin: "0 0 10px" }}>
+        <div className="sc-levels-panel sc-closed-levels">
           <div className="apple-metric-col">
             <span className="apple-metric-lbl">ENTRY PIVOT</span>
             <span className="apple-metric-val amber">
@@ -981,57 +954,54 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
         </div>
 
         <div className="apple-card-footer">
-          <div style={{ fontSize: 10.5, color: "var(--ink-muted)" }}>
-            Status: <b style={{ color: "var(--ink-primary)" }}>{c.outcome_status}</b> · Historical Audit
+          <div className="sc-closed-status">
+            <b>{c.outcome_status || (isWin ? "TARGET HIT" : isLoss ? "STOP HIT" : "TIME EXIT")}</b> · Historical trade
           </div>
           <div className="apple-inspect-pill">
             <span>Inspect Trade</span>
             <span style={{ fontSize: 13 }}>↗</span>
           </div>
         </div>
-      </div>
+      </article>
     );
   };
 
   return (
-    <div className="screener-screen-root" style={{ padding: "8px 6px 36px", width: "100%", maxWidth: "100%", margin: "0" }}>
+    <div className="screener-screen-root" style={{ padding: "14px 14px 44px", width: "100%", maxWidth: "100%", margin: "0" }}>
       {/* ─── 1. REFINED COMPACT HERO BANNER ─── */}
       <div className="sc-hero">
         <div className="sc-hero-badge">
-          <span>⚡</span>
-          <span>QuantSync Screener</span>
+          <span className="sc-live-dot" aria-hidden="true" />
+          <span>QUANTSYNC · MARKET SCANNER</span>
         </div>
         <h1 className="sc-hero-title">
-          Pattern & Breakout Intelligence
+          Pattern intelligence
         </h1>
         <p className="sc-hero-sub">
-          Institutional chart pattern setups across NSE equities · Updated {scanDate || "Daily"}
+          A clear view of emerging setups, active breakouts, and completed trades across NSE equities.
         </p>
+        <div className="sc-hero-meta">
+          <span><span className="sc-live-dot" aria-hidden="true" /> {scanDate ? `Last scan ${scanDate}` : "NSE equities"}</span>
+          <span className="sc-hero-meta-divider" />
+          <span>Prices update live when available</span>
+        </div>
       </div>
 
-      {/* ─── 2. GLOBAL TIMEFRAME SELECTION BAR + UNDER-THE-HOOD ML BADGE ─── */}
+      {/* ─── 2. CHART TIMEFRAME FILTER ─── */}
       <div className="sc-global-tf-bar">
         <div className="sc-global-tf-left">
-          <span className="sc-global-tf-lbl">Timeframe:</span>
+          <label className="sc-global-tf-lbl" htmlFor="sc-chart-timeframe">Timeframe for charts</label>
           <select
+            id="sc-chart-timeframe"
             className="sc-global-tf-select"
             value={globalTf}
             onChange={(e) => setGlobalTf(e.target.value as any)}
           >
-            <option value="ALL">⚡ All Horizons (Daily · Weekly · Monthly)</option>
-            <option value="DAILY">⚡ 1D Daily Tactical</option>
-            <option value="WEEKLY">🏛️ 1W Weekly Structural</option>
-            <option value="MONTHLY">👑 1M Monthly Generational</option>
+            <option value="ALL">All (Daily, Weekly, Monthly)</option>
+            <option value="DAILY">Daily</option>
+            <option value="WEEKLY">Weekly</option>
+            <option value="MONTHLY">Monthly</option>
           </select>
-        </div>
-        <div className="sc-global-tf-right">
-          <span
-            className="sc-pill ml-pass-pill"
-            style={{ padding: "5px 10px", fontSize: "10px", cursor: "default" }}
-            title="Trained ML Quality Gates active under the hood: automatically purging low-edge patterns (Double Bottom, Bull Flag) based on 2020-2026 empirical validation"
-          >
-            🤖 ML Quality Gate: ACTIVE
-          </span>
         </div>
       </div>
 
@@ -1045,9 +1015,10 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
             setFreshSubFilter("ALL");
           }}
           className={`sc-master-tab-btn ${masterTab === "fresh" ? "active fresh" : ""}`}
+          aria-pressed={masterTab === "fresh"}
         >
-          <span className="sc-mt-icon">🟢</span>
-          <span className="sc-mt-title">Fresh Setups</span>
+          <span className="sc-mt-icon">◉</span>
+          <span className="sc-mt-title">Fresh signals</span>
           <span className="sc-mt-badge">{freshStocks.length}</span>
         </button>
 
@@ -1058,9 +1029,10 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
             setMcapFilter("ALL");
           }}
           className={`sc-master-tab-btn ${masterTab === "runners" ? "active runners" : ""}`}
+          aria-pressed={masterTab === "runners"}
         >
-          <span className="sc-mt-icon">⚡</span>
-          <span className="sc-mt-title">Active Runners</span>
+          <span className="sc-mt-icon">↗</span>
+          <span className="sc-mt-title">In progress</span>
           <span className="sc-mt-badge">{runnersStocks.length}</span>
         </button>
 
@@ -1072,17 +1044,18 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
             setClosedFilter("ALL");
           }}
           className={`sc-master-tab-btn ${masterTab === "closed" ? "active closed" : ""}`}
+          aria-pressed={masterTab === "closed"}
         >
-          <span className="sc-mt-icon">📜</span>
-          <span className="sc-mt-title">Closed Ledger</span>
+          <span className="sc-mt-icon">◷</span>
+          <span className="sc-mt-title">Past trades</span>
           <span className="sc-mt-badge">
-            {closedTotal > 0 ? (closedTotal > 999 ? `${(closedTotal / 1000).toFixed(1)}k` : closedTotal) : "4.3k"}
+            {closedTotal > 0 ? (closedTotal > 999 ? `${(closedTotal / 1000).toFixed(1)}k` : closedTotal) : "—"}
           </span>
         </button>
       </div>
 
       {/* ─── 4. EXECUTIVE HUD METRIC TILES (PRIMARY INTERACTIVE FILTER) ─── */}
-      <div className="sc-executive-hud">
+      <div className={`sc-executive-hud ${masterTab === "closed" ? "closed" : ""}`}>
         {masterTab === "fresh" ? (
           <>
             <div
@@ -1091,9 +1064,9 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
               role="button"
               tabIndex={0}
             >
-              <div className="sc-hud-lbl">🟢 Ready to Buy</div>
+              <div className="sc-hud-lbl">Near entry price</div>
               <div className="sc-hud-val">{freshCounts.buyZone} Setups</div>
-              <div className="sc-hud-sub">0% to +3.5% from Pivot</div>
+              <div className="sc-hud-sub">Price is near the planned entry</div>
             </div>
 
             <div
@@ -1103,9 +1076,9 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
               role="button"
               tabIndex={0}
             >
-              <div className="sc-hud-lbl">🔄 Pivot Retest</div>
+              <div className="sc-hud-lbl">Retesting breakout</div>
               <div className="sc-hud-val" style={{ color: "#22D3EE" }}>{freshCounts.retest} Setups</div>
-              <div className="sc-hud-sub">Taking Support on Pivot</div>
+              <div className="sc-hud-sub">Price has returned to the breakout level</div>
             </div>
 
             <div
@@ -1114,9 +1087,9 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
               role="button"
               tabIndex={0}
             >
-              <div className="sc-hud-lbl">🎯 Radar Coiling</div>
+              <div className="sc-hud-lbl">Close to breakout</div>
               <div className="sc-hud-val">{freshCounts.radar} Setups</div>
-              <div className="sc-hud-sub">&lt;2.5% to Trigger</div>
+              <div className="sc-hud-sub">Less than 2.5% from breakout</div>
             </div>
 
             <div
@@ -1125,17 +1098,17 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
               role="button"
               tabIndex={0}
             >
-              <div className="sc-hud-lbl">⚡ All Fresh</div>
+              <div className="sc-hud-lbl">All fresh signals</div>
               <div className="sc-hud-val">{freshStocks.length} Setups</div>
-              <div className="sc-hud-sub">Full Watchlist Filter</div>
+              <div className="sc-hud-sub">Across selected timeframes</div>
             </div>
           </>
         ) : masterTab === "runners" ? (
           <>
             <div className="sc-hud-tile indigo">
-              <div className="sc-hud-lbl">⚡ Active Runners</div>
+              <div className="sc-hud-lbl">⚡ Active breakouts</div>
               <div className="sc-hud-val">{runnersStocks.length} Stocks</div>
-              <div className="sc-hud-sub">In-Flight Breakouts</div>
+              <div className="sc-hud-sub">Breakouts still in progress</div>
             </div>
             <div className="sc-hud-tile green">
               <div className="sc-hud-lbl">📈 Avg Running Gain</div>
@@ -1144,19 +1117,19 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
                   ? (runnersStocks.reduce((acc, s) => acc + getBreakoutClassification(s).diffPct, 0) / runnersStocks.length).toFixed(1)
                   : "0.0"}%
               </div>
-              <div className="sc-hud-sub">Unrealized Performance</div>
+              <div className="sc-hud-sub">Average change since entry</div>
             </div>
             <div className="sc-hud-tile gold">
-              <div className="sc-hud-lbl">🚀 Leading Runner</div>
+              <div className="sc-hud-lbl">🚀 Leading breakout</div>
               <div className="sc-hud-val">
                 {runnersStocks[0] ? `${runnersStocks[0].symbol} (+${getBreakoutClassification(runnersStocks[0]).diffPct.toFixed(0)}%)` : "—"}
               </div>
-              <div className="sc-hud-sub">Top Institutional Gainer</div>
+              <div className="sc-hud-sub">Largest gain since entry</div>
             </div>
             <div className="sc-hud-tile muted">
-              <div className="sc-hud-lbl">🛡️ Target 1 Monitored</div>
-              <div className="sc-hud-val">{runnersStocks.length} Orders</div>
-              <div className="sc-hud-sub">Follow Trailing Stops</div>
+              <div className="sc-hud-lbl">🛡️ Active setups</div>
+              <div className="sc-hud-val">{runnersStocks.length} Stocks</div>
+              <div className="sc-hud-sub">Being tracked</div>
             </div>
           </>
         ) : (
@@ -1167,9 +1140,9 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
               role="button"
               tabIndex={0}
             >
-              <div className="sc-hud-lbl">📜 All Closed</div>
-              <div className="sc-hud-val">{closedTotal > 0 ? closedTotal.toLocaleString() : "4,296"} Records</div>
-              <div className="sc-hud-sub">2020–2026 Audit Ledger</div>
+              <div className="sc-hud-lbl">All past trades</div>
+              <div className="sc-hud-val">{closedTotal > 0 ? closedTotal.toLocaleString() : "—"}</div>
+              <div className="sc-hud-sub">Historical trade records</div>
             </div>
 
             <div
@@ -1178,9 +1151,9 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
               role="button"
               tabIndex={0}
             >
-              <div className="sc-hud-lbl">🏆 Target Hit (Wins)</div>
-              <div className="sc-hud-val">{patternAccuracy?.overall_win_rate_pct ? `${patternAccuracy.overall_win_rate_pct}%` : "68.4%"} WR</div>
-              <div className="sc-hud-sub">Verified Target 1 Hits</div>
+              <div className="sc-hud-lbl">Target hits</div>
+              <div className="sc-hud-val">{patternAccuracy?.overall_win_rate_pct ? `${patternAccuracy.overall_win_rate_pct}%` : "—"}</div>
+              <div className="sc-hud-sub">Historical win rate</div>
             </div>
 
             <div
@@ -1189,16 +1162,11 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
               role="button"
               tabIndex={0}
             >
-              <div className="sc-hud-lbl">🛑 Stopped Out</div>
-              <div className="sc-hud-val" style={{ color: "var(--apple-red)" }}>Risk Managed</div>
-              <div className="sc-hud-sub">Capital Protected Exits</div>
+              <div className="sc-hud-lbl">Stopped out</div>
+              <div className="sc-hud-val" style={{ color: "var(--apple-red)" }}>Review exits</div>
+              <div className="sc-hud-sub">View stopped trades</div>
             </div>
 
-            <div className="sc-hud-tile cyan" style={{ borderColor: "rgba(6, 182, 212, 0.3)" }}>
-              <div className="sc-hud-lbl">⏱️ Avg Duration</div>
-              <div className="sc-hud-val" style={{ color: "#22D3EE" }}>14.2 Days</div>
-              <div className="sc-hud-sub">Holding Period to Target</div>
-            </div>
           </>
         )}
       </div>
@@ -1208,7 +1176,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, padding: "0 2px" }}>
             <span style={{ fontSize: 9.5, fontWeight: 800, color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Explore Chart Patterns ({visiblePatterns.length - 1} Active)
+              Pattern types ({visiblePatterns.length - 1})
             </span>
             {selectedPattern !== "ALL" && (
               <button
@@ -1245,7 +1213,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
                   </div>
                   <div className="sc-pat-name">{pat.label}</div>
                   <div className="sc-pat-count-badge">
-                    {count} {count === 1 ? "call" : "calls"}
+                    {count} {count === 1 ? "setup" : "setups"}
                   </div>
                 </button>
               );
@@ -1257,7 +1225,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
       {/* ─── 6. MARKET CAP FILTER BAR ─── */}
       {masterTab !== "closed" && (
         <div className="sc-mcap-filter-bar">
-          <span className="sc-mcap-label">CAP:</span>
+          <span className="sc-mcap-label">Market cap</span>
           {MCAP_OPTIONS.map((opt) => {
             const count = mcapCounts[opt.id] ?? 0;
             if (opt.id !== "ALL" && count === 0) return null;
@@ -1290,16 +1258,16 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
               margin: "0 auto 10px"
             }}
           />
-          <div style={{ fontSize: 11.5, fontWeight: 600 }}>Filtering Pattern Setups...</div>
+              <div style={{ fontSize: 11.5, fontWeight: 600 }}>Loading signals...</div>
         </div>
       ) : masterTab === "fresh" ? (
         <div>
           {displayedFreshStocks.length === 0 ? (
             <div className="card" style={{ textAlign: "center", padding: "36px 16px", borderRadius: 16 }}>
               <div style={{ fontSize: 30, marginBottom: 8 }}>🟢</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink1)" }}>No Fresh Opportunities In Selected Zone</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink1)" }}>No fresh signals match these filters</div>
               <div style={{ fontSize: 11, color: "var(--ink3)", marginTop: 4 }}>
-                Try selecting "All Fresh" or switching timeframes to view tactical setups.
+                Try another pattern or timeframe to see more signals.
               </div>
             </div>
           ) : (
@@ -1313,9 +1281,9 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
           {runnersStocks.length === 0 ? (
             <div className="card" style={{ textAlign: "center", padding: "36px 16px", borderRadius: 16 }}>
               <div style={{ fontSize: 30, marginBottom: 8 }}>⚡</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink1)" }}>No Active Runners On Selected Horizon</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink1)" }}>No active breakouts match this timeframe</div>
               <div style={{ fontSize: 11, color: "var(--ink3)", marginTop: 4 }}>
-                Check "All Horizons" to view in-flight trades across Daily, Weekly, and Monthly charts.
+                Choose All timeframes to see active breakouts across Daily, Weekly, and Monthly charts.
               </div>
             </div>
           ) : (

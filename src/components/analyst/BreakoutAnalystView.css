@@ -621,7 +621,10 @@
 }
 
 .chart-icon-flair {
-  font-size: 14px;
+  width: 18px;
+  height: 18px;
+  color: #3B82F6;
+  flex: 0 0 18px;
 }
 
 .chart-card-heading {
@@ -647,6 +650,7 @@
   font-weight: 700;
   color: var(--an-text-sub);
   padding: 5px 9px;
+  min-height: 36px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -655,6 +659,28 @@
 .chart-tf-btn.active {
   background: #3B82F6;
   color: #FFFFFF;
+}
+
+.chart-card-header-bar { flex-wrap: wrap; }
+.chart-header-left { flex: 1 1 220px; min-width: 0; }
+.chart-card-heading { font-size: 14px; }
+.chart-refresh-icon-btn { width: 44px; height: 44px; flex: 0 0 44px; }
+.chart-tf-toggle-capsule { flex: 0 0 auto; max-width: 100%; }
+.chart-tf-btn:focus-visible,
+.chart-refresh-icon-btn:focus-visible,
+.chart-stage-reload-btn:focus-visible { outline: 3px solid #3B82F6; outline-offset: 2px; }
+
+@media (max-width: 680px) {
+  .chart-card-header-bar { align-items: flex-start; gap: 10px; }
+  .chart-header-left { flex-basis: calc(100% - 46px); min-height: 40px; }
+  .chart-tf-toggle-capsule { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; box-sizing: border-box; }
+  .chart-tf-btn { min-width: 0; min-height: 44px; padding: 8px 5px; font-size: 12px; }
+  .dna-chart-card-section { padding: 14px; }
+}
+
+@media (max-width: 380px) {
+  .chart-card-heading { font-size: 13px; }
+  .chart-tf-btn { font-size: 11px; }
 }
 
 .dna-clean-chart-stage {
@@ -1093,6 +1119,96 @@
   font-weight: 700;
   color: var(--an-text-sub);
   font-family: 'JetBrains Mono', monospace;
+}
+
+/* Focused stock overview: one identity, a clear price, and compact levels. */
+.analyst-topbar {
+  min-height: 54px;
+  padding: 6px 2px 12px;
+  border-bottom: 1px solid var(--an-card-border);
+  background: color-mix(in srgb, var(--an-bg) 92%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.analyst-overview {
+  max-width: 1120px;
+  margin: 0 auto 22px;
+  padding: 24px;
+  border: 1px solid var(--an-card-border);
+  border-radius: 22px;
+  background: linear-gradient(145deg, var(--an-card-bg), color-mix(in srgb, var(--an-bg) 22%, var(--an-card-bg)));
+  box-shadow: var(--an-card-shadow);
+}
+
+.analyst-overview-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 290px);
+  gap: 24px;
+  align-items: center;
+}
+
+.analyst-eyebrow,
+.analyst-context-row,
+.analyst-pattern-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.analyst-symbol { color: var(--an-text-title); font: 800 13px/1.2 'JetBrains Mono', monospace; letter-spacing: .04em; }
+.analyst-market { color: var(--an-text-muted); font-size: 12px; }
+.analyst-status { border-radius: 999px; padding: 4px 9px; background: var(--an-good-bg); border: 1px solid var(--an-good-border); color: #10B981; font-size: 11px; font-weight: 700; }
+.analyst-company-name { margin: 10px 0 9px; color: var(--an-text-title); font-size: clamp(23px, 3vw, 34px); font-weight: 750; line-height: 1.15; letter-spacing: -.035em; }
+.analyst-pattern-line { gap: 7px; margin-bottom: 12px; }
+.analyst-pattern-label { color: var(--an-text-muted); font-size: 11px; }
+.analyst-pattern-name { color: var(--an-text-body); font-size: 14px; font-weight: 650; }
+.analyst-context-row { gap: 6px; }
+.analyst-context-chip { display: inline-flex; align-items: center; min-height: 25px; padding: 4px 9px; border-radius: 7px; border: 1px solid var(--an-pill-border); background: var(--an-pill-bg); color: var(--an-text-sub); font-size: 10px; line-height: 1.3; }
+.analyst-context-chip.analyst-history { border-color: rgba(139, 92, 246, .25); color: #A78BFA; }
+.analyst-history-note { margin: 7px 0 0; color: var(--an-text-muted); font-size: 10px; line-height: 1.45; }
+.analyst-price-block { display: flex; flex-direction: column; align-items: flex-start; padding-left: 22px; border-left: 1px solid var(--an-card-border); }
+.analyst-price-label { margin-bottom: 3px; color: var(--an-text-muted); font-size: 11px; }
+.analyst-live-price { font-size: clamp(25px, 3vw, 34px); line-height: 1.15; }
+.analyst-target-distance { margin-top: 6px; color: var(--an-text-sub); font-size: 11px; }
+.analyst-target-distance strong { margin-left: 4px; color: #10B981; font-variant-numeric: tabular-nums; }
+.analyst-updated { display: inline-flex; align-items: center; gap: 6px; margin-top: 11px; color: var(--an-text-muted); font-size: 10px; }
+.analyst-live-dot { width: 6px; height: 6px; border-radius: 50%; background: #10B981; box-shadow: 0 0 0 3px rgba(16,185,129,.12); }
+.analyst-market-range { margin-top: 20px; padding: 12px 14px; border: 1px solid var(--an-card-border); border-radius: 12px; background: var(--an-pod-bg); }
+.analyst-range-heading { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 10px; color: var(--an-text-muted); font-size: 10px; }
+.analyst-range-heading span:last-child { color: var(--an-text-sub); font-variant-numeric: tabular-nums; }
+.analyst-market-range .range-52w-labels { margin: 9px 0 0; font-size: 10px; }
+.analyst-market-range .range-52w-labels span { display: flex; gap: 5px; }
+.analyst-levels { margin-top: 10px; gap: 8px; }
+.analyst-levels .level-pod { align-items: flex-start; padding: 10px 12px; border-radius: 11px; box-shadow: none; }
+.analyst-levels .level-pod:hover { transform: none; }
+.analyst-levels .level-lbl { font-size: 9px; }
+.analyst-levels .level-val { font-size: 14px; }
+
+@media (max-width: 639px) {
+  .analyst-topbar { margin-bottom: 12px !important; }
+  .analyst-overview { padding: 17px 15px; border-radius: 17px; margin-bottom: 16px; }
+  .analyst-overview-main { grid-template-columns: minmax(0, 1fr); gap: 15px; }
+  .analyst-company-name { margin: 8px 0; font-size: 25px; }
+  .analyst-price-block { display: grid; grid-template-columns: auto 1fr; align-items: baseline; column-gap: 10px; padding: 12px 0 0; border-left: 0; border-top: 1px solid var(--an-card-border); }
+  .analyst-price-label { grid-column: 1 / -1; }
+  .analyst-live-price { font-size: 27px; }
+  .analyst-target-distance { margin: 0; }
+  .analyst-updated { grid-column: 1 / -1; margin-top: 5px; }
+  .analyst-market-range { margin-top: 15px; padding: 11px 12px; }
+  .analyst-levels { gap: 6px; }
+  .analyst-levels .level-pod { padding: 9px 7px; }
+  .analyst-levels .level-lbl { white-space: normal; font-size: 8px; }
+  .analyst-levels .level-val { font-size: clamp(11px, 3.2vw, 14px); }
+}
+
+@media (min-width: 1024px) {
+  .analyst-overview { padding: 28px 32px; }
+  .dna-analyst-scroll-citadel { max-width: 1280px; margin: 0 auto; padding-left: 24px; padding-right: 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dna-analyst-fullscreen-overlay { animation: none; }
 }
 
 .technical-radar-bento {

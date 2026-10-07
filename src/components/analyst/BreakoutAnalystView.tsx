@@ -276,10 +276,11 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
     String(apiData?.action_title || "").includes("Target Achieved");
 
   const rawTf = (apiData?.timeframe || stock.timeframe || "").toUpperCase();
-  const timeframeTag = rawTf === "MONTHLY" ? "👑 1M Generational" : rawTf === "WEEKLY" ? "🏛️ 1W Structural" : rawTf === "DAILY" ? "⚡ 1D Tactical" : null;
+  const timeframeTag = rawTf === "MONTHLY" ? "Monthly" : rawTf === "WEEKLY" ? "Weekly" : rawTf === "DAILY" ? "Daily" : null;
+  const displayPatternName = patternName.toLowerCase().replace(/_/g, " ").replace(/\band\b/g, "&").replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
 
   const rawBaseYears = Number(apiData?.base_duration_years ?? stock.base_duration_years ?? stock.baseDurationYears ?? 0);
-  const baseDurationStr = rawBaseYears >= 0.5 ? `${rawBaseYears.toFixed(1)}y Base` : null;
+  const baseDurationStr = rawBaseYears >= 0.5 ? `Base · ${rawBaseYears.toFixed(1)} years` : null;
 
   const patCode = (patternName || "").split("·")[0].trim().toUpperCase().replace(/[\s\-]+/g, "_");
   const tfCode = (rawTf || (dnaTimeframe === "monthly" ? "1M" : dnaTimeframe === "macro" ? "1W" : "1D")).toUpperCase()
@@ -495,11 +496,11 @@ ChartAnalysis : ${websiteLink}`;
               </div>
 
               <h3 className="chart-loading-title">
-                Building Institutional Chart for <span className="loading-highlight-sym">{cleanSymbol}</span>
+                Preparing the chart for <span className="loading-highlight-sym">{cleanSymbol}</span>
               </h3>
 
               <p className="chart-loading-subtitle">
-                Streaming daily OHLCV candlesticks, detecting multi-timeframe swing geometry & calculating institutional levels...
+                Loading price history and chart levels...
               </p>
 
               <div className="chart-progress-track">
@@ -521,7 +522,7 @@ ChartAnalysis : ${websiteLink}`;
                 </div>
                 <div className={`chart-step-item ${loadingStep === 4 ? "done" : ""}`}>
                   <span className="step-indicator">{loadingStep === 4 ? "✓" : "4"}</span>
-                  <span>Pre-rendering Analysed DNA Chart & BSE Terminal</span>
+                  <span>Preparing the price chart</span>
                 </div>
               </div>
             </div>
@@ -543,13 +544,13 @@ ChartAnalysis : ${websiteLink}`;
         )}
 
         {/* ── 1. UNIFIED QUANTSYNC TOPBAR (Header Everywhere) ──────────── */}
-        <header className="topbar" style={{ position: "sticky", top: 0, zIndex: 100, marginBottom: 16 }}>
+        <header className="topbar analyst-topbar" style={{ position: "sticky", top: 0, zIndex: 100, marginBottom: 16 }}>
           <div className="brand" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button 
+            <button
               type="button" 
               className="theme-btn" 
               onClick={handleBackNavigation}
-              style={{ width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", borderRadius: "50%" }}
+              style={{ width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", borderRadius: "50%" }}
               title="Back"
               aria-label="Back"
             >
@@ -562,17 +563,7 @@ ChartAnalysis : ${websiteLink}`;
           </div>
 
           <div className="topbar-right" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button 
-              type="button" 
-              className="dna-nav-back-btn" 
-              onClick={handleBackNavigation}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", fontSize: 12, borderRadius: 8 }}
-            >
-              <span>←</span>
-              <span>Back</span>
-            </button>
-
-            <button type="button" className="dna-nav-share-btn" onClick={handleWhatsAppShare} style={{ margin: 0, padding: "6px 12px", fontSize: 12, borderRadius: 8 }}>
+            <button type="button" className="dna-nav-share-btn" onClick={handleWhatsAppShare} style={{ margin: 0, padding: "8px 13px", fontSize: 12, borderRadius: 10 }}>
               <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                 <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/>
               </svg>
@@ -582,81 +573,46 @@ ChartAnalysis : ${websiteLink}`;
         </header>
 
         {/* ── 2. HERO STOCK IDENTITY & 52W RANGE ──────────────────────────── */}
-        <section className="dna-stock-identity-hero">
-          <div className="dna-badge-pill-row">
-            <span className="dna-pill symbol-pill">{cleanSymbol}</span>
-            <span className="dna-pill bse-pill">BSE Equities</span>
-            <span className="dna-pill pattern-pill">{patternName}</span>
-            <span className="dna-pill cap-pill">{sector}</span>
-            {timeframeTag && (
-              <span className="dna-pill tf-pill" style={{ background: "rgba(139,92,246,0.18)", color: "#A78BFA", border: "1px solid rgba(139,92,246,0.3)", fontWeight: 700 }}>
-                {timeframeTag}
-              </span>
-            )}
-            {baseDurationStr && (
-              <span className="dna-pill duration-pill" style={{ background: "rgba(6,182,212,0.18)", color: "#22D3EE", border: "1px solid rgba(6,182,212,0.3)", fontWeight: 700 }}>
-                ⏳ {baseDurationStr}
-              </span>
-            )}
-            {acc && acc.win_rate_pct > 0 && (
-              <span className="dna-pill accuracy-pill" style={{ background: "rgba(139,92,246,0.22)", color: "#C4B5FD", border: "1px solid rgba(139,92,246,0.45)", fontWeight: 800 }}>
-                🏆 {acc.win_rate_pct}% Empirical Win Rate ({acc.resolved || acc.total} Backtested Trades, 2020–2026)
-              </span>
-            )}
-            {isTargetAchieved && (
-              <span className="dna-pill target-hit-pill" style={{ background: "rgba(16,185,129,0.2)", color: "#10B981", border: "1px solid rgba(16,185,129,0.4)", fontWeight: 700 }}>
-                🎯 Target Achieved · Profit Booked
-              </span>
-            )}
-          </div>
-
-          <div className="dna-verified-strip">
-            <span className="spark-bolt">{isTargetAchieved ? "🎯" : "⚡"}</span>
-            <span>{isTargetAchieved ? "Completed Setup · Target Reached & Profit Booked" : `Live Analysis · ${new Date().toLocaleDateString("en-CA")}`}</span>
-          </div>
-
-          <h1 className="dna-stock-massive-title">{cleanSymbol}</h1>
-          {stockName !== cleanSymbol && <div className="dna-stock-sub-name">{stockName}</div>}
-
-          <div className="dna-price-change-cluster">
-            <span className="dna-live-price">{fmtCurrency(cmp)}</span>
-            {potentialGainStr && (
-              <span className="dna-change-pill up">{potentialGainStr}</span>
-            )}
-          </div>
-
-          {/* 52-Week Range Bar */}
-          <div className="dna-52w-range-card">
-            <div className="range-52w-labels">
-              <span>52W Low: <strong>{fmtCurrency(low52)}</strong></span>
-              <span>52W High: <strong>{fmtCurrency(high52)}</strong></span>
+        <section className="dna-stock-identity-hero analyst-overview" aria-labelledby="analyst-stock-title">
+          <div className="analyst-overview-main">
+            <div className="analyst-identity">
+              <div className="analyst-eyebrow">
+                <span className="analyst-symbol">{cleanSymbol}</span>
+                <span className="analyst-market">BSE · {sector}</span>
+                {isTargetAchieved && <span className="analyst-status">Target reached</span>}
+              </div>
+              <h1 id="analyst-stock-title" className="analyst-company-name">{stockName}</h1>
+              <div className="analyst-pattern-line">
+                <span className="analyst-pattern-label">Detected pattern</span>
+                <span className="analyst-pattern-name">{displayPatternName}</span>
+              </div>
+              <div className="analyst-context-row">
+                {timeframeTag && <span className="analyst-context-chip">{timeframeTag}</span>}
+                {baseDurationStr && <span className="analyst-context-chip">{baseDurationStr}</span>}
+                {acc && acc.win_rate_pct > 0 && <span className="analyst-context-chip analyst-history">Historical win rate {acc.win_rate_pct}% · {acc.resolved || acc.total} trades</span>}
+              </div>
+              {acc && acc.win_rate_pct > 0 && <p className="analyst-history-note">Historical pattern results are informational and do not predict future returns.</p>}
             </div>
+            <div className="analyst-price-block">
+              <span className="analyst-price-label">Current price</span>
+              <span className="dna-live-price analyst-live-price">{fmtCurrency(cmp)}</span>
+              {potentialGainStr && <span className="analyst-target-distance">Target distance <strong>{potentialGainStr.replace(" Potential", "")}</strong></span>}
+              <span className="analyst-updated"><span className="analyst-live-dot" />{isTargetAchieved ? "Setup complete" : `Analysis updated · ${new Date().toLocaleDateString("en-CA")}`}</span>
+            </div>
+          </div>
+
+          <div className="analyst-market-range" aria-label="52-week trading range">
+            <div className="analyst-range-heading"><span>52-week range</span><span>{range52Pct != null ? `${range52Pct}% of range` : "Position unavailable"}</span></div>
             <div className="range-52w-track">
-              {range52Pct != null ? (
-                <>
-                  <div className="range-52w-fill" style={{ width: `${range52Pct}%` }} />
-                  <div className="range-52w-thumb" style={{ left: `${range52Pct}%` }} />
-                </>
-              ) : (
-                <div className="range-52w-fill" style={{ width: "50%", opacity: 0.2 }} />
-              )}
+              {range52Pct != null && <><div className="range-52w-fill" style={{ width: `${range52Pct}%` }} /><div className="range-52w-thumb" style={{ left: `${range52Pct}%` }} /></>}
             </div>
+            <div className="range-52w-labels"><span>Low <strong>{fmtCurrency(low52)}</strong></span><span>High <strong>{fmtCurrency(high52)}</strong></span></div>
           </div>
 
-          {/* 3 Key Levels HUD (Factual Data Only) */}
-          <div className="dna-3-levels-hud">
-            <div className="level-pod pivot-pod">
-              <span className="level-lbl">BREAKOUT PIVOT</span>
-              <span className="level-val gold">{fmtCurrency(entryPrice)}</span>
-            </div>
-            <div className="level-pod target-pod">
-              <span className="level-lbl">{isTargetAchieved ? "TARGET (REACHED ✓)" : "TARGET"}</span>
-              <span className="level-val profit">{fmtCurrency(targetPrice)}</span>
-            </div>
-            <div className="level-pod sl-pod">
-              <span className="level-lbl">STOP LOSS (SL)</span>
-              <span className="level-val loss">{fmtCurrency(stopLossPrice)}</span>
-            </div>
+          <div className="dna-3-levels-hud analyst-levels" aria-label="Key price levels">
+            <div className="level-pod pivot-pod"><span className="level-lbl">BREAKOUT PIVOT</span><span className="level-val gold">{fmtCurrency(entryPrice)}</span></div>
+            <div className="level-pod target-pod"><span className="level-lbl">{isTargetAchieved ? "TARGET · REACHED" : "TARGET"}</span><span className="level-val profit">{fmtCurrency(targetPrice)}</span></div>
+            <div className="level-pod sl-pod"><span className="level-lbl">STOP LOSS</span><span className="level-val loss">{fmtCurrency(stopLossPrice)}</span></div>
           </div>
         </section>
 
@@ -664,12 +620,16 @@ ChartAnalysis : ${websiteLink}`;
         <section className="dna-chart-card-section">
           <div className="chart-card-header-bar">
             <div className="chart-header-left">
-              <span className="chart-icon-flair">📈</span>
-              <span className="chart-card-heading">QuantSync Analysed DNA Chart</span>
+              <svg className="chart-icon-flair" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 3v18h18" />
+                <path d="m7 14 4-4 3 3 6-7" />
+              </svg>
+              <span className="chart-card-heading">Price chart</span>
               <button
                 type="button"
                 className="chart-refresh-icon-btn"
                 title="Reload Chart"
+                aria-label="Reload price chart"
                 onClick={() => setChartReloadKey((k) => k + 1)}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className={chartLoading ? "spin-pulse" : ""}>
@@ -677,27 +637,30 @@ ChartAnalysis : ${websiteLink}`;
                 </svg>
               </button>
             </div>
-            <div className="chart-tf-toggle-capsule">
+            <div className="chart-tf-toggle-capsule" role="group" aria-label="Chart timeframe">
               <button
                 type="button"
                 className={`chart-tf-btn ${dnaTimeframe === "tactical" ? "active" : ""}`}
                 onClick={() => setDnaTimeframe("tactical")}
+                aria-pressed={dnaTimeframe === "tactical"}
               >
-                1D Tactical
+                Daily
               </button>
               <button
                 type="button"
                 className={`chart-tf-btn ${dnaTimeframe === "macro" ? "active" : ""}`}
                 onClick={() => setDnaTimeframe("macro")}
+                aria-pressed={dnaTimeframe === "macro"}
               >
-                1W Structural
+                Weekly
               </button>
               <button
                 type="button"
                 className={`chart-tf-btn ${dnaTimeframe === "monthly" ? "active" : ""}`}
                 onClick={() => setDnaTimeframe("monthly")}
+                aria-pressed={dnaTimeframe === "monthly"}
               >
-                1M Generational (3-5Y)
+                Monthly
               </button>
             </div>
           </div>
@@ -708,14 +671,14 @@ ChartAnalysis : ${websiteLink}`;
               <div className="chart-stage-loading-overlay">
                 <div className="chart-stage-spinner-ring" />
                 <div className="chart-stage-loading-text">
-                  Generating Analysed DNA Chart...
+                  Loading price chart...
                 </div>
                 <div className="chart-stage-loading-sub">
                   {dnaTimeframe === "monthly"
-                    ? "Calculating 3-5Y Generational Base & Monthly Candlesticks"
+                    ? "Loading monthly prices and pattern levels"
                     : dnaTimeframe === "macro"
-                    ? "Analyzing Multi-Year Structural Breakout & Weekly Levels"
-                    : "Computing 4-Month Tactical Swing Channel & VSA"}
+                    ? "Loading weekly prices and pattern levels"
+                    : "Loading daily prices and pattern levels"}
                 </div>
               </div>
             )}
@@ -725,11 +688,12 @@ ChartAnalysis : ${websiteLink}`;
                 <div className="chart-stage-error-icon">📊</div>
                 <div className="chart-stage-error-title">Chart Generation Pending</div>
                 <div className="chart-stage-error-sub">
-                  The institutional chart engine is preparing the {dnaTimeframe === "monthly" ? "Monthly Generational" : dnaTimeframe === "macro" ? "Weekly Structural" : "Tactical"} setup.
+                  The chart is still loading. Please try again in a moment.
                 </div>
                 <button
                   type="button"
                   className="chart-stage-reload-btn"
+                  aria-label="Try loading the chart again"
                   onClick={() => setChartReloadKey((k) => k + 1)}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -742,7 +706,7 @@ ChartAnalysis : ${websiteLink}`;
               loadedChartSrc && (
                 <img
                   src={loadedChartSrc}
-                  alt={`${cleanSymbol} Analysed Chart`}
+                  alt={`${cleanSymbol} pattern price chart`}
                   className={`dna-rendered-chart-image ${chartLoading ? "is-reloading" : ""}`}
                 />
               )
