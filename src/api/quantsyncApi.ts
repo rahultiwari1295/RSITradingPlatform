@@ -389,10 +389,33 @@ export const quantsyncApi = {
     return apiFetch<{ count: number; records: Array<any> }>(`/api/screener/records${qs}`);
   },
 
+  getMlQualityGates: () =>
+    apiFetch<{
+      validation_method: string;
+      gates: Array<{
+        pattern_type: string;
+        pre_win_rate: number;
+        post_win_rate: number;
+        win_rate_lift: number;
+        pre_avg_pnl: number;
+        post_avg_pnl: number;
+        trades_tested: number;
+        trades_passed: number;
+        pruned_pct: number;
+        losers_eliminated: number;
+        auc_score: number;
+        gate_threshold: number;
+        survival_verdict: string;
+        recommendation: string;
+        top_features: string[];
+      }>;
+    }>(`/api/screener/ml-gates`),
+
   searchSymbols: (query: string) =>
     apiFetch<Array<{ symbol: string; name?: string; token?: string; price?: number; candleCount?: number }>>(
       `/api/dna/search?q=${encodeURIComponent(query)}`
     ),
 };
+
 
 

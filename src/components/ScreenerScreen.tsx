@@ -404,6 +404,8 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
   const [timeframeFilter, setTimeframeFilter] = useState<"ALL" | "DAILY" | "WEEKLY" | "MONTHLY">("ALL");
   const [expandedOlder, setExpandedOlder] = useState<boolean>(false);
   const [patternAccuracy, setPatternAccuracy] = useState<any>(null);
+  const [mlGateActive, setMlGateActive] = useState<boolean>(false);
+  const [mlGatesData, setMlGatesData] = useState<any>(null);
 
   const [loading, setLoading] = useState<boolean>(() => {
     return !SCREENER_MEMORY_CACHE["near_breakout"];
@@ -434,6 +436,10 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
     quantsyncApi.getPatternAccuracy()
       .then((acc) => setPatternAccuracy(acc))
       .catch((e) => console.warn("Could not load pattern accuracy", e));
+
+    quantsyncApi.getMlQualityGates()
+      .then((data) => setMlGatesData(data))
+      .catch((e) => console.warn("Could not load ML quality gates", e));
   }, []);
 
   // Fetch stocks when primary tab changes (serves instant cache first, then refreshes if stale)
@@ -589,11 +595,38 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
     });
   }, [patternCounts]);
 
-  // Filter stocks by selected pattern
+  // Map of trained ML Quality Gates per pattern archetype
+  const mlGatesMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    if (mlGatesData?.gates) {
+      mlGatesData.gates.forEach((g: any) => {
+        map[g.pattern_type] = g;
+        const clean = g.pattern_type.replace(/_/g, " ").toUpperCase();
+        map[clean] = g;
+      });
+    }
+    return map;
+  }, [mlGatesData]);
+
+  // Filter stocks by selected pattern & ML Quality Gate
   const patternFilteredStocks = useMemo(() => {
-    if (selectedPattern === "ALL") return liveEnrichedStocks;
-    return liveEnrichedStocks.filter((s) => normalizePatternId(s.pattern_type) === selectedPattern);
-  }, [liveEnrichedStocks, selectedPattern]);
+    let list = liveEnrichedStocks;
+    if (selectedPattern !== "ALL") {
+      list = list.filter((s) => normalizePatternId(s.pattern_type) === selectedPattern);
+    }
+    if (mlGateActive) {
+      list = list.filter((s) => {
+        const patCode = (s.pattern_type || "").split("·")[0].trim().toUpperCase().replace(/[\s\-&]+/g, "_");
+        const gate = mlGatesMap[patCode] || Object.values(mlGatesMap).find((g: any) => patCode.includes(g.pattern_type) || (g.pattern_type && g.pattern_type.includes(patCode)));
+        // Purge candidates Double Bottom and Bull Flag (or any with survival_verdict === "PURGE")
+        if (gate && (gate.survival_verdict === "PURGE" || gate.post_win_rate < 40)) {
+          return false;
+        }
+        return true;
+      });
+    }
+    return list;
+  }, [liveEnrichedStocks, selectedPattern, mlGateActive, mlGatesMap]);
 
   // Option B Action status counts for Confirmed Breakout
   const { buyZoneCount, retestCount, extendedCount, submergedCount } = useMemo(() => {
@@ -867,10 +900,11 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
     }
 
     // Historical empirical accuracy lookup (2020-2026 backtest ledger)
-    const patCode = (s.pattern_type || "").split("·")[0].trim().toUpperCase().replace(/[\s\-]+/g, "_");
+    const patCode = (s.pattern_type || "").split("·")[0].trim().toUpperCase().replace(/[\s\-&]+/g, "_");
     const tfCode = (s.timeframe || "DAILY").toUpperCase();
     const accKey = `${tfCode}_${patCode}`;
     const acc = patternAccuracy?.matrix?.[accKey] || patternAccuracy?.by_pattern?.[patCode];
+    const gate = mlGatesMap[patCode] || Object.values(mlGatesMap).find((g: any) => patCode.includes(g.pattern_type) || (g.pattern_type && g.pattern_type.includes(patCode)));
 
     return (
       <div
@@ -901,6 +935,15 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
                     🏆 {acc.win_rate_pct}% Win Rate
                   </span>
                 )}
+                {gate && gate.survival_verdict === "PURGE" ? (
+                  <span className="sc-pill ml-purge-pill" title={`${gate.recommendation} (Out-of-sample: ${gate.post_win_rate}% vs ${gate.pre_win_rate}% baseline)`}>
+                    ⚠️ ML: Low Edge
+                  </span>
+                ) : gate ? (
+                  <span className="sc-pill ml-pass-pill" title={`${gate.recommendation} | ML Gate Out-of-Sample: ${gate.post_win_rate}% WR (+${gate.win_rate_lift > 0 ? gate.win_rate_lift.toFixed(1) : 0}% Lift) | AUC: ${gate.auc_score}`}>
+                    🤖 ML: {gate.post_win_rate.toFixed(0)}%
+                  </span>
+                ) : null}
               </div>
               <div className="sc-subline">
                 {s.company_name || s.sector || "NSE Equity"}
@@ -1113,6 +1156,13 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
           >
             ⚠️ Submerged ({submergedCount})
           </button>
+          <button
+            onClick={() => setMlGateActive(!mlGateActive)}
+            className={`sc-filter-chip ml-gate ${mlGateActive ? "active" : ""}`}
+            title="Filter breakouts using trained LightGBM ML Quality Gates per pattern"
+          >
+            🤖 ML Gate {mlGateActive ? "ACTIVE" : "OFF"}
+          </button>
         </div>
       )}
 
@@ -1142,6 +1192,13 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
             className={`sc-filter-chip missed ${nearFilter === "FAR" ? "active" : ""}`}
           >
             📏 3% – 5% Trigger
+          </button>
+          <button
+            onClick={() => setMlGateActive(!mlGateActive)}
+            className={`sc-filter-chip ml-gate ${mlGateActive ? "active" : ""}`}
+            title="Filter radar setups using trained LightGBM ML Quality Gates per pattern"
+          >
+            🤖 ML Gate {mlGateActive ? "ACTIVE" : "OFF"}
           </button>
         </div>
       )}

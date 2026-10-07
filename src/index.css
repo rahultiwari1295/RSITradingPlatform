@@ -3024,6 +3024,17 @@ body::before{
   color: #F59E0B;
   border-color: #F59E0B;
 }
+.sc-filter-chip.ml-gate {
+  background: color-mix(in srgb, #6366F1 12%, transparent);
+  color: #818CF8;
+  border-color: color-mix(in srgb, #6366F1 30%, transparent);
+}
+.sc-filter-chip.ml-gate.active {
+  background: #6366F1;
+  color: #FFFFFF;
+  border-color: #6366F1;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+}
 
 /* MARKET CAP FILTER STRIP */
 .sc-mcap-filter-bar {
@@ -3236,6 +3247,20 @@ body::before{
   background: color-mix(in srgb, #8B5CF6 14%, transparent);
   color: #A78BFA;
   border: 1px solid color-mix(in srgb, #8B5CF6 32%, transparent);
+  font-weight: 700;
+  font-size: 9.5px;
+}
+.sc-pill.ml-pass-pill {
+  background: color-mix(in srgb, #10B981 14%, transparent);
+  color: #34D399;
+  border: 1px solid color-mix(in srgb, #10B981 32%, transparent);
+  font-weight: 700;
+  font-size: 9.5px;
+}
+.sc-pill.ml-purge-pill {
+  background: color-mix(in srgb, #EF4444 14%, transparent);
+  color: #F87171;
+  border: 1px solid color-mix(in srgb, #EF4444 32%, transparent);
   font-weight: 700;
   font-size: 9.5px;
 }
