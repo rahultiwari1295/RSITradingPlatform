@@ -489,7 +489,11 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
   // 1. "if any stock already touched the target then it should not needed in pattern page right"
   // 2. "and whats the at risk .. we dont need that page also or dont keep those stocks also which have at risk thing"
   const validStocks = useMemo(() => {
+    const seenSymbols = new Set<string>();
     return rawStocks.filter((s: any) => {
+      const sym = (s.symbol || "").toUpperCase();
+      if (!sym || seenSymbols.has(sym)) return false;
+
       const cmp = Number(s.curr_price || 0);
       const tgt = Number(s.target_1 || 0);
       const brk = Number(s.breakout_level || 0);
@@ -512,6 +516,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
         if (cmp >= brk || distPct > 5.0 || distPct < 0) return false;
       }
 
+      seenSymbols.add(sym);
       return true;
     });
   }, [rawStocks, activeTab]);
@@ -648,6 +653,15 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
       list = list.filter((s) => matchesMcap(s, mcapFilter));
     }
 
+    // Defensive symbol deduplication in timeline view
+    const listSeen = new Set<string>();
+    list = list.filter((s) => {
+      const sym = (s.symbol || "").toUpperCase();
+      if (!sym || listSeen.has(sym)) return false;
+      listSeen.add(sym);
+      return true;
+    });
+
     const base = scanDate ? new Date(scanDate) : new Date();
     const dateMap = new Map<string, { label: string; daysAgo: number; stocks: any[] }>();
     const older: any[] = [];
@@ -728,6 +742,15 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
       list = list.filter((s) => matchesMcap(s, mcapFilter));
     }
 
+    // Defensive symbol deduplication in near breakout list
+    const nearSeen = new Set<string>();
+    list = list.filter((s) => {
+      const sym = (s.symbol || "").toUpperCase();
+      if (!sym || nearSeen.has(sym)) return false;
+      nearSeen.add(sym);
+      return true;
+    });
+
     // Sort closest to pivot trigger first
     list.sort((a: any, b: any) => {
       const distA = (Number(a.breakout_level) - Number(a.curr_price)) / Number(a.breakout_level);
@@ -762,13 +785,24 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
       ? (cls.isGoodToBuy ? "border-buy" : cls.isMissed ? "border-missed" : "border-skip")
       : "border-near";
 
+    // Dynamic Action Label
+    let actionBadge = { text: "⚡ Near", cls: "near" };
+    if (activeTab === "success") {
+      if (cls.isTargetHit) actionBadge = { text: "🎯 Target Met", cls: "hit" };
+      else if (cls.isGoodToBuy) actionBadge = { text: `🟢 Buy Zone (+${cls.diffPct.toFixed(1)}%)`, cls: "buy" };
+      else if (cls.isMissed) actionBadge = { text: `🛑 Extended (+${cls.diffAbs.toFixed(1)}%)`, cls: "missed" };
+      else if (cls.isSkip) actionBadge = { text: "⏭️ Low R:R", cls: "skip" };
+    } else {
+      actionBadge = { text: `⚡ Trigger in ${cls.diffAbs.toFixed(1)}%`, cls: cls.diffAbs < 1.0 ? "hot" : "near" };
+    }
+
     return (
       <div
         key={sym || idx}
         onClick={() => handleStockClick(stockWithLive)}
         className={`sc-card ${borderCls}`}
       >
-        {/* Top Row: Monogram, Symbol, Pattern Pill, Price, DNA Score */}
+        {/* Row 1: Stock Identity & Live Action Header */}
         <div className="sc-card-head">
           <div className="sc-card-left">
             <div className="sc-avatar" style={{ background: avatarGrad }}>
@@ -777,23 +811,14 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
             <div className="sc-card-id-block">
               <div className="sc-sym-row">
                 <span className="sc-sym">{sym}</span>
+                <span className="sc-pill tf-dur">
+                  {s.timeframe === "MONTHLY" ? "👑 1M" : s.timeframe === "WEEKLY" ? "🏛️ 1W" : "⚡ 1D"}
+                  {s.base_duration_years ? ` · ${Number(s.base_duration_years).toFixed(1)}y Base` : ""}
+                </span>
                 {s.pattern_type && (
                   <span className="sc-pill pattern">
-                    📐 {s.pattern_type.split("·")[0].trim()}
+                    {s.pattern_type.split("·")[0].replace("Multi-Year Base", "Base").trim()}
                   </span>
-                )}
-                {s.timeframe && (
-                  <span className="sc-pill tf" style={{ background: "rgba(139,92,246,0.18)", color: "#A78BFA", border: "1px solid rgba(139,92,246,0.3)", fontWeight: 700 }}>
-                    {s.timeframe === "MONTHLY" ? "👑 1M" : s.timeframe === "WEEKLY" ? "🏛️ 1W" : "⚡ 1D"}
-                  </span>
-                )}
-                {s.base_duration_years && Number(s.base_duration_years) >= 0.5 && (
-                  <span className="sc-pill dur" style={{ background: "rgba(6,182,212,0.18)", color: "#22D3EE", border: "1px solid rgba(6,182,212,0.3)", fontWeight: 700 }}>
-                    ⏳ {Number(s.base_duration_years).toFixed(1)}y Base
-                  </span>
-                )}
-                {s.mcap_tier && (
-                  <span className="sc-pill mcap">{s.mcap_tier}</span>
                 )}
               </div>
               <div className="sc-subline">
@@ -806,151 +831,67 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
             <div className={`sc-cmp ${liveItem ? "live-tick" : ""}`}>
               ₹{Number(currentPrice || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <div className="sc-dna-badge" style={{ color: scoreColor }}>
-              DNA {score}/100
+            <div className={`sc-action-badge ${actionBadge.cls}`}>
+              {actionBadge.text}
             </div>
           </div>
         </div>
 
-        {/* Precision Action Strip Banner */}
-        {activeTab === "success" && cls.hasPivot && (
-          <>
-            {cls.isTargetHit && (
-              <div className="sc-action-banner target-achieved" style={{ background: "rgba(16,185,129,0.14)", border: "1px solid rgba(16,185,129,0.35)" }}>
-                <div className="sc-banner-left">
-                  <span className="sc-banner-tag" style={{ background: "#10B981", color: "#fff", fontWeight: 700 }}>🎯 TARGET ACHIEVED</span>
-                  <span className="sc-banner-desc">
-                    Target Met (<b className="num">₹{cls.tgt.toFixed(1)}</b>) · Profit Booked
-                  </span>
-                </div>
-                <div className="sc-banner-right">
-                  <span className="sc-dist-badge" style={{ color: "#10B981", fontWeight: 700 }}>Complete ✓</span>
-                </div>
-              </div>
-            )}
-            {!cls.isTargetHit && cls.isGoodToBuy && (
-              <div className="sc-action-banner buy">
-                <div className="sc-banner-left">
-                  <span className="sc-banner-tag buy">🟢 BUY ZONE</span>
-                  <span className="sc-banner-desc">
-                    <b className="num">{cls.diffPct >= 0 ? `+${cls.diffPct.toFixed(1)}%` : `${cls.diffPct.toFixed(1)}%`}</b> from Breakout (<b className="num">₹{cls.brk.toFixed(1)}</b>)
-                  </span>
-                </div>
-                {cls.targetGainPct !== null && (
-                  <div className="sc-banner-right">
-                    <span className="sc-target-badge">
-                      Target <b className="num">₹{cls.tgt.toFixed(0)}</b> (<b className="num">+{cls.targetGainPct.toFixed(1)}%</b>)
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-            {!cls.isTargetHit && cls.isMissed && (
-              <div className="sc-action-banner missed">
-                <div className="sc-banner-left">
-                  <span className="sc-banner-tag missed">🛑 EXTENDED</span>
-                  <span className="sc-banner-desc">
-                    <b className="num">+{cls.diffAbs.toFixed(1)}%</b> past Breakout (<b className="num">₹{cls.brk.toFixed(1)}</b>)
-                  </span>
-                </div>
-                <div className="sc-banner-right">
-                  <span className="sc-dist-badge">High Chase Risk</span>
-                </div>
-              </div>
-            )}
-            {cls.isSkip && (
-              <div className="sc-action-banner skip">
-                <div className="sc-banner-left">
-                  <span className="sc-banner-tag skip">⏭️ SKIP</span>
-                  <span className="sc-banner-desc">
-                    Low upside left (<b className="num">{cls.targetGainPct !== null ? `+${cls.targetGainPct.toFixed(1)}%` : "0%"}</b> to Target)
-                  </span>
-                </div>
-                <div className="sc-banner-right">
-                  <span className="sc-dist-badge">Poor R:R</span>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {activeTab === "near_breakout" && cls.hasPivot && (
-          <div className="sc-action-banner near">
-            <div className="sc-banner-left">
-              <span className="sc-banner-tag near">⚡ PIVOT</span>
-              <span className="sc-banner-desc">
-                Trigger: <b className="num">₹{cls.brk.toFixed(1)}</b>
-              </span>
-            </div>
-            <div className="sc-banner-right">
-              <span className={`sc-dist-badge ${cls.diffAbs < 1.0 ? "hot" : ""}`}>
-                {cls.diffAbs < 1.0 ? "🔥" : "⏳"} <b className="num">{cls.diffAbs.toFixed(2)}%</b> to Trigger
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Option A Visual Zone: Mini Candlestick Sparkline + High-Precision Proximity Gauge */}
-        {cls.hasPivot && (
-          <div className="sc-card-visual-row">
+        {/* Row 2: Compact Mini Sparkline + 3-Point Trade Plan */}
+        <div className="sc-card-mid-grid">
+          <div className="sc-sparkline-cell">
             <MiniBaseSparkline
               candlesJson={s.mini_candles_json}
               isBullish={cls.status !== "MISSED"}
             />
-            <BreakoutProximityGauge
-              cmp={currentPrice}
-              pivot={Number(s.breakout_level || 0)}
-              target={Number(s.target_1 || 0)}
-              stopLoss={Number(s.stop_loss || 0)}
-              status={activeTab === "near_breakout" ? "NEAR" : cls.status}
-            />
           </div>
-        )}
 
-        {/* 3-Pillar Institutional Trade Matrix */}
-        <div className="sc-trade-matrix">
-          <div className="sc-matrix-box pivot">
-            <span className="sc-matrix-lbl">Breakout Pivot</span>
-            <span className="sc-matrix-val amber">
-              {s.breakout_level ? `₹${Number(s.breakout_level).toFixed(1)}` : "—"}
-            </span>
-          </div>
-          <div className="sc-matrix-box target">
-            <span className="sc-matrix-lbl">
-              Target {cls.targetGainPct !== null ? `(+${cls.targetGainPct.toFixed(0)}%)` : ""}
-            </span>
-            <span className="sc-matrix-val green">
-              {s.target_1 ? `₹${Number(s.target_1).toFixed(1)}` : "—"}
-            </span>
-          </div>
-          <div className="sc-matrix-box stop">
-            <span className="sc-matrix-lbl">Stop Loss</span>
-            <span className="sc-matrix-val red">
-              {s.stop_loss ? `₹${Number(s.stop_loss).toFixed(1)}` : "—"}
-            </span>
-          </div>
-          <div className="sc-rr-badge" title="Risk to Reward Ratio">
-            ⚖️ 1:{(s.target_1 && s.stop_loss && currentPrice > Number(s.stop_loss))
-              ? ((Number(s.target_1) - currentPrice) / (currentPrice - Number(s.stop_loss))).toFixed(1)
-              : s.risk_reward_ratio ? Number(s.risk_reward_ratio).toFixed(1) : "2.8"} R:R
+          <div className="sc-matrix-compact">
+            <div className="sc-mc-col">
+              <span className="sc-mc-lbl">TRIGGER</span>
+              <span className="sc-mc-val amber">
+                {s.breakout_level ? `₹${Number(s.breakout_level).toFixed(1)}` : "—"}
+              </span>
+            </div>
+            <div className="sc-mc-col">
+              <span className="sc-mc-lbl">TARGET</span>
+              <span className="sc-mc-val green">
+                {s.target_1 ? `₹${Number(s.target_1).toFixed(0)}` : "—"}
+                {cls.targetGainPct !== null && <small> (+{cls.targetGainPct.toFixed(0)}%)</small>}
+              </span>
+            </div>
+            <div className="sc-mc-col">
+              <span className="sc-mc-lbl">STOP LOSS</span>
+              <span className="sc-mc-val red">
+                {s.stop_loss ? `₹${Number(s.stop_loss).toFixed(1)}` : "—"}
+              </span>
+            </div>
+            <div className="sc-mc-col rr">
+              <span className="sc-mc-lbl">R:R RATIO</span>
+              <span className="sc-mc-val rr">
+                1:{(s.target_1 && s.stop_loss && currentPrice > Number(s.stop_loss))
+                  ? ((Number(s.target_1) - currentPrice) / (currentPrice - Number(s.stop_loss))).toFixed(1)
+                  : s.risk_reward_ratio ? Number(s.risk_reward_ratio).toFixed(1) : "2.8"}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Institutional Flow Tags Footer */}
+        {/* Row 3: Slim Flow Tags */}
         <div className="sc-flow-tags">
           <span className={`sc-flow-pill ${s.volume_ratio_20d && Number(s.volume_ratio_20d) >= 1.5 ? "vol-hot" : ""}`}>
-            ⚡ Vol: {s.volume_ratio_20d ? `${Number(s.volume_ratio_20d).toFixed(1)}×` : "1.8×"}
+            ⚡ {s.volume_ratio_20d ? `${Number(s.volume_ratio_20d).toFixed(1)}×` : "1.8×"} Vol
           </span>
           <span className="sc-flow-pill">
-            RSI: {s.rsi !== null && s.rsi !== undefined ? Number(s.rsi).toFixed(1) : "58"}
+            RSI {s.rsi !== null && s.rsi !== undefined ? Number(s.rsi).toFixed(0) : "58"}
           </span>
-          {s.base_duration_years && (
+          {s.mcap_tier && (
             <span className="sc-flow-pill">
-              ⏳ {Number(s.base_duration_years).toFixed(1)}y Accumulation
+              {s.mcap_tier}
             </span>
           )}
-          <span className="sc-flow-pill">
-            {s.mcap_tier || "Mid-Cap"}
+          <span className="sc-flow-pill score" style={{ color: scoreColor, fontWeight: 800 }}>
+            DNA {score}/100
           </span>
         </div>
       </div>
