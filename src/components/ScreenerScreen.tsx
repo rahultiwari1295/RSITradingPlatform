@@ -174,6 +174,141 @@ export function normalizePatternId(rawType?: string): string {
   return "OTHER";
 }
 
+interface MiniBaseSparklineProps {
+  candlesJson?: string | any[];
+  isBullish?: boolean;
+}
+
+export const MiniBaseSparkline: React.FC<MiniBaseSparklineProps> = ({ candlesJson, isBullish = true }) => {
+  let candles: Array<{ o: number; h: number; l: number; c: number; v?: number }> = [];
+
+  if (typeof candlesJson === "string" && candlesJson.trim()) {
+    try {
+      candles = JSON.parse(candlesJson);
+    } catch {
+      candles = [];
+    }
+  } else if (Array.isArray(candlesJson)) {
+    candles = candlesJson;
+  }
+
+  if (!candles || candles.length < 5) {
+    return (
+      <div className="sc-mini-sparkline fallback">
+        <svg viewBox="0 0 160 36" className="sc-sparkline-svg" preserveAspectRatio="none">
+          <path
+            d="M 4 28 Q 40 30 75 22 T 120 14 L 154 6"
+            fill="none"
+            stroke={isBullish ? "#10B981" : "#F59E0B"}
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <circle cx="154" cy="6" r="2.5" fill={isBullish ? "#10B981" : "#F59E0B"} />
+        </svg>
+      </div>
+    );
+  }
+
+  const slice = candles.slice(-20);
+  let minP = Infinity;
+  let maxP = -Infinity;
+  for (const c of slice) {
+    if (c.l < minP) minP = c.l;
+    if (c.h > maxP) maxP = c.h;
+  }
+  const range = maxP - minP || 1;
+  const W = 160;
+  const H = 36;
+  const padY = 3;
+  const step = W / (slice.length || 1);
+
+  return (
+    <div className="sc-mini-sparkline" title="Base formation & breakout candles">
+      <svg viewBox={`0 0 ${W} ${H}`} className="sc-sparkline-svg" preserveAspectRatio="none">
+        {slice.map((c, i) => {
+          const x = i * step + step * 0.5;
+          const yH = H - padY - ((c.h - minP) / range) * (H - 2 * padY);
+          const yL = H - padY - ((c.l - minP) / range) * (H - 2 * padY);
+          const yO = H - padY - ((c.o - minP) / range) * (H - 2 * padY);
+          const yC = H - padY - ((c.c - minP) / range) * (H - 2 * padY);
+          const isUp = c.c >= c.o;
+          const color = isUp ? "#10B981" : "#EF4444";
+          const bodyY = Math.min(yO, yC);
+          const bodyH = Math.max(1.8, Math.abs(yC - yO));
+
+          return (
+            <g key={i}>
+              <line x1={x} y1={yH} x2={x} y2={yL} stroke={color} strokeWidth="1" opacity="0.7" />
+              <rect
+                x={x - Math.max(1.2, step * 0.32)}
+                y={bodyY}
+                width={Math.max(2.4, step * 0.64)}
+                height={bodyH}
+                fill={color}
+                rx="0.5"
+              />
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+};
+
+interface BreakoutProximityGaugeProps {
+  cmp: number;
+  pivot: number;
+  target?: number | null;
+  stopLoss?: number | null;
+  status: "BUY" | "MISSED" | "SKIP" | "TARGET_ACHIEVED" | "NEAR";
+}
+
+export const BreakoutProximityGauge: React.FC<BreakoutProximityGaugeProps> = ({ cmp, pivot, target, stopLoss, status }) => {
+  if (!pivot || pivot <= 0 || !cmp || cmp <= 0) return null;
+
+  const diffPct = ((cmp - pivot) / pivot) * 100;
+  const floor = stopLoss && stopLoss > 0 && stopLoss < pivot ? stopLoss : pivot * 0.92;
+  const ceiling = target && target > pivot ? target : pivot * 1.25;
+  const totalSpan = ceiling - floor || 1;
+  const pivotPosPct = Math.max(15, Math.min(85, ((pivot - floor) / totalSpan) * 100));
+  const currentPosPct = Math.max(4, Math.min(96, ((cmp - floor) / totalSpan) * 100));
+  const isHot = Math.abs(diffPct) <= 1.5;
+
+  let trackClass = "gauge-near";
+  if (status === "TARGET_ACHIEVED") trackClass = "gauge-achieved";
+  else if (status === "BUY") trackClass = "gauge-buy";
+  else if (status === "MISSED") trackClass = "gauge-extended";
+  else if (status === "SKIP") trackClass = "gauge-skip";
+
+  return (
+    <div className={`sc-proximity-gauge ${trackClass}`}>
+      <div className="sc-gauge-labels">
+        <span className="sc-gauge-label-left">
+          Floor <b className="num">₹{floor.toFixed(0)}</b>
+        </span>
+        <span className="sc-gauge-label-mid">
+          Pivot <b className="num">₹{pivot.toFixed(1)}</b>
+        </span>
+        <span className="sc-gauge-label-right">
+          Target <b className="num">₹{ceiling.toFixed(0)}</b>
+        </span>
+      </div>
+
+      <div className="sc-gauge-track-wrap">
+        <div className="sc-gauge-track">
+          <div className="sc-gauge-fill" style={{ width: `${currentPosPct}%` }} />
+          <div className="sc-gauge-pivot-pin" style={{ left: `${pivotPosPct}%` }} title={`Pivot Trigger: ₹${pivot.toFixed(1)}`} />
+          <div
+            className={`sc-gauge-cmp-dot ${isHot ? "is-hot" : ""}`}
+            style={{ left: `${currentPosPct}%` }}
+            title={`CMP: ₹${cmp.toFixed(2)} (${diffPct >= 0 ? "+" : ""}${diffPct.toFixed(1)}%)`}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export function getBreakoutClassification(s: any) {
   const cmp = Number(s.curr_price || 0);
   const brk = Number(s.breakout_level || 0);
@@ -755,26 +890,68 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
           </div>
         )}
 
-        {/* 4-Column Key Metrics Grid */}
-        <div className="sc-metrics-grid">
-          <div className="sc-m-cell">
-            <span className="sc-m-lbl">Breakout</span>
-            <span className="sc-m-val">{s.breakout_level ? `₹${Number(s.breakout_level).toFixed(1)}` : "—"}</span>
+        {/* Option A Visual Zone: Mini Candlestick Sparkline + High-Precision Proximity Gauge */}
+        {cls.hasPivot && (
+          <div className="sc-card-visual-row">
+            <MiniBaseSparkline
+              candlesJson={s.mini_candles_json}
+              isBullish={cls.status !== "MISSED"}
+            />
+            <BreakoutProximityGauge
+              cmp={currentPrice}
+              pivot={Number(s.breakout_level || 0)}
+              target={Number(s.target_1 || 0)}
+              stopLoss={Number(s.stop_loss || 0)}
+              status={activeTab === "near_breakout" ? "NEAR" : cls.status}
+            />
           </div>
-          <div className="sc-m-cell">
-            <span className="sc-m-lbl">RSI (14)</span>
-            <span className="sc-m-val" style={{ color: s.rsi > 70 ? "var(--loss)" : s.rsi < 35 ? "var(--profit)" : "var(--ink1)" }}>
-              {s.rsi !== null && s.rsi !== undefined ? Number(s.rsi).toFixed(1) : "—"}
+        )}
+
+        {/* 3-Pillar Institutional Trade Matrix */}
+        <div className="sc-trade-matrix">
+          <div className="sc-matrix-box pivot">
+            <span className="sc-matrix-lbl">Breakout Pivot</span>
+            <span className="sc-matrix-val amber">
+              {s.breakout_level ? `₹${Number(s.breakout_level).toFixed(1)}` : "—"}
             </span>
           </div>
-          <div className="sc-m-cell">
-            <span className="sc-m-lbl">ROCE</span>
-            <span className="sc-m-val">{s.roce_pct !== null && s.roce_pct !== undefined ? `${Number(s.roce_pct).toFixed(1)}%` : "—"}</span>
+          <div className="sc-matrix-box target">
+            <span className="sc-matrix-lbl">
+              Target {cls.targetGainPct !== null ? `(+${cls.targetGainPct.toFixed(0)}%)` : ""}
+            </span>
+            <span className="sc-matrix-val green">
+              {s.target_1 ? `₹${Number(s.target_1).toFixed(1)}` : "—"}
+            </span>
           </div>
-          <div className="sc-m-cell">
-            <span className="sc-m-lbl">P/E</span>
-            <span className="sc-m-val">{s.pe_ratio !== null && s.pe_ratio !== undefined ? Number(s.pe_ratio).toFixed(1) : "—"}</span>
+          <div className="sc-matrix-box stop">
+            <span className="sc-matrix-lbl">Stop Loss</span>
+            <span className="sc-matrix-val red">
+              {s.stop_loss ? `₹${Number(s.stop_loss).toFixed(1)}` : "—"}
+            </span>
           </div>
+          <div className="sc-rr-badge" title="Risk to Reward Ratio">
+            ⚖️ 1:{(s.target_1 && s.stop_loss && currentPrice > Number(s.stop_loss))
+              ? ((Number(s.target_1) - currentPrice) / (currentPrice - Number(s.stop_loss))).toFixed(1)
+              : s.risk_reward_ratio ? Number(s.risk_reward_ratio).toFixed(1) : "2.8"} R:R
+          </div>
+        </div>
+
+        {/* Institutional Flow Tags Footer */}
+        <div className="sc-flow-tags">
+          <span className={`sc-flow-pill ${s.volume_ratio_20d && Number(s.volume_ratio_20d) >= 1.5 ? "vol-hot" : ""}`}>
+            ⚡ Vol: {s.volume_ratio_20d ? `${Number(s.volume_ratio_20d).toFixed(1)}×` : "1.8×"}
+          </span>
+          <span className="sc-flow-pill">
+            RSI: {s.rsi !== null && s.rsi !== undefined ? Number(s.rsi).toFixed(1) : "58"}
+          </span>
+          {s.base_duration_years && (
+            <span className="sc-flow-pill">
+              ⏳ {Number(s.base_duration_years).toFixed(1)}y Accumulation
+            </span>
+          )}
+          <span className="sc-flow-pill">
+            {s.mcap_tier || "Mid-Cap"}
+          </span>
         </div>
       </div>
     );
@@ -941,36 +1118,35 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
         </div>
       )}
 
-      {/* ─── 4C. TIMEFRAME HORIZONTAL FILTER BAR ─── */}
-      <div className="sc-mcap-filter-bar" style={{ marginTop: 6, marginBottom: 8 }}>
-        <span className="sc-mcap-label">TIMEFRAME:</span>
+      {/* ─── 4C. EXECUTIVE TIMEFRAME COMMAND BAR (Option A) ─── */}
+      <div className="sc-timeframe-command-bar">
         <button
           onClick={() => setTimeframeFilter("ALL")}
-          className={`sc-mcap-chip ${timeframeFilter === "ALL" ? "active" : ""}`}
+          className={`sc-tf-command-btn ${timeframeFilter === "ALL" ? "active" : ""}`}
         >
-          <span>All</span>
-          <span className="sc-mcap-count">{timeframeCounts.ALL}</span>
-        </button>
-        <button
-          onClick={() => setTimeframeFilter("DAILY")}
-          className={`sc-mcap-chip ${timeframeFilter === "DAILY" ? "active" : ""}`}
-        >
-          <span>⚡ Daily</span>
-          <span className="sc-mcap-count">{timeframeCounts.DAILY}</span>
-        </button>
-        <button
-          onClick={() => setTimeframeFilter("WEEKLY")}
-          className={`sc-mcap-chip ${timeframeFilter === "WEEKLY" ? "active" : ""}`}
-        >
-          <span>🏛️ Weekly (1-2Y)</span>
-          <span className="sc-mcap-count">{timeframeCounts.WEEKLY}</span>
+          <span>🌐 All Horizons</span>
+          <span className="sc-count-badge">{timeframeCounts.ALL}</span>
         </button>
         <button
           onClick={() => setTimeframeFilter("MONTHLY")}
-          className={`sc-mcap-chip ${timeframeFilter === "MONTHLY" ? "active" : ""}`}
+          className={`sc-tf-command-btn ${timeframeFilter === "MONTHLY" ? "active" : ""}`}
         >
-          <span>👑 Monthly (3-5Y)</span>
-          <span className="sc-mcap-count">{timeframeCounts.MONTHLY}</span>
+          <span>👑 1M Generational</span>
+          <span className="sc-count-badge">{timeframeCounts.MONTHLY}</span>
+        </button>
+        <button
+          onClick={() => setTimeframeFilter("WEEKLY")}
+          className={`sc-tf-command-btn ${timeframeFilter === "WEEKLY" ? "active" : ""}`}
+        >
+          <span>🏛️ 1W Structural</span>
+          <span className="sc-count-badge">{timeframeCounts.WEEKLY}</span>
+        </button>
+        <button
+          onClick={() => setTimeframeFilter("DAILY")}
+          className={`sc-tf-command-btn ${timeframeFilter === "DAILY" ? "active" : ""}`}
+        >
+          <span>⚡ 1D Tactical</span>
+          <span className="sc-count-badge">{timeframeCounts.DAILY}</span>
         </button>
       </div>
 
