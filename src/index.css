@@ -3014,6 +3014,16 @@ body::before{
   color: #F59E0B;
   border-color: #F59E0B;
 }
+.sc-filter-chip.active.retest {
+  background: color-mix(in srgb, #3B82F6 16%, transparent);
+  color: #3B82F6;
+  border-color: #3B82F6;
+}
+.sc-filter-chip.active.submerged {
+  background: color-mix(in srgb, #F59E0B 16%, transparent);
+  color: #F59E0B;
+  border-color: #F59E0B;
+}
 
 /* MARKET CAP FILTER STRIP */
 .sc-mcap-filter-bar {
@@ -3159,6 +3169,12 @@ body::before{
 .sc-card.border-near {
   border-left: 3.5px solid #F59E0B;
 }
+.sc-card.border-retest {
+  border-left: 3.5px solid #3B82F6;
+}
+.sc-card.border-submerged {
+  border-left: 3.5px solid #F59E0B;
+}
 
 .sc-card-head {
   display: flex;
@@ -3216,6 +3232,13 @@ body::before{
   border: 1px solid var(--line-2);
   color: var(--ink2);
 }
+.sc-pill.accuracy-pill {
+  background: color-mix(in srgb, #8B5CF6 14%, transparent);
+  color: #A78BFA;
+  border: 1px solid color-mix(in srgb, #8B5CF6 32%, transparent);
+  font-weight: 700;
+  font-size: 9.5px;
+}
 .sc-pill.mcap {
   background: var(--s2);
   color: var(--ink3);
@@ -3265,6 +3288,16 @@ body::before{
 .sc-action-banner.missed {
   background: color-mix(in srgb, var(--loss) 10%, transparent);
   border: 1px solid color-mix(in srgb, var(--loss) 24%, transparent);
+  color: var(--ink1);
+}
+.sc-action-banner.retest {
+  background: color-mix(in srgb, #3B82F6 11%, transparent);
+  border: 1px solid color-mix(in srgb, #3B82F6 26%, transparent);
+  color: var(--ink1);
+}
+.sc-action-banner.submerged {
+  background: color-mix(in srgb, #F59E0B 10%, transparent);
+  border: 1px solid color-mix(in srgb, #F59E0B 24%, transparent);
   color: var(--ink1);
 }
 .sc-action-banner.skip {

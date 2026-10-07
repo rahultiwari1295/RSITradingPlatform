@@ -63,9 +63,16 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [apiData, setApiData] = useState<any | null>(null);
+  const [patternAccuracy, setPatternAccuracy] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [loadingStep, setLoadingStep] = useState<number>(1);
   const [loadingProgress, setLoadingProgress] = useState<number>(20);
+
+  useEffect(() => {
+    quantsyncApi.getPatternAccuracy()
+      .then((acc) => setPatternAccuracy(acc))
+      .catch((e) => console.warn("Could not load pattern accuracy in Analyst View", e));
+  }, []);
 
   // Independent Chart Loading & Failover States (Never blocks full page)
   const [loadedChartSrc, setLoadedChartSrc] = useState<string>("");
@@ -273,6 +280,12 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
 
   const rawBaseYears = Number(apiData?.base_duration_years ?? stock.base_duration_years ?? stock.baseDurationYears ?? 0);
   const baseDurationStr = rawBaseYears >= 0.5 ? `${rawBaseYears.toFixed(1)}y Base` : null;
+
+  const patCode = (patternName || "").split("·")[0].trim().toUpperCase().replace(/[\s\-]+/g, "_");
+  const tfCode = (rawTf || (dnaTimeframe === "monthly" ? "1M" : dnaTimeframe === "macro" ? "1W" : "1D")).toUpperCase()
+    .replace("1M", "MONTHLY").replace("1W", "WEEKLY").replace("1D", "DAILY");
+  const accKey = `${tfCode}_${patCode}`;
+  const acc = patternAccuracy?.matrix?.[accKey] || patternAccuracy?.by_pattern?.[patCode];
 
   // Dynamic Good & Bad Points strictly from engine or factual metrics
   const apiGood: string[] = apiData?.why_buy_reasons && Array.isArray(apiData.why_buy_reasons) ? apiData.why_buy_reasons : [];
@@ -583,6 +596,11 @@ ChartAnalysis : ${websiteLink}`;
             {baseDurationStr && (
               <span className="dna-pill duration-pill" style={{ background: "rgba(6,182,212,0.18)", color: "#22D3EE", border: "1px solid rgba(6,182,212,0.3)", fontWeight: 700 }}>
                 ⏳ {baseDurationStr}
+              </span>
+            )}
+            {acc && acc.win_rate_pct > 0 && (
+              <span className="dna-pill accuracy-pill" style={{ background: "rgba(139,92,246,0.22)", color: "#C4B5FD", border: "1px solid rgba(139,92,246,0.45)", fontWeight: 800 }}>
+                🏆 {acc.win_rate_pct}% Empirical Win Rate ({acc.resolved || acc.total} Backtested Trades, 2020–2026)
               </span>
             )}
             {isTargetAchieved && (

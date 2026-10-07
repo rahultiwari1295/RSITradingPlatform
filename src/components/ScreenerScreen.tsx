@@ -313,10 +313,15 @@ export function getBreakoutClassification(s: any) {
   const cmp = Number(s.curr_price || 0);
   const brk = Number(s.breakout_level || 0);
   const tgt = Number(s.target_1 || 0);
+  const sl = Number(s.stop_loss || 0);
   const hasPivot = brk > 0;
   const diffPct = hasPivot ? ((cmp - brk) / brk) * 100 : 0;
   const diffAbs = Math.abs(diffPct);
   const targetGainPct = (tgt > 0 && cmp > 0) ? ((tgt - cmp) / cmp * 100) : null;
+  const tf = (s.timeframe || "DAILY").toUpperCase();
+
+  // Buy Zone Thresholds under Option B
+  const buyZoneLimit = tf === "MONTHLY" ? 10.0 : tf === "WEEKLY" ? 6.5 : 4.5;
 
   const isTargetHit = s.lifecycle_state === "TARGET_ACHIEVED" ||
     String(s.action_title || "").includes("Target Achieved") ||
@@ -324,23 +329,41 @@ export function getBreakoutClassification(s: any) {
     s.stance === "NEUTRAL" ||
     (tgt > 0 && cmp >= tgt && brk > 0 && tgt > brk);
 
-  const isMissed = diffAbs > 5.0 || isTargetHit;
-  const isSkip = !isMissed && targetGainPct !== null && targetGainPct < 5.0;
-  const isGoodToBuy = !isMissed && !isSkip && !isTargetHit;
+  let executionState: "BUY_ZONE" | "RETEST" | "EXTENDED" | "SUBMERGED" | "TARGET_ACHIEVED" = "BUY_ZONE";
+
+  if (isTargetHit) {
+    executionState = "TARGET_ACHIEVED";
+  } else if (diffPct >= 0 && diffPct <= buyZoneLimit) {
+    executionState = "BUY_ZONE";
+  } else if (diffPct >= -1.8 && diffPct < 0) {
+    executionState = "RETEST";
+  } else if (diffPct > buyZoneLimit) {
+    executionState = "EXTENDED";
+  } else {
+    // Slipped below pivot floor (diffPct < -1.8%)
+    executionState = "SUBMERGED";
+  }
+
+  // Compatibility flags
+  const isGoodToBuy = executionState === "BUY_ZONE" || executionState === "RETEST";
+  const isMissed = executionState === "EXTENDED";
+  const isSkip = executionState === "SUBMERGED";
 
   let status: "BUY" | "MISSED" | "SKIP" | "TARGET_ACHIEVED" = "BUY";
   if (isTargetHit) status = "TARGET_ACHIEVED";
-  else if (isMissed) status = "MISSED";
-  else if (isSkip) status = "SKIP";
+  else if (executionState === "EXTENDED") status = "MISSED";
+  else if (executionState === "SUBMERGED") status = "SKIP";
 
   return {
     hasPivot,
     cmp,
     brk,
     tgt,
+    sl,
     diffPct,
     diffAbs,
     targetGainPct,
+    executionState,
     status,
     isGoodToBuy,
     isMissed,
@@ -375,11 +398,12 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
   // 1. Two-way primary switch: "near_breakout" vs "success" (Confirmed Breakout)
   const [activeTab, setActiveTab] = useState<"near_breakout" | "success">("near_breakout");
   const [selectedPattern, setSelectedPattern] = useState<string>("ALL");
-  const [actionFilter, setActionFilter] = useState<"ALL" | "BUY" | "MISSED" | "SKIP">("ALL");
+  const [actionFilter, setActionFilter] = useState<"ALL" | "BUY_ZONE" | "RETEST" | "EXTENDED" | "SUBMERGED">("ALL");
   const [nearFilter, setNearFilter] = useState<"ALL" | "HOT" | "MID" | "FAR">("ALL");
   const [mcapFilter, setMcapFilter] = useState<string>("ALL");
   const [timeframeFilter, setTimeframeFilter] = useState<"ALL" | "DAILY" | "WEEKLY" | "MONTHLY">("ALL");
   const [expandedOlder, setExpandedOlder] = useState<boolean>(false);
+  const [patternAccuracy, setPatternAccuracy] = useState<any>(null);
 
   const [loading, setLoading] = useState<boolean>(() => {
     return !SCREENER_MEMORY_CACHE["near_breakout"];
@@ -406,6 +430,10 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
         });
       })
       .catch((e) => console.warn("Could not load screener breakouts", e));
+
+    quantsyncApi.getPatternAccuracy()
+      .then((acc) => setPatternAccuracy(acc))
+      .catch((e) => console.warn("Could not load pattern accuracy", e));
   }, []);
 
   // Fetch stocks when primary tab changes (serves instant cache first, then refreshes if stale)
@@ -567,18 +595,19 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
     return liveEnrichedStocks.filter((s) => normalizePatternId(s.pattern_type) === selectedPattern);
   }, [liveEnrichedStocks, selectedPattern]);
 
-  // Action status counts for Confirmed Breakout
-  const { buyCount, missedCount, skipCount } = useMemo(() => {
-    let b = 0, m = 0, sk = 0;
+  // Option B Action status counts for Confirmed Breakout
+  const { buyZoneCount, retestCount, extendedCount, submergedCount } = useMemo(() => {
+    let bz = 0, rt = 0, ext = 0, sub = 0;
     if (activeTab === "success") {
       patternFilteredStocks.forEach((s) => {
         const cls = getBreakoutClassification(s);
-        if (cls.status === "BUY") b++;
-        else if (cls.status === "MISSED") m++;
-        else if (cls.status === "SKIP") sk++;
+        if (cls.executionState === "BUY_ZONE") bz++;
+        else if (cls.executionState === "RETEST") rt++;
+        else if (cls.executionState === "EXTENDED") ext++;
+        else if (cls.executionState === "SUBMERGED") sub++;
       });
     }
-    return { buyCount: b, missedCount: m, skipCount: sk };
+    return { buyZoneCount: bz, retestCount: rt, extendedCount: ext, submergedCount: sub };
   }, [patternFilteredStocks, activeTab]);
 
   // Dynamic Market Cap counts across filtered set
@@ -594,7 +623,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
     let baseList = patternFilteredStocks;
     if (activeTab === "success") {
       if (actionFilter !== "ALL") {
-        baseList = baseList.filter((s) => getBreakoutClassification(s).status === actionFilter);
+        baseList = baseList.filter((s) => getBreakoutClassification(s).executionState === actionFilter);
       }
     } else {
       if (nearFilter === "HOT") {
@@ -659,7 +688,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
       list = list.filter((s) => (s.timeframe || "DAILY").toUpperCase() === timeframeFilter);
     }
     if (actionFilter !== "ALL") {
-      list = list.filter((s) => getBreakoutClassification(s).status === actionFilter);
+      list = list.filter((s) => getBreakoutClassification(s).executionState === actionFilter);
     }
     if (mcapFilter !== "ALL") {
       list = list.filter((s) => matchesMcap(s, mcapFilter));
@@ -810,19 +839,38 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
     const avatarGrad = AVATAR_GRADS[idx % AVATAR_GRADS.length];
 
     const borderCls = activeTab === "success"
-      ? (cls.isGoodToBuy ? "border-buy" : cls.isMissed ? "border-missed" : "border-skip")
+      ? (cls.executionState === "BUY_ZONE"
+          ? "border-buy"
+          : cls.executionState === "RETEST"
+          ? "border-retest"
+          : cls.executionState === "SUBMERGED"
+          ? "border-submerged"
+          : "border-missed")
       : "border-near";
 
-    // Dynamic Action Label
+    // Dynamic Action Label under Option B
     let actionBadge = { text: "⚡ Near", cls: "near" };
     if (activeTab === "success") {
-      if (cls.isTargetHit) actionBadge = { text: "🎯 Target Met", cls: "hit" };
-      else if (cls.isGoodToBuy) actionBadge = { text: `🟢 Buy Zone (+${cls.diffPct.toFixed(1)}%)`, cls: "buy" };
-      else if (cls.isMissed) actionBadge = { text: `🛑 Extended (+${cls.diffAbs.toFixed(1)}%)`, cls: "missed" };
-      else if (cls.isSkip) actionBadge = { text: "⏭️ Low R:R", cls: "skip" };
+      if (cls.executionState === "TARGET_ACHIEVED") {
+        actionBadge = { text: `🎯 Target Met (+${cls.diffPct.toFixed(1)}%)`, cls: "hit" };
+      } else if (cls.executionState === "BUY_ZONE") {
+        actionBadge = { text: `🟢 Buy Zone (+${cls.diffPct.toFixed(1)}%)`, cls: "buy" };
+      } else if (cls.executionState === "RETEST") {
+        actionBadge = { text: `🔄 Retest (${cls.diffPct.toFixed(1)}%)`, cls: "retest" };
+      } else if (cls.executionState === "EXTENDED") {
+        actionBadge = { text: `🛑 Extended (+${cls.diffPct.toFixed(1)}%)`, cls: "missed" };
+      } else if (cls.executionState === "SUBMERGED") {
+        actionBadge = { text: `⚠️ Submerged (${cls.diffPct.toFixed(1)}%)`, cls: "submerged" };
+      }
     } else {
       actionBadge = { text: `⚡ Trigger in ${cls.diffAbs.toFixed(1)}%`, cls: cls.diffAbs < 1.0 ? "hot" : "near" };
     }
+
+    // Historical empirical accuracy lookup (2020-2026 backtest ledger)
+    const patCode = (s.pattern_type || "").split("·")[0].trim().toUpperCase().replace(/[\s\-]+/g, "_");
+    const tfCode = (s.timeframe || "DAILY").toUpperCase();
+    const accKey = `${tfCode}_${patCode}`;
+    const acc = patternAccuracy?.matrix?.[accKey] || patternAccuracy?.by_pattern?.[patCode];
 
     return (
       <div
@@ -846,6 +894,11 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
                 {s.pattern_type && (
                   <span className="sc-pill pattern">
                     {s.pattern_type.split("·")[0].trim()}
+                  </span>
+                )}
+                {acc && acc.win_rate_pct > 0 && (
+                  <span className="sc-pill accuracy-pill" title={`${acc.resolved || acc.total} historical verified breakouts (2020–2026)`}>
+                    🏆 {acc.win_rate_pct}% Win Rate
                   </span>
                 )}
               </div>
@@ -1027,15 +1080,9 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
         </div>
       )}
 
-      {/* ─── 4. ACTION STATUS FILTER BAR (BUY / MISSED / SKIP) ─── */}
+      {/* ─── 4. OPTION B LIFECYCLE ACTION FILTER BAR ─── */}
       {activeTab === "success" && (
         <div className="sc-action-filter-bar">
-          <button
-            onClick={() => setActionFilter("BUY")}
-            className={`sc-filter-chip buy ${actionFilter === "BUY" ? "active" : ""}`}
-          >
-            🟢 Good to Buy ({buyCount})
-          </button>
           <button
             onClick={() => setActionFilter("ALL")}
             className={`sc-filter-chip all ${actionFilter === "ALL" ? "active" : ""}`}
@@ -1043,16 +1090,28 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
             All Breakouts ({patternFilteredStocks.length})
           </button>
           <button
-            onClick={() => setActionFilter("MISSED")}
-            className={`sc-filter-chip missed ${actionFilter === "MISSED" ? "active" : ""}`}
+            onClick={() => setActionFilter("BUY_ZONE")}
+            className={`sc-filter-chip buy ${actionFilter === "BUY_ZONE" ? "active" : ""}`}
           >
-            🛑 Missed ({missedCount})
+            🟢 Buy Zone ({buyZoneCount})
           </button>
           <button
-            onClick={() => setActionFilter("SKIP")}
-            className={`sc-filter-chip skip ${actionFilter === "SKIP" ? "active" : ""}`}
+            onClick={() => setActionFilter("RETEST")}
+            className={`sc-filter-chip retest ${actionFilter === "RETEST" ? "active" : ""}`}
           >
-            ⏭️ Skip ({skipCount})
+            🔄 Retest ({retestCount})
+          </button>
+          <button
+            onClick={() => setActionFilter("EXTENDED")}
+            className={`sc-filter-chip missed ${actionFilter === "EXTENDED" ? "active" : ""}`}
+          >
+            🛑 Extended ({extendedCount})
+          </button>
+          <button
+            onClick={() => setActionFilter("SUBMERGED")}
+            className={`sc-filter-chip submerged ${actionFilter === "SUBMERGED" ? "active" : ""}`}
+          >
+            ⚠️ Submerged ({submergedCount})
           </button>
         </div>
       )}

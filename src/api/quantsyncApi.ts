@@ -340,9 +340,59 @@ export const quantsyncApi = {
   getStockDetail: (symbol: string, timeframe?: string) =>
     apiFetch<any>(`/api/stock/detail/${encodeURIComponent(symbol)}${timeframe ? `?timeframe=${encodeURIComponent(timeframe)}` : ""}`),
 
+  getPatternAccuracy: () =>
+    apiFetch<{
+      period: string;
+      overall: {
+        total_records: number;
+        resolved_trades: number;
+        wins: number;
+        losses: number;
+        active: number;
+        win_rate_pct: number;
+        avg_win_gain_pct: number;
+        avg_pnl_pct: number;
+        avg_holding_bars: number;
+      };
+      by_timeframe: Record<string, {
+        total: number;
+        resolved: number;
+        wins: number;
+        losses: number;
+        win_rate_pct: number;
+        avg_win_gain_pct: number;
+        avg_pnl_pct: number;
+      }>;
+      by_pattern: Record<string, {
+        total: number;
+        resolved: number;
+        wins: number;
+        losses: number;
+        win_rate_pct: number;
+        avg_win_gain_pct: number;
+        avg_pnl_pct: number;
+      }>;
+      matrix: Record<string, {
+        timeframe: string;
+        pattern_type: string;
+        total: number;
+        resolved: number;
+        win_rate_pct: number;
+        avg_win_gain_pct: number;
+      }>;
+    }>(`/api/screener/pattern-accuracy`),
+
+  getHistoricalBreakoutRecords: (params?: { symbol?: string; timeframe?: string; pattern?: string; outcome?: string; limit?: number; offset?: number }) => {
+    const qs = params ? "?" + new URLSearchParams(
+      Object.entries(params).filter(([_, v]) => v !== undefined && v !== null && v !== "").map(([k, v]) => [k, String(v)])
+    ).toString() : "";
+    return apiFetch<{ count: number; records: Array<any> }>(`/api/screener/records${qs}`);
+  },
+
   searchSymbols: (query: string) =>
     apiFetch<Array<{ symbol: string; name?: string; token?: string; price?: number; candleCount?: number }>>(
       `/api/dna/search?q=${encodeURIComponent(query)}`
     ),
 };
+
 
