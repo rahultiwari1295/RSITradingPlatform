@@ -2882,6 +2882,226 @@ body::before{
   flex-shrink: 0;
 }
 
+/* ─── MASTER 3-TAB LIFECYCLE CONTROLS ─── */
+.sc-global-tf-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sc-global-tf-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sc-global-tf-lbl {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--ink3);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.sc-global-tf-select {
+  appearance: none;
+  background: var(--s2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394A3B8' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E") no-repeat right 12px center;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  padding: 7px 32px 7px 12px;
+  color: var(--ink1);
+  font-size: 11.5px;
+  font-weight: 750;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.sc-global-tf-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.sc-master-tabs {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--s2);
+  border: 1px solid var(--line-2);
+  padding: 4px;
+  border-radius: 14px;
+  margin-bottom: 14px;
+  gap: 4px;
+}
+.sc-master-tab-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 6px;
+  border-radius: 10px;
+  font-size: clamp(10.5px, 2.8vw, 12.5px);
+  font-weight: 750;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink3);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.sc-master-tab-btn:hover {
+  color: var(--ink1);
+}
+.sc-master-tab-btn.active.fresh {
+  background: color-mix(in srgb, #10B981 18%, transparent);
+  border-color: rgba(16, 185, 129, 0.45);
+  color: #10B981;
+  box-shadow: 0 2px 12px rgba(16, 185, 129, 0.15);
+}
+.sc-master-tab-btn.active.runners {
+  background: color-mix(in srgb, #3B82F6 18%, transparent);
+  border-color: rgba(59, 130, 246, 0.45);
+  color: #60A5FA;
+  box-shadow: 0 2px 12px rgba(59, 130, 246, 0.15);
+}
+.sc-master-tab-btn.active.closed {
+  background: color-mix(in srgb, #8B5CF6 18%, transparent);
+  border-color: rgba(139, 92, 246, 0.45);
+  color: #A78BFA;
+  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.15);
+}
+.sc-mt-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.sc-mt-title {
+  letter-spacing: -0.01em;
+}
+.sc-mt-badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5.5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+}
+
+/* ─── RETEST & AUDIT PILLS ─── */
+.sc-pill.retest-pill {
+  background: color-mix(in srgb, #06B6D4 15%, transparent);
+  color: #22D3EE;
+  border: 1px solid color-mix(in srgb, #06B6D4 35%, transparent);
+  font-weight: 800;
+  font-size: 9.5px;
+}
+
+/* ─── CLOSED TRADE AUDIT CARD (TILE 2) ─── */
+.sc-closed-card {
+  background: var(--card-bg, var(--s1));
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.sc-closed-card:hover {
+  transform: translateY(-1.5px);
+  border-color: var(--line-2);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+}
+.sc-closed-card.win {
+  border-left: 3.5px solid #10B981;
+}
+.sc-closed-card.loss {
+  border-left: 3.5px solid #EF4444;
+}
+.sc-closed-card.timestop {
+  border-left: 3.5px solid #F59E0B;
+}
+
+.sc-outcome-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 7px;
+  font-size: 10.5px;
+  font-weight: 850;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -0.02em;
+}
+.sc-outcome-badge.win {
+  background: color-mix(in srgb, #10B981 16%, transparent);
+  color: #34D399;
+  border: 1px solid color-mix(in srgb, #10B981 35%, transparent);
+}
+.sc-outcome-badge.loss {
+  background: color-mix(in srgb, #EF4444 16%, transparent);
+  color: #F87171;
+  border: 1px solid color-mix(in srgb, #EF4444 35%, transparent);
+}
+.sc-outcome-badge.timestop {
+  background: color-mix(in srgb, #F59E0B 16%, transparent);
+  color: #FBBF24;
+  border: 1px solid color-mix(in srgb, #F59E0B 35%, transparent);
+}
+
+.sc-audit-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 10px 0 8px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+@media (max-width: 600px) {
+  .sc-audit-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+}
+.sc-audit-col {
+  display: flex;
+  flex-direction: column;
+}
+.sc-audit-lbl {
+  font-size: 7.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin-bottom: 2px;
+}
+.sc-audit-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink1);
+}
+.sc-audit-val.green { color: #10B981; }
+.sc-audit-val.red { color: #EF4444; }
+.sc-audit-val.amber { color: #F59E0B; }
+.sc-audit-sub {
+  font-size: 8px;
+  font-weight: 600;
+  color: var(--ink3);
+  margin-top: 1px;
+}
+
+.sc-audit-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 9.5px;
+  color: var(--ink3);
+  border-top: 1px solid var(--line);
+  padding-top: 6px;
+  margin-top: 4px;
+}
+
 /* 3. PATTERN HERO GRID (3 BUTTONS PER ROW WITH CANDLESTICK CHART VISUALS) */
 .sc-pattern-hero-grid {
   display: grid;
