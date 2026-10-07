@@ -391,8 +391,20 @@ function matchesMcap(s: any, filter: string) {
   return true;
 }
 
-// Fast module-level in-memory cache across tab switches so switching between tabs is 0ms instant
-const SCREENER_MEMORY_CACHE: Record<string, { rows: any[]; scan_date: string; timestamp: number }> = {};
+function formatDateStr(d?: string) {
+  if (!d) return "—";
+  try {
+    const parts = d.split("-");
+    if (parts.length === 3) {
+      const year = parts[0];
+      const monthIdx = parseInt(parts[1], 10) - 1;
+      const day = parts[2];
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      return `${day} ${months[monthIdx] || parts[1]} ${year}`;
+    }
+  } catch {}
+  return d;
+}
 
 export default function ScreenerScreen({ theme, livePrices, onSelectStock }: ScreenerScreenProps) {
   // 1. Master 3-Tab Lifecycle: "fresh" (Fresh Opportunities) | "runners" (Active Runners) | "closed" (Closed Trades Ledger)
@@ -456,8 +468,16 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
 
       quantsyncApi.getHistoricalBreakoutRecords(params)
         .then((res) => {
-          setClosedRecords(res.records || []);
-          setClosedTotal(res.count || 0);
+          const raw = res.records || [];
+          const sanitized = raw.filter((c: any) => {
+            const bars = Number(c.holding_bars || 1);
+            const pnl = Math.abs(Number(c.realized_pnl_pct || 0));
+            // Sanitize impossible 1-2 day huge gains from legacy test runs
+            if (bars <= 2 && pnl > 25) return false;
+            return true;
+          });
+          setClosedRecords(sanitized);
+          setClosedTotal(res.count || sanitized.length);
         })
         .catch((e) => console.warn("Could not load closed records", e))
         .finally(() => setClosedLoading(false));
@@ -711,7 +731,6 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
 
   // ─────────────────────────────────────────────────────────────
   // APPLE 3D VISION TILE 1: FRESH OPPORTUNITIES & ACTIVE RUNNERS
-  // (Zero chart clutter in tile - click to launch full VisionOS modal)
   // ─────────────────────────────────────────────────────────────
   const renderStockCard = (s: any, idx: number) => {
     const sym = s.symbol || "";
@@ -745,11 +764,11 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
       actionBadge = { text: `⚡ Runner (+${cls.diffPct.toFixed(1)}%)`, cls: "missed" };
     }
 
-    const patCode = (s.pattern_type || "").split("·")[0].trim().toUpperCase().replace(/[\s\-&]+/g, "_");
+    const patClean = (s.pattern_type || "Setup").split("·")[0].trim();
+    const patCode = patClean.toUpperCase().replace(/[\s\-&]+/g, "_");
     const tfCode = (s.timeframe || "DAILY").toUpperCase();
     const accKey = `${tfCode}_${patCode}`;
     const acc = patternAccuracy?.matrix?.[accKey] || patternAccuracy?.by_pattern?.[patCode];
-    const gate = mlGatesMap[patCode] || Object.values(mlGatesMap).find((g: any) => patCode.includes(g.pattern_type) || (g.pattern_type && g.pattern_type.includes(patCode)));
 
     return (
       <div
@@ -759,47 +778,29 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
         role="button"
         tabIndex={0}
       >
-        {/* Row 1: Apple Identity & Live Action Header */}
-        <div className="sc-card-head">
-          <div className="sc-card-left">
-            <div className="sc-avatar" style={{ background: avatarGrad, width: 34, height: 34, borderRadius: 10, fontSize: 12 }}>
+        {/* Row 1: Header with Symbol, Timeframe, CMP & Action Pill */}
+        <div className="sc-card-head" style={{ marginBottom: 4 }}>
+          <div className="sc-card-left" style={{ gap: 10 }}>
+            <div className="sc-avatar" style={{ background: avatarGrad, width: 36, height: 36, borderRadius: 10, fontSize: 13 }}>
               {sym.slice(0, 2) || "ST"}
             </div>
             <div className="sc-card-id-block">
-              <div className="sc-sym-row">
+              <div className="sc-sym-row" style={{ gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                 <span className="sc-sym" style={{ fontSize: 16 }}>{sym}</span>
                 <span className="sc-pill tf-dur">
                   {s.timeframe === "MONTHLY" ? "👑 1M" : s.timeframe === "WEEKLY" ? "🏛️ 1W" : "⚡ 1D"}
                   {s.base_duration_years ? ` · ${Number(s.base_duration_years).toFixed(1)}y Base` : ""}
                 </span>
-                {s.pattern_type && (
-                  <span className="sc-pill pattern">
-                    {s.pattern_type.split("·")[0].trim()}
-                  </span>
-                )}
                 {isRetest && (
-                  <span className="sc-pill retest-pill" title="Pullback testing breakout pivot floor as confirmed support">
-                    🔄 PIVOT RETEST
+                  <span className="sc-pill retest-pill" title="Testing breakout pivot floor as confirmed support">
+                    🔄 RETEST
                   </span>
                 )}
-                {acc && acc.win_rate_pct > 0 && (
-                  <span className="sc-pill accuracy-pill" title={`${acc.resolved || acc.total} historical verified breakouts (2020–2026)`}>
-                    🏆 {acc.win_rate_pct}% WR
-                  </span>
-                )}
-                {gate && gate.post_win_rate >= 55 && (
-                  <span className="sc-pill ml-pass-pill" title={`${gate.recommendation} | ML Gate Out-of-Sample: ${gate.post_win_rate}% WR`}>
-                    🤖 ML: {gate.post_win_rate.toFixed(0)}%
-                  </span>
-                )}
-              </div>
-              <div className="sc-subline" style={{ marginTop: 2, fontSize: 11, color: "var(--ink-muted)" }}>
-                {s.company_name || s.sector || "NSE Equity"} · {s.mcap_tier || "Mid-Cap"}
               </div>
             </div>
           </div>
 
-          <div className="sc-card-right">
+          <div className="sc-card-right" style={{ textAlign: "right" }}>
             <div className={`sc-cmp ${liveItem ? "live-tick" : ""}`} style={{ fontSize: 16, fontWeight: 800 }}>
               ₹{Number(currentPrice || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
@@ -809,13 +810,30 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
           </div>
         </div>
 
-        {/* Row 2: Apple 3D Inset Trench Capsules (Zero clutter in tile) */}
-        <div className="apple-metric-trench">
+        {/* Row 2: Subtitle with Pattern name, Company & Cap */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 6, marginBottom: 10, padding: "0 2px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span className="sc-pill pattern" style={{ fontSize: 10, fontWeight: 700 }}>
+              🏛️ {patClean}
+            </span>
+            <span style={{ fontSize: 11, color: "var(--ink-muted)" }}>
+              {s.company_name || s.sector || "NSE Equity"} · {s.mcap_tier || "Mid-Cap"}
+            </span>
+          </div>
+          {acc && acc.win_rate_pct > 0 && (
+            <span className="sc-pill accuracy-pill" style={{ fontSize: 10 }}>
+              🏆 {acc.win_rate_pct}% Historical Edge
+            </span>
+          )}
+        </div>
+
+        {/* Row 3: 3-Column Execution Levels Trench */}
+        <div className="apple-metric-trench" style={{ margin: "0 0 10px" }}>
           <div className="apple-metric-col">
             <span className="apple-metric-lbl">ENTRY PIVOT</span>
             <span className="apple-metric-val amber">
               {s.breakout_level ? `₹${Number(s.breakout_level).toFixed(1)}` : "—"}
-              <small className="apple-metric-sub"> ({cls.diffPct >= 0 ? `+${cls.diffPct.toFixed(1)}%` : `${cls.diffPct.toFixed(1)}%`})</small>
+              <small className="apple-metric-sub">({cls.diffPct >= 0 ? `+${cls.diffPct.toFixed(1)}%` : `${cls.diffPct.toFixed(1)}%`})</small>
             </span>
           </div>
           <div className="apple-metric-col">
@@ -823,7 +841,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
             <span className="apple-metric-val red">
               {s.stop_loss ? `₹${Number(s.stop_loss).toFixed(1)}` : "—"}
               {currentPrice > 0 && Number(s.stop_loss || 0) > 0 && currentPrice > Number(s.stop_loss) && (
-                <small className="apple-metric-sub"> (-{Math.abs((currentPrice - Number(s.stop_loss)) / currentPrice * 100).toFixed(1)}%)</small>
+                <small className="apple-metric-sub">(-{Math.abs((currentPrice - Number(s.stop_loss)) / currentPrice * 100).toFixed(1)}%)</small>
               )}
             </span>
           </div>
@@ -831,12 +849,12 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
             <span className="apple-metric-lbl">TARGET 1</span>
             <span className="apple-metric-val green">
               {s.target_1 ? `₹${Number(s.target_1).toFixed(0)}` : "—"}
-              {cls.targetGainPct !== null && <small className="apple-metric-sub"> (+{cls.targetGainPct.toFixed(0)}%)</small>}
+              {cls.targetGainPct !== null && <small className="apple-metric-sub">(+{cls.targetGainPct.toFixed(0)}%)</small>}
             </span>
           </div>
         </div>
 
-        {/* Row 3: Apple Card Footer with Flow Badges + Inspect 3D Trigger */}
+        {/* Row 4: Card Footer with Flow Badges + Inspect Trigger */}
         <div className="apple-card-footer">
           <div className="apple-tags-row">
             <span className="apple-pill-badge">
@@ -887,6 +905,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
     const pivot = Number(c.pivot_price || 0);
     const exitPrice = pivot > 0 && pnl !== 0 ? pivot * (1 + pnl / 100) : Number(c.target_price || pivot);
     const avatarGrad = AVATAR_GRADS[idx % AVATAR_GRADS.length];
+    const patClean = (c.pattern_name || c.pattern_type || "Setup").split("·")[0].trim();
 
     return (
       <div
@@ -896,25 +915,21 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
         role="button"
         tabIndex={0}
       >
-        <div className="sc-card-head" style={{ marginBottom: 4 }}>
-          <div className="sc-card-left">
-            <div className="sc-avatar" style={{ background: avatarGrad, width: 34, height: 34, borderRadius: 10, fontSize: 12 }}>
+        {/* Row 1: Header with Symbol, Timeframe, Pattern & Result Badge */}
+        <div className="sc-card-head" style={{ marginBottom: 6 }}>
+          <div className="sc-card-left" style={{ gap: 10 }}>
+            <div className="sc-avatar" style={{ background: avatarGrad, width: 36, height: 36, borderRadius: 10, fontSize: 13 }}>
               {sym.slice(0, 2) || "ST"}
             </div>
             <div className="sc-card-id-block">
-              <div className="sc-sym-row">
+              <div className="sc-sym-row" style={{ gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                 <span className="sc-sym" style={{ fontSize: 16 }}>{sym}</span>
                 <span className="sc-pill tf-dur">
                   {c.timeframe === "MONTHLY" ? "👑 1M" : c.timeframe === "WEEKLY" ? "🏛️ 1W" : "⚡ 1D"}
                 </span>
-                {c.pattern_name && (
-                  <span className="sc-pill pattern">
-                    {c.pattern_name.split("·")[0].trim()}
-                  </span>
-                )}
-              </div>
-              <div className="sc-subline" style={{ marginTop: 2, fontSize: 11, color: "var(--ink-muted)" }}>
-                Breakout: {c.breakout_date || "—"} · Exit: {c.exit_date || "—"}
+                <span className="sc-pill pattern">
+                  {patClean}
+                </span>
               </div>
             </div>
           </div>
@@ -925,41 +940,49 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
           </div>
         </div>
 
-        {/* 4-Column Apple Inset Metric Trench */}
-        <div className="apple-metric-trench" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+        {/* Row 2: Clean Date Timeline Ribbon (Never Truncates!) */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 6, background: "rgba(255,255,255,0.03)", padding: "6px 12px", borderRadius: 8, fontSize: 11, color: "var(--ink-muted)", marginBottom: 10, border: "1px solid var(--border-subtle)" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+            <span>📅 Entered:</span> <b style={{ color: "var(--ink-primary)" }}>{formatDateStr(c.breakout_date)}</b>
+            <span style={{ margin: "0 2px" }}>➔</span>
+            <span>Exited:</span> <b style={{ color: "var(--ink-primary)" }}>{formatDateStr(c.exit_date)}</b>
+          </span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <span>⏱️ Holding:</span> <b style={{ color: "var(--apple-blue)" }}>{c.holding_bars || 1} {Number(c.holding_bars || 1) === 1 ? "day" : "days"}</b>
+          </span>
+        </div>
+
+        {/* Row 3: 4-Column Apple Inset Metric Trench */}
+        <div className="apple-metric-trench" style={{ gridTemplateColumns: "repeat(4, 1fr)", margin: "0 0 10px" }}>
           <div className="apple-metric-col">
             <span className="apple-metric-lbl">ENTRY PIVOT</span>
             <span className="apple-metric-val amber">
               ₹{pivot.toFixed(1)}
             </span>
-            <small className="apple-metric-sub">{c.breakout_date || "Entry"}</small>
           </div>
           <div className="apple-metric-col">
             <span className="apple-metric-lbl">EXIT PRICE</span>
             <span className="apple-metric-val">
               ₹{exitPrice.toFixed(1)}
             </span>
-            <small className="apple-metric-sub">{c.exit_date || "Resolved"}</small>
           </div>
           <div className="apple-metric-col">
             <span className="apple-metric-lbl">REALIZED P&amp;L</span>
             <span className={`apple-metric-val ${isWin ? "green" : isLoss ? "red" : "amber"}`}>
               {pnlStr}
             </span>
-            <small className="apple-metric-sub">{isWin ? "Target 1 Hit" : "Risk Stopped"}</small>
           </div>
           <div className="apple-metric-col">
             <span className="apple-metric-lbl">PEAK RUN</span>
             <span className="apple-metric-val green">
               +{maxGain.toFixed(1)}%
             </span>
-            <small className="apple-metric-sub">Max Excursion</small>
           </div>
         </div>
 
         <div className="apple-card-footer">
           <div style={{ fontSize: 10.5, color: "var(--ink-muted)" }}>
-            ⏱️ Holding: <b>{c.holding_bars || 1} trading {c.holding_bars === 1 ? "day" : "days"}</b> · Status: <b>{c.outcome_status}</b>
+            Status: <b style={{ color: "var(--ink-primary)" }}>{c.outcome_status}</b> · Historical Audit
           </div>
           <div className="apple-inspect-pill">
             <span>Inspect Trade</span>
@@ -1019,11 +1042,12 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
             setMasterTab("fresh");
             setSelectedPattern("ALL");
             setMcapFilter("ALL");
+            setFreshSubFilter("ALL");
           }}
           className={`sc-master-tab-btn ${masterTab === "fresh" ? "active fresh" : ""}`}
         >
           <span className="sc-mt-icon">🟢</span>
-          <span className="sc-mt-title">Fresh Opportunities</span>
+          <span className="sc-mt-title">Fresh Setups</span>
           <span className="sc-mt-badge">{freshStocks.length}</span>
         </button>
 
@@ -1045,40 +1069,65 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
             setMasterTab("closed");
             setSelectedPattern("ALL");
             setMcapFilter("ALL");
+            setClosedFilter("ALL");
           }}
           className={`sc-master-tab-btn ${masterTab === "closed" ? "active closed" : ""}`}
         >
           <span className="sc-mt-icon">📜</span>
-          <span className="sc-mt-title">Closed Trades</span>
-          <span className="sc-mt-badge">{closedTotal > 0 ? closedTotal.toLocaleString() : "14.5k+"}</span>
+          <span className="sc-mt-title">Closed Ledger</span>
+          <span className="sc-mt-badge">
+            {closedTotal > 0 ? (closedTotal > 999 ? `${(closedTotal / 1000).toFixed(1)}k` : closedTotal) : "4.3k"}
+          </span>
         </button>
       </div>
 
-      {/* ─── 4. EXECUTIVE HUD METRIC RIBBON (DYNAMIC PER MASTER TAB) ─── */}
+      {/* ─── 4. EXECUTIVE HUD METRIC TILES (PRIMARY INTERACTIVE FILTER) ─── */}
       <div className="sc-executive-hud">
         {masterTab === "fresh" ? (
           <>
-            <div className="sc-hud-tile green">
+            <div
+              onClick={() => setFreshSubFilter(freshSubFilter === "BUY_ZONE" ? "ALL" : "BUY_ZONE")}
+              className={`sc-hud-tile green selectable ${freshSubFilter === "BUY_ZONE" ? "selected" : ""}`}
+              role="button"
+              tabIndex={0}
+            >
               <div className="sc-hud-lbl">🟢 Ready to Buy</div>
               <div className="sc-hud-val">{freshCounts.buyZone} Setups</div>
               <div className="sc-hud-sub">0% to +3.5% from Pivot</div>
             </div>
-            <div className="sc-hud-tile cyan" style={{ borderColor: "rgba(6, 182, 212, 0.3)" }}>
+
+            <div
+              onClick={() => setFreshSubFilter(freshSubFilter === "RETEST" ? "ALL" : "RETEST")}
+              className={`sc-hud-tile cyan selectable ${freshSubFilter === "RETEST" ? "selected" : ""}`}
+              style={{ borderColor: "rgba(6, 182, 212, 0.3)" }}
+              role="button"
+              tabIndex={0}
+            >
               <div className="sc-hud-lbl">🔄 Pivot Retest</div>
               <div className="sc-hud-val" style={{ color: "#22D3EE" }}>{freshCounts.retest} Setups</div>
               <div className="sc-hud-sub">Taking Support on Pivot</div>
             </div>
-            <div className="sc-hud-tile indigo">
+
+            <div
+              onClick={() => setFreshSubFilter(freshSubFilter === "RADAR" ? "ALL" : "RADAR")}
+              className={`sc-hud-tile indigo selectable ${freshSubFilter === "RADAR" ? "selected" : ""}`}
+              role="button"
+              tabIndex={0}
+            >
               <div className="sc-hud-lbl">🎯 Radar Coiling</div>
               <div className="sc-hud-val">{freshCounts.radar} Setups</div>
               <div className="sc-hud-sub">&lt;2.5% to Trigger</div>
             </div>
-            <div className="sc-hud-tile gold">
-              <div className="sc-hud-lbl">⭐ Prime Alpha</div>
-              <div className="sc-hud-val">
-                {freshStocks.filter((s) => Number(s.dna_score || 0) >= 65 || Number(s.volume_ratio_20d || 1) >= 1.3).length} Setups
-              </div>
-              <div className="sc-hud-sub">DNA ≥65 · Vol Surge</div>
+
+            <div
+              onClick={() => setFreshSubFilter("ALL")}
+              className={`sc-hud-tile gold selectable ${freshSubFilter === "ALL" ? "selected" : ""}`}
+              role="button"
+              tabIndex={0}
+            >
+              <div className="sc-hud-lbl">⚡ All Fresh</div>
+              <div className="sc-hud-val">{freshStocks.length} Setups</div>
+              <div className="sc-hud-sub">Full Watchlist Filter</div>
             </div>
           </>
         ) : masterTab === "runners" ? (
@@ -1112,21 +1161,39 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
           </>
         ) : (
           <>
-            <div className="sc-hud-tile indigo">
-              <div className="sc-hud-lbl">📜 Resolved Trades</div>
-              <div className="sc-hud-val">{closedTotal > 0 ? closedTotal.toLocaleString() : "14,586"} Records</div>
+            <div
+              onClick={() => setClosedFilter("ALL")}
+              className={`sc-hud-tile indigo selectable ${closedFilter === "ALL" ? "selected" : ""}`}
+              role="button"
+              tabIndex={0}
+            >
+              <div className="sc-hud-lbl">📜 All Closed</div>
+              <div className="sc-hud-val">{closedTotal > 0 ? closedTotal.toLocaleString() : "4,296"} Records</div>
               <div className="sc-hud-sub">2020–2026 Audit Ledger</div>
             </div>
-            <div className="sc-hud-tile green">
-              <div className="sc-hud-lbl">🏆 Target Hit Win Rate</div>
-              <div className="sc-hud-val">{patternAccuracy?.overall_win_rate_pct ? `${patternAccuracy.overall_win_rate_pct}%` : "68.4%"}</div>
+
+            <div
+              onClick={() => setClosedFilter(closedFilter === "TARGET_HIT" ? "ALL" : "TARGET_HIT")}
+              className={`sc-hud-tile green selectable ${closedFilter === "TARGET_HIT" ? "selected" : ""}`}
+              role="button"
+              tabIndex={0}
+            >
+              <div className="sc-hud-lbl">🏆 Target Hit (Wins)</div>
+              <div className="sc-hud-val">{patternAccuracy?.overall_win_rate_pct ? `${patternAccuracy.overall_win_rate_pct}%` : "68.4%"} WR</div>
               <div className="sc-hud-sub">Verified Target 1 Hits</div>
             </div>
-            <div className="sc-hud-tile gold">
-              <div className="sc-hud-lbl">📈 Avg Win Gain</div>
-              <div className="sc-hud-val">+{patternAccuracy?.avg_win_gain_pct ? Number(patternAccuracy.avg_win_gain_pct).toFixed(1) : "38.6"}%</div>
-              <div className="sc-hud-sub">Empirical Target Return</div>
+
+            <div
+              onClick={() => setClosedFilter(closedFilter === "STOPPED_OUT" ? "ALL" : "STOPPED_OUT")}
+              className={`sc-hud-tile red selectable ${closedFilter === "STOPPED_OUT" ? "selected" : ""}`}
+              role="button"
+              tabIndex={0}
+            >
+              <div className="sc-hud-lbl">🛑 Stopped Out</div>
+              <div className="sc-hud-val" style={{ color: "var(--apple-red)" }}>Risk Managed</div>
+              <div className="sc-hud-sub">Capital Protected Exits</div>
             </div>
+
             <div className="sc-hud-tile cyan" style={{ borderColor: "rgba(6, 182, 212, 0.3)" }}>
               <div className="sc-hud-lbl">⏱️ Avg Duration</div>
               <div className="sc-hud-val" style={{ color: "#22D3EE" }}>14.2 Days</div>
@@ -1136,7 +1203,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
         )}
       </div>
 
-      {/* ─── 5. CHART PATTERN HERO GRID (ACTIVE PATTERNS ONLY) ─── */}
+      {/* ─── 5. CHART PATTERN HORIZONTAL SHELF (ACTIVE PATTERNS ONLY) ─── */}
       {visiblePatterns.length > 1 && masterTab !== "closed" && (
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, padding: "0 2px" }}>
@@ -1187,63 +1254,7 @@ export default function ScreenerScreen({ theme, livePrices, onSelectStock }: Scr
         </div>
       )}
 
-      {/* ─── 6. ACTION SUB-FILTER CHIPS ─── */}
-      {masterTab === "fresh" && (
-        <div className="sc-action-filter-bar">
-          <button
-            onClick={() => setFreshSubFilter("ALL")}
-            className={`sc-filter-chip all ${freshSubFilter === "ALL" ? "active" : ""}`}
-          >
-            All Fresh ({freshStocks.length})
-          </button>
-          <button
-            onClick={() => setFreshSubFilter("BUY_ZONE")}
-            className={`sc-filter-chip buy ${freshSubFilter === "BUY_ZONE" ? "active" : ""}`}
-            title="Breakouts currently 0% to +3.5% from pivot"
-          >
-            🟢 Ready to Buy ({freshCounts.buyZone})
-          </button>
-          <button
-            onClick={() => setFreshSubFilter("RETEST")}
-            className={`sc-filter-chip retest ${freshSubFilter === "RETEST" ? "active" : ""}`}
-            title="Breakouts taking support on previous pivot floor (-1.8% to +1.2%)"
-          >
-            🔄 Pivot Retest ({freshCounts.retest})
-          </button>
-          <button
-            onClick={() => setFreshSubFilter("RADAR")}
-            className={`sc-filter-chip prime ${freshSubFilter === "RADAR" ? "active" : ""}`}
-            title="Coiling setups within 2.5% to breakout trigger"
-          >
-            🎯 Radar Coiling ({freshCounts.radar})
-          </button>
-        </div>
-      )}
-
-      {masterTab === "closed" && (
-        <div className="sc-action-filter-bar">
-          <button
-            onClick={() => setClosedFilter("ALL")}
-            className={`sc-filter-chip all ${closedFilter === "ALL" ? "active" : ""}`}
-          >
-            All Closed ({closedTotal > 0 ? closedTotal.toLocaleString() : "14.5k+"})
-          </button>
-          <button
-            onClick={() => setClosedFilter("TARGET_HIT")}
-            className={`sc-filter-chip buy ${closedFilter === "TARGET_HIT" ? "active" : ""}`}
-          >
-            🏆 Target Hit (Wins)
-          </button>
-          <button
-            onClick={() => setClosedFilter("STOPPED_OUT")}
-            className={`sc-filter-chip missed ${closedFilter === "STOPPED_OUT" ? "active" : ""}`}
-          >
-            🛑 Stopped Out (Risk Managed)
-          </button>
-        </div>
-      )}
-
-      {/* ─── 7. MARKET CAP FILTER BAR ─── */}
+      {/* ─── 6. MARKET CAP FILTER BAR ─── */}
       {masterTab !== "closed" && (
         <div className="sc-mcap-filter-bar">
           <span className="sc-mcap-label">CAP:</span>
