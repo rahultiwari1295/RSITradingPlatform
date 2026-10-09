@@ -2020,6 +2020,10 @@
       margin-inline:0;
       padding-inline:14px;
     }
+    html[data-embedded="true"] .dna-report-view {
+      width:100%;
+      padding-inline:14px;
+    }
     html[data-embedded="true"] .stock-hero-card {
       width:100%;
       max-width:none;
@@ -2031,12 +2035,172 @@
       margin-inline:0;
       padding-inline:0;
     }
-    html[data-embedded="true"] .report-subnav-sticky { padding-inline:14px; }
+    html[data-embedded="true"] .report-subnav-sticky { padding-inline:0; }
     html[data-embedded="true"] .report-tab-pane {
       width:100%;
       max-width:none;
       margin-inline:0;
       padding-inline:0;
+    }
+
+    /* Premium report presentation: pearl by day, midnight by night. */
+    :root[data-report-open="true"][data-theme="light"] {
+      --bg-base:#F6F4EF;
+      --bg-surface:#FFFEFC;
+      --bg-card:#FFFFFF;
+      --bg-card-hover:#FBF8F1;
+      --bg-elevated:#F0EADF;
+      --bg-glass:rgba(255,254,251,.88);
+      --border-subtle:rgba(63,51,32,.10);
+      --border-medium:rgba(63,51,32,.16);
+      --border-bright:rgba(151,112,45,.38);
+      --text-white:#1B1A16;
+      --text-body:#34332E;
+      --text-muted:#68665D;
+      --text-dim:#716D62;
+      --primary:#805D23;
+      --primary-glow:rgba(161,123,54,.19);
+      --primary-subtle:rgba(161,123,54,.10);
+      --good:#176B51;
+      --good-glow:rgba(23,107,81,.16);
+      --good-subtle:rgba(23,107,81,.09);
+      --good-border:rgba(23,107,81,.25);
+      --danger:#A53E43;
+      --danger-glow:rgba(165,62,67,.14);
+      --danger-subtle:rgba(165,62,67,.08);
+      --danger-border:rgba(165,62,67,.22);
+      --caution:#805D23;
+      --caution-subtle:rgba(161,123,54,.11);
+      --gauge-track:#E7E1D5;
+      --shadow-card:0 18px 46px rgba(48,40,27,.085),0 3px 9px rgba(48,40,27,.045),inset 0 1px rgba(255,255,255,.96);
+      --shadow-glow:0 0 28px -5px var(--primary-glow);
+    }
+    :root[data-report-open="true"]:not([data-theme="light"]) {
+      --bg-base:#0B101B;
+      --bg-surface:#111A2A;
+      --bg-card:#141F32;
+      --bg-card-hover:#1A2940;
+      --bg-elevated:#202D43;
+      --bg-glass:rgba(17,26,42,.88);
+      --border-subtle:rgba(224,232,245,.085);
+      --border-medium:rgba(224,232,245,.15);
+      --border-bright:rgba(222,190,121,.42);
+      --text-white:#F5F1E8;
+      --text-body:#E0DFD9;
+      --text-muted:#ADB7C7;
+      --text-dim:#8792A3;
+      --primary:#E2C27D;
+      --primary-glow:rgba(226,194,125,.20);
+      --primary-subtle:rgba(226,194,125,.12);
+      --good:#69C7A4;
+      --good-glow:rgba(105,199,164,.18);
+      --good-subtle:rgba(105,199,164,.11);
+      --good-border:rgba(105,199,164,.28);
+      --danger:#F08B86;
+      --danger-glow:rgba(240,139,134,.16);
+      --danger-subtle:rgba(240,139,134,.10);
+      --danger-border:rgba(240,139,134,.27);
+      --caution:#E2C27D;
+      --caution-subtle:rgba(226,194,125,.12);
+      --gauge-track:#344156;
+      --shadow-card:0 22px 56px rgba(0,0,0,.30),0 3px 12px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.055);
+      --shadow-glow:0 0 30px -6px var(--primary-glow);
+    }
+    html[data-report-open="true"] body {
+      background:
+        radial-gradient(ellipse at 7% 0%,color-mix(in srgb,var(--primary) 9%,transparent),transparent 34rem),
+        radial-gradient(ellipse at 98% 24%,color-mix(in srgb,#4C76C8 8%,transparent),transparent 30rem),
+        var(--bg-base);
+      background-attachment:scroll;
+    }
+    html[data-report-open="true"] .dna-report-view {
+      animation:dnaReportArrival .52s cubic-bezier(.2,.75,.25,1) both;
+    }
+    @keyframes dnaReportArrival {
+      from { opacity:0; }
+      to { opacity:1; }
+    }
+    html[data-report-open="true"] .stock-hero-card {
+      position:relative;
+      isolation:isolate;
+      overflow:hidden;
+      border-color:color-mix(in srgb,var(--primary) 28%,var(--border-medium));
+      background:
+        radial-gradient(ellipse at 100% 0%,color-mix(in srgb,var(--primary) 15%,transparent),transparent 43%),
+        radial-gradient(ellipse at 0% 100%,color-mix(in srgb,var(--good) 8%,transparent),transparent 42%),
+        linear-gradient(145deg,var(--bg-card),color-mix(in srgb,var(--bg-card) 91%,#64799E 9%));
+      box-shadow:var(--shadow-card),inset 0 1px rgba(255,255,255,.12);
+      transition:transform .3s cubic-bezier(.2,.75,.25,1),box-shadow .3s ease,border-color .3s ease;
+      animation:dnaHeroArrival .7s .06s cubic-bezier(.2,.75,.25,1) both;
+    }
+    @keyframes dnaHeroArrival {
+      from { opacity:0; }
+      to { opacity:1; }
+    }
+    html[data-report-open="true"] .report-welcome { animation:dnaReportArrival .48s .10s both; }
+    html[data-report-open="true"] .report-subnav-sticky {
+      backdrop-filter:blur(18px) saturate(145%);
+      -webkit-backdrop-filter:blur(18px) saturate(145%);
+      box-shadow:0 9px 24px rgba(18,23,33,.055);
+    }
+    html[data-report-open="true"] .subnav-pill {
+      transition:transform .2s cubic-bezier(.2,.75,.25,1),background .2s ease,color .2s ease,box-shadow .2s ease,border-color .2s ease;
+    }
+    html[data-report-open="true"] .subnav-pill.active {
+      background:linear-gradient(135deg,#E8D5A7,#C5A466);
+      box-shadow:0 8px 20px rgba(152,116,58,.22),inset 0 1px rgba(255,255,255,.45);
+    }
+    html[data-report-open="true"] .citadel-card,
+    html[data-report-open="true"] .speedometer-card,
+    html[data-report-open="true"] .pillars-card,
+    html[data-report-open="true"] .donut-holder-card,
+    html[data-report-open="true"] .waterfall-card,
+    html[data-report-open="true"] .fact-card,
+    html[data-report-open="true"] .case-box,
+    html[data-report-open="true"] .cgrowth-card,
+    html[data-report-open="true"] .div-hero-card,
+    html[data-report-open="true"] .momentum-card {
+      transition:transform .24s cubic-bezier(.2,.75,.25,1),border-color .24s ease,box-shadow .24s ease,background-color .24s ease;
+    }
+    @media (hover:hover) and (prefers-reduced-motion:no-preference) {
+      html[data-report-open="true"] .stock-hero-card:hover {
+        transform:translateY(-3px);
+        border-color:var(--border-bright);
+        box-shadow:0 26px 60px rgba(0,0,0,.16),var(--shadow-glow),inset 0 1px rgba(255,255,255,.14);
+      }
+      html[data-report-open="true"] .subnav-pill:hover { transform:translateY(-2px); }
+      html[data-report-open="true"] .citadel-card:hover,
+      html[data-report-open="true"] .speedometer-card:hover,
+      html[data-report-open="true"] .pillars-card:hover,
+      html[data-report-open="true"] .donut-holder-card:hover,
+      html[data-report-open="true"] .waterfall-card:hover,
+      html[data-report-open="true"] .fact-card:hover,
+      html[data-report-open="true"] .case-box:hover,
+      html[data-report-open="true"] .cgrowth-card:hover,
+      html[data-report-open="true"] .div-hero-card:hover,
+      html[data-report-open="true"] .momentum-card:hover {
+        transform:translateY(-3px);
+        border-color:var(--border-bright);
+        box-shadow:0 18px 38px rgba(0,0,0,.13),var(--shadow-glow);
+      }
+    }
+    html[data-report-open="true"] button:focus-visible,
+    html[data-report-open="true"] a:focus-visible,
+    html[data-report-open="true"] input:focus-visible {
+      outline:3px solid var(--primary);
+      outline-offset:3px;
+      box-shadow:0 0 0 5px var(--primary-subtle);
+    }
+    @media (prefers-reduced-motion:reduce) {
+      html[data-report-open="true"] *,
+      html[data-report-open="true"] *::before,
+      html[data-report-open="true"] *::after {
+        animation-duration:.01ms !important;
+        animation-delay:0s !important;
+        animation-iteration-count:1 !important;
+        scroll-behavior:auto !important;
+        transition-duration:.01ms !important;
+      }
     }
   </style>
 </head>
