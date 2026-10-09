@@ -2453,19 +2453,19 @@
 
         <!-- Sticky section guide for the complete, scrollable report -->
         <nav class="report-subnav-sticky" aria-label="Report sections">
-          <button type="button" class="subnav-pill active" aria-controls="tab-overview" aria-current="location" onclick="switchReportTab('overview', this)">
+          <button type="button" class="subnav-pill active" aria-controls="tab-overview" aria-current="location" onclick="switchReportTab('overview', this, event)">
             <span>01&nbsp; Overview</span>
           </button>
-          <button type="button" class="subnav-pill" aria-controls="tab-statements" onclick="switchReportTab('statements', this)">
+          <button type="button" class="subnav-pill" aria-controls="tab-statements" onclick="switchReportTab('statements', this, event)">
             <span>02&nbsp; Statements</span>
           </button>
-          <button type="button" class="subnav-pill" aria-controls="tab-statistics" onclick="switchReportTab('statistics', this)">
+          <button type="button" class="subnav-pill" aria-controls="tab-statistics" onclick="switchReportTab('statistics', this, event)">
             <span>03&nbsp; Growth &amp; ratios</span>
           </button>
-          <button type="button" class="subnav-pill" aria-controls="tab-dividends" onclick="switchReportTab('dividends', this)">
+          <button type="button" class="subnav-pill" aria-controls="tab-dividends" onclick="switchReportTab('dividends', this, event)">
             <span>04&nbsp; Dividends</span>
           </button>
-          <button type="button" class="subnav-pill" aria-controls="tab-earnings" onclick="switchReportTab('earnings', this)">
+          <button type="button" class="subnav-pill" aria-controls="tab-earnings" onclick="switchReportTab('earnings', this, event)">
             <span>05&nbsp; Earnings</span>
           </button>
         </nav>
@@ -3157,11 +3157,21 @@
     }
 
     // Switch Top Report Tabs
-    function switchReportTab(tabKey, btnEl) {
+    function switchReportTab(tabKey, btnEl, clickEvent) {
+      if (clickEvent) {
+        clickEvent.preventDefault();
+        clickEvent.stopPropagation();
+      }
       currentActiveTab = tabKey;
       if (btnEl) setActiveReportSection(btnEl);
       const pane = document.getElementById(`tab-${tabKey}`);
-      if (pane) pane.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (!pane) return;
+
+      // Scroll inside the report iframe only. scrollIntoView may also scroll the host app.
+      const scrollMargin = Number.parseFloat(window.getComputedStyle(pane).scrollMarginTop) || 0;
+      const targetTop = window.scrollY + pane.getBoundingClientRect().top - scrollMargin;
+      const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+      window.scrollTo({ top: Math.max(0, targetTop), behavior });
     }
 
     function setActiveReportSection(activeButton) {
