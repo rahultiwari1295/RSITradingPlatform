@@ -253,7 +253,6 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
     } catch (_) {}
   };
 
-  const pill = (t: string, c?: string) => <span className="rsp-pill" style={c ? { color: c } : undefined}>{t}</span>;
   const kv = (k: React.ReactNode, v: React.ReactNode, last = false) => (
     <div className="rdr-kv" style={last ? { borderBottom: "none" } : undefined}>
       <span>{k}</span>
@@ -267,7 +266,7 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
     </section>
   );
 
-  // ── our own chart (fast, with stop/target zones)
+  // ── fallback price chart (only when the pattern chart is not ready)
   const chart = () => {
     if (chartState === "loading") return <div className="rdr-chartmsg">Loading chart…</div>;
     if (chartState === "error" || !candles.length) return <div className="rdr-chartmsg">Chart data unavailable</div>;
@@ -293,8 +292,10 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
           style={{ width: "100%", display: "block", touchAction: "pan-y" }}
           onPointerMove={(e) => {
             const r = e.currentTarget.getBoundingClientRect();
+            if (!(r.width > 0)) return;
             const x = Math.max(0, Math.min(r.width, e.clientX - r.left));
-            setHover(candles[Math.min(N - 1, Math.floor((x / r.width) * N))]);
+            const idx = Math.max(0, Math.min(N - 1, Math.floor((x / r.width) * N)));
+            setHover(candles[idx] || null);
           }}
           onPointerLeave={() => setHover(null)}
         >
@@ -307,7 +308,7 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
             const c = b.c >= b.o ? colors.gn : colors.rd;
             const yT = Y(Math.max(b.o, b.c)), yB = Y(Math.min(b.o, b.c));
             return (
-              <g key={i} className="rdr-cand" style={{ ["--c" as any]: i * 0.5 }}>
+              <g key={i}>
                 <line x1={X(i)} x2={X(i)} y1={Y(b.h)} y2={Y(b.l)} stroke={c} strokeWidth="1" />
                 <rect x={X(i) - bw / 2} y={yT} width={bw} height={Math.max(1.5, yB - yT)} fill={c} rx="0.8" />
               </g>
@@ -324,8 +325,8 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
         <div style={{ fontSize: 11, color: colors.mu, marginTop: 6, minHeight: 16 }}>
           {hover ? (
             <span>
-              <b>{hover.time}</b> · O {hover.o.toFixed(1)} · H {hover.h.toFixed(1)} · L {hover.l.toFixed(1)} · C{" "}
-              <span style={{ color: hover.c >= hover.o ? colors.gn : colors.rd, fontWeight: 700 }}>{hover.c.toFixed(1)}</span>
+              <b>{hover.time}</b> · O {Number(hover.o).toFixed(1)} · H {Number(hover.h).toFixed(1)} · L {Number(hover.l).toFixed(1)} · C{" "}
+              <span style={{ color: hover.c >= hover.o ? colors.gn : colors.rd, fontWeight: 700 }}>{Number(hover.c).toFixed(1)}</span>
             </span>
           ) : (
             "Touch or drag across the chart to inspect sessions"
@@ -335,102 +336,107 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
     );
   };
 
+  // ── price bar (stop → trigger → target with today's price)
+  const ruler = () => {
+    const pts = [sl, bk, tg, cmp].filter((v) => v > 0);
+    if (pts.length < 2 || !(bk > 0)) return null;
+    const lo = Math.min(...pts) * 0.99, hi = Math.max(...pts) * 1.01;
+    const P = (v: number) => Math.max(3, Math.min(97, ((v - lo) / (hi - lo)) * 100));
+    return (
+      <div className="rdr-ruler" style={{ marginTop: 18 }}>
+        <div className="rdr-rt">
+          {sl > 0 && <i style={{ left: `${P(sl)}%`, width: `${P(bk) - P(sl)}%`, background: "rgba(251,113,133,.5)" }} />}
+          {tg > 0 && <i style={{ left: `${P(bk)}%`, width: `${P(tg) - P(bk)}%`, background: "rgba(52,211,153,.5)" }} />}
+        </div>
+        <div className="rdr-rd" style={{ left: `${P(cmp)}%` }} />
+      </div>
+    );
+  };
+
   const gradeColor = ml ? (ml.conviction_grade === "ELITE" ? colors.gn : ml.conviction_grade === "STRONG" ? colors.acc : ml.conviction_grade === "NEUTRAL" ? colors.am : colors.rd) : colors.mu;
-  const stat = (label: string, value: React.ReactNode, color?: string) => (
-    <div className="rsp-stat">
-      <div className="rsp-stat-l">{label}</div>
-      <div className="rsp-stat-v rdr-num" style={color ? { color } : undefined}>{value}</div>
+  const winPct = stats ? Math.max(0, Math.min(100, Number(stats.win_rate_pct))) : null;
+  const tile = (label: string, value: React.ReactNode, note?: React.ReactNode, color?: string, bar?: { pct: number; bg: string }) => (
+    <div className="rsp-tile">
+      <div className="rsp-tile-l">{label}</div>
+      <div className="rsp-tile-v rdr-num" style={color ? { color } : undefined}>{value}</div>
+      {note ? <div className="rsp-tile-n">{note}</div> : null}
+      {bar ? <div className="rsp-bar-t"><i style={{ width: `${bar.pct}%`, background: bar.bg }} /></div> : null}
     </div>
   );
+  const above = [ema20, ema50, ema200].filter((v) => v != null && cmp >= (v as number)).length;
+  const emaCount = [ema20, ema50, ema200].filter((v) => v != null).length;
+  const accent = verdict.c;
 
   return (
-    <div ref={rootRef} className={`rsp${closing ? " closing" : ""}`}>
+    <div ref={rootRef} className={`rsp${closing ? " closing" : ""}`} style={{ ["--vc" as any]: accent }}>
       <style>{RSP_CSS}</style>
       <div className="rsp-bar">
-        <span style={{ width: 38 }} />
         <div className={`rsp-mini${compact ? " on" : ""}`}>
           <b>{sym}</b>
-          <span className="rdr-num">₹{fmt(cmp)}</span>
+          <span className="rdr-num">₹{fmt(cmp)} <i style={{ color: diff >= 0 ? colors.gn : colors.rd, fontStyle: "normal" }}>{diff >= 0 ? "+" : ""}{diff.toFixed(1)}%</i></span>
         </div>
         <button className="rsp-share" onClick={share} aria-label="Share">⤴</button>
       </div>
 
       <div className="rsp-wrap">
-        {/* Hero */}
-        <section className="rsp-rise rsp-hero" style={{ ["--i" as any]: 0 }}>
-          <div className="rsp-eyebrow">
-            {String(s.sector || "Equities")}
-            {Number(s.is_fno) === 1 || s.is_fno === true ? " · F&O" : ""}
+        {/* Identity — compact so the chart is the first big thing */}
+        <section className="rsp-rise rsp-id" style={{ ["--i" as any]: 0 }}>
+          <div style={{ minWidth: 0 }}>
+            <div className="rsp-eyebrow">{String(s.sector || "Equities")}{Number(s.is_fno) === 1 || s.is_fno === true ? " · F&O" : ""} · {timeframeLabel(s.timeframe)}</div>
+            <div className="rsp-sym">{sym}</div>
+            <div className="rsp-co">{s.company_name || detail?.company_name || sym}</div>
           </div>
-          <div className="rsp-sym">{sym}</div>
-          <div className="rsp-co">{s.company_name || detail?.company_name || sym}</div>
-          <div className="rsp-priceRow">
+          <div style={{ textAlign: "right", flex: "0 0 auto" }}>
             <div className="rsp-price rdr-num">₹{fmt(cmp)}</div>
-            <div className="rsp-chg rdr-num" style={{ color: diff >= 0 ? colors.gn : colors.rd }}>
-              {diff >= 0 ? "+" : ""}{diff.toFixed(1)}% <span>vs trigger</span>
-            </div>
+            <div className="rsp-chg rdr-num" style={{ color: diff >= 0 ? colors.gn : colors.rd }}>{diff >= 0 ? "+" : ""}{diff.toFixed(1)}% <span>vs trigger</span></div>
           </div>
-          <div className="rsp-verdictRow">
-            <span className="rdr-vtag" style={{ color: verdict.c, background: `${verdict.c}24` }}>{verdict.w}</span>
-            {pill(String(s.pattern_type || "").split("·")[0].trim() || "Setup")}
-            {pill(timeframeLabel(s.timeframe))}
-          </div>
-          <div className="rsp-why">{why}</div>
-          {range52 != null && (
-            <div className="rsp-range">
-              <div className="rsp-range-h"><span>52-week range</span><span className="rdr-num">{range52}% of range</span></div>
-              <div className="rsp-range-t"><i style={{ width: `${range52}%` }} /><b style={{ left: `${range52}%` }} /></div>
-              <div className="rsp-range-l rdr-num"><span>₹{fmt(low52, 1)}</span><span>₹{fmt(high52, 1)}</span></div>
-            </div>
-          )}
         </section>
 
-        {sec("Chart", 1, (
-          <div className="rdr-sbox" style={{ marginTop: 0, padding: 12 }}>
-            <div className="rsp-tfrow">
-              <div className="rsp-tf" role="group" aria-label="Chart timeframe">
-                {([["tactical", "1D"], ["macro", "1W"], ["monthly", "1M"]] as const).map(([k, l]) => (
-                  <button key={k} className={view === k ? "on" : ""} onClick={() => setView(k)} aria-pressed={view === k}>{l}</button>
-                ))}
-              </div>
-              <button className="rsp-reload" onClick={() => setDnaKey((k) => k + 1)} aria-label="Reload chart">↻</button>
+        {/* 1. Chart (hero) */}
+        <section className="rsp-rise rsp-chartcard" style={{ ["--i" as any]: 1 }}>
+          <div className="rsp-tfrow">
+            <div className="rsp-tf" role="group" aria-label="Chart timeframe">
+              {([["tactical", "1D"], ["macro", "1W"], ["monthly", "1M"]] as const).map(([k, l]) => (
+                <button key={k} className={view === k ? "on" : ""} onClick={() => setView(k)} aria-pressed={view === k}>{l}</button>
+              ))}
             </div>
-            <div className="rsp-stage">
-              {dnaLoading && <div className="rsp-stage-load"><i />Drawing pattern &amp; trendlines…</div>}
-              {!dnaError && dnaSrc && <img src={dnaSrc} alt={`${sym} pattern chart`} className={dnaLoading ? "reloading" : ""} />}
-              {dnaError && (
-                <div>
-                  <div style={{ fontSize: 12, color: "var(--mu)", marginBottom: 8 }}>Pattern chart is not ready yet. Showing price chart.</div>
-                  {chart()}
-                </div>
-              )}
-            </div>
-            <div className="rsp-legend">
-              <span><i style={{ background: colors.gn }} />Target <b className="rdr-num">₹{fmt(tg, 1)}</b></span>
-              <span><i style={{ background: colors.acc }} />Trigger <b className="rdr-num">₹{fmt(bk, 1)}</b></span>
-              <span><i style={{ background: colors.rd }} />Stop <b className="rdr-num">₹{fmt(sl, 1)}</b></span>
-            </div>
+            <span className="rsp-hint">Pattern &amp; trendlines</span>
+            <button className="rsp-reload" onClick={() => setDnaKey((k) => k + 1)} aria-label="Reload chart">↻</button>
           </div>
-        ))}
+          <div className="rsp-stage">
+            {dnaLoading && <div className="rsp-stage-load"><i />Drawing pattern &amp; trendlines…</div>}
+            {!dnaError && dnaSrc && <img src={dnaSrc} alt={`${sym} pattern chart`} className={dnaLoading ? "reloading" : ""} />}
+            {dnaError && (
+              <div style={{ padding: 10 }}>
+                <div style={{ fontSize: 12, color: "var(--mu)", marginBottom: 8 }}>Pattern chart is not ready yet. Showing price chart.</div>
+                {chart()}
+              </div>
+            )}
+          </div>
+          <div className="rsp-legend">
+            <span><i style={{ background: colors.gn }} />Target <b className="rdr-num">₹{fmt(tg, 1)}</b></span>
+            <span><i style={{ background: colors.acc }} />Trigger <b className="rdr-num">₹{fmt(bk, 1)}</b></span>
+            <span><i style={{ background: colors.rd }} />Stop <b className="rdr-num">₹{fmt(sl, 1)}</b></span>
+          </div>
+        </section>
 
-        {sec("Key levels", 2, (
+        {/* 2. The decision */}
+        <section className="rsp-rise rsp-decision" style={{ ["--i" as any]: 2 }}>
+          <div className="rsp-dec-top">
+            <span className="rdr-vtag" style={{ color: verdict.c, background: `${verdict.c}26`, fontSize: 15, padding: "6px 14px" }}>{verdict.w}</span>
+            {rr > 0 && <span className="rsp-rr rdr-num">{rr.toFixed(1)}× reward vs risk</span>}
+          </div>
+          <div className="rsp-why">{why}</div>
+          {ruler()}
           <div className="rsp-levels">
-            <div><span>Trigger</span><b className="rdr-num" style={{ color: colors.acc }}>₹{fmt(bk, 1)}</b></div>
+            <div><span>{s._tradeType === "RADAR" ? "Buy above" : "Buy around"}</span><b className="rdr-num" style={{ color: colors.acc }}>₹{fmt(ent, 1)}</b></div>
             <div><span>Aim for</span><b className="rdr-num" style={{ color: colors.gn }}>₹{fmt(tg, 1)}</b><em className="rdr-num">{toTarget != null ? `${toTarget >= 0 ? "+" : ""}${toTarget.toFixed(1)}%` : ""}</em></div>
             <div><span>Exit at</span><b className="rdr-num" style={{ color: colors.rd }}>₹{fmt(sl, 1)}</b><em className="rdr-num">{toStop != null ? `${toStop.toFixed(1)}%` : ""}</em></div>
           </div>
-        ))}
+        </section>
 
-        {sec("Your plan", 3, (
-          <div className="rdr-sbox" style={{ marginTop: 0 }}>
-            {kv(s._tradeType === "RADAR" ? "Buy above" : "Buy around", <span style={{ color: colors.acc }}>₹{ent ? ent.toFixed(1) : "—"}</span>)}
-            {kv("Exit if it falls to", <span style={{ color: colors.rd }}>₹{sl ? sl.toFixed(1) : "—"}</span>)}
-            {kv("Aim for", <span style={{ color: colors.gn }}>₹{tg ? tg.toFixed(1) : "—"}</span>)}
-            {kv("Reward vs risk", rr > 0 ? `${rr.toFixed(1)}×` : "—", true)}
-          </div>
-        ))}
-
-        {sec("If you invest", 4, (
+        {/* 3. Invest calculator */}
+        {sec("If you invest", 3, (
           <div className="rdr-sbox" style={{ marginTop: 0 }}>
             <div className="rdr-kv">
               <span>Amount you can invest</span>
@@ -441,9 +447,7 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: "10px 0", borderBottom: "1px solid var(--line)" }}>
               {[10000, 25000, 50000, 100000].map((v) => (
-                <button key={v} className={`rdr-chip${calc.amt === v ? " on" : ""}`} onClick={() => setInvest(String(v))}>
-                  {v >= 100000 ? "₹1 lakh" : `₹${v / 1000}k`}
-                </button>
+                <button key={v} className={`rdr-chip${calc.amt === v ? " on" : ""}`} onClick={() => setInvest(String(v))}>{v >= 100000 ? "₹1 lakh" : `₹${v / 1000}k`}</button>
               ))}
             </div>
             {calc.qty > 0 ? (
@@ -461,16 +465,57 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
           </div>
         ), "profit and loss at the target and the stop")}
 
+        {/* 4. Evidence */}
+        {(stats || ml || gate) && sec("Can you trust it?", 4, (
+          <div className="rsp-evidence">
+            {stats && winPct != null && (
+              <div className="rsp-ev-row">
+                <div className="rsp-ring" style={{ background: `conic-gradient(${winPct >= 50 ? colors.gn : colors.am} ${winPct}%, var(--glass2) 0)` }}>
+                  <div><b className="rdr-num">{winPct.toFixed(0)}%</b><span>won</span></div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div className="rsp-ev-t">This pattern's track record</div>
+                  <div className="rsp-ev-s">{stats.resolved} similar setups · average {Number(stats.avg_pnl_pct) >= 0 ? "+" : ""}{Number(stats.avg_pnl_pct).toFixed(1)}% per trade{gate?.survival_verdict ? ` · quality check: ${gate.survival_verdict}` : ""}</div>
+                </div>
+              </div>
+            )}
+            {ml && (
+              <div className="rsp-ml">
+                <div className="rdr-row" style={{ alignItems: "center" }}>
+                  <div className="rsp-ev-t">Model confidence</div>
+                  <span className="rdr-vtag" style={{ color: gradeColor, background: `${gradeColor}26` }}>{ml.conviction_grade}</span>
+                </div>
+                <div className="rsp-stats">
+                  <div><span>Win probability</span><b className="rdr-num" style={{ color: colors.gn }}>{ml.win_probability_pct}</b></div>
+                  <div><span>Expected value</span><b className="rdr-num" style={{ color: Number(ml.expected_value_pct) >= 0 ? colors.gn : colors.rd }}>{Number(ml.expected_value_pct) > 0 ? "+" : ""}{ml.expected_value_pct}%</b></div>
+                  <div><span>Pattern match</span><b className="rdr-num" style={{ color: colors.acc }}>{fp?.top_similarity_pct || "—"}</b></div>
+                  <div><span>Look-alikes that won</span><b className="rdr-num" style={{ color: colors.am }}>{fp?.twin_historical_win_rate_pct != null ? `${fp.twin_historical_win_rate_pct}%` : "—"}</b></div>
+                </div>
+                {Array.isArray(fp?.top_historical_twins) && fp.top_historical_twins.length > 0 && (
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+                    {fp.top_historical_twins.slice(0, 3).map((tw: any, i: number) => (
+                      <span key={i} className="rsp-twin" style={{ color: tw.realized_win ? colors.gn : colors.rd, borderColor: tw.realized_win ? `${colors.gn}66` : `${colors.rd}66` }}>
+                        {tw.symbol} · {String(tw.date || "").slice(0, 7)} · {tw.mfe_gain_pct > 0 ? `+${tw.mfe_gain_pct}%` : `${tw.mfe_gain_pct}%`}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ), "history, not a promise")}
+
+        {/* 5. The case */}
         {(good.length > 0 || bad.length > 0) && sec("The case", 5, (
           <div className="rsp-case">
             {good.length > 0 && (
-              <div className="rsp-case-card good">
+              <div className="rsp-case-card" style={{ ["--cc" as any]: colors.gn }}>
                 <div className="rsp-case-h" style={{ color: colors.gn }}>What's working</div>
                 {good.slice(0, 4).map((t, i) => <div key={i} className="rsp-case-i"><i style={{ background: colors.gn }} />{t}</div>)}
               </div>
             )}
             {bad.length > 0 && (
-              <div className="rsp-case-card bad">
+              <div className="rsp-case-card" style={{ ["--cc" as any]: colors.rd }}>
                 <div className="rsp-case-h" style={{ color: colors.rd }}>What could go wrong</div>
                 {bad.slice(0, 4).map((t, i) => <div key={i} className="rsp-case-i"><i style={{ background: colors.rd }} />{t}</div>)}
               </div>
@@ -478,85 +523,27 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
           </div>
         ))}
 
-        {sec("Why we like it", 6, (
-          <div className="rdr-sbox" style={{ marginTop: 0 }}>
-            {kv("Position vs trigger", cls.hasPivot ? `${cls.diffPct >= 0 ? "+" : ""}${cls.diffPct.toFixed(2)}%` : "—")}
-            {Number(s.dna_score) > 0 && kv("Setup strength", `${Math.round(Number(s.dna_score))} / 100`)}
-            {stats && kv("Past results of this pattern", <span style={{ color: Number(stats.win_rate_pct) >= 50 ? colors.gn : colors.am }}>{Number(stats.win_rate_pct).toFixed(0)}% won · {stats.resolved} trades</span>)}
-            {stats && kv("Average result", `${Number(stats.avg_pnl_pct) >= 0 ? "+" : ""}${Number(stats.avg_pnl_pct).toFixed(1)}%`)}
-            {gate && kv("Quality check", `${gate.survival_verdict || "—"}${gate.post_win_rate !== undefined ? ` · ${Number(gate.post_win_rate).toFixed(0)}% after filter` : ""}`)}
-            {num(s.adx14) != null && kv("Trend strength", Number(s.adx14).toFixed(0))}
-            {kv("Timeframe", timeframeLabel(s.timeframe), true)}
-          </div>
-        ))}
-
-        {ml && sec("Model confidence", 7, (
-          <div className="rdr-sbox" style={{ marginTop: 0, padding: 16 }}>
-            <div className="rdr-row" style={{ alignItems: "center" }}>
-              <div style={{ fontSize: 13, color: "var(--mu)" }}>Trained on past setups</div>
-              <span className="rdr-vtag" style={{ color: gradeColor, background: `${gradeColor}24` }}>{ml.conviction_grade}</span>
+        {/* 6. Health check */}
+        {(rsi != null || vol != null || emaCount > 0 || range52 != null) && sec("Health check", 6, (
+          <>
+            <div className="rsp-tiles">
+              {rsi != null && tile("Momentum (RSI)", rsi.toFixed(0), rsi >= 70 ? "Stretched" : rsi >= 60 ? "Strong" : rsi <= 40 ? "Weak" : "Balanced", rsi >= 60 && rsi < 70 ? colors.gn : rsi >= 70 ? colors.am : rsi <= 40 ? colors.rd : undefined, { pct: Math.max(5, Math.min(95, rsi)), bg: `linear-gradient(90deg,${colors.rd},${colors.am},${colors.gn})` })}
+              {vol != null && tile("Buying interest", `${vol.toFixed(1)}×`, vol >= 1.5 ? "Heavy" : vol < 1 ? "Light" : "Normal", vol >= 1.5 ? colors.gn : undefined, { pct: Math.min(100, Math.max(8, vol * 25)), bg: colors.acc })}
+              {emaCount > 0 && tile("Trend", `${above}/${emaCount}`, `above ${emaCount === 3 ? "20, 50 & 200-day" : "key"} averages`, above === emaCount ? colors.gn : above === 0 ? colors.rd : colors.am, { pct: (above / emaCount) * 100, bg: colors.gn })}
+              {range52 != null && tile("52-week range", `${range52}%`, `₹${fmt0(low52)} – ₹${fmt0(high52)}`, undefined, { pct: range52, bg: `linear-gradient(90deg,${colors.acc},${colors.rd === "x" ? "" : "#8B5CF6"})` })}
             </div>
-            <div className="rsp-stats">
-              {stat("Win probability", ml.win_probability_pct, colors.gn)}
-              {stat("Expected value", `${Number(ml.expected_value_pct) > 0 ? "+" : ""}${ml.expected_value_pct}%`, Number(ml.expected_value_pct) >= 0 ? colors.gn : colors.rd)}
-              {stat("Pattern match", fp?.top_similarity_pct || "—", colors.acc)}
-              {stat("Look-alikes that won", fp?.twin_historical_win_rate_pct != null ? `${fp.twin_historical_win_rate_pct}%` : "—", colors.am)}
-            </div>
-            {Array.isArray(fp?.top_historical_twins) && fp.top_historical_twins.length > 0 && (
-              <div style={{ marginTop: 12 }}>
-                <div style={{ fontSize: 11, color: "var(--mu)", fontWeight: 700, marginBottom: 6 }}>CLOSEST PAST LOOK-ALIKES</div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {fp.top_historical_twins.slice(0, 3).map((tw: any, i: number) => (
-                    <span key={i} className="rsp-twin" style={{ color: tw.realized_win ? colors.gn : colors.rd, borderColor: tw.realized_win ? `${colors.gn}55` : `${colors.rd}55` }}>
-                      {tw.symbol} · {String(tw.date || "").slice(0, 7)} · {tw.similarity_pct} match · {tw.mfe_gain_pct > 0 ? `+${tw.mfe_gain_pct}% peak` : `${tw.mfe_gain_pct}%`}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div style={{ fontSize: 11, color: "var(--dim)", marginTop: 12 }}>Past results are information, not a promise of future returns.</div>
-          </div>
-        ))}
-
-        {(rsi != null || ema20 != null || vol != null) && sec("Technical health", 8, (
-          <div className="rsp-tech">
-            {rsi != null && (
-              <div className="rsp-pod">
-                <div className="rsp-pod-h"><span>Momentum (RSI)</span><b style={{ color: rsi >= 60 ? colors.gn : rsi <= 40 ? colors.rd : colors.am }}>{rsi >= 70 ? "Stretched" : rsi >= 60 ? "Strong" : rsi <= 40 ? "Weak" : "Balanced"}</b></div>
-                <div className="rsp-pod-v rdr-num">{rsi.toFixed(1)}</div>
-                <div className="rsp-bar-t"><i style={{ width: `${Math.max(5, Math.min(95, rsi))}%`, background: `linear-gradient(90deg,${colors.rd},${colors.am},${colors.gn})` }} /></div>
-              </div>
-            )}
-            {vol != null && (
-              <div className="rsp-pod">
-                <div className="rsp-pod-h"><span>Buying interest</span><b style={{ color: vol >= 1.5 ? colors.gn : colors.mu }}>{vol >= 1.5 ? "Heavy" : vol < 1 ? "Light" : "Normal"}</b></div>
-                <div className="rsp-pod-v rdr-num">{vol.toFixed(1)}×</div>
-                <div className="rsp-bar-t"><i style={{ width: `${Math.min(100, Math.max(8, vol * 25))}%`, background: colors.acc }} /></div>
-              </div>
-            )}
-            {(ema20 != null || ema50 != null || ema200 != null) && (
-              <div className="rsp-pod">
-                <div className="rsp-pod-h"><span>Moving averages</span><b style={{ color: colors.mu }}>{detail?.ema_alignment === "BULL_STACK" ? "Bullish stack" : "Price vs average"}</b></div>
-                {([["20", ema20], ["50", ema50], ["200", ema200]] as [string, number | null][]).map(([k, v]) => v != null && (
-                  <div key={k} className="rdr-kv" style={{ padding: "8px 0", fontSize: 13 }}>
-                    <span>{k}-day</span>
-                    <b className="rdr-num">₹{fmt(v, 1)} <span style={{ color: cmp >= v ? colors.gn : colors.rd }}>{cmp >= v ? "above" : "below"}</span></b>
-                  </div>
-                ))}
-              </div>
-            )}
             {(r1 != null || r2 != null || s1 != null) && (
-              <div className="rsp-pod">
-                <div className="rsp-pod-h"><span>Support &amp; resistance</span></div>
+              <div className="rdr-sbox" style={{ marginTop: 10 }}>
                 {r2 != null && kv("Resistance 2", `₹${fmt(r2, 1)}`)}
                 {r1 != null && kv("Resistance 1", `₹${fmt(r1, 1)}`)}
                 {s1 != null && kv("Support 1", `₹${fmt(s1, 1)}`, true)}
               </div>
             )}
-          </div>
+          </>
         ))}
 
-        {sec("Interactive chart", 9, (
+        {/* 7. Interactive chart (on demand) */}
+        {sec("Interactive chart", 7, (
           <div className="rdr-sbox" style={{ marginTop: 0, padding: 12 }}>
             {!tvOn ? (
               <button className="rdr-btn2" style={{ margin: 0 }} onClick={() => setTvOn(true)}>Open full interactive chart</button>
@@ -573,7 +560,7 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
           </div>
         ))}
 
-        <div className="rsp-rise" style={{ ["--i" as any]: 10 }}>
+        <div className="rsp-rise" style={{ ["--i" as any]: 8 }}>
           <button className="rdr-cta" onClick={onOpenDna}>Open full DNA report</button>
           <button className="rdr-btn2" onClick={share}>Share this setup</button>
           <button className="rdr-btn2" style={{ color: alertOn ? colors.gn : undefined }} onClick={() => { setAlertOn(true); setToast(`Alert set at ₹${fmt(bk, 1)}`); setTimeout(() => setToast(""), 2200); }}>
@@ -590,70 +577,83 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
 
 const RSP_CSS = `
 .rsp{position:absolute;inset:0;z-index:40;overflow-y:auto;overflow-x:hidden;background:var(--bg);color:var(--ink);overscroll-behavior:contain;scrollbar-width:none;animation:rspin .5s cubic-bezier(.2,.9,.25,1) both;font-family:inherit}
+.rdr-root.light .rsp{background:linear-gradient(180deg,#E3E8F7,#EEF1FA 45%,#E9EDF8)}
 .rsp::-webkit-scrollbar{display:none}
 .rsp.closing{animation:rspout .32s cubic-bezier(.4,0,.8,.4) both}
 @keyframes rspin{from{transform:translateX(100%)}to{transform:none}}
 @keyframes rspout{from{transform:none}to{transform:translateX(100%)}}
 .rsp *{box-sizing:border-box;min-width:0}
-.rsp:before{content:"";position:absolute;left:0;right:0;top:0;height:380px;background:radial-gradient(60% 70% at 25% 0,rgba(124,140,255,.25),transparent 70%),radial-gradient(50% 60% at 90% 10%,rgba(167,139,250,.16),transparent 70%);pointer-events:none}
-.rsp-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px 6px;background:linear-gradient(var(--bg) 60%,transparent);backdrop-filter:blur(10px)}
-.rsp-back{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 14px 0 11px;border-radius:99px;background:var(--glass);border:1px solid var(--line);color:var(--acc);font-size:15px;font-weight:650;cursor:pointer}
-.rsp-share{width:38px;height:38px;border-radius:50%;background:var(--glass);border:1px solid var(--line);color:var(--ink);font-size:16px;cursor:pointer}
-.rsp-mini{display:flex;flex-direction:column;align-items:center;line-height:1.15;opacity:0;transform:translateY(6px);transition:all .3s;pointer-events:none}
-.rsp-mini.on{opacity:1;transform:none}
+.rsp:before{content:"";position:absolute;left:0;right:0;top:0;height:420px;background:radial-gradient(60% 70% at 25% 0,color-mix(in srgb,var(--vc,#7C8CFF) 30%,transparent),transparent 70%),radial-gradient(50% 60% at 92% 8%,rgba(167,139,250,.22),transparent 70%);pointer-events:none}
+.rsp-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 14px 4px;min-height:44px;pointer-events:none}
+.rsp-bar>*{pointer-events:auto}
+.rsp-share{width:38px;height:38px;border-radius:50%;background:var(--glass);border:1px solid var(--line);color:var(--ink);font-size:16px;cursor:pointer;box-shadow:var(--sh);margin-left:auto}
+.rsp-mini{position:absolute;left:50%;transform:translate(-50%,6px);display:flex;flex-direction:column;align-items:center;line-height:1.15;opacity:0;transition:all .3s;pointer-events:none;padding:5px 14px;border-radius:14px;background:var(--glass);border:1px solid var(--line);box-shadow:var(--sh)}
+.rsp-mini.on{opacity:1;transform:translate(-50%,0)}
 .rsp-mini b{font-size:14px;font-weight:780}.rsp-mini span{font-size:12px;color:var(--mu)}
-.rsp-wrap{position:relative;max-width:620px;margin:0 auto;padding:0 18px}
-.rsp-rise{animation:rdrrise .7s cubic-bezier(.2,.9,.25,1) both;animation-delay:calc(var(--i,0)*60ms + 220ms)}
-.rsp-hero{padding:8px 4px 6px}
-.rsp-eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mu);font-weight:700}
-.rsp-sym{font-size:clamp(32px,10vw,46px);font-weight:820;letter-spacing:-.04em;line-height:1.05;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rsp-co{font-size:14px;color:var(--mu);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rsp-priceRow{display:flex;align-items:baseline;gap:12px;margin-top:16px;flex-wrap:wrap}
-.rsp-price{font-size:clamp(30px,9vw,40px);font-weight:800;letter-spacing:-.03em}
-.rsp-chg{font-size:15px;font-weight:700}.rsp-chg span{font-weight:500;color:var(--mu);font-size:12.5px}
-.rsp-verdictRow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:14px}
-.rsp-pill{padding:4px 10px;border-radius:99px;background:var(--glass);border:1px solid var(--line);font-size:11.5px;font-weight:650;color:var(--mu);white-space:nowrap}
-.rsp-why{font-size:15px;line-height:1.5;color:var(--mu);margin-top:12px}
-.rsp-range{margin-top:20px;padding:14px 16px;border-radius:18px;background:var(--glass);border:1px solid var(--line)}
-.rsp-range-h{display:flex;justify-content:space-between;font-size:12px;color:var(--mu);font-weight:600}
-.rsp-range-t{position:relative;height:6px;border-radius:3px;background:var(--glass2);margin:12px 0 8px}
-.rsp-range-t i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:linear-gradient(90deg,var(--acc),var(--acc2))}
-.rsp-range-t b{position:absolute;top:-5px;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:#fff;border:4px solid var(--acc);box-shadow:0 3px 10px rgba(0,0,0,.4)}
-.rsp-range-l{display:flex;justify-content:space-between;font-size:12px;color:var(--dim)}
-.rsp-levels{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.rsp-levels>div{padding:14px 12px;border-radius:18px;background:linear-gradient(165deg,var(--glass2),var(--glass));border:1px solid var(--line);box-shadow:var(--sh)}
-.rsp-levels span{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mu);font-weight:700}
-.rsp-levels b{display:block;font-size:17px;margin-top:6px;font-weight:780}
-.rsp-levels em{display:block;font-style:normal;font-size:11.5px;color:var(--mu);margin-top:2px}
-.rsp-case{display:grid;gap:10px}
-.rsp-case-card{padding:14px 16px;border-radius:18px;background:var(--glass);border:1px solid var(--line)}
-.rsp-case-h{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:750;margin-bottom:8px}
-.rsp-case-i{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45;color:var(--ink);padding:5px 0}
-.rsp-case-i i{flex:0 0 7px;height:7px;border-radius:50%;margin-top:7px}
-.rsp-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
-.rsp-stat{padding:10px 12px;border-radius:14px;background:var(--glass2);border:1px solid var(--line)}
-.rsp-stat-l{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--mu);font-weight:700}
-.rsp-stat-v{font-size:19px;font-weight:800;margin-top:3px}
-.rsp-twin{font-size:11px;padding:4px 9px;border-radius:99px;border:1px solid;font-weight:650}
-.rsp-tech{display:grid;gap:10px}
-.rsp-pod{padding:14px 16px;border-radius:18px;background:var(--glass);border:1px solid var(--line)}
-.rsp-pod-h{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--mu);font-weight:650}
-.rsp-pod-v{font-size:26px;font-weight:800;margin:6px 0 8px;letter-spacing:-.02em}
-.rsp-bar-t{height:6px;border-radius:3px;background:var(--glass2);overflow:hidden}
-.rsp-bar-t i{display:block;height:100%;border-radius:3px}
-.rsp-tfrow{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.rsp-wrap{position:relative;max-width:620px;margin:0 auto;padding:0 16px}
+.rsp-rise{animation:rdrrise .7s cubic-bezier(.2,.9,.25,1) both;animation-delay:calc(var(--i,0)*60ms + 200ms)}
+.rsp-id{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding:0 4px 14px}
+.rsp-eyebrow{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:700}
+.rsp-sym{font-size:clamp(26px,8vw,34px);font-weight:820;letter-spacing:-.035em;line-height:1.05;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rsp-co{font-size:13px;color:var(--mu);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rsp-price{font-size:clamp(24px,7.5vw,32px);font-weight:800;letter-spacing:-.03em;white-space:nowrap}
+.rsp-chg{font-size:13.5px;font-weight:700;white-space:nowrap}.rsp-chg span{font-weight:500;color:var(--mu);font-size:11.5px}
+.rsp-chartcard,.rsp-decision{border-radius:26px;background:linear-gradient(165deg,var(--glass2),var(--glass));border:1px solid var(--line);box-shadow:var(--sh);padding:12px;margin-bottom:14px}
+.rdr-root.light .rsp-chartcard,.rdr-root.light .rsp-decision{background:linear-gradient(165deg,#fff 45%,#F1F3FF)}
+.rsp-decision{position:relative;overflow:hidden;padding:18px 18px 16px}
+.rsp-decision:after{content:"";position:absolute;right:-40px;top:-50px;width:210px;height:180px;background:radial-gradient(closest-side,color-mix(in srgb,var(--vc,#7C8CFF) 32%,transparent),transparent);pointer-events:none}
+.rsp-decision>*{position:relative;z-index:1}
+.rsp-dec-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.rsp-rr{font-size:12.5px;font-weight:700;color:var(--mu);padding:5px 11px;border-radius:99px;background:var(--glass2);border:1px solid var(--line)}
+.rsp-why{font-size:15px;line-height:1.5;color:var(--ink);opacity:.82;margin-top:12px}
+.rsp-tfrow{display:flex;align-items:center;gap:10px;margin:2px 2px 10px}
+.rsp-hint{font-size:11.5px;color:var(--mu);flex:1;text-align:right}
 .rsp-tf{display:inline-flex;padding:3px;border-radius:99px;background:var(--glass2);border:1px solid var(--line)}
 .rsp-tf button{border:none;background:none;color:var(--mu);font-size:13px;font-weight:700;padding:6px 16px;border-radius:99px;cursor:pointer}
 .rsp-tf button.on{background:linear-gradient(150deg,var(--acc),var(--acc2));color:#fff;box-shadow:0 6px 14px -6px var(--acc)}
 .rsp-reload{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--glass);color:var(--mu);cursor:pointer;font-size:16px}
-.rsp-stage{position:relative;min-height:220px;border-radius:14px;overflow:hidden;background:var(--glass)}
+.rsp-stage{position:relative;min-height:240px;border-radius:16px;overflow:hidden;background:var(--glass2)}
 .rsp-stage img{width:100%;display:block;transition:opacity .3s}.rsp-stage img.reloading{opacity:.35}
 .rsp-stage-load{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;font-size:12.5px;color:var(--mu);z-index:2}
 .rsp-stage-load i{width:26px;height:26px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--acc);animation:rspspin 1s linear infinite}
 @keyframes rspspin{to{transform:rotate(360deg)}}
-.rsp-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--mu)}
+.rsp-legend{display:flex;gap:14px;flex-wrap:wrap;margin:12px 4px 2px;font-size:12px;color:var(--mu)}
 .rsp-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
 .rsp-legend b{color:var(--ink);margin-left:4px}
+.rsp-levels{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.rsp-levels>div{padding:11px 10px;border-radius:16px;background:var(--glass2);border:1px solid var(--line)}
+.rdr-root.light .rsp-levels>div{background:#F4F6FF}
+.rsp-levels span{display:block;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--mu);font-weight:700}
+.rsp-levels b{display:block;font-size:16px;margin-top:5px;font-weight:780}
+.rsp-levels em{display:block;font-style:normal;font-size:11.5px;color:var(--mu);margin-top:2px}
+.rsp-evidence{display:grid;gap:10px}
+.rsp-ev-row,.rsp-ml{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:20px;background:linear-gradient(165deg,var(--glass2),var(--glass));border:1px solid var(--line);box-shadow:var(--sh)}
+.rsp-ml{display:block}
+.rsp-ring{flex:0 0 66px;width:66px;height:66px;border-radius:50%;display:grid;place-items:center}
+.rsp-ring>div{width:52px;height:52px;border-radius:50%;background:var(--bg2);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}
+.rsp-ring b{font-size:15px;font-weight:800}.rsp-ring span{font-size:9.5px;color:var(--mu)}
+.rsp-ev-t{font-size:14.5px;font-weight:720}
+.rsp-ev-s{font-size:12.5px;color:var(--mu);margin-top:3px;line-height:1.4}
+.rsp-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.rsp-stats>div{padding:10px 12px;border-radius:14px;background:var(--glass2);border:1px solid var(--line)}
+.rdr-root.light .rsp-stats>div{background:#F4F6FF}
+.rsp-stats span{display:block;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--mu);font-weight:700}
+.rsp-stats b{display:block;font-size:19px;font-weight:800;margin-top:3px}
+.rsp-twin{font-size:11px;padding:4px 9px;border-radius:99px;border:1px solid;font-weight:650}
+.rsp-case{display:grid;gap:10px}
+.rsp-case-card{position:relative;overflow:hidden;padding:14px 16px;border-radius:20px;background:linear-gradient(165deg,var(--glass2),var(--glass));border:1px solid var(--line);box-shadow:var(--sh)}
+.rsp-case-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--cc)}
+.rsp-case-h{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:750;margin-bottom:6px}
+.rsp-case-i{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45;padding:5px 0}
+.rsp-case-i i{flex:0 0 7px;height:7px;border-radius:50%;margin-top:7px}
+.rsp-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rsp-tile{padding:14px;border-radius:20px;background:linear-gradient(165deg,var(--glass2),var(--glass));border:1px solid var(--line);box-shadow:var(--sh)}
+.rsp-tile-l{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--mu);font-weight:700}
+.rsp-tile-v{font-size:26px;font-weight:800;margin-top:6px;letter-spacing:-.02em}
+.rsp-tile-n{font-size:12px;color:var(--mu);margin:2px 0 10px}
+.rsp-bar-t{height:6px;border-radius:3px;background:var(--glass2);overflow:hidden}
+.rdr-root.light .rsp-bar-t{background:rgba(48,58,130,.10)}
+.rsp-bar-t i{display:block;height:100%;border-radius:3px}
 .rsp-toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);padding:11px 18px;border-radius:99px;background:var(--ink);color:var(--bg);font-size:13px;font-weight:650;z-index:80;animation:rdrfade .2s both}
 @media (prefers-reduced-motion:reduce){.rsp,.rsp-rise{animation-duration:.01ms!important}}
 `;

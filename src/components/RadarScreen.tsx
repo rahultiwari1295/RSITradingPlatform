@@ -75,7 +75,7 @@ const fmt = (n: any, d = 2) =>
 const fmt0 = (n: any) => Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 });
 const patLabel = (s: Setup) => String(s.pattern_type || "").split("·")[0].trim();
 
-export default function RadarScreen({ theme = "dark", livePrices, onSelectStock, onSwitchTab, onStockOpenChange, backSignal = 0, homeSignal = 0 }: RadarScreenProps) {
+function RadarScreenInner({ theme = "dark", livePrices, onSelectStock, onSwitchTab, onStockOpenChange, backSignal = 0, homeSignal = 0 }: RadarScreenProps) {
   const isLight = theme === "light";
 
   // ── UI state
@@ -365,8 +365,20 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
   const reduceMotion = typeof window !== "undefined" && !!window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const runFx = () => {
+    try {
+      runFxUnsafe();
+    } catch (e) {
+      console.warn("Radar fx skipped", e);
+    }
+  };
+  const runFxUnsafe = () => {
     const sc = rootRef.current;
     if (!sc || reduceMotion) return;
+    // while pinch-zoomed (or on a page-zoomed desktop) the 3D effects are switched off: it keeps zooming smooth and light on memory
+    const vv = window.visualViewport;
+    const zoomed = !!vv && Math.abs(vv.scale - 1) > 0.02;
+    sc.parentElement?.classList.toggle("zoomed", zoomed);
+    if (zoomed) return;
     const y = sc.scrollTop;
     const h = sc.clientHeight || 1;
     const pr = sc.getBoundingClientRect();
@@ -396,7 +408,7 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
       el.style.setProperty("--s", (1 - e * 0.09 - leave * 0.05).toFixed(3));
       el.style.setProperty("--ty", `${(e * 46 - leave * 14).toFixed(1)}px`);
       el.style.setProperty("--o", Math.max(0, 1 - e * 0.85 - leave * 0.7).toFixed(3));
-      el.style.setProperty("--bl", `${(e * 3).toFixed(2)}px`);
+      el.style.setProperty("--sx", `${((c - 0.5) * 160 - 10).toFixed(0)}%`);
     });
     runPicksFx();
   };
@@ -425,10 +437,12 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
     };
     sc.addEventListener("scroll", on, { passive: true });
     window.addEventListener("resize", on);
+    window.visualViewport?.addEventListener("resize", on);
     return () => {
       cancelAnimationFrame(raf);
       sc.removeEventListener("scroll", on);
       window.removeEventListener("resize", on);
+      window.visualViewport?.removeEventListener("resize", on);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -528,7 +542,8 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
     const d = diffOf(s);
     const st = patternStats(s);
     return (
-      <div key={`${s.symbol}-${idx}`} className="rdr-card" onClick={() => openStock(s)}>
+      <div key={`${s.symbol}-${idx}`} className="rdr-card" style={{ ["--vc" as any]: v.c }} onClick={() => openStock(s)}>
+        <div className="rdr-shine" />
         <div className="rdr-row">
           <div style={{ minWidth: 0 }}>
             <div className="rdr-cs">{s.symbol}</div>
@@ -562,7 +577,8 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
     const v = closedTradeView(c);
     const color = v.isWin ? colors.gn : v.isLoss ? colors.rd : colors.mu;
     return (
-      <div key={`${c.symbol}-${c.breakout_date}-${idx}`} className="rdr-card">
+      <div key={`${c.symbol}-${c.breakout_date}-${idx}`} className="rdr-card" style={{ ["--vc" as any]: color }}>
+        <div className="rdr-shine" />
         <div className="rdr-row">
           <div>
             <div className="rdr-cs">{c.symbol}</div>
@@ -753,7 +769,7 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
                 const d = diffOf(s);
                 const st = patternStats(s);
                 return (
-                  <div key={s.symbol} className="rdr-pick" onClick={() => openStock(s)}>
+                  <div key={s.symbol} className="rdr-pick" style={{ ["--vc" as any]: v.c }} onClick={() => openStock(s)}>
                     <div className="rdr-shine" />
                     <div className="rdr-rank">#{i + 1} pick</div>
                     <div className="rdr-psym">{s.symbol}</div>
@@ -1002,32 +1018,69 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
   );
 }
 
+class RadarBoundary extends React.Component<{ children: React.ReactNode; theme?: string }, { err: Error | null }> {
+  state = { err: null as Error | null };
+  static getDerivedStateFromError(err: Error) {
+    return { err };
+  }
+  componentDidCatch(err: Error, info: React.ErrorInfo) {
+    console.error("Radar crashed:", err, info.componentStack);
+  }
+  render() {
+    if (!this.state.err) return this.props.children;
+    const light = this.props.theme === "light";
+    return (
+      <div style={{ height: "100%", display: "grid", placeItems: "center", padding: 24, textAlign: "center", color: light ? "#0B0D14" : "#F5F6F8", background: light ? "#EEF1F9" : "#06070A" }}>
+        <div style={{ maxWidth: 360 }}>
+          <div style={{ fontSize: 18, fontWeight: 750, marginBottom: 8 }}>Radar hit a problem</div>
+          <div style={{ fontSize: 13, opacity: 0.7, lineHeight: 1.5, marginBottom: 6 }}>The rest of the app is fine. Tap below to reload this screen.</div>
+          <div style={{ fontSize: 11, opacity: 0.5, marginBottom: 16, wordBreak: "break-word" }}>{String(this.state.err.message || this.state.err).slice(0, 160)}</div>
+          <button onClick={() => this.setState({ err: null })} style={{ padding: "11px 22px", borderRadius: 14, border: "none", background: "linear-gradient(120deg,#6C7BFF,#9B7BF5)", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+            Reload Radar
+          </button>
+        </div>
+      </div>
+    );
+  }
+}
+
+export default function RadarScreen(props: RadarScreenProps) {
+  return (
+    <RadarBoundary theme={props.theme}>
+      <RadarScreenInner {...props} />
+    </RadarBoundary>
+  );
+}
+
 const RDR_CSS = `
 .rdr-root{--bg:#06070A;--bg2:#0C0E14;--glass:rgba(255,255,255,.055);--glass2:rgba(255,255,255,.09);--line:rgba(255,255,255,.09);--ink:#F5F6F8;--mu:rgba(235,238,245,.62);--dim:rgba(235,238,245,.36);--acc:#7C8CFF;--acc2:#A78BFA;--gn:#34D399;--rd:#FB7185;--am:#FBBF24;
 --sh:0 1px 0 rgba(255,255,255,.12) inset,0 -1px 0 rgba(0,0,0,.4) inset,0 2px 4px rgba(0,0,0,.35),0 14px 28px -8px rgba(0,0,0,.55),0 44px 80px -30px rgba(0,0,0,.85);--r:22px;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI",sans-serif;color:var(--ink)}
 .rdr{position:relative;width:100%;height:100%;overflow-y:auto;overflow-x:hidden;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI",sans-serif;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-.rdr-root.light{--bg:#F4F5F9;--bg2:#FFFFFF;--glass:rgba(255,255,255,.8);--glass2:rgba(255,255,255,.95);--line:rgba(20,24,40,.09);--ink:#0B0D14;--mu:rgba(20,24,40,.62);--dim:rgba(20,24,40,.38);--acc:#4F5BE8;--acc2:#7C5CE0;--gn:#0E9F6E;--rd:#E11D48;--am:#B45309;
---sh:0 1px 0 rgba(255,255,255,.9) inset,0 2px 4px rgba(30,40,90,.08),0 14px 28px -10px rgba(30,40,90,.18),0 40px 70px -30px rgba(30,40,90,.35)}
+.rdr-root.light{--bg:#E9EDF8;--bg2:#F7F8FD;--glass:#FFFFFF;--glass2:#FFFFFF;--line:rgba(48,58,130,.12);--ink:#0A0C18;--mu:rgba(16,22,52,.70);--dim:rgba(16,22,52,.46);--acc:#4B57F0;--acc2:#8B5CF6;--gn:#0A9B69;--rd:#E0163F;--am:#B45309;
+--sh:0 1px 0 rgba(255,255,255,1) inset,0 1px 2px rgba(40,50,130,.10),0 10px 22px -8px rgba(60,72,190,.26),0 34px 56px -26px rgba(60,72,190,.38)}
 .rdr::-webkit-scrollbar{display:none}
 .rdr *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 .rdr button{font-family:inherit}
 .rdr-num{font-variant-numeric:tabular-nums}
 .rdr-aura{position:absolute;left:-20%;right:-20%;top:-10%;height:60vh;background:radial-gradient(60% 60% at 30% 30%,rgba(124,140,255,.28),transparent 70%),radial-gradient(50% 50% at 80% 20%,rgba(167,139,250,.2),transparent 70%);pointer-events:none;transform:translateY(var(--py,0px));filter:blur(8px)}
+.rdr-root.light .rdr-aura{background:radial-gradient(55% 60% at 22% 25%,rgba(99,102,241,.38),transparent 70%),radial-gradient(45% 55% at 85% 12%,rgba(236,72,153,.22),transparent 70%),radial-gradient(50% 50% at 60% 55%,rgba(20,184,166,.16),transparent 70%)}
+.rdr-root.light{background:linear-gradient(180deg,#E3E8F7,#EEF1FA 40%,#E9EDF8)}
+.rdr-root.light .rdr{background:transparent}
 .rdr-content{position:relative;max-width:620px;margin:0 auto;transform-origin:50% 0;transition:transform .6s cubic-bezier(.2,.9,.25,1),filter .6s}
 .rdr-content.recede{transform:scale(.95) translateY(8px);filter:brightness(.55)}
 .rdr-top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:16px 20px 10px;background:linear-gradient(var(--bg) 55%,transparent)}
 .rdr-brand{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mu)}
-.rdr-ibtn{min-width:36px;height:36px;border-radius:99px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;color:var(--ink);cursor:pointer;font-size:15px;backdrop-filter:blur(14px)}
+.rdr-ibtn{min-width:36px;height:36px;border-radius:99px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;color:var(--ink);cursor:pointer;font-size:15px;box-shadow:var(--sh)}
 .rdr-hero{padding:6px 22px 8px;transform-origin:0 0;transform:translateY(var(--hy,0px)) scale(var(--hs,1));opacity:var(--ho,1);will-change:transform,opacity}
 .rdr-date{font-size:13px;color:var(--mu);font-weight:500}
 .rdr-big{font-size:38px;line-height:1.05;font-weight:800;letter-spacing:-.035em;margin:8px 0 10px}
 .rdr-big em{font-style:normal;background:linear-gradient(100deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
 .rdr-sub{font-size:15px;line-height:1.45;color:var(--mu);max-width:340px}
-.rdr-trust{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:7px 12px;border-radius:99px;background:var(--glass);border:1px solid var(--line);font-size:12px;color:var(--mu);cursor:pointer}
+.rdr-trust{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:7px 12px;border-radius:99px;background:var(--glass);border:1px solid var(--line);box-shadow:var(--sh);font-size:12px;color:var(--mu);cursor:pointer}
 .rdr-trust b{color:var(--ink)}
 .rdr-dot{width:7px;height:7px;border-radius:50%;background:var(--gn);box-shadow:0 0 10px var(--gn);animation:rdrpulse 2s infinite}
 @keyframes rdrpulse{50%{opacity:.4}}
-.rdr-search{display:flex;align-items:center;margin:16px 22px 0;height:42px;border-radius:14px;background:var(--glass);border:1px solid var(--line);padding:0 14px}
+.rdr-search{display:flex;align-items:center;margin:16px 22px 0;height:42px;border-radius:14px;background:var(--glass);border:1px solid var(--line);padding:0 14px;box-shadow:var(--sh)}
 .rdr-search input{flex:1;background:none;border:none;outline:none;color:var(--ink);font-size:14.5px}
 .rdr-search button{background:none;border:none;color:var(--mu);cursor:pointer}
 .rdr-sec{display:flex;justify-content:space-between;align-items:baseline;padding:26px 22px 12px;transform:translateY(var(--ry2,0px));opacity:var(--ro,1)}
@@ -1036,12 +1089,11 @@ const RDR_CSS = `
 .rdr-picks,.rdr-list{perspective:1100px}
 .rdr-picks{display:flex;gap:14px;overflow-x:auto;padding:14px 22px 34px;scroll-snap-type:x mandatory;scrollbar-width:none}
 .rdr-picks::-webkit-scrollbar{display:none}
-.rdr-pick{flex:0 0 78%;scroll-snap-align:center;border-radius:28px;padding:20px;position:relative;overflow:hidden;cursor:pointer;background:linear-gradient(155deg,var(--glass2),var(--glass));border:1px solid var(--line);box-shadow:var(--sh);backdrop-filter:blur(20px);
- transform:translate3d(0,0,0) rotateY(var(--ry,0deg)) scale(var(--s,1));opacity:var(--o,1);will-change:transform;transform-style:preserve-3d}
-.rdr-pick:before{content:"";position:absolute;inset:0;background:radial-gradient(80% 60% at 100% 0,rgba(124,140,255,.22),transparent 60%);pointer-events:none}
+.rdr-pick{flex:0 0 78%;scroll-snap-align:center;border-radius:28px;padding:20px;position:relative;overflow:hidden;cursor:pointer;background:linear-gradient(155deg,var(--glass2),var(--glass));border:1px solid var(--line);box-shadow:var(--sh);
+ transform:translate3d(0,0,0) rotateY(var(--ry,0deg)) scale(var(--s,1));opacity:var(--o,1)}
+.rdr-pick:before{content:"";position:absolute;inset:0;background:radial-gradient(85% 70% at 100% 0,color-mix(in srgb,var(--vc,#7C8CFF) 26%,transparent),transparent 62%);pointer-events:none}
 .rdr-pick:after,.rdr-card:before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;background:linear-gradient(160deg,rgba(255,255,255,.34),rgba(255,255,255,0) 38%,rgba(124,140,255,.25) 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
 .rdr-shine{position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.10) 45%,transparent 60%);transform:translateX(var(--sx,-60%));pointer-events:none}
-.rdr-pick .rdr-psym,.rdr-pick .rdr-pprice{transform:translateZ(24px)}
 .rdr-rank{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--acc);text-transform:uppercase}
 .rdr-psym{font-size:26px;font-weight:800;letter-spacing:-.03em;margin-top:6px}
 .rdr-verdict{display:inline-flex;align-items:center;gap:7px;margin-top:14px;font-weight:750;font-size:15px}
@@ -1051,7 +1103,7 @@ const RDR_CSS = `
 .rdr-pprice small{font-size:12.5px;font-weight:600;margin-left:6px}
 .rdr-journey{display:flex;gap:8px;padding:0 22px;overflow-x:auto;scrollbar-width:none}
 .rdr-journey::-webkit-scrollbar{display:none}
-.rdr-stage{flex:1 0 auto;min-width:82px;text-align:left;padding:11px 13px;border-radius:18px;background:var(--glass);border:1px solid var(--line);color:var(--ink);cursor:pointer;transition:all .3s cubic-bezier(.2,.8,.2,1)}
+.rdr-stage{flex:1 0 auto;min-width:82px;text-align:left;padding:11px 13px;border-radius:18px;background:var(--glass);border:1px solid var(--line);box-shadow:var(--sh);color:var(--ink);cursor:pointer;transition:all .3s cubic-bezier(.2,.8,.2,1)}
 .rdr-stage .n{font-size:22px;font-weight:800;letter-spacing:-.02em}
 .rdr-stage .l{font-size:12px;color:var(--mu);margin-top:1px;font-weight:600}
 .rdr-stage.quiet{min-width:70px;opacity:.8}
@@ -1062,14 +1114,17 @@ const RDR_CSS = `
 .rdr-filters{display:flex;gap:6px;overflow-x:auto;padding:4px 22px 8px;scrollbar-width:none}
 .rdr-filters::-webkit-scrollbar{display:none}
 .rdr-wrap{display:flex;flex-wrap:wrap;gap:8px}
-.rdr-chip{flex:0 0 auto;padding:7px 13px;border-radius:99px;border:1px solid var(--line);background:var(--glass);color:var(--ink);font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.rdr-chip{flex:0 0 auto;padding:7px 13px;border-radius:99px;border:1px solid var(--line);background:var(--glass);box-shadow:0 1px 2px rgba(20,24,60,.08);color:var(--ink);font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
 .rdr-chip.on{background:linear-gradient(150deg,var(--acc),var(--acc2));border-color:transparent;color:#fff}
 .rdr-list{padding:8px 18px 0}
-.rdr-card{position:relative;border-radius:var(--r);padding:16px 18px 14px;margin-bottom:14px;background:linear-gradient(165deg,var(--glass2),var(--glass));border:1px solid var(--line);box-shadow:var(--sh);backdrop-filter:blur(18px);cursor:pointer;
- transform-origin:50% 100%;transform:translate3d(0,var(--ty,0px),0) rotateX(var(--rx,0deg)) scale(var(--s,1));opacity:var(--o,1);filter:blur(var(--bl,0px));will-change:transform,opacity;transform-style:preserve-3d}
-.rdr-card:active{filter:brightness(1.08)}
-.rdr-card .rdr-cs,.rdr-card .rdr-cp{transform:translateZ(18px)}
-.rdr-card .rdr-ruler{transform:translateZ(10px)}
+.rdr-card{position:relative;overflow:hidden;border-radius:var(--r);padding:16px 18px 14px;margin-bottom:14px;background:linear-gradient(165deg,var(--glass2),var(--glass));border:1px solid var(--line);box-shadow:var(--sh);cursor:pointer;
+ transform-origin:50% 100%;transform:translate3d(0,var(--ty,0px),0) rotateX(var(--rx,0deg)) scale(var(--s,1));opacity:var(--o,1)}
+.rdr-root.light .rdr-card{background:linear-gradient(165deg,#FFFFFF 40%,#F1F3FF)}
+.rdr-card:after{content:"";position:absolute;right:-30px;top:-40px;width:170px;height:150px;background:radial-gradient(closest-side,color-mix(in srgb,var(--vc,#7C8CFF) 30%,transparent),transparent);pointer-events:none;opacity:.8}
+.rdr-card:active{filter:brightness(1.05)}
+.rdr-card>*{position:relative;z-index:1}
+.rdr-card>.rdr-shine{position:absolute;z-index:0}
+.rdr-root.zoomed .rdr-card,.rdr-root.zoomed .rdr-pick,.rdr-root.zoomed .rdr-hero,.rdr-root.zoomed .rdr-sec{transform:none!important;opacity:1!important}
 .rdr-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .rdr-cs{font-size:19px;font-weight:780;letter-spacing:-.02em}
 .rdr-cc{font-size:12px;color:var(--mu);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1104,7 +1159,7 @@ const RDR_CSS = `
 @keyframes rdrgrow{from{opacity:0;transform:scaleY(.2)}to{opacity:1;transform:none}}
 .rdr-grab{width:38px;height:5px;border-radius:3px;background:var(--dim);margin:0 auto 16px}
 .rdr-shsym{font-size:clamp(21px,6.2vw,30px);font-weight:800;letter-spacing:-.03em}
-.rdr-sbox{margin-top:16px;border-radius:20px;background:var(--glass);border:1px solid var(--line);padding:4px 16px}
+.rdr-sbox{margin-top:16px;border-radius:20px;background:var(--glass);border:1px solid var(--line);padding:4px 16px;box-shadow:var(--sh)}
 .rdr-kv{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
 .rdr-kv>span:first-child{color:var(--mu)}
 .rdr-kv b{font-weight:700;text-align:right}
