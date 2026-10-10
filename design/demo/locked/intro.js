@@ -58,7 +58,7 @@ U.sB=function(s,p){
 };
 U.sC=function(s,p){
   var a=eo(rng(p,.1,.5));
-  $("#n1").textContent=Math.round(54*a)+"%";$("#n2").textContent="+"+(0.36*a).toFixed(2)+"R";$("#n3").textContent=Math.round(423*a);
+  $("#n1").textContent=Math.round(54*a)+"%";$("#n2").textContent="₹"+Math.round(36*a);$("#n3").textContent=Math.round(423*a);
   $(".stats3",s).style.transform="translate3d(0,"+(-ease(rng(p,.5,.7))*vh*.06).toFixed(1)+"px,0)";
   rEls.forEach(function(el,i){var k=ease(rng(p,.42+i*.012,.62+i*.012));el.style.setProperty("--k",k.toFixed(3))});
   $(".stats3",s).style.opacity=(ease(rng(p,0,.1))).toFixed(3);
