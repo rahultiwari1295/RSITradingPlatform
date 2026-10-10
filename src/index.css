@@ -348,15 +348,20 @@ body::before{
   transform:none !important;
 }
 
-/* Full-bleed edge-to-edge container for Stock DNA Story screen */
-#screen-dna {
+/* Full-bleed edge-to-edge container for Stock DNA Story screen and 3D Pattern Radar */
+#screen-dna, #screen-radar {
   padding: 0 !important;
   overflow: hidden !important;
   height: 100% !important;
+  width: 100% !important;
+  position: absolute;
+  inset: 0;
 }
 @media (max-width: 768px) {
-  #screen-dna {
+  #screen-dna, #screen-radar {
     padding: 0 !important;
+    overflow: hidden !important;
+    height: 100% !important;
   }
 }
 
@@ -8634,7 +8639,8 @@ body::before{
   max-width: 1240px !important; margin: 0 auto !important;
   padding: 20px clamp(12px, 2vw, 24px) 56px !important;
 }
-#screen-screener, #screen-radar { padding: 0 !important; }
+#screen-screener { padding: 0 !important; }
+#screen-radar { padding: 0 !important; overflow: hidden !important; height: 100% !important; }
 @media (min-width: 900px) and (min-height: 861px) {
   .app:has(#screen-screener.active), .app:has(#screen-radar.active) {width:100vw;max-width:1440px;height:100dvh;max-height:100dvh;border-radius:0;}
   .app:has(#screen-screener.active) .topbar, .app:has(#screen-radar.active) .topbar {padding-left:clamp(20px,3vw,48px);padding-right:clamp(20px,3vw,48px);}

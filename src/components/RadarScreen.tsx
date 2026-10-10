@@ -39,6 +39,12 @@ export default function RadarScreen({ theme, onSelectStock, onSwitchTab }: Radar
     }
   }, [activeTheme, iframeLoaded]);
 
+  // Failsafe: Ensure skeleton disappears even if onLoad event is suppressed by browser
+  useEffect(() => {
+    const timer = setTimeout(() => setIframeLoaded(true), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Handle postMessage events from iframe
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
