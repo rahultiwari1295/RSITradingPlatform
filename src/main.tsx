@@ -7,6 +7,9 @@ import { lazy, Suspense } from 'react';
 
 const OpsPage = lazy(() => import('./ops/OpsPage'));
 const IS_OPS = /^\/(ops|rahuldata)(\/|$)/.test(window.location.pathname);
+// New calm-luxe UI (Stock X-Ray, AI Calls, Pattern Calls). Lives on its own paths so the classic app keeps working.
+const QApp = lazy(() => import('./q/QApp'));
+const IS_Q = /^\/(home|xray|calls|patterns|portfolio)(\/|$)/.test(window.location.pathname) || new URLSearchParams(window.location.search).get('ui') === 'new';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -80,7 +83,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
       <AuthProvider>
-        {IS_OPS ? <Suspense fallback={null}><OpsPage /></Suspense> : <App />}
+        {IS_OPS ? <Suspense fallback={null}><OpsPage /></Suspense> : IS_Q ? <Suspense fallback={null}><QApp /></Suspense> : <App />}
       </AuthProvider>
     </ErrorBoundary>
   </StrictMode>,
