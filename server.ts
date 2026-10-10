@@ -1201,10 +1201,7 @@ async function startServer() {
   // Screener API proxy to local Python FastAPI backend (http://127.0.0.1:8000) or VPS
   app.all(["/api/screener", "/api/screener/*"], async (req, res) => {
     try {
-      const queryStr = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
-      const pathPart = req.params[0] ? `/${req.params[0]}` : "";
-      // Try local python server first on port 8000
-      let backendUrl = `http://127.0.0.1:8000/api/screener${pathPart}${queryStr}`;
+      const targetPath = req.originalUrl || req.url;
       const filterHomeHero = (data: any) => {
         if (req.query.setup === "home_hero" && data && Array.isArray(data.rows)) {
           data.rows = data.rows.filter((r: any) => {
@@ -1214,35 +1211,40 @@ async function startServer() {
             if (brk <= 0 || cp <= 0) return false;
             const diffAbs = Math.abs(((cp - brk) / brk) * 100);
             const tgtGain = tgt > 0 ? ((tgt - cp) / cp) * 100 : 0;
-            // Strictly Good to Buy: within 5.0% of breakout and >= 5.0% upside left
             return diffAbs <= 5.0 && tgtGain >= 5.0;
           });
         }
         return data;
       };
 
+      // Try local python server first on port 8000
       try {
-        const localRes = await fetch(backendUrl, {
+        const localRes = await fetch(`http://127.0.0.1:8000${targetPath}`, {
           method: req.method,
           headers: { Accept: "application/json" },
-          signal: AbortSignal.timeout(3000)
+          signal: AbortSignal.timeout(1500)
         });
         if (localRes.ok) {
           const data = await localRes.json();
           return res.json(filterHomeHero(data));
         }
       } catch (e) {
-        // Fallback to VPS endpoint
-        backendUrl = `https://quantsync-api.duckdns.org:8443/api/screener${pathPart}${queryStr}`;
-        const vpsRes = await fetch(backendUrl, {
+        // Local server offline or timed out
+      }
+
+      // Fallback to VPS endpoint
+      try {
+        const vpsRes = await fetch(`https://quantsync-api.duckdns.org:8443${targetPath}`, {
           method: req.method,
           headers: { Accept: "application/json" },
-          signal: AbortSignal.timeout(8000)
+          signal: AbortSignal.timeout(12000)
         });
         if (vpsRes.ok) {
           const data = await vpsRes.json();
           return res.json(filterHomeHero(data));
         }
+      } catch (e) {
+        console.error("VPS proxy error:", e);
       }
       return res.status(502).json({ error: "Could not connect to screener backend service" });
     } catch (err: any) {

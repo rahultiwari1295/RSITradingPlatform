@@ -24,6 +24,7 @@ import InstitutionalPatternChart from "./components/charts/InstitutionalPatternC
 import TradingViewStockDetail from "./components/TradingViewStockDetail";
 import StockDNAScreen from "./components/StockDNAScreen";
 import ScreenerScreen from "./components/ScreenerScreen";
+import RadarScreen from "./components/RadarScreen";
 import { useLiveMarket, liveMarketSocket } from "./services/liveMarketSocket";
 import { LuxuryHomeDeck } from "./components/home/LuxuryHomeDeck";
 import "./components/home/LuxuryHomeDeck.css";
@@ -1287,10 +1288,10 @@ export default function App() {
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     return (localStorage.getItem("theme") as "dark" | "light") || "light";
   });
-  const [activeTab, setActiveTab] = useState<"home" | "signals" | "portfolio" | "dna" | "charts" | "intel" | "screener" | "lounge" | "more">(() => {
+  const [activeTab, setActiveTab] = useState<"home" | "signals" | "portfolio" | "dna" | "charts" | "intel" | "screener" | "radar" | "lounge" | "more">(() => {
     if (typeof window !== "undefined") {
       const p = new URLSearchParams(window.location.search).get("tab");
-      if (p && ["home", "signals", "portfolio", "dna", "charts", "intel", "screener", "lounge", "more"].includes(p)) {
+      if (p && ["home", "signals", "portfolio", "dna", "charts", "intel", "screener", "radar", "lounge", "more"].includes(p)) {
         return p as any;
       }
       // If direct deep link contains ?stock= or ?sym=, automatically open the DNA screen!
@@ -1356,7 +1357,7 @@ export default function App() {
   const [selectedSignalTrade, setSelectedSignalTrade] = useState<any | null>(null);
 
   const navigateToTab = (
-    tab: "home" | "signals" | "portfolio" | "dna" | "charts" | "intel" | "screener" | "lounge" | "more",
+    tab: "home" | "signals" | "portfolio" | "dna" | "charts" | "intel" | "screener" | "radar" | "lounge" | "more",
     stock?: string,
     resetDna: boolean = false
   ) => {
@@ -1861,10 +1862,18 @@ export default function App() {
     return false;
   });
 
+  const [hasOpenedRadar, setHasOpenedRadar] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("tab") === "radar";
+    }
+    return false;
+  });
+
   useEffect(() => {
     if (activeTab === "lounge") setHasOpenedLounge(true);
     if (activeTab === "dna" || selectedDnaStock) setHasOpenedDna(true);
     if (activeTab === "screener") setHasOpenedScreener(true);
+    if (activeTab === "radar") setHasOpenedRadar(true);
   }, [activeTab, selectedDnaStock]);
 
   const handleRangeChange = (r: number) => {
@@ -4711,8 +4720,9 @@ export default function App() {
                           const sym = (it.s || it.symbol || "").toUpperCase();
                           const live = livePrices?.[sym]?.price;
                           const currentCmp = live || it.currentPrice;
-                          const tfBadge = it.timeframe === "MONTHLY" ? "1M" : it.timeframe === "WEEKLY" ? "1W" : "1D";
-                          const baseYears = it.base_duration_years ? `${Number(it.base_duration_years).toFixed(1)}y` : it.base;
+                          const itemAny = it as any;
+                          const tfBadge = itemAny.timeframe === "MONTHLY" ? "1M" : itemAny.timeframe === "WEEKLY" ? "1W" : "1D";
+                          const baseYears = itemAny.base_duration_years ? `${Number(itemAny.base_duration_years).toFixed(1)}y` : it.base;
                           return (
                           <div
                             key={itIdx}
@@ -4726,7 +4736,7 @@ export default function App() {
                             <div className="row between">
                               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                                 <span className="nm">{it.s || it.symbol}</span>
-                                <span className="pill" style={{ fontSize: 8.5, padding: "2px 5px", background: it.timeframe === "MONTHLY" ? "rgba(6,182,212,0.18)" : it.timeframe === "WEEKLY" ? "rgba(139,92,246,0.18)" : "var(--s3)" }}>
+                                <span className="pill" style={{ fontSize: 8.5, padding: "2px 5px", background: itemAny.timeframe === "MONTHLY" ? "rgba(6,182,212,0.18)" : itemAny.timeframe === "WEEKLY" ? "rgba(139,92,246,0.18)" : "var(--s3)" }}>
                                   {tfBadge}
                                 </span>
                               </div>
@@ -4830,6 +4840,21 @@ export default function App() {
               livePrices={livePrices}
               onSelectStock={(sym, fullData) => {
                 setAnalystStock(fullData || { symbol: sym, sym });
+              }}
+            />
+          )}
+        </section>
+
+        {/* ===== RADAR SCREEN (NEXT GENERATION 3D PATTERN RADAR) ===== */}
+        <section className={`screen ${activeTab === "radar" ? "active" : ""}`} id="screen-radar">
+          {hasOpenedRadar && (
+            <RadarScreen
+              theme={theme}
+              onSelectStock={(sym) => {
+                navigateToTab("dna", sym);
+              }}
+              onSwitchTab={(t) => {
+                navigateToTab(t as any);
               }}
             />
           )}
@@ -5025,7 +5050,31 @@ export default function App() {
           }} />
         </button>
 
-        {/* 5. PORTFOLIO */}
+        {/* 5. RADAR (3D Pattern Radar) */}
+        <button
+          className={`tab ${activeTab === "radar" ? "active" : ""}`}
+          onClick={() => navigateToTab("radar")}
+          data-tab="radar"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="m16.2 7.8-2 7.4-7.4 2 2-7.4z" />
+            <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+          </svg>
+          Radar
+          <span style={{
+            position: "absolute",
+            top: 5,
+            right: "calc(50% - 15px)",
+            width: 5,
+            height: 5,
+            borderRadius: "50%",
+            background: "#0A84FF",
+            boxShadow: "0 0 6px #0A84FF"
+          }} />
+        </button>
+
+        {/* 6. PORTFOLIO */}
         <button
           className={`tab ${activeTab === "portfolio" ? "active" : ""}`}
           onClick={() => navigateToTab("portfolio")}

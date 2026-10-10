@@ -377,7 +377,7 @@ body::before{
 .tabbar{
   flex:0 0 auto;
   display:grid;
-  grid-template-columns:repeat(5, 1fr);
+  grid-template-columns:repeat(6, 1fr);
   background:rgba(8, 11, 18, 0.94);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -8634,10 +8634,10 @@ body::before{
   max-width: 1240px !important; margin: 0 auto !important;
   padding: 20px clamp(12px, 2vw, 24px) 56px !important;
 }
-#screen-screener { padding: 0 !important; }
+#screen-screener, #screen-radar { padding: 0 !important; }
 @media (min-width: 900px) and (min-height: 861px) {
-  .app:has(#screen-screener.active) {width:100vw;max-width:1440px;height:100dvh;max-height:100dvh;border-radius:0;}
-  .app:has(#screen-screener.active) .topbar {padding-left:clamp(20px,3vw,48px);padding-right:clamp(20px,3vw,48px);}
+  .app:has(#screen-screener.active), .app:has(#screen-radar.active) {width:100vw;max-width:1440px;height:100dvh;max-height:100dvh;border-radius:0;}
+  .app:has(#screen-screener.active) .topbar, .app:has(#screen-radar.active) .topbar {padding-left:clamp(20px,3vw,48px);padding-right:clamp(20px,3vw,48px);}
 }
 [data-theme="light"] .screener-screen-root {
   --sc-surface: #fff; --sc-raised: #fff; --sc-inset: #f2f4f8; --sc-edge: rgba(30,41,59,.10);

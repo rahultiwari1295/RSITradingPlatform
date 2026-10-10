@@ -28,6 +28,13 @@ export interface BreakoutStockData {
   base_duration_years?: number;
   lifecycleState?: string;
   lifecycle_state?: string;
+  company_name?: string;
+  pattern_type?: string;
+  curr_price?: number;
+  currentPrice?: number;
+  breakout_level?: number;
+  stop_loss?: number;
+  stopLossPrice?: number;
 }
 
 interface BreakoutAnalystViewProps {
