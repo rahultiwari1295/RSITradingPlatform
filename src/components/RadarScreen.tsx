@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { quantsyncApi } from "../api/quantsyncApi";
 import { liveMarketSocket } from "../services/liveMarketSocket";
 import {
@@ -41,12 +41,13 @@ interface RadarScreenProps {
 
 type Setup = Record<string, any>;
 
-const TABS = [
-  { key: "confirmed", label: "Confirmed" },
-  { key: "retest", label: "Retest" },
-  { key: "near", label: "Near" },
-  { key: "risk", label: "At risk" },
-  { key: "closed", label: "Closed" },
+const STAGES = [
+  { key: "ready", label: "Ready", text: "<b>Ready to buy.</b> Price just broke above its trigger and is still close to it, so the risk is small." },
+  { key: "watch", label: "Watching", text: "<b>Almost there.</b> Price is just under its trigger. Wait for it to cross before buying." },
+  { key: "retest", label: "Retest", text: "<b>Second chance.</b> Price broke out, came back to test the trigger and is holding. Often a safer entry." },
+  { key: "moved", label: "Moved", text: "<b>Already moved.</b> Price ran well past its trigger. Buying now means chasing; most traders wait for a pullback." },
+  { key: "risk", label: "At risk", text: "<b>Broke down.</b> These setups failed. They are here so you can avoid them or exit." },
+  { key: "closed", label: "Closed", text: "<b>Track record.</b> Every finished trade, win or loss. This is what the win rate is built from." },
 ];
 
 const SORTS = [
@@ -108,8 +109,8 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
   const colors = useMemo(
     () =>
       isLight
-        ? { bg: "#F2F2F7", card: "#FFFFFF", card2: "#E5E5EA", ink: "#000000", mu: "rgba(60,60,67,0.6)", dim: "rgba(60,60,67,0.3)", line: "rgba(60,60,67,0.18)", bl: "#007AFF", gn: "#248A3D", rd: "#D70015", or: "#C93400", track: "rgba(120,120,128,0.16)", sh: "rgba(20,30,70,0.12)", bar: "rgba(249,249,249,0.92)" }
-        : { bg: "#0A0A0C", card: "#1C1C1E", card2: "#2C2C2E", ink: "#FFFFFF", mu: "rgba(235,235,245,0.6)", dim: "rgba(235,235,245,0.32)", line: "rgba(84,84,88,0.45)", bl: "#0A84FF", gn: "#30D158", rd: "#FF453A", or: "#FF9F0A", track: "rgba(120,120,128,0.24)", sh: "rgba(0,0,0,0.6)", bar: "rgba(28,28,30,0.85)" },
+        ? { bg: "#FFFFFF", ink: "#0B0D14", mu: "rgba(20,24,40,0.62)", acc: "#4F5BE8", gn: "#0E9F6E", rd: "#E11D48", am: "#B45309" }
+        : { bg: "#0C0E14", ink: "#F5F6F8", mu: "rgba(235,238,245,0.62)", acc: "#7C8CFF", gn: "#34D399", rd: "#FB7185", am: "#FBBF24" },
     [isLight]
   );
 
@@ -221,14 +222,13 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
     [tabBase, filters.pattern, sortKey]
   );
 
-  const tabCounts = [view.buyZone.length + view.runners.length, view.retest.length, view.radar.length, view.risk.length, null as number | null];
-
-  const activeList: Setup[] =
-    activeTab === 0 ? [...view.buyZone, ...view.runners] : activeTab === 1 ? view.retest : activeTab === 2 ? view.radar : activeTab === 3 ? view.risk : [];
+  const stageLists: Setup[][] = [view.buyZone, view.radar, view.retest, view.runners, view.risk, []];
+  const stageCounts = stageLists.map((l) => l.length);
+  const activeList: Setup[] = stageLists[activeTab] || [];
 
   // pattern chips with counts for the active tab (only patterns that exist)
   const patternChips = useMemo(() => {
-    const base = activeTab === 0 ? [...tabBase.buyZone, ...tabBase.runners] : activeTab === 1 ? tabBase.retest : activeTab === 2 ? tabBase.radar : tabBase.risk;
+    const base = [tabBase.buyZone, tabBase.radar, tabBase.retest, tabBase.runners, tabBase.risk, [] as Setup[]][activeTab];
     const counts: Record<string, number> = {};
     base.forEach((s) => {
       const id = normalizePatternId(s.pattern_type);
@@ -245,7 +245,7 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
 
   // ── closed trades ledger
   useEffect(() => {
-    if (activeTab !== 4) return;
+    if (activeTab !== 5) return;
     let alive = true;
     setClosedLoading(true);
     const params: any = { limit: 80 };
@@ -261,27 +261,6 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
       alive = false;
     };
   }, [activeTab, filters.timeframe, filters.pattern, closedFilter]);
-
-  // ── verdict (driven by the engine's classification, not by raw server flags)
-  const getVerdict = (s: Setup) => {
-    const bk = Number(s.breakout_level) || 0;
-    const cmp = Number(s.curr_price) || 0;
-    const sl = Number(s.stop_loss) || 0;
-    const d = bk > 0 ? ((cmp - bk) / bk) * 100 : 0;
-    const ad = Math.abs(d);
-    switch (s._tradeType) {
-      case "BUY_ZONE":
-        return { color: colors.gn, t: "Buy zone", s: `${d >= 0 ? "+" : ""}${d.toFixed(1)}% from pivot ₹${bk.toFixed(1)}` };
-      case "RETEST":
-        return { color: colors.bl, t: "Retest zone", s: `Testing ₹${bk.toFixed(1)} as support` };
-      case "RADAR":
-        return { color: colors.bl, t: "Near breakout", s: `${ad.toFixed(1)}% below · trigger above ₹${bk.toFixed(1)}` };
-      case "RUNNER":
-        return { color: colors.or, t: "Running", s: `${d.toFixed(1)}% above pivot ₹${bk.toFixed(1)} · don't chase` };
-      default:
-        return { color: colors.rd, t: "At risk", s: `${ad.toFixed(1)}% ${d < 0 ? "below" : "from"} pivot${sl > 0 ? ` · stop ₹${sl.toFixed(1)}` : ""}` };
-    }
-  };
 
   // ── detail sheet: real chart only
   useEffect(() => {
@@ -349,23 +328,197 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
     return (gatesMap as any)[code] || Object.values(gatesMap as any).find((g: any) => code.includes(g.pattern_type) || (g.pattern_type && g.pattern_type.includes(code))) || null;
   };
 
-  // ── UI pieces
-  const Chip = ({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) => (
-    <button
-      onClick={onClick}
-      style={{
-        flex: "0 0 auto",
-        padding: "6px 12px",
-        borderRadius: 99,
-        border: `0.5px solid ${colors.line}`,
-        background: on ? colors.bl : colors.card,
-        color: on ? "#FFFFFF" : colors.ink,
-        fontSize: 12,
-        fontWeight: 600,
-        cursor: "pointer",
-        whiteSpace: "nowrap",
+
+  // ── plain-language verdicts
+  const verdictOf = (s: Setup) => {
+    switch (s._tradeType) {
+      case "BUY_ZONE":
+      case "RETEST":
+        return { w: "Good to buy", c: colors.gn };
+      case "RADAR":
+        return { w: "Wait", c: colors.acc };
+      case "RUNNER":
+        return { w: "Don't chase", c: colors.am };
+      default:
+        return { w: "At risk", c: colors.rd };
+    }
+  };
+  const diffOf = (s: Setup) => {
+    const bk = Number(s.breakout_level) || 0;
+    const cmp = Number(s.curr_price) || 0;
+    return bk > 0 ? ((cmp - bk) / bk) * 100 : 0;
+  };
+  const whyText = (s: Setup) => {
+    const bk = Number(s.breakout_level) || 0;
+    const sl = Number(s.stop_loss) || 0;
+    const d = diffOf(s);
+    const a = Math.abs(d).toFixed(1);
+    switch (s._tradeType) {
+      case "BUY_ZONE":
+        return `Broke above ₹${fmt(bk, 1)} and is only ${a}% past it.${sl > 0 ? " Stop-loss is close, so risk is small." : ""}`;
+      case "RETEST":
+        return `Back testing ₹${fmt(bk, 1)} after the breakout, and holding.`;
+      case "RADAR":
+        return `${a}% under its ₹${fmt(bk, 1)} trigger. Wait for a close above it.`;
+      case "RUNNER":
+        return `${d.toFixed(1)}% above its trigger already. Wait for a dip to ₹${fmt(bk, 1)}.`;
+      default:
+        return `${a}% ${d < 0 ? "below" : "from"} its ₹${fmt(bk, 1)} trigger${sl > 0 ? `. Exit level ₹${fmt(sl, 1)}` : ""}.`;
+    }
+  };
+
+  // ── hero count-up
+  const readyCount = view.buyZone.length + view.retest.length;
+  const [shownReady, setShownReady] = useState(0);
+  useEffect(() => {
+    if (isLoading) return;
+    let raf = 0;
+    const from = 0;
+    const t0 = performance.now();
+    const step = (n: number) => {
+      const k = Math.min(1, (n - t0) / 900);
+      setShownReady(Math.round(from + (readyCount - from) * (1 - Math.pow(1 - k, 3))));
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [readyCount, isLoading]);
+
+  // ── top picks: best reward for the risk, weighted by the pattern's real win rate
+  const topPicks = useMemo(() => {
+    const score = (s: Setup) => {
+      const st = patternStats(s);
+      const win = st ? Number(st.win_rate_pct) : 50;
+      return rewardRisk(s) * win;
+    };
+    return [...view.buyZone, ...view.retest]
+      .filter((s) => rewardRisk(s) > 0)
+      .sort((a, b) => score(b) - score(a))
+      .slice(0, 4);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, patAcc]);
+
+  // ── scroll-driven depth (no pointer/hover movement)
+  const rootRef = useRef<HTMLDivElement>(null);
+  const picksRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = typeof window !== "undefined" && !!window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const runFx = () => {
+    const sc = rootRef.current;
+    if (!sc || reduceMotion) return;
+    const y = sc.scrollTop;
+    const h = sc.clientHeight || 1;
+    const pr = sc.getBoundingClientRect();
+    const aura = sc.querySelector<HTMLElement>(".rdr-aura");
+    if (aura) aura.style.setProperty("--py", `${-y * 0.3}px`);
+    const hero = sc.querySelector<HTMLElement>(".rdr-hero");
+    if (hero) {
+      const k = Math.min(1, y / 360);
+      hero.style.setProperty("--hs", (1 - k * 0.1).toFixed(3));
+      hero.style.setProperty("--hy", `${(y * 0.35).toFixed(1)}px`);
+      hero.style.setProperty("--ho", (1 - k * 0.9).toFixed(3));
+    }
+    sc.querySelectorAll<HTMLElement>(".rdr-sec").forEach((e) => {
+      const r = e.getBoundingClientRect();
+      const t = Math.max(0, Math.min(1, (pr.bottom - r.top) / (h * 0.35)));
+      e.style.setProperty("--ro", t.toFixed(3));
+      e.style.setProperty("--ry2", `${((1 - t) * 24).toFixed(1)}px`);
+    });
+    sc.querySelectorAll<HTMLElement>(".rdr-card").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      const c = (r.top + r.height / 2 - pr.top) / h;
+      const enter = Math.max(0, (c - 0.62) / 0.38);
+      const leave = Math.max(0, (0.2 - c) / 0.2);
+      let e = Math.min(1, enter);
+      e = e * e;
+      el.style.setProperty("--rx", `${(e * 22 + leave * -10).toFixed(2)}deg`);
+      el.style.setProperty("--s", (1 - e * 0.09 - leave * 0.05).toFixed(3));
+      el.style.setProperty("--ty", `${(e * 46 - leave * 14).toFixed(1)}px`);
+      el.style.setProperty("--o", Math.max(0, 1 - e * 0.85 - leave * 0.7).toFixed(3));
+      el.style.setProperty("--bl", `${(e * 3).toFixed(2)}px`);
+    });
+    runPicksFx();
+  };
+  const runPicksFx = () => {
+    const box = picksRef.current;
+    if (!box || reduceMotion) return;
+    const br = box.getBoundingClientRect();
+    const mid = br.left + br.width / 2;
+    box.querySelectorAll<HTMLElement>(".rdr-pick").forEach((p) => {
+      const r = p.getBoundingClientRect();
+      const off = (r.left + r.width / 2 - mid) / br.width;
+      const d = Math.min(1, Math.abs(off));
+      p.style.setProperty("--s", (1 - d * 0.1).toFixed(3));
+      p.style.setProperty("--o", (1 - d * 0.45).toFixed(3));
+      p.style.setProperty("--ry", `${(-off * 38).toFixed(1)}deg`);
+      p.style.setProperty("--sx", `${(off * 120 - 10).toFixed(0)}%`);
+    });
+  };
+  useEffect(() => {
+    const sc = rootRef.current;
+    if (!sc) return;
+    let raf = 0;
+    const on = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(runFx);
+    };
+    sc.addEventListener("scroll", on, { passive: true });
+    window.addEventListener("resize", on);
+    return () => {
+      cancelAnimationFrame(raf);
+      sc.removeEventListener("scroll", on);
+      window.removeEventListener("resize", on);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    const id = requestAnimationFrame(runFx);
+    return () => cancelAnimationFrame(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, activeList.length, isLoading, closedRecords.length, topPicks.length]);
+
+  // ── tooltips + first-visit tour + track-record sheet
+  const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null);
+  const [trustOpen, setTrustOpen] = useState(false);
+  const TOUR = [
+    ["Welcome to Radar", "We scan every NSE stock each day and show only the few worth your attention, with plain reasons."],
+    ["Follow the journey", "Stocks move through Watching → Ready → Retest → Moved. Tap a stage to see what to do at that point."],
+    ["Read the bar", "The dot is today's price. The red side is where you exit if you're wrong, the green side is where you aim. Tap any card for the full plan."],
+  ];
+  const [tourStep, setTourStep] = useState<number | null>(() => {
+    try {
+      return localStorage.getItem("radar_tour_v1") ? null : 0;
+    } catch (_) {
+      return 0;
+    }
+  });
+  const endTour = () => {
+    setTourStep(null);
+    try {
+      localStorage.setItem("radar_tour_v1", "1");
+    } catch (_) {}
+  };
+  const GLOSS: Record<string, string> = {
+    strength: "A 0-100 score for how clean and well-supported the pattern is. Higher is better.",
+    rr: "For every ₹1 you risk, how many ₹ you could make if the target is reached.",
+    trigger: "The price a stock needs to cross to confirm the pattern. Buying above it is the signal.",
+  };
+  const Tip = ({ k, children }: { k: string; children: React.ReactNode }) => (
+    <span
+      className="rdr-tip"
+      onClick={(e) => {
+        e.stopPropagation();
+        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        setTip({ text: GLOSS[k], x: Math.max(12, Math.min(window.innerWidth - 252, r.left)), y: r.top });
       }}
     >
+      {children}
+    </span>
+  );
+
+  // ── pieces
+  const Chip = ({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) => (
+    <button className={`rdr-chip${on ? " on" : ""}`} onClick={onClick}>
       {children}
     </button>
   );
@@ -376,90 +529,70 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
     const tg = Number(s.target_1) || 0;
     const cmp = Number(s.curr_price) || 0;
     const pts = [sl, bk, tg, cmp].filter((v) => v > 0);
-    if (pts.length < 2) return null;
-    const lo = Math.min(...pts) * 0.985;
-    const hi = Math.max(...pts) * 1.015;
-    const pct = (v: number) => Math.max(3, Math.min(97, ((v - lo) / (hi - lo)) * 100));
-    const mark = (v: number, color: string, label: string) =>
-      v > 0 ? (
-        <>
-          <div style={{ position: "absolute", left: `${pct(v)}%`, top: 11, width: 2, height: 18, background: color, borderRadius: 1 }} />
-          <div style={{ position: "absolute", left: `${pct(v)}%`, top: 30, transform: "translateX(-50%)", fontSize: 10, color: colors.mu, whiteSpace: "nowrap" }}>
-            {label} {fmt0(v)}
-          </div>
-        </>
-      ) : null;
+    if (pts.length < 2 || !(bk > 0)) return null;
+    const lo = Math.min(...pts) * 0.99;
+    const hi = Math.max(...pts) * 1.01;
+    const P = (v: number) => Math.max(3, Math.min(97, ((v - lo) / (hi - lo)) * 100));
+    // nudge labels apart so they never overlap
+    const marks = [
+      sl > 0 ? { v: sl, t: `Stop ${fmt0(sl)}` } : null,
+      { v: bk, t: `Trigger ${fmt0(bk)}` },
+      tg > 0 ? { v: tg, t: `Target ${fmt0(tg)}` } : null,
+    ].filter(Boolean) as { v: number; t: string }[];
+    let last = -100;
+    const placed = marks.map((m) => {
+      let x = P(m.v);
+      if (x - last < 22) x = last + 22;
+      last = x;
+      return { ...m, x: Math.min(92, x) };
+    });
     return (
-      <div style={{ position: "relative", height: 42, margin: "6px 2px 2px" }}>
-        <div style={{ position: "absolute", left: 0, right: 0, top: 18, height: 4, borderRadius: 2, background: `linear-gradient(90deg, ${colors.rd}, ${colors.track} 38%, ${colors.track} 62%, ${colors.gn})`, opacity: 0.6 }} />
-        {mark(sl, colors.rd, "Stop")}
-        {mark(bk, colors.bl, "Pivot")}
-        {mark(tg, colors.gn, "Target")}
-        <div style={{ position: "absolute", left: `${pct(cmp)}%`, top: 13, width: 14, height: 14, marginLeft: -7, borderRadius: "50%", background: "#FFFFFF", border: `3px solid ${colors.bl}`, boxShadow: "0 2px 6px rgba(0,0,0,0.4)", transition: "left 0.4s ease" }} />
+      <div className="rdr-ruler">
+        <div className="rdr-rt">
+          {sl > 0 && <i style={{ left: `${P(sl)}%`, width: `${P(bk) - P(sl)}%`, background: "rgba(251,113,133,.45)" }} />}
+          {tg > 0 && <i style={{ left: `${P(bk)}%`, width: `${P(tg) - P(bk)}%`, background: "rgba(52,211,153,.45)" }} />}
+        </div>
+        <div className="rdr-rd" style={{ left: `${P(cmp)}%` }} />
+        {placed.map((m) => (
+          <div key={m.t} className="rdr-rl" style={{ left: `${m.x}%` }}>
+            {m.t}
+          </div>
+        ))}
       </div>
     );
   };
 
-  const pill = (text: string, color?: string) => (
-    <span style={{ padding: "2px 7px", borderRadius: 99, background: colors.track, color: color || colors.mu, fontSize: 10.5, fontWeight: 600 }}>{text}</span>
-  );
-
-  const renderCard = (s: Setup, idx: number, dim = false) => {
-    const v = getVerdict(s);
-    const hasScore = Number(s.dna_score) > 0;
-    const score = Number(s.dna_score) || 0;
-    const scoreBg = score >= 75 ? colors.gn : score >= 50 ? colors.or : colors.rd;
-    const vol = Number(s.volume_ratio_20d) || 0;
-    const rr = rewardRisk(s);
-    const rsi = Number(s.rsi) || 0;
+  const renderCard = (s: Setup, idx: number) => {
+    const v = verdictOf(s);
+    const d = diffOf(s);
+    const st = patternStats(s);
     return (
-      <div
-        key={`${s.symbol}-${idx}`}
-        onClick={() => setSelectedStock(s)}
-        style={{ position: "relative", background: colors.card, borderRadius: 20, padding: 16, marginBottom: 12, border: `1px solid ${colors.line}`, boxShadow: `0 6px 18px -6px ${colors.sh}`, cursor: "pointer", opacity: dim ? 0.8 : 1, touchAction: "manipulation" }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+      <div key={`${s.symbol}-${idx}`} className="rdr-card" onClick={() => setSelectedStock(s)}>
+        <div className="rdr-row">
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: colors.ink, letterSpacing: "0.02em" }}>{s.symbol}</div>
-            <div style={{ fontSize: 12, color: colors.mu, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {s.company_name || s.symbol}
-              {s.sector ? ` · ${s.sector}` : ""}
+            <div className="rdr-cs">{s.symbol}</div>
+            <div className="rdr-cc">{s.company_name || s.symbol}</div>
+          </div>
+          <div style={{ flexShrink: 0 }}>
+            <div className="rdr-cp rdr-num">₹{fmt(s.curr_price)}</div>
+            <div className="rdr-cd rdr-num" style={{ color: d >= 0 ? colors.gn : colors.rd }}>
+              {d >= 0 ? "+" : ""}
+              {d.toFixed(1)}%
             </div>
           </div>
-          <div style={{ textAlign: "right", flexShrink: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: colors.ink }}>₹{fmt(s.curr_price)}</div>
-            {hasScore && (
-              <div style={{ display: "inline-block", padding: "2px 8px", borderRadius: 99, background: scoreBg, color: "#FFFFFF", fontSize: 11, fontWeight: 700, marginTop: 3 }}>DNA {Math.round(score)}</div>
-            )}
-          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 10, fontSize: 13, fontWeight: 600, flexWrap: "wrap" }}>
-          <span style={{ width: 8, height: 8, borderRadius: "50%", background: v.color, boxShadow: `0 0 6px ${v.color}` }} />
-          <span style={{ color: v.color }}>{v.t}</span>
-          <span style={{ color: colors.mu, fontWeight: 400, fontSize: 12 }}>{v.s}</span>
-        </div>
-        <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
-          {patLabel(s) && pill(patLabel(s))}
-          {pill(timeframeLabel(s.timeframe))}
-          {Number(s.is_fno) === 1 || s.is_fno === true ? pill("F&O") : null}
-          {(() => {
-            const st = patternStats(s);
-            return st ? pill(`${Number(st.win_rate_pct).toFixed(0)}% win · ${st.resolved} trades`, Number(st.win_rate_pct) >= 50 ? colors.gn : colors.or) : null;
-          })()}
+        <div className="rdr-vline">
+          <span className="rdr-vtag" style={{ color: v.c, background: `${v.c}24` }}>
+            {v.w}
+          </span>
+          <span className="rdr-vtxt">{whyText(s)}</span>
         </div>
         {renderRuler(s)}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 6, paddingTop: 10, borderTop: `0.5px solid ${colors.line}`, fontSize: 11, color: colors.mu }}>
-          {[
-            ["Reward/Risk", rr > 0 ? `${rr.toFixed(1)}×` : "—"],
-            ["Volume surge", vol > 0 ? `${vol.toFixed(1)}×` : "—"],
-            ["RSI (14)", rsi > 0 ? rsi.toFixed(0) : "—"],
-          ].map(([k, val]) => (
-            <div key={k}>
-              <div>{k}</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: colors.ink, marginTop: 1 }}>{val}</div>
-            </div>
-          ))}
-        </div>
+        {st && (
+          <div className="rdr-foot rdr-num">
+            {Number(st.win_rate_pct).toFixed(0)}% of {st.resolved} similar setups won
+          </div>
+        )}
       </div>
     );
   };
@@ -468,28 +601,30 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
     const v = closedTradeView(c);
     const color = v.isWin ? colors.gn : v.isLoss ? colors.rd : colors.mu;
     return (
-      <div key={`${c.symbol}-${c.breakout_date}-${idx}`} style={{ background: colors.card, borderRadius: 18, padding: 14, marginBottom: 10, border: `1px solid ${colors.line}` }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div key={`${c.symbol}-${c.breakout_date}-${idx}`} className="rdr-card">
+        <div className="rdr-row">
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>{c.symbol}</div>
-            <div style={{ fontSize: 11.5, color: colors.mu }}>
+            <div className="rdr-cs">{c.symbol}</div>
+            <div className="rdr-cc">
               {v.pattern} · {timeframeLabel(c.timeframe)} · {v.days} bar{v.days === 1 ? "" : "s"}
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 17, fontWeight: 800, color }}>
+            <div className="rdr-cp rdr-num" style={{ color }}>
               {v.pnl >= 0 ? "+" : ""}
               {v.pnl.toFixed(1)}%
             </div>
-            <div style={{ fontSize: 11, color, fontWeight: 600 }}>{v.isWin ? "Target hit" : v.isLoss ? "Stopped out" : String(c.outcome_status || "Closed")}</div>
+            <div className="rdr-cd" style={{ color }}>
+              {v.isWin ? "Target hit" : v.isLoss ? "Stopped out" : String(c.outcome_status || "Closed")}
+            </div>
           </div>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 11, color: colors.mu }}>
+        <div className="rdr-foot rdr-num" style={{ display: "flex", justifyContent: "space-between" }}>
           <span>
             {c.breakout_date || "—"} → {c.exit_date || "—"}
           </span>
           <span>
-            Pivot ₹{fmt(v.pivot)}
+            Trigger ₹{fmt(v.pivot)}
             {v.peakRun ? ` · peak +${v.peakRun.toFixed(1)}%` : ""}
           </span>
         </div>
@@ -497,106 +632,98 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
     );
   };
 
-  const sectionHeader = (title: string, n: number, top = 14) => (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: `${top}px 4px 10px` }}>
-      <span style={{ fontSize: 14, fontWeight: 700 }}>{title}</span>
-      <span style={{ fontSize: 12, color: colors.mu }}>{n} setups</span>
+  const sectionHeader = (title: string, right: React.ReactNode) => (
+    <div className="rdr-sec">
+      <h2>{title}</h2>
+      <span>{right}</span>
     </div>
   );
 
-  const sheetShell = (onClose: () => void, children: React.ReactNode, maxH = "88vh") => (
-    <div style={{ position: "fixed", inset: 0, zIndex: 90, background: "rgba(0,0,0,0.6)", display: "flex", flexDirection: "column", justifyContent: "flex-end" }} onClick={onClose}>
-      <div style={{ background: colors.bg, borderRadius: "24px 24px 0 0", maxHeight: maxH, overflowY: "auto", padding: "16px 18px 36px", boxShadow: "0 -10px 40px rgba(0,0,0,0.4)" }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: colors.dim, margin: "0 auto 14px" }} />
+  const label = (t: string) => <div className="rdr-lab rdr-st">{t}</div>;
+  const row = (k: React.ReactNode, val: React.ReactNode, last = false) => (
+    <div className="rdr-kv" style={last ? { borderBottom: "none" } : undefined}>
+      <span>{k}</span>
+      <b className="rdr-num">{val}</b>
+    </div>
+  );
+
+  const sheetShell = (onClose: () => void, children: React.ReactNode, maxH = "92%") => (
+    <>
+      <div className="rdr-scrim" onClick={onClose} />
+      <div className="rdr-sheet" style={{ maxHeight: maxH }} onClick={() => setTip(null)}>
+        <div className="rdr-grab" />
         {children}
       </div>
-    </div>
+    </>
   );
 
-  const label = (t: string) => <div style={{ fontSize: 12, fontWeight: 700, color: colors.mu, textTransform: "uppercase", marginBottom: 8 }}>{t}</div>;
-  const row = (k: string, val: React.ReactNode, last = false) => (
-    <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: last ? "none" : `0.5px solid ${colors.line}` }}>
-      <span style={{ color: colors.mu }}>{k}</span>
-      <span style={{ fontWeight: 700 }}>{val}</span>
-    </div>
-  );
-
-  // ── chart
+  // ── detail chart (real candles only)
   const renderChart = (s: Setup) => {
-    if (chartState === "loading" || chartState === "idle") return <div style={{ marginTop: 14, padding: "30px 0", textAlign: "center", fontSize: 12, color: colors.mu }}>Loading chart…</div>;
-    if (chartState === "error" || !detailCandles.length) return <div style={{ marginTop: 14, padding: "30px 0", textAlign: "center", fontSize: 12, color: colors.mu }}>Chart data unavailable</div>;
+    if (chartState === "loading" || chartState === "idle") return <div className="rdr-chartmsg">Loading chart…</div>;
+    if (chartState === "error" || !detailCandles.length) return <div className="rdr-chartmsg">Chart data unavailable</div>;
     const N = detailCandles.length;
-    const W = 340, H = 180, pt = 16, pb = 12, pl = 6, pr = 46;
+    const W = 340, H = 170, pt = 12, pb = 12, pl = 6, pr = 54;
     const ch = H - pt - pb;
     const cw = W - pl - pr;
-    const lo = Math.min(...detailCandles.map((b) => b.l)) * 0.985;
-    const hi = Math.max(...detailCandles.map((b) => b.h)) * 1.015;
+    const bk = Number(s.breakout_level) || 0, sl = Number(s.stop_loss) || 0, tg = Number(s.target_1) || 0, cmp = Number(s.curr_price) || 0;
+    const lo = Math.min(...detailCandles.map((b) => b.l), sl > 0 ? sl : Infinity) * 0.99;
+    const hi = Math.max(...detailCandles.map((b) => b.h), tg > 0 ? tg : 0) * 1.01;
     const rg = hi - lo || 1;
-    const getY = (v: number) => pt + ch - ((Math.min(hi, Math.max(lo, v)) - lo) / rg) * ch;
-    const getX = (i: number) => pl + (i / (N - 1 || 1)) * cw;
+    const Y = (v: number) => pt + ch - ((Math.min(hi, Math.max(lo, v)) - lo) / rg) * ch;
+    const X = (i: number) => pl + (i / (N - 1 || 1)) * cw;
     const bw = Math.max(2, Math.min(6, (cw / N) * 0.65));
-    const line = (v: number, color: string, dashed = true) =>
+    const ln = (v: number, color: string, text: string) =>
       v > 0 ? (
         <g>
-          <line x1={pl} x2={W - pr} y1={getY(v)} y2={getY(v)} stroke={color} strokeWidth="1" strokeDasharray={dashed ? "3 3" : undefined} />
-          <text x={W - 2} y={getY(v) + 3} textAnchor="end" fill={color} fontSize="9" fontWeight="700">₹{v.toFixed(0)}</text>
+          <line x1={pl} x2={W - pr + 4} y1={Y(v)} y2={Y(v)} stroke={color} strokeWidth="1" strokeDasharray="3 4" />
+          <text x={W - 2} y={Y(v) + 3} textAnchor="end" fill={color} fontSize="9.5" fontWeight="700">{text}</text>
         </g>
       ) : null;
     return (
-      <div style={{ marginTop: 14 }}>
-        <div style={{ background: isLight ? "#F8F9FA" : "#141518", borderRadius: 12, padding: "8px 6px", overflow: "hidden" }}>
-          <svg
-            viewBox={`0 0 ${W} ${H}`}
-            style={{ width: "100%", height: "auto", display: "block", touchAction: "pan-y" }}
-            onPointerMove={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-              setHoveredCandle(detailCandles[Math.min(N - 1, Math.floor((x / rect.width) * N))]);
-            }}
-            onPointerLeave={() => setHoveredCandle(null)}
-          >
-            {(() => {
-              const bk = Number(s.breakout_level) || 0, sl = Number(s.stop_loss) || 0, tg = Number(s.target_1) || 0;
-              return (
-                <>
-                  {sl > 0 && bk > sl && <rect x={pl} y={getY(bk)} width={W - pr - pl} height={Math.max(0, getY(sl) - getY(bk))} fill={colors.rd} opacity="0.08" />}
-                  {tg > bk && bk > 0 && <rect x={pl} y={getY(tg)} width={W - pr - pl} height={Math.max(0, getY(bk) - getY(tg))} fill={colors.gn} opacity="0.08" />}
-                </>
-              );
-            })()}
-            {line(Number(s.breakout_level) || 0, colors.bl)}
-            {line(Number(s.stop_loss) || 0, colors.rd)}
-            {line(Number(s.target_1) || 0, colors.gn)}
-            {detailCandles.map((b, i) => {
-              const x = getX(i);
-              const c = b.c >= b.o ? colors.gn : colors.rd;
-              const yTop = getY(Math.max(b.o, b.c));
-              const yBot = getY(Math.min(b.o, b.c));
-              return (
-                <g key={i}>
-                  <line x1={x} x2={x} y1={getY(b.h)} y2={getY(b.l)} stroke={c} strokeWidth="1" />
-                  <rect x={x - bw / 2} y={yTop} width={bw} height={Math.max(1.5, yBot - yTop)} fill={c} rx="0.5" />
-                </g>
-              );
-            })}
-            {Number(s.curr_price) > 0 && (
-              <g>
-                <line x1={pl} x2={W - pr} y1={getY(Number(s.curr_price))} y2={getY(Number(s.curr_price))} stroke={colors.ink} strokeWidth="0.8" opacity="0.7" />
-                <rect x={W - pr + 1} y={getY(Number(s.curr_price)) - 7} width={44} height={14} rx="3" fill={colors.ink} />
-                <text x={W - pr + 23} y={getY(Number(s.curr_price)) + 3} textAnchor="middle" fill={colors.bg} fontSize="9" fontWeight="700">{Number(s.curr_price).toFixed(1)}</text>
+      <div className="rdr-chart rdr-st">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          style={{ width: "100%", display: "block", touchAction: "pan-y" }}
+          onPointerMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+            setHoveredCandle(detailCandles[Math.min(N - 1, Math.floor((x / rect.width) * N))]);
+          }}
+          onPointerLeave={() => setHoveredCandle(null)}
+        >
+          {sl > 0 && bk > sl && <rect x={pl} y={Y(bk)} width={W - pr - pl + 4} height={Math.max(0, Y(sl) - Y(bk))} fill={colors.rd} opacity="0.09" />}
+          {tg > bk && bk > 0 && <rect x={pl} y={Y(tg)} width={W - pr - pl + 4} height={Math.max(0, Y(bk) - Y(tg))} fill={colors.gn} opacity="0.09" />}
+          {ln(bk, colors.acc, "Trigger")}
+          {ln(sl, colors.rd, "Stop")}
+          {ln(tg, colors.gn, "Target")}
+          {detailCandles.map((b, i) => {
+            const c = b.c >= b.o ? colors.gn : colors.rd;
+            const yT = Y(Math.max(b.o, b.c));
+            const yB = Y(Math.min(b.o, b.c));
+            return (
+              <g key={i} className="rdr-cand" style={{ ["--c" as any]: i }}>
+                <line x1={X(i)} x2={X(i)} y1={Y(b.h)} y2={Y(b.l)} stroke={c} strokeWidth="1" />
+                <rect x={X(i) - bw / 2} y={yT} width={bw} height={Math.max(1.5, yB - yT)} fill={c} rx="0.8" />
               </g>
-            )}
-          </svg>
-          <div style={{ fontSize: 11, color: colors.mu, marginTop: 4, minHeight: 18 }}>
-            {hoveredCandle ? (
-              <span>
-                <b>{hoveredCandle.time}</b> · O {hoveredCandle.o.toFixed(1)} · H {hoveredCandle.h.toFixed(1)} · L {hoveredCandle.l.toFixed(1)} · C{" "}
-                <span style={{ color: hoveredCandle.c >= hoveredCandle.o ? colors.gn : colors.rd, fontWeight: 700 }}>{hoveredCandle.c.toFixed(1)}</span>
-              </span>
-            ) : (
-              "Touch or drag across the chart to inspect sessions"
-            )}
-          </div>
+            );
+          })}
+          {cmp > 0 && (
+            <g>
+              <line x1={pl} x2={W - pr + 4} y1={Y(cmp)} y2={Y(cmp)} stroke={colors.ink} strokeWidth="0.8" opacity="0.6" />
+              <rect x={W - pr + 5} y={Y(cmp) - 8} width={48} height={16} rx="4" fill={colors.ink} />
+              <text x={W - pr + 29} y={Y(cmp) + 3.5} textAnchor="middle" fill={colors.bg} fontSize="10" fontWeight="800">{cmp.toFixed(1)}</text>
+            </g>
+          )}
+        </svg>
+        <div style={{ fontSize: 11, color: colors.mu, marginTop: 6, minHeight: 16 }}>
+          {hoveredCandle ? (
+            <span>
+              <b>{hoveredCandle.time}</b> · O {hoveredCandle.o.toFixed(1)} · H {hoveredCandle.h.toFixed(1)} · L {hoveredCandle.l.toFixed(1)} · C{" "}
+              <span style={{ color: hoveredCandle.c >= hoveredCandle.o ? colors.gn : colors.rd, fontWeight: 700 }}>{hoveredCandle.c.toFixed(1)}</span>
+            </span>
+          ) : (
+            "Touch or drag across the chart to inspect sessions"
+          )}
         </div>
       </div>
     );
@@ -604,7 +731,7 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
 
   const emptyState = (t: string, sub: string) => (
     <div style={{ textAlign: "center", padding: "40px 20px", color: colors.mu }}>
-      <div style={{ fontSize: 16, fontWeight: 700, color: colors.ink, margin: "8px 0" }}>{t}</div>
+      <div style={{ fontSize: 17, fontWeight: 700, color: colors.ink, margin: "8px 0" }}>{t}</div>
       <div>{sub}</div>
     </div>
   );
@@ -615,56 +742,122 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
     setMlGateOn(true);
   };
 
+  const sheetOpen = !!selectedStock || trustOpen || isSortOpen || isFilterOpen;
+  const dateStr = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
+  const overall = patAcc?.overall;
+
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%", display: "flex", flexDirection: "column", background: colors.bg, color: colors.ink, fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', sans-serif", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
-      {/* Header */}
-      <div style={{ position: "sticky", top: 0, zIndex: 30, background: colors.bar, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: `0.5px solid ${colors.line}`, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, letterSpacing: "-0.02em" }}>Pattern Radar</h1>
-          <div style={{ fontSize: 12, color: isStale ? colors.or : colors.mu, marginTop: 1 }}>
-            {scanDate ? `Scan ${scanDate}${isStale ? ` · latest expected ${expected}` : ""}` : "Daily scan"}
+    <div ref={rootRef} className={`rdr${isLight ? " light" : ""}`}>
+      <style>{RDR_CSS}</style>
+      <div className="rdr-aura" />
+      <div className={`rdr-content${sheetOpen ? " recede" : ""}`}>
+        {/* Top bar */}
+        <div className="rdr-top">
+          <div className="rdr-brand">Radar</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="rdr-ibtn" onClick={() => setIsFilterOpen(true)} aria-label="Filters" style={{ width: "auto", padding: "0 14px", fontSize: 13, fontWeight: 650 }}>
+              Filters{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ""}
+            </button>
+            <button className="rdr-ibtn" onClick={() => setTourStep(0)} aria-label="Show the tour">?</button>
           </div>
         </div>
-        <button onClick={() => setIsFilterOpen(true)} style={{ padding: "7px 14px", borderRadius: 14, background: colors.track, border: "none", color: colors.ink, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-          Filters
-          {activeFilterCount > 0 && <span style={{ marginLeft: 6, padding: "1px 6px", borderRadius: 10, background: colors.bl, color: "#FFFFFF", fontSize: 10, fontWeight: 700 }}>{activeFilterCount}</span>}
-        </button>
-      </div>
 
-      <div style={{ padding: "14px 16px 80px", maxWidth: 900, width: "100%", margin: "0 auto" }}>
-        {/* Search */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, height: 40, borderRadius: 12, background: colors.track, padding: "0 12px", marginBottom: 12 }}>
-          <input type="search" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Search symbol or company" style={{ flex: 1, background: "none", border: "none", outline: "none", color: colors.ink, fontSize: 14 }} />
-          {searchInput && (
-            <button onClick={() => setSearchInput("")} style={{ background: "none", border: "none", color: colors.mu, cursor: "pointer", fontSize: 14 }}>
-              ✕
-            </button>
+        {/* Hero */}
+        <div className="rdr-hero">
+          <div className="rdr-date" style={{ color: isStale ? colors.am : undefined }}>
+            {dateStr}
+            {isStale ? ` · latest scan ${scanDate}` : ""}
+          </div>
+          <div className="rdr-big">
+            <em className="rdr-num">{isLoading ? "–" : shownReady}</em> {readyCount === 1 ? "stock is" : "stocks are"}
+            <br />
+            ready to buy today
+          </div>
+          <div className="rdr-sub">
+            {summary?.total_stocks ? `Out of ${Number(summary.total_stocks).toLocaleString("en-IN")} scanned, these` : "These"} few are at a good price right now. We show you why, and when to stay away.
+          </div>
+          {winRate > 0 && (
+            <div className="rdr-trust" onClick={() => setTrustOpen(true)}>
+              <span className="rdr-dot" />
+              <span>
+                <b className="rdr-num">{winRate.toFixed(0)}%</b> of past setups hit their target
+                {overall?.resolved_trades ? <> · <b className="rdr-num">{fmt0(overall.resolved_trades)}</b> trades</> : null}
+              </span>
+              <span>›</span>
+            </div>
           )}
         </div>
 
-        {/* Tabs */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", background: colors.track, borderRadius: 12, padding: 3, marginBottom: 12 }}>
-          {TABS.map((t, idx) => {
-            const sel = idx === activeTab;
-            return (
-              <button key={t.key} onClick={() => setActiveTab(idx)} style={{ padding: "7px 2px", borderRadius: 9, border: "none", background: sel ? colors.card : "transparent", color: sel ? colors.ink : colors.mu, boxShadow: sel ? "0 2px 6px rgba(0,0,0,0.18)" : "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", fontSize: 11.5, fontWeight: sel ? 700 : 500, transition: "all 0.2s ease" }}>
-                <span>{t.label}</span>
-                <span style={{ fontSize: 10, opacity: 0.8, marginTop: 1 }}>{isLoading ? "…" : tabCounts[idx] ?? "—"}</span>
-              </button>
-            );
-          })}
+        {/* Search */}
+        <div className="rdr-search">
+          <input type="search" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Search any stock" />
+          {searchInput && <button onClick={() => setSearchInput("")} aria-label="Clear search">✕</button>}
         </div>
 
-        {/* Timeframe + pattern chips */}
-        <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 6, marginBottom: 4 }}>
+        {/* Top picks */}
+        {!isLoading && !loadError && topPicks.length > 0 && (
+          <>
+            {sectionHeader("Top picks", "Best reward for the risk")}
+            <div className="rdr-picks" ref={picksRef} onScroll={runPicksFx}>
+              {topPicks.map((s, i) => {
+                const v = verdictOf(s);
+                const d = diffOf(s);
+                const st = patternStats(s);
+                return (
+                  <div key={s.symbol} className="rdr-pick" onClick={() => setSelectedStock(s)}>
+                    <div className="rdr-shine" />
+                    <div className="rdr-rank">#{i + 1} pick</div>
+                    <div className="rdr-psym">{s.symbol}</div>
+                    <div className="rdr-cc">{s.company_name || s.symbol}</div>
+                    <div className="rdr-verdict" style={{ color: v.c }}>
+                      <i style={{ background: v.c, boxShadow: `0 0 10px ${v.c}` }} />
+                      {v.w}
+                    </div>
+                    <div className="rdr-why">{whyText(s)}</div>
+                    <div className="rdr-pprice rdr-num">
+                      ₹{fmt(s.curr_price)}
+                      <small style={{ color: d >= 0 ? colors.gn : colors.rd }}>
+                        {d >= 0 ? "+" : ""}
+                        {d.toFixed(1)}% vs trigger
+                      </small>
+                    </div>
+                    <div className="rdr-why rdr-num" style={{ marginTop: 10 }}>
+                      {st ? `${Number(st.win_rate_pct).toFixed(0)}% of similar setups won · ` : ""}
+                      {rewardRisk(s).toFixed(1)}× reward vs risk
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* Journey */}
+        {sectionHeader("All setups", isLoading ? "Loading…" : activeTab === 5 ? `${closedRecords.length} trades` : `${activeList.length} stocks${mlGateOn && hiddenByGate > 0 ? ` · ${hiddenByGate} low-edge hidden` : ""}`)}
+        <div className="rdr-journey">
+          {STAGES.map((st, idx) => (
+            <div key={st.key} className={`rdr-stage${idx === activeTab ? " on" : ""}${idx >= 4 ? " quiet" : ""}`} onClick={() => setActiveTab(idx)}>
+              <div className="n rdr-num">{idx === 5 ? "↺" : isLoading ? "…" : stageCounts[idx]}</div>
+              <div className="l">{st.label}</div>
+            </div>
+          ))}
+        </div>
+        <div className="rdr-stagetext" dangerouslySetInnerHTML={{ __html: STAGES[activeTab].text }} />
+
+        <div className="rdr-filters">
           {TF_CHIPS.map((t) => (
             <Chip key={t.id} on={filters.timeframe === t.id} onClick={() => setF({ timeframe: t.id })}>
               {t.label}
             </Chip>
           ))}
+          {activeTab !== 5 && (
+            <button className="rdr-chip" onClick={() => setIsSortOpen(true)} style={{ marginLeft: "auto" }}>
+              Sort: {SORTS.find((x) => x.key === sortKey)?.label} ⌄
+            </button>
+          )}
         </div>
-        {patternChips.length > 0 && activeTab !== 4 && (
-          <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, marginBottom: 4 }}>
+        {patternChips.length > 0 && activeTab !== 5 && (
+          <div className="rdr-filters">
             <Chip on={filters.pattern === "ALL"} onClick={() => setF({ pattern: "ALL" })}>
               All patterns
             </Chip>
@@ -676,67 +869,26 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
           </div>
         )}
 
-        {/* Win-rate strip (real numbers only) */}
-        {winRate > 0 && (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 14, background: colors.card, border: `1px solid ${colors.line}`, margin: "6px 0 12px", fontSize: 12, color: colors.mu }}>
-            <span>
-              Historical win rate <b style={{ color: colors.ink }}>{winRate.toFixed(1)}%</b>
-              {patAcc?.overall?.resolved_trades ? ` · ${fmt0(patAcc.overall.resolved_trades)} trades` : ""}
-            </span>
-            {patAcc?.overall?.avg_pnl_pct !== undefined && (
-              <span>
-                Avg <b style={{ color: Number(patAcc.overall.avg_pnl_pct) >= 0 ? colors.gn : colors.rd }}>{Number(patAcc.overall.avg_pnl_pct) >= 0 ? "+" : ""}{Number(patAcc.overall.avg_pnl_pct).toFixed(1)}%</b>
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Sort bar */}
-        {activeTab !== 4 && (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, padding: "0 4px" }}>
-            <span style={{ fontSize: 13, color: colors.mu }}>
-              {activeList.length} setups
-              {mlGateOn && hiddenByGate > 0 ? ` · ${hiddenByGate} low-edge hidden` : ""}
-            </span>
-            <button onClick={() => setIsSortOpen(true)} style={{ background: "none", border: "none", color: colors.bl, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-              Sort: {SORTS.find((s) => s.key === sortKey)?.label} ⌄
-            </button>
-          </div>
-        )}
-
-        {/* Loading */}
-        {isLoading && [1, 2, 3].map((i) => <div key={i} style={{ height: 140, borderRadius: 20, marginBottom: 12, background: colors.card, opacity: 0.6 }} />)}
+        {isLoading && [1, 2, 3].map((i) => <div key={i} className="rdr-skel" />)}
 
         {loadError && !isLoading && (
           <div style={{ textAlign: "center", padding: "40px 20px", color: colors.mu }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: colors.ink, margin: "8px 0" }}>Could not load scan setups</div>
-            <button onClick={() => setReloadKey((k) => k + 1)} style={{ marginTop: 10, padding: "8px 20px", borderRadius: 12, background: colors.bl, color: "#FFFFFF", border: "none", fontWeight: 600, cursor: "pointer" }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: colors.ink, margin: "8px 0" }}>Could not load scan setups</div>
+            <button className="rdr-cta" style={{ width: "auto", padding: "10px 24px" }} onClick={() => setReloadKey((k) => k + 1)}>
               Retry
             </button>
           </div>
         )}
 
-        {/* Lists */}
-        {!isLoading && !loadError && activeTab !== 4 && (
-          <div>
+        {!isLoading && !loadError && activeTab !== 5 && (
+          <div className="rdr-list">
             {activeList.length === 0 ? (
               <>
-                {emptyState("No setups match", "Try clearing search or filters.")}
+                {emptyState("Nothing here right now", activeFilterCount > 0 || searchInput ? "Try clearing search or filters." : "Check another stage, or come back after the next scan.")}
                 {(activeFilterCount > 0 || searchInput) && (
-                  <button onClick={clearAll} style={{ display: "block", margin: "0 auto", padding: "8px 18px", borderRadius: 12, background: colors.track, color: colors.bl, border: "none", fontWeight: 600, cursor: "pointer" }}>
+                  <button className="rdr-chip" style={{ display: "block", margin: "0 auto" }} onClick={clearAll}>
                     Clear all
                   </button>
-                )}
-              </>
-            ) : activeTab === 0 ? (
-              <>
-                {sectionHeader("Good to buy", view.buyZone.length)}
-                {view.buyZone.length === 0 ? <div style={{ fontSize: 12, color: colors.mu, margin: "0 4px 8px" }}>Nothing in the buy zone right now.</div> : view.buyZone.map((s, i) => renderCard(s, i))}
-                {view.runners.length > 0 && (
-                  <>
-                    {sectionHeader("Old trades · already running", view.runners.length, 20)}
-                    {view.runners.map((s, i) => renderCard(s, view.buyZone.length + i, true))}
-                  </>
                 )}
               </>
             ) : (
@@ -745,10 +897,9 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
           </div>
         )}
 
-        {/* Closed ledger */}
-        {activeTab === 4 && (
-          <div>
-            <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+        {activeTab === 5 && (
+          <div className="rdr-list">
+            <div className="rdr-filters" style={{ padding: "0 4px 12px" }}>
               {([["ALL", "All"], ["TARGET_HIT", "Target hit"], ["STOP_HIT", "Stopped out"]] as const).map(([id, l]) => (
                 <Chip key={id} on={closedFilter === id} onClick={() => setClosedFilter(id)}>
                   {l}
@@ -764,114 +915,111 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
             )}
           </div>
         )}
+        <div style={{ height: 90 }} />
       </div>
 
       {/* Detail sheet */}
       {selectedStock &&
-        sheetShell(
-          () => setSelectedStock(null),
-          <>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-              <div>
-                <h3 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>{selectedStock.symbol}</h3>
-                <div style={{ fontSize: 13, color: colors.mu, marginTop: 2 }}>
-                  {selectedStock.company_name || selectedStock.symbol}
-                  {selectedStock.sector ? ` · ${selectedStock.sector}` : ""}
-                  {Number(selectedStock.is_fno) === 1 || selectedStock.is_fno === true ? " · F&O" : ""}
+        (() => {
+          const s = selectedStock;
+          const v = verdictOf(s);
+          const c = getBreakoutClassification(s);
+          const st = patternStats(s);
+          const gate = mlGateFor(s) as any;
+          const items: [React.ReactNode, React.ReactNode][] = [];
+          if (Number(s.dna_score) > 0) items.push([<Tip k="strength">Setup strength</Tip>, `${Math.round(Number(s.dna_score))} / 100`]);
+          items.push(["Pattern", `${patLabel(s) || "—"} · ${timeframeLabel(s.timeframe)}`]);
+          if (st) items.push(["Past results of this pattern", <span style={{ color: Number(st.win_rate_pct) >= 50 ? colors.gn : colors.am }}>{Number(st.win_rate_pct).toFixed(0)}% won · {st.resolved} trades</span>]);
+          if (st) items.push(["Average result", `${Number(st.avg_pnl_pct) >= 0 ? "+" : ""}${Number(st.avg_pnl_pct).toFixed(1)}%`]);
+          if (gate) items.push(["Quality check", `${gate.survival_verdict || "—"}${gate.post_win_rate !== undefined ? ` · ${Number(gate.post_win_rate).toFixed(0)}% after filter` : ""}`]);
+          if (Number(s.volume_ratio_20d) > 0) items.push(["Buying interest", `${Number(s.volume_ratio_20d).toFixed(1)}× normal${Number(s.volume_ratio_20d) >= 1.5 ? " (strong)" : Number(s.volume_ratio_20d) < 1 ? " (light)" : ""}`]);
+          if (Number(s.rsi) > 0) items.push(["Momentum (RSI)", `${Number(s.rsi).toFixed(0)}${Number(s.rsi) > 70 ? " (stretched)" : Number(s.rsi) < 40 ? " (weak)" : ""}`]);
+          if (Number(s.adx14) > 0) items.push(["Trend strength", Number(s.adx14).toFixed(0)]);
+          if (gate?.top_features?.length) items.push(["Model leans on", gate.top_features.slice(0, 3).join(", ")]);
+          return sheetShell(
+            () => setSelectedStock(null),
+            <>
+              <div className="rdr-row rdr-st">
+                <div>
+                  <div className="rdr-shsym">{s.symbol}</div>
+                  <div className="rdr-cc" style={{ fontSize: 13.5 }}>
+                    {s.company_name || s.symbol}
+                    {s.sector ? ` · ${s.sector}` : ""}
+                    {Number(s.is_fno) === 1 || s.is_fno === true ? " · F&O" : ""}
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div className="rdr-cp rdr-num" style={{ fontSize: 24 }}>₹{fmt(s.curr_price)}</div>
+                  <span className="rdr-vtag" style={{ color: v.c, background: `${v.c}24`, display: "inline-block", marginTop: 4 }}>{v.w}</span>
                 </div>
               </div>
-              <button onClick={() => setSelectedStock(null)} style={{ background: colors.track, border: "none", borderRadius: 12, padding: "6px 12px", color: colors.bl, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                Done
-              </button>
-            </div>
+              <div className="rdr-why rdr-st" style={{ fontSize: 15, marginTop: 12 }}>{whyText(s)}</div>
+              <div className="rdr-sbox rdr-st" style={{ padding: "12px 10px 8px" }}>{renderChart(s)}</div>
 
-            <div style={{ background: colors.card, borderRadius: 18, padding: 16, marginBottom: 16, border: `1px solid ${colors.line}` }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ width: 9, height: 9, borderRadius: "50%", background: getVerdict(selectedStock).color }} />
-                  <span style={{ fontWeight: 700, color: getVerdict(selectedStock).color, fontSize: 15 }}>{getVerdict(selectedStock).t}</span>
-                </div>
-                <div style={{ fontSize: 20, fontWeight: 800 }}>₹{fmt(selectedStock.curr_price)}</div>
+              {label("Why we like it")}
+              <div className="rdr-sbox rdr-st">
+                {row("Position vs trigger", c.hasPivot ? `${c.diffPct >= 0 ? "+" : ""}${c.diffPct.toFixed(2)}%` : "—")}
+                {items.map(([k, val], i) => <React.Fragment key={i}>{row(k, val, i === items.length - 1)}</React.Fragment>)}
               </div>
-              <div style={{ fontSize: 12, color: colors.mu, marginTop: 4 }}>{getVerdict(selectedStock).s}</div>
-              {renderChart(selectedStock)}
-            </div>
 
-            {label("Why this setup")}
-            <div style={{ background: colors.card, borderRadius: 14, padding: "0 14px", marginBottom: 16 }}>
-              {(() => {
-                const s = selectedStock;
-                const c = getBreakoutClassification(s);
-                const st = patternStats(s);
-                const gate = mlGateFor(s) as any;
-                const items: [string, React.ReactNode][] = [];
-                items.push(["Position vs pivot", c.hasPivot ? `${c.diffPct >= 0 ? "+" : ""}${c.diffPct.toFixed(2)}% (${getVerdict(s).t})` : "—"]);
-                if (Number(s.dna_score) > 0) items.push(["DNA score", `${Math.round(Number(s.dna_score))} / 100`]);
-                items.push(["Pattern", `${patLabel(s) || "—"} · ${timeframeLabel(s.timeframe)}`]);
-                if (st) items.push(["Pattern track record", <span><b style={{ color: Number(st.win_rate_pct) >= 50 ? colors.gn : colors.or }}>{Number(st.win_rate_pct).toFixed(0)}% win</b> · {st.resolved} trades · avg {Number(st.avg_pnl_pct) >= 0 ? "+" : ""}{Number(st.avg_pnl_pct).toFixed(1)}%</span>]);
-                if (gate) items.push(["ML quality gate", <span>{gate.survival_verdict || "—"}{gate.post_win_rate !== undefined ? ` · ${Number(gate.post_win_rate).toFixed(0)}% after filter` : ""}</span>]);
-                if (Number(s.volume_ratio_20d) > 0) items.push(["Volume vs 20d avg", `${Number(s.volume_ratio_20d).toFixed(1)}×${Number(s.volume_ratio_20d) >= 1.5 ? " (strong)" : Number(s.volume_ratio_20d) < 1 ? " (light)" : ""}`]);
-                if (Number(s.rsi) > 0) items.push(["RSI (14)", `${Number(s.rsi).toFixed(0)}${Number(s.rsi) > 70 ? " (stretched)" : Number(s.rsi) < 40 ? " (weak)" : ""}`]);
-                if (Number(s.adx14) > 0) items.push(["Trend strength (ADX)", Number(s.adx14).toFixed(0)]);
-                if (gate?.top_features?.length) items.push(["Model leans on", gate.top_features.slice(0, 3).join(", ")]);
-                return items.map(([k, v], i) => row(k, v, i === items.length - 1));
-              })()}
-            </div>
-
-            {label("Trade execution plan")}
-            <div style={{ background: colors.card, borderRadius: 14, padding: "0 14px", marginBottom: 16 }}>
-              {row(selectedStock._tradeType === "RADAR" ? "Entry (buy above)" : "Entry (market)", <span style={{ color: colors.bl }}>₹{sizing.ent ? sizing.ent.toFixed(1) : "—"}</span>)}
-              {row("Stop loss", <span style={{ color: colors.rd }}>₹{sizing.sl ? sizing.sl.toFixed(1) : "—"}</span>)}
-              {row("Target 1", <span style={{ color: colors.gn }}>₹{sizing.tg ? sizing.tg.toFixed(1) : "—"}</span>)}
-              {row("Reward / risk", rewardRisk(selectedStock) > 0 ? `${rewardRisk(selectedStock).toFixed(1)}×` : "—", true)}
-            </div>
-
-            {label("Position sizing")}
-            <div style={{ background: colors.card, borderRadius: 14, padding: "0 14px", marginBottom: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `0.5px solid ${colors.line}` }}>
-                <span style={{ color: colors.mu }}>Max risk capital</span>
-                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <span>₹</span>
-                  <input type="text" inputMode="numeric" value={riskCapital} onChange={(e) => setRiskCapital(e.target.value.replace(/\D/g, ""))} style={{ width: 90, textAlign: "right", background: colors.track, border: "none", borderRadius: 8, padding: "6px 8px", color: colors.ink, fontWeight: 700, outline: "none" }} />
-                </div>
+              {label("Your plan")}
+              <div className="rdr-sbox rdr-st">
+                {row(s._tradeType === "RADAR" ? "Buy above" : "Buy around", <span style={{ color: colors.acc }}>₹{sizing.ent ? sizing.ent.toFixed(1) : "—"}</span>)}
+                {row("Exit if it falls to", <span style={{ color: colors.rd }}>₹{sizing.sl ? sizing.sl.toFixed(1) : "—"}</span>)}
+                {row("Aim for", <span style={{ color: colors.gn }}>₹{sizing.tg ? sizing.tg.toFixed(1) : "—"}</span>)}
+                {row(<Tip k="rr">Reward vs risk</Tip>, rewardRisk(s) > 0 ? `${rewardRisk(s).toFixed(1)}×` : "—", true)}
               </div>
-              {row("Quantity", `${sizing.qty.toLocaleString("en-IN")} shares`)}
-              {row("Capital required", `₹${Math.round(sizing.cap).toLocaleString("en-IN")}`)}
-              {row(
-                "Target profit / stop loss",
-                <span>
-                  <b style={{ color: colors.gn }}>+₹{Math.round(sizing.profit).toLocaleString("en-IN")}</b> / <b style={{ color: colors.rd }}>−₹{Math.round(sizing.loss).toLocaleString("en-IN")}</b>
-                </span>,
-                true
+
+              {label("How much to buy")}
+              <div className="rdr-sbox rdr-st">
+                <div className="rdr-kv">
+                  <span>Most you're willing to lose</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <span>₹</span>
+                    <input className="rdr-input rdr-num" type="text" inputMode="numeric" value={riskCapital} onChange={(e) => setRiskCapital(e.target.value.replace(/\D/g, ""))} />
+                  </div>
+                </div>
+                {row("Quantity", `${sizing.qty.toLocaleString("en-IN")} shares`)}
+                {row("Money needed", `₹${Math.round(sizing.cap).toLocaleString("en-IN")}`)}
+                {row("If target / if stopped", <span><b style={{ color: colors.gn }}>+₹{Math.round(sizing.profit).toLocaleString("en-IN")}</b> / <b style={{ color: colors.rd }}>−₹{Math.round(sizing.loss).toLocaleString("en-IN")}</b></span>, true)}
+              </div>
+
+              {onOpenAnalyst && (
+                <button className="rdr-cta rdr-st" onClick={() => { const x = selectedStock; setSelectedStock(null); onOpenAnalyst(x); }}>
+                  Open analyst view
+                </button>
               )}
-            </div>
-
-            {onOpenAnalyst && (
-              <button
-                onClick={() => {
-                  const s = selectedStock;
-                  setSelectedStock(null);
-                  onOpenAnalyst(s);
-                }}
-                style={{ width: "100%", padding: 14, borderRadius: 14, background: colors.bl, color: "#FFFFFF", border: "none", fontWeight: 700, fontSize: 16, cursor: "pointer", marginBottom: 10 }}
-              >
-                Open analyst view
+              <button className="rdr-btn2 rdr-st" onClick={() => { const x = selectedStock; setSelectedStock(null); if (onSelectStock) onSelectStock(x.symbol, x); else if (onSwitchTab) onSwitchTab("dna"); }}>
+                Open DNA report
               </button>
+              <button className="rdr-btn2 rdr-st" onClick={() => setAlertActive(true)} style={{ color: alertActive ? colors.gn : undefined }}>
+                {alertActive ? "✓ Price alert active" : `Alert me at ₹${Number(s.breakout_level || 0).toFixed(1)}`}
+              </button>
+            </>
+          );
+        })()}
+
+      {/* Track record */}
+      {trustOpen &&
+        sheetShell(
+          () => setTrustOpen(false),
+          <>
+            <div className="rdr-shsym rdr-st" style={{ fontSize: 24 }}>Track record</div>
+            <div className="rdr-why rdr-st" style={{ fontSize: 15 }}>Every setup is tested against what happened next. Nothing is hidden.</div>
+            <div className="rdr-sbox rdr-st">
+              {row("Closed trades", fmt0(overall?.resolved_trades))}
+              {row("Hit target", <span style={{ color: colors.gn }}>{winRate.toFixed(0)}%</span>)}
+              {overall?.avg_pnl_pct !== undefined && row("Average result", `${Number(overall.avg_pnl_pct) >= 0 ? "+" : ""}${Number(overall.avg_pnl_pct).toFixed(1)}%`)}
+              {overall?.avg_holding_bars !== undefined && row("Typical hold", `${Number(overall.avg_holding_bars).toFixed(0)} bars`, true)}
+            </div>
+            {patAcc?.by_timeframe && (
+              <>
+                {label("By timeframe")}
+                <div className="rdr-sbox rdr-st">
+                  {Object.entries(patAcc.by_timeframe as Record<string, any>).map(([k, t], i, a) => row(timeframeLabel(k), `${Number(t.win_rate_pct).toFixed(0)}% · ${t.resolved} trades`, i === a.length - 1))}
+                </div>
+              </>
             )}
-            <button
-              onClick={() => {
-                const s = selectedStock;
-                setSelectedStock(null);
-                if (onSelectStock) onSelectStock(s.symbol, s);
-                else if (onSwitchTab) onSwitchTab("dna");
-              }}
-              style={{ width: "100%", padding: 12, borderRadius: 14, background: onOpenAnalyst ? colors.track : colors.bl, color: onOpenAnalyst ? colors.bl : "#FFFFFF", border: "none", fontWeight: 700, fontSize: 15, cursor: "pointer", marginBottom: 10 }}
-            >
-              Open DNA report
-            </button>
-            <button onClick={() => setAlertActive(true)} style={{ width: "100%", padding: 12, borderRadius: 14, background: colors.track, color: alertActive ? colors.gn : colors.bl, border: "none", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
-              {alertActive ? "✓ Price alert active" : `Alert me at ₹${Number(selectedStock.breakout_level || 0).toFixed(1)}`}
-            </button>
           </>
         )}
 
@@ -880,17 +1028,17 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
         sheetShell(
           () => setIsSortOpen(false),
           <>
-            <h3 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 14px" }}>Sort setups</h3>
-            <div style={{ background: colors.card, borderRadius: 14, overflow: "hidden" }}>
-              {SORTS.map((s) => (
-                <div key={s.key} onClick={() => { setSortKey(s.key); setIsSortOpen(false); }} style={{ display: "flex", justifyContent: "space-between", padding: "14px 16px", borderBottom: `0.5px solid ${colors.line}`, cursor: "pointer" }}>
-                  <span style={{ fontWeight: sortKey === s.key ? 700 : 500 }}>{s.label}</span>
-                  {sortKey === s.key && <span style={{ color: colors.bl }}>✓</span>}
+            <div className="rdr-shsym rdr-st" style={{ fontSize: 22, marginBottom: 12 }}>Sort setups</div>
+            <div className="rdr-sbox rdr-st">
+              {SORTS.map((x, i) => (
+                <div key={x.key} className="rdr-kv" style={{ cursor: "pointer", borderBottom: i === SORTS.length - 1 ? "none" : undefined }} onClick={() => { setSortKey(x.key); setIsSortOpen(false); }}>
+                  <span style={{ color: colors.ink, fontWeight: sortKey === x.key ? 700 : 500 }}>{x.label}</span>
+                  {sortKey === x.key && <span style={{ color: colors.acc }}>✓</span>}
                 </div>
               ))}
             </div>
           </>,
-          "60vh"
+          "60%"
         )}
 
       {/* Filter sheet */}
@@ -898,67 +1046,182 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
         sheetShell(
           () => setIsFilterOpen(false),
           <>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Filter setups</h3>
-              <button onClick={() => setIsFilterOpen(false)} style={{ background: "none", border: "none", color: colors.bl, fontWeight: 700, cursor: "pointer" }}>
-                Done
-              </button>
+            <div className="rdr-row rdr-st" style={{ marginBottom: 12, alignItems: "center" }}>
+              <div className="rdr-shsym" style={{ fontSize: 22 }}>Filters</div>
+              <button className="rdr-chip on" onClick={() => setIsFilterOpen(false)}>Done</button>
             </div>
-
             {label("Market cap")}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+            <div className="rdr-wrap rdr-st">
               {MCAP_OPTIONS.map((m) => (
-                <Chip key={m.id} on={filters.mcap === m.id} onClick={() => setF({ mcap: m.id })}>
-                  {m.label}
-                </Chip>
+                <Chip key={m.id} on={filters.mcap === m.id} onClick={() => setF({ mcap: m.id })}>{m.label}</Chip>
               ))}
             </div>
-
             {sectorOptions.length > 0 && (
               <>
                 {label("Sector")}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-                  <Chip on={!filters.sector} onClick={() => setF({ sector: "" })}>
-                    Any
-                  </Chip>
+                <div className="rdr-wrap rdr-st">
+                  <Chip on={!filters.sector} onClick={() => setF({ sector: "" })}>Any</Chip>
                   {sectorOptions.map(([name, n]) => (
-                    <Chip key={name} on={filters.sector === name} onClick={() => setF({ sector: filters.sector === name ? "" : name })}>
-                      {name} {n}
-                    </Chip>
+                    <Chip key={name} on={filters.sector === name} onClick={() => setF({ sector: filters.sector === name ? "" : name })}>{name} {n}</Chip>
                   ))}
                 </div>
               </>
             )}
-
-            <div style={{ background: colors.card, borderRadius: 14, padding: "12px 16px", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>F&amp;O stocks only</span>
-              <input type="checkbox" checked={filters.fnoOnly} onChange={(e) => setF({ fnoOnly: e.target.checked })} style={{ width: 20, height: 20, accentColor: colors.bl }} />
-            </div>
-
-            <div style={{ background: colors.card, borderRadius: 14, padding: "12px 16px", marginBottom: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div>Hide low-edge patterns</div>
-                  <div style={{ fontSize: 11, color: colors.mu, marginTop: 2 }}>ML quality gate · same as Pattern page</div>
+            <div className="rdr-sbox rdr-st" style={{ marginTop: 18 }}>
+              <div className="rdr-kv">
+                <span style={{ color: colors.ink }}>F&amp;O stocks only</span>
+                <input type="checkbox" checked={filters.fnoOnly} onChange={(e) => setF({ fnoOnly: e.target.checked })} style={{ width: 20, height: 20, accentColor: colors.acc }} />
+              </div>
+              <div className="rdr-kv">
+                <span style={{ color: colors.ink }}>Hide low-edge patterns<div style={{ fontSize: 11, color: colors.mu }}>Patterns that historically lose more than they win</div></span>
+                <input type="checkbox" checked={mlGateOn} onChange={(e) => setMlGateOn(e.target.checked)} style={{ width: 20, height: 20, accentColor: colors.acc }} />
+              </div>
+              <div className="rdr-kv" style={{ flexDirection: "column", gap: 8, borderBottom: "none" }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: colors.ink }}>Minimum setup strength</span>
+                  <b style={{ color: colors.acc }}>{filters.minScore}</b>
                 </div>
-                <input type="checkbox" checked={mlGateOn} onChange={(e) => setMlGateOn(e.target.checked)} style={{ width: 20, height: 20, accentColor: colors.bl }} />
+                <input type="range" min="0" max="95" step="5" value={filters.minScore} onChange={(e) => setF({ minScore: Number(e.target.value) })} style={{ width: "100%", accentColor: colors.acc }} />
               </div>
             </div>
-
-            <div style={{ background: colors.card, borderRadius: 14, padding: "12px 16px", marginBottom: 20 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                <span>Minimum DNA score</span>
-                <span style={{ fontWeight: 700, color: colors.bl }}>{filters.minScore}</span>
-              </div>
-              <input type="range" min="0" max="95" step="5" value={filters.minScore} onChange={(e) => setF({ minScore: Number(e.target.value) })} style={{ width: "100%", accentColor: colors.bl }} />
-            </div>
-
-            <button onClick={() => { clearAll(); setIsFilterOpen(false); }} style={{ width: "100%", padding: 12, borderRadius: 12, background: "none", border: "none", color: colors.rd, fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
-              Reset filters
-            </button>
+            <button className="rdr-btn2 rdr-st" style={{ color: colors.rd }} onClick={() => { clearAll(); setIsFilterOpen(false); }}>Reset filters</button>
           </>,
-          "80vh"
+          "86%"
         )}
+
+      {/* Glossary tooltip */}
+      {tip && <div className="rdr-tipbox" style={{ left: tip.x, top: Math.max(8, tip.y - 78) }}>{tip.text}</div>}
+
+      {/* First-visit tour */}
+      {tourStep !== null && (
+        <div className="rdr-coach">
+          <div className="rdr-cbox">
+            <h3>{TOUR[tourStep][0]}</h3>
+            <p>{TOUR[tourStep][1]}</p>
+            <div className="rdr-dots">{TOUR.map((_, i) => <i key={i} className={i === tourStep ? "on" : ""} />)}</div>
+            <button className="rdr-cta" onClick={() => (tourStep < TOUR.length - 1 ? setTourStep(tourStep + 1) : endTour())}>
+              {tourStep < TOUR.length - 1 ? "Next" : "Got it"}
+            </button>
+            <button className="rdr-skip" onClick={endTour}>Skip</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+const RDR_CSS = `
+.rdr{--bg:#06070A;--bg2:#0C0E14;--glass:rgba(255,255,255,.055);--glass2:rgba(255,255,255,.09);--line:rgba(255,255,255,.09);--ink:#F5F6F8;--mu:rgba(235,238,245,.62);--dim:rgba(235,238,245,.36);--acc:#7C8CFF;--acc2:#A78BFA;--gn:#34D399;--rd:#FB7185;--am:#FBBF24;
+--sh:0 1px 0 rgba(255,255,255,.12) inset,0 -1px 0 rgba(0,0,0,.4) inset,0 2px 4px rgba(0,0,0,.35),0 14px 28px -8px rgba(0,0,0,.55),0 44px 80px -30px rgba(0,0,0,.85);--r:22px;
+position:relative;width:100%;height:100%;overflow-y:auto;overflow-x:hidden;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI",sans-serif;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.rdr.light{--bg:#F4F5F9;--bg2:#FFFFFF;--glass:rgba(255,255,255,.8);--glass2:rgba(255,255,255,.95);--line:rgba(20,24,40,.09);--ink:#0B0D14;--mu:rgba(20,24,40,.62);--dim:rgba(20,24,40,.38);--acc:#4F5BE8;--acc2:#7C5CE0;--gn:#0E9F6E;--rd:#E11D48;--am:#B45309;
+--sh:0 1px 0 rgba(255,255,255,.9) inset,0 2px 4px rgba(30,40,90,.08),0 14px 28px -10px rgba(30,40,90,.18),0 40px 70px -30px rgba(30,40,90,.35)}
+.rdr::-webkit-scrollbar{display:none}
+.rdr *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+.rdr button{font-family:inherit}
+.rdr-num{font-variant-numeric:tabular-nums}
+.rdr-aura{position:absolute;left:-20%;right:-20%;top:-10%;height:60vh;background:radial-gradient(60% 60% at 30% 30%,rgba(124,140,255,.28),transparent 70%),radial-gradient(50% 50% at 80% 20%,rgba(167,139,250,.2),transparent 70%);pointer-events:none;transform:translateY(var(--py,0px));filter:blur(8px)}
+.rdr-content{position:relative;max-width:620px;margin:0 auto;transform-origin:50% 0;transition:transform .6s cubic-bezier(.2,.9,.25,1),filter .6s}
+.rdr-content.recede{transform:scale(.95) translateY(8px);filter:brightness(.55)}
+.rdr-top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:16px 20px 10px;background:linear-gradient(var(--bg) 55%,transparent)}
+.rdr-brand{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mu)}
+.rdr-ibtn{min-width:36px;height:36px;border-radius:99px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;color:var(--ink);cursor:pointer;font-size:15px;backdrop-filter:blur(14px)}
+.rdr-hero{padding:6px 22px 8px;transform-origin:0 0;transform:translateY(var(--hy,0px)) scale(var(--hs,1));opacity:var(--ho,1);will-change:transform,opacity}
+.rdr-date{font-size:13px;color:var(--mu);font-weight:500}
+.rdr-big{font-size:38px;line-height:1.05;font-weight:800;letter-spacing:-.035em;margin:8px 0 10px}
+.rdr-big em{font-style:normal;background:linear-gradient(100deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.rdr-sub{font-size:15px;line-height:1.45;color:var(--mu);max-width:340px}
+.rdr-trust{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:7px 12px;border-radius:99px;background:var(--glass);border:1px solid var(--line);font-size:12px;color:var(--mu);cursor:pointer}
+.rdr-trust b{color:var(--ink)}
+.rdr-dot{width:7px;height:7px;border-radius:50%;background:var(--gn);box-shadow:0 0 10px var(--gn);animation:rdrpulse 2s infinite}
+@keyframes rdrpulse{50%{opacity:.4}}
+.rdr-search{display:flex;align-items:center;margin:16px 22px 0;height:42px;border-radius:14px;background:var(--glass);border:1px solid var(--line);padding:0 14px}
+.rdr-search input{flex:1;background:none;border:none;outline:none;color:var(--ink);font-size:14.5px}
+.rdr-search button{background:none;border:none;color:var(--mu);cursor:pointer}
+.rdr-sec{display:flex;justify-content:space-between;align-items:baseline;padding:26px 22px 12px;transform:translateY(var(--ry2,0px));opacity:var(--ro,1)}
+.rdr-sec h2{margin:0;font-size:20px;font-weight:750;letter-spacing:-.02em}
+.rdr-sec span{font-size:12.5px;color:var(--mu)}
+.rdr-picks,.rdr-list{perspective:1100px}
+.rdr-picks{display:flex;gap:14px;overflow-x:auto;padding:14px 22px 34px;scroll-snap-type:x mandatory;scrollbar-width:none}
+.rdr-picks::-webkit-scrollbar{display:none}
+.rdr-pick{flex:0 0 78%;scroll-snap-align:center;border-radius:28px;padding:20px;position:relative;overflow:hidden;cursor:pointer;background:linear-gradient(155deg,var(--glass2),var(--glass));border:1px solid var(--line);box-shadow:var(--sh);backdrop-filter:blur(20px);
+ transform:translate3d(0,0,0) rotateY(var(--ry,0deg)) scale(var(--s,1));opacity:var(--o,1);will-change:transform;transform-style:preserve-3d}
+.rdr-pick:before{content:"";position:absolute;inset:0;background:radial-gradient(80% 60% at 100% 0,rgba(124,140,255,.22),transparent 60%);pointer-events:none}
+.rdr-pick:after,.rdr-card:before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;background:linear-gradient(160deg,rgba(255,255,255,.34),rgba(255,255,255,0) 38%,rgba(124,140,255,.25) 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.rdr-shine{position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.10) 45%,transparent 60%);transform:translateX(var(--sx,-60%));pointer-events:none}
+.rdr-pick .rdr-psym,.rdr-pick .rdr-pprice{transform:translateZ(24px)}
+.rdr-rank{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--acc);text-transform:uppercase}
+.rdr-psym{font-size:26px;font-weight:800;letter-spacing:-.03em;margin-top:6px}
+.rdr-verdict{display:inline-flex;align-items:center;gap:7px;margin-top:14px;font-weight:750;font-size:15px}
+.rdr-verdict i{width:9px;height:9px;border-radius:50%;display:block}
+.rdr-why{font-size:13.5px;line-height:1.4;color:var(--mu);margin-top:6px}
+.rdr-pprice{font-size:22px;font-weight:750;margin-top:14px}
+.rdr-pprice small{font-size:12.5px;font-weight:600;margin-left:6px}
+.rdr-journey{display:flex;gap:8px;padding:0 22px;overflow-x:auto;scrollbar-width:none}
+.rdr-journey::-webkit-scrollbar{display:none}
+.rdr-stage{flex:1 0 auto;min-width:82px;text-align:left;padding:11px 13px;border-radius:18px;background:var(--glass);border:1px solid var(--line);color:var(--ink);cursor:pointer;transition:all .3s cubic-bezier(.2,.8,.2,1)}
+.rdr-stage .n{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.rdr-stage .l{font-size:12px;color:var(--mu);margin-top:1px;font-weight:600}
+.rdr-stage.quiet{min-width:70px;opacity:.8}
+.rdr-stage.on{background:linear-gradient(150deg,var(--acc),var(--acc2));border-color:transparent;box-shadow:0 14px 30px -12px var(--acc);opacity:1}
+.rdr-stage.on .l,.rdr-stage.on .n{color:#fff}
+.rdr-stagetext{padding:14px 24px 8px;font-size:14px;line-height:1.45;color:var(--mu);min-height:54px}
+.rdr-stagetext b{color:var(--ink)}
+.rdr-filters{display:flex;gap:6px;overflow-x:auto;padding:4px 22px 8px;scrollbar-width:none}
+.rdr-filters::-webkit-scrollbar{display:none}
+.rdr-wrap{display:flex;flex-wrap:wrap;gap:8px}
+.rdr-chip{flex:0 0 auto;padding:7px 13px;border-radius:99px;border:1px solid var(--line);background:var(--glass);color:var(--ink);font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.rdr-chip.on{background:linear-gradient(150deg,var(--acc),var(--acc2));border-color:transparent;color:#fff}
+.rdr-list{padding:8px 18px 0}
+.rdr-card{position:relative;border-radius:var(--r);padding:16px 18px 14px;margin-bottom:14px;background:linear-gradient(165deg,var(--glass2),var(--glass));border:1px solid var(--line);box-shadow:var(--sh);backdrop-filter:blur(18px);cursor:pointer;
+ transform-origin:50% 100%;transform:translate3d(0,var(--ty,0px),0) rotateX(var(--rx,0deg)) scale(var(--s,1));opacity:var(--o,1);filter:blur(var(--bl,0px));will-change:transform,opacity;transform-style:preserve-3d}
+.rdr-card:active{filter:brightness(1.08)}
+.rdr-card .rdr-cs,.rdr-card .rdr-cp{transform:translateZ(18px)}
+.rdr-card .rdr-ruler{transform:translateZ(10px)}
+.rdr-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.rdr-cs{font-size:19px;font-weight:780;letter-spacing:-.02em}
+.rdr-cc{font-size:12px;color:var(--mu);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rdr-cp{font-size:18px;font-weight:750;text-align:right}
+.rdr-cd{font-size:12px;font-weight:650;text-align:right;margin-top:1px}
+.rdr-vline{display:flex;align-items:center;gap:8px;margin-top:11px}
+.rdr-vtag{font-size:13px;font-weight:760;padding:4px 10px;border-radius:99px;white-space:nowrap}
+.rdr-vtxt{font-size:12.5px;color:var(--mu);flex:1}
+.rdr-foot{margin-top:6px;font-size:11.5px;color:var(--dim)}
+.rdr-ruler{position:relative;height:36px;margin:14px 2px 2px}
+.rdr-rt{position:absolute;left:0;right:0;top:12px;height:5px;border-radius:3px;background:var(--glass2);overflow:hidden}
+.rdr-rt i{position:absolute;top:0;bottom:0}
+.rdr-rd{position:absolute;top:6px;width:17px;height:17px;margin-left:-8px;border-radius:50%;background:#fff;border:4px solid var(--acc);box-shadow:0 0 0 6px rgba(124,140,255,.18),0 4px 12px rgba(0,0,0,.4);transition:left .8s cubic-bezier(.2,.8,.2,1)}
+.rdr-rl{position:absolute;top:24px;font-size:10.5px;color:var(--dim);transform:translateX(-50%);white-space:nowrap}
+.rdr-skel{height:150px;border-radius:22px;margin:0 18px 14px;background:var(--glass);animation:rdrpulse 1.4s infinite}
+.rdr-scrim{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);animation:rdrfade .3s ease both}
+@keyframes rdrfade{from{opacity:0}to{opacity:1}}
+.rdr-sheet{position:fixed;left:50%;bottom:0;z-index:60;width:100%;max-width:620px;overflow-y:auto;border-radius:30px 30px 0 0;background:var(--bg2);color:var(--ink);border:1px solid var(--line);padding:12px 20px 40px;box-shadow:0 -30px 80px rgba(0,0,0,.6),0 -1px 0 rgba(255,255,255,.14) inset;scrollbar-width:none;animation:rdrsheet .55s cubic-bezier(.2,.9,.25,1) both}
+.rdr-sheet::-webkit-scrollbar{display:none}
+@keyframes rdrsheet{from{transform:translate(-50%,105%)}to{transform:translate(-50%,0)}}
+.rdr-st{animation:rdrrise .7s cubic-bezier(.2,.9,.25,1) both;animation-delay:.18s}
+.rdr-sheet .rdr-st:nth-child(n+3){animation-delay:.26s}.rdr-sheet .rdr-st:nth-child(n+5){animation-delay:.34s}.rdr-sheet .rdr-st:nth-child(n+7){animation-delay:.42s}.rdr-sheet .rdr-st:nth-child(n+9){animation-delay:.5s}
+@keyframes rdrrise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.rdr-cand{animation:rdrgrow .6s cubic-bezier(.2,.9,.25,1) both;animation-delay:calc(var(--c)*14ms + 350ms);transform-box:fill-box;transform-origin:center}
+@keyframes rdrgrow{from{opacity:0;transform:scaleY(.2)}to{opacity:1;transform:none}}
+.rdr-grab{width:38px;height:5px;border-radius:3px;background:var(--dim);margin:0 auto 16px}
+.rdr-shsym{font-size:30px;font-weight:800;letter-spacing:-.03em}
+.rdr-sbox{margin-top:16px;border-radius:20px;background:var(--glass);border:1px solid var(--line);padding:4px 16px}
+.rdr-kv{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+.rdr-kv>span:first-child{color:var(--mu)}
+.rdr-kv b{font-weight:700;text-align:right}
+.rdr-lab{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:700;margin:22px 4px 8px}
+.rdr-input{width:96px;text-align:right;background:var(--glass2);border:1px solid var(--line);border-radius:10px;padding:6px 9px;color:var(--ink);font-weight:700;outline:none}
+.rdr-chartmsg{padding:30px 0;text-align:center;font-size:12px;color:var(--mu)}
+.rdr-chart{color:var(--ink)}
+.rdr-cta{width:100%;margin-top:18px;padding:16px;border:none;border-radius:18px;font-size:16px;font-weight:750;color:#fff;background:linear-gradient(120deg,var(--acc),var(--acc2));box-shadow:0 16px 34px -14px var(--acc);cursor:pointer}
+.rdr-btn2{width:100%;margin-top:10px;padding:14px;border:1px solid var(--line);border-radius:18px;font-size:15px;font-weight:700;color:var(--acc);background:var(--glass);cursor:pointer}
+.rdr-tip{border-bottom:1px dotted var(--dim);cursor:help}
+.rdr-tipbox{position:fixed;z-index:90;max-width:240px;padding:11px 13px;border-radius:14px;background:var(--ink);color:var(--bg);font-size:12.5px;line-height:1.4;box-shadow:0 12px 30px rgba(0,0,0,.5);animation:rdrfade .2s both}
+.rdr-coach{position:fixed;inset:0;z-index:100;background:rgba(3,4,8,.82);backdrop-filter:blur(10px);display:flex;align-items:flex-end;justify-content:center;padding:20px;animation:rdrfade .4s both}
+.rdr-cbox{width:100%;max-width:520px;border-radius:28px;padding:24px;background:var(--bg2);border:1px solid var(--line);color:var(--ink)}
+.rdr-cbox h3{margin:0 0 6px;font-size:22px;letter-spacing:-.02em}
+.rdr-cbox p{margin:0;color:var(--mu);font-size:15px;line-height:1.5}
+.rdr-dots{display:flex;gap:6px;margin:18px 0 4px}.rdr-dots i{height:5px;width:18px;border-radius:3px;background:var(--line)}.rdr-dots i.on{background:var(--acc);width:30px}
+.rdr-skip{display:block;margin:10px auto 0;background:none;border:none;color:var(--mu);font-size:13px;cursor:pointer}
+@media (prefers-reduced-motion:reduce){.rdr *{animation-duration:.01ms!important;transition-duration:.01ms!important}.rdr-card,.rdr-pick,.rdr-hero,.rdr-sec{transform:none!important;opacity:1!important;filter:none!important}}
+`;
