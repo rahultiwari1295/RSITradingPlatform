@@ -37,6 +37,12 @@ interface RadarScreenProps {
   livePrices?: Record<string, { price: number; change_pct?: number }>;
   onSelectStock?: (symbol: string, fullData?: any) => void;
   onSwitchTab?: (tab: string) => void;
+  /** Tells the app header whether a stock page is open (to show its back arrow). */
+  onStockOpenChange?: (symbol: string | null) => void;
+  /** Increment to go back from the open stock page (header arrow). */
+  backSignal?: number;
+  /** Increment to return to the Radar home list (dock icon). */
+  homeSignal?: number;
 }
 
 type Setup = Record<string, any>;
@@ -69,7 +75,7 @@ const fmt = (n: any, d = 2) =>
 const fmt0 = (n: any) => Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 });
 const patLabel = (s: Setup) => String(s.pattern_type || "").split("·")[0].trim();
 
-export default function RadarScreen({ theme = "dark", livePrices, onSelectStock, onSwitchTab }: RadarScreenProps) {
+export default function RadarScreen({ theme = "dark", livePrices, onSelectStock, onSwitchTab, onStockOpenChange, backSignal = 0, homeSignal = 0 }: RadarScreenProps) {
   const isLight = theme === "light";
 
   // ── UI state
@@ -654,6 +660,29 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
+  useEffect(() => {
+    onStockOpenChange?.(selectedStock ? String(selectedStock.symbol) : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStock?.symbol]);
+  const firstSig = useRef(true);
+  useEffect(() => {
+    if (firstSig.current) return;
+    if (selectedRef.current) goBack();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [backSignal]);
+  useEffect(() => {
+    if (firstSig.current) {
+      firstSig.current = false;
+      return;
+    }
+    // dock icon: always land on the Radar home list
+    if (selectedRef.current) {
+      setSelectedStock(null);
+      setPageClosing(false);
+    }
+    rootRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [homeSignal]);
   // keep the open page's numbers live as prices tick
   const liveSelected = useMemo(() => {
     if (!selectedStock) return null;
@@ -666,7 +695,8 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
   const overall = patAcc?.overall;
 
   return (
-    <div ref={rootRef} className={`rdr${isLight ? " light" : ""}`}>
+    <div className={`rdr-root${isLight ? " light" : ""}`} style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
+    <div ref={rootRef} className="rdr">
       <style>{RDR_CSS}</style>
       <div className="rdr-aura" />
       <div className={`rdr-content${sheetOpen ? " recede" : ""}`}>
@@ -837,29 +867,6 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
         <div style={{ height: 90 }} />
       </div>
 
-      {/* Stock page */}
-      {liveSelected && (
-        <RadarStockPage
-          key={liveSelected.symbol}
-          stock={liveSelected}
-          theme={isLight ? "light" : "dark"}
-          colors={colors}
-          verdict={verdictOf(liveSelected)}
-          why={whyText(liveSelected)}
-          stats={patternStats(liveSelected)}
-          gate={mlGateFor(liveSelected)}
-          closing={pageClosing}
-          onBack={goBack}
-          onOpenDna={() => {
-            const x = liveSelected;
-            setSelectedStock(null);
-            setPageClosing(false);
-            if (onSelectStock) onSelectStock(x.symbol, x);
-            else if (onSwitchTab) onSwitchTab("dna");
-          }}
-        />
-      )}
-
       {/* Track record */}
       {trustOpen &&
         sheetShell(
@@ -968,14 +975,38 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
         </div>
       )}
     </div>
+    {/* Stock page (sits under the app header so its back arrow stays visible) */}
+      {liveSelected && (
+        <RadarStockPage
+          key={liveSelected.symbol}
+          stock={liveSelected}
+          theme={isLight ? "light" : "dark"}
+          colors={colors}
+          verdict={verdictOf(liveSelected)}
+          why={whyText(liveSelected)}
+          stats={patternStats(liveSelected)}
+          gate={mlGateFor(liveSelected)}
+          closing={pageClosing}
+          onBack={goBack}
+          onOpenDna={() => {
+            const x = liveSelected;
+            setSelectedStock(null);
+            setPageClosing(false);
+            if (onSelectStock) onSelectStock(x.symbol, x);
+            else if (onSwitchTab) onSwitchTab("dna");
+          }}
+        />
+      )}
+
+    </div>
   );
 }
 
 const RDR_CSS = `
-.rdr{--bg:#06070A;--bg2:#0C0E14;--glass:rgba(255,255,255,.055);--glass2:rgba(255,255,255,.09);--line:rgba(255,255,255,.09);--ink:#F5F6F8;--mu:rgba(235,238,245,.62);--dim:rgba(235,238,245,.36);--acc:#7C8CFF;--acc2:#A78BFA;--gn:#34D399;--rd:#FB7185;--am:#FBBF24;
---sh:0 1px 0 rgba(255,255,255,.12) inset,0 -1px 0 rgba(0,0,0,.4) inset,0 2px 4px rgba(0,0,0,.35),0 14px 28px -8px rgba(0,0,0,.55),0 44px 80px -30px rgba(0,0,0,.85);--r:22px;
-position:relative;width:100%;height:100%;overflow-y:auto;overflow-x:hidden;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI",sans-serif;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-.rdr.light{--bg:#F4F5F9;--bg2:#FFFFFF;--glass:rgba(255,255,255,.8);--glass2:rgba(255,255,255,.95);--line:rgba(20,24,40,.09);--ink:#0B0D14;--mu:rgba(20,24,40,.62);--dim:rgba(20,24,40,.38);--acc:#4F5BE8;--acc2:#7C5CE0;--gn:#0E9F6E;--rd:#E11D48;--am:#B45309;
+.rdr-root{--bg:#06070A;--bg2:#0C0E14;--glass:rgba(255,255,255,.055);--glass2:rgba(255,255,255,.09);--line:rgba(255,255,255,.09);--ink:#F5F6F8;--mu:rgba(235,238,245,.62);--dim:rgba(235,238,245,.36);--acc:#7C8CFF;--acc2:#A78BFA;--gn:#34D399;--rd:#FB7185;--am:#FBBF24;
+--sh:0 1px 0 rgba(255,255,255,.12) inset,0 -1px 0 rgba(0,0,0,.4) inset,0 2px 4px rgba(0,0,0,.35),0 14px 28px -8px rgba(0,0,0,.55),0 44px 80px -30px rgba(0,0,0,.85);--r:22px;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI",sans-serif;color:var(--ink)}
+.rdr{position:relative;width:100%;height:100%;overflow-y:auto;overflow-x:hidden;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI",sans-serif;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.rdr-root.light{--bg:#F4F5F9;--bg2:#FFFFFF;--glass:rgba(255,255,255,.8);--glass2:rgba(255,255,255,.95);--line:rgba(20,24,40,.09);--ink:#0B0D14;--mu:rgba(20,24,40,.62);--dim:rgba(20,24,40,.38);--acc:#4F5BE8;--acc2:#7C5CE0;--gn:#0E9F6E;--rd:#E11D48;--am:#B45309;
 --sh:0 1px 0 rgba(255,255,255,.9) inset,0 2px 4px rgba(30,40,90,.08),0 14px 28px -10px rgba(30,40,90,.18),0 40px 70px -30px rgba(30,40,90,.35)}
 .rdr::-webkit-scrollbar{display:none}
 .rdr *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}

@@ -1354,6 +1354,9 @@ export default function App() {
     return "";
   });
   const [analystStock, setAnalystStock] = useState<any | null>(null);
+  const [radarStockOpen, setRadarStockOpen] = useState<string | null>(null);
+  const [radarBackSignal, setRadarBackSignal] = useState(0);
+  const [radarHomeSignal, setRadarHomeSignal] = useState(0);
   const [selectedSignalTrade, setSelectedSignalTrade] = useState<any | null>(null);
 
   const navigateToTab = (
@@ -2913,6 +2916,19 @@ export default function App() {
                   borderRadius: "50%"
                 }}
                 title="Back to DNA Search"
+                aria-label="Back"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+              </button>
+            ) : activeTab === "radar" && radarStockOpen ? (
+              <button
+                type="button"
+                className="theme-btn"
+                onClick={() => setRadarBackSignal((n) => n + 1)}
+                style={{ width: 32, height: 32, display: "inline-flex", alignItems: "center", justifyContent: "center", marginRight: 8, cursor: "pointer", borderRadius: "50%" }}
+                title="Back to Radar"
                 aria-label="Back"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -4851,6 +4867,9 @@ export default function App() {
             <RadarScreen
               theme={theme}
               livePrices={livePrices}
+              onStockOpenChange={setRadarStockOpen}
+              backSignal={radarBackSignal}
+              homeSignal={radarHomeSignal}
               onSelectStock={(sym) => {
                 navigateToTab("dna", sym);
               }}
@@ -5054,7 +5073,11 @@ export default function App() {
         {/* 5. RADAR (3D Pattern Radar) */}
         <button
           className={`tab ${activeTab === "radar" ? "active" : ""}`}
-          onClick={() => navigateToTab("radar")}
+          onClick={() => {
+            if (radarStockOpen) setRadarHomeSignal((n) => n + 1);
+            else if (activeTab === "radar") setRadarHomeSignal((n) => n + 1);
+            navigateToTab("radar");
+          }}
           data-tab="radar"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">

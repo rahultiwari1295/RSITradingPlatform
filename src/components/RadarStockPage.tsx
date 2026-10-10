@@ -36,7 +36,15 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
   const [candles, setCandles] = useState<any[]>([]);
   const [chartState, setChartState] = useState<"loading" | "ready" | "error">("loading");
   const [hover, setHover] = useState<any | null>(null);
-  const [riskCapital, setRiskCapital] = useState("10000");
+  const [view, setView] = useState<"tactical" | "macro" | "monthly">(() => {
+    const t = String(s.timeframe || "").toUpperCase();
+    return t === "MONTHLY" || t === "1M" ? "monthly" : t === "WEEKLY" || t === "1W" ? "macro" : "tactical";
+  });
+  const [dnaSrc, setDnaSrc] = useState("");
+  const [dnaLoading, setDnaLoading] = useState(true);
+  const [dnaError, setDnaError] = useState(false);
+  const [dnaKey, setDnaKey] = useState(0);
+  const [invest, setInvest] = useState("10000");
   const [alertOn, setAlertOn] = useState(false);
   const [tvOn, setTvOn] = useState(false);
   const [tvTf, setTvTf] = useState<"D" | "W" | "M">(() => {
@@ -70,6 +78,43 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
       alive = false;
     };
   }, [sym]);
+
+  // ── server-rendered pattern chart (trendlines, base, pivot) — same renderer as the DNA report
+  useEffect(() => {
+    let cancelled = false;
+    setDnaLoading(true);
+    setDnaError(false);
+    const q = `view=${view}&theme=${theme}${dnaKey > 0 ? "&force=true" : ""}&t=${Date.now()}`;
+    const primary = `/api/dna/chart/${sym}?${q}`;
+    const fallback = `https://quantsync-api.duckdns.org:8443/api/dna/chart/${sym}?${q}`;
+    const fail = () => {
+      if (!cancelled) {
+        setDnaError(true);
+        setDnaLoading(false);
+      }
+    };
+    const ok = (src: string) => () => {
+      if (!cancelled) {
+        setDnaSrc(src);
+        setDnaLoading(false);
+      }
+    };
+    const tryFallback = () => {
+      const fb = new Image();
+      fb.onload = ok(fallback);
+      fb.onerror = fail;
+      fb.src = fallback;
+    };
+    const img = new Image();
+    const timer = setTimeout(tryFallback, 4500);
+    img.onload = () => { clearTimeout(timer); ok(primary)(); };
+    img.onerror = () => { clearTimeout(timer); tryFallback(); };
+    img.src = primary;
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [sym, view, theme, dnaKey]);
 
   // ── compact header after the hero scrolls away
   useEffect(() => {
@@ -187,12 +232,18 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
     if (sl > 0) bad.push(`The setup is wrong if it closes below ₹${fmt(sl, 1)}.`);
   }
 
-  const sizing = useMemo(() => {
-    const r = Math.max(0, Number(riskCapital.replace(/\D/g, "")) || 0);
-    const rps = sl > 0 && ent > sl ? ent - sl : 0;
-    const qty = rps > 0 ? Math.floor(r / rps) : 0;
-    return { qty, cap: qty * ent, profit: qty * (tg > ent ? tg - ent : 0), loss: qty * rps };
-  }, [riskCapital, ent, sl, tg]);
+  const calc = useMemo(() => {
+    const amt = Math.max(0, Number(invest.replace(/\D/g, "")) || 0);
+    const qty = ent > 0 ? Math.floor(amt / ent) : 0;
+    const used = qty * ent;
+    const profit = tg > ent ? qty * (tg - ent) : 0;
+    const loss = sl > 0 && ent > sl ? qty * (ent - sl) : 0;
+    return {
+      amt, qty, used, left: amt - used, profit, loss,
+      profitPct: tg > ent && ent > 0 ? ((tg - ent) / ent) * 100 : 0,
+      lossPct: sl > 0 && ent > sl ? ((ent - sl) / ent) * 100 : 0,
+    };
+  }, [invest, ent, sl, tg]);
 
   const share = async () => {
     const text = `📊 ${sym} — ${verdict.w}\nPrice ₹${fmt(cmp)} · Trigger ₹${fmt(bk, 1)} · Stop ₹${fmt(sl, 1)} · Target ₹${fmt(tg, 1)}${rr > 0 ? ` · ${rr.toFixed(1)}× reward vs risk` : ""}\n${why}`;
@@ -296,10 +347,7 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
     <div ref={rootRef} className={`rsp${closing ? " closing" : ""}`}>
       <style>{RSP_CSS}</style>
       <div className="rsp-bar">
-        <button className="rsp-back" onClick={onBack} aria-label="Back to Radar">
-          <svg width="11" height="18" viewBox="0 0 11 18" fill="none"><path d="M9.5 1.5 2 9l7.5 7.5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          <span>Radar</span>
-        </button>
+        <span style={{ width: 38 }} />
         <div className={`rsp-mini${compact ? " on" : ""}`}>
           <b>{sym}</b>
           <span className="rdr-num">₹{fmt(cmp)}</span>
@@ -337,7 +385,33 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
           )}
         </section>
 
-        {sec("Chart", 1, <div className="rdr-sbox" style={{ padding: "12px 10px 8px", marginTop: 0 }}>{chart()}</div>)}
+        {sec("Chart", 1, (
+          <div className="rdr-sbox" style={{ marginTop: 0, padding: 12 }}>
+            <div className="rsp-tfrow">
+              <div className="rsp-tf" role="group" aria-label="Chart timeframe">
+                {([["tactical", "1D"], ["macro", "1W"], ["monthly", "1M"]] as const).map(([k, l]) => (
+                  <button key={k} className={view === k ? "on" : ""} onClick={() => setView(k)} aria-pressed={view === k}>{l}</button>
+                ))}
+              </div>
+              <button className="rsp-reload" onClick={() => setDnaKey((k) => k + 1)} aria-label="Reload chart">↻</button>
+            </div>
+            <div className="rsp-stage">
+              {dnaLoading && <div className="rsp-stage-load"><i />Drawing pattern &amp; trendlines…</div>}
+              {!dnaError && dnaSrc && <img src={dnaSrc} alt={`${sym} pattern chart`} className={dnaLoading ? "reloading" : ""} />}
+              {dnaError && (
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--mu)", marginBottom: 8 }}>Pattern chart is not ready yet. Showing price chart.</div>
+                  {chart()}
+                </div>
+              )}
+            </div>
+            <div className="rsp-legend">
+              <span><i style={{ background: colors.gn }} />Target <b className="rdr-num">₹{fmt(tg, 1)}</b></span>
+              <span><i style={{ background: colors.acc }} />Trigger <b className="rdr-num">₹{fmt(bk, 1)}</b></span>
+              <span><i style={{ background: colors.rd }} />Stop <b className="rdr-num">₹{fmt(sl, 1)}</b></span>
+            </div>
+          </div>
+        ))}
 
         {sec("Key levels", 2, (
           <div className="rsp-levels">
@@ -356,20 +430,36 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
           </div>
         ))}
 
-        {sec("How much to buy", 4, (
+        {sec("If you invest", 4, (
           <div className="rdr-sbox" style={{ marginTop: 0 }}>
             <div className="rdr-kv">
-              <span>Most you're willing to lose</span>
+              <span>Amount you can invest</span>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <span>₹</span>
-                <input className="rdr-input rdr-num" type="text" inputMode="numeric" value={riskCapital} onChange={(e) => setRiskCapital(e.target.value.replace(/\D/g, ""))} />
+                <input className="rdr-input rdr-num" type="text" inputMode="numeric" value={invest} onChange={(e) => setInvest(e.target.value.replace(/\D/g, ""))} />
               </div>
             </div>
-            {kv("Quantity", `${sizing.qty.toLocaleString("en-IN")} shares`)}
-            {kv("Money needed", `₹${fmt0(sizing.cap)}`)}
-            {kv("If target / if stopped", <span><b style={{ color: colors.gn }}>+₹{fmt0(sizing.profit)}</b> / <b style={{ color: colors.rd }}>−₹{fmt0(sizing.loss)}</b></span>, true)}
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: "10px 0", borderBottom: "1px solid var(--line)" }}>
+              {[10000, 25000, 50000, 100000].map((v) => (
+                <button key={v} className={`rdr-chip${calc.amt === v ? " on" : ""}`} onClick={() => setInvest(String(v))}>
+                  {v >= 100000 ? "₹1 lakh" : `₹${v / 1000}k`}
+                </button>
+              ))}
+            </div>
+            {calc.qty > 0 ? (
+              <>
+                {kv("You can buy", `${calc.qty.toLocaleString("en-IN")} share${calc.qty === 1 ? "" : "s"} at ₹${fmt(ent, 1)}`)}
+                {kv("Money used", `₹${fmt0(calc.used)}`)}
+                {kv("If it reaches the target", <span style={{ color: colors.gn }}>+₹{fmt0(calc.profit)} <small>(+{calc.profitPct.toFixed(1)}%)</small></span>)}
+                {kv("If it hits the stop-loss", <span style={{ color: colors.rd }}>−₹{fmt0(calc.loss)} <small>(−{calc.lossPct.toFixed(1)}%)</small></span>, true)}
+              </>
+            ) : (
+              <div className="rdr-kv" style={{ borderBottom: "none", color: "var(--mu)" }}>
+                {calc.amt > 0 ? `One share costs ₹${fmt(ent, 1)}. Enter at least that to see a result.` : "Enter an amount to see profit and loss."}
+              </div>
+            )}
           </div>
-        ))}
+        ), "profit and loss at the target and the stop")}
 
         {(good.length > 0 || bad.length > 0) && sec("The case", 5, (
           <div className="rsp-case">
@@ -499,14 +589,14 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
 }
 
 const RSP_CSS = `
-.rsp{position:fixed;inset:0;z-index:70;overflow-y:auto;overflow-x:hidden;background:var(--bg);color:var(--ink);overscroll-behavior:contain;scrollbar-width:none;animation:rspin .5s cubic-bezier(.2,.9,.25,1) both;font-family:inherit}
+.rsp{position:absolute;inset:0;z-index:40;overflow-y:auto;overflow-x:hidden;background:var(--bg);color:var(--ink);overscroll-behavior:contain;scrollbar-width:none;animation:rspin .5s cubic-bezier(.2,.9,.25,1) both;font-family:inherit}
 .rsp::-webkit-scrollbar{display:none}
 .rsp.closing{animation:rspout .32s cubic-bezier(.4,0,.8,.4) both}
 @keyframes rspin{from{transform:translateX(100%)}to{transform:none}}
 @keyframes rspout{from{transform:none}to{transform:translateX(100%)}}
 .rsp *{box-sizing:border-box;min-width:0}
 .rsp:before{content:"";position:absolute;left:0;right:0;top:0;height:380px;background:radial-gradient(60% 70% at 25% 0,rgba(124,140,255,.25),transparent 70%),radial-gradient(50% 60% at 90% 10%,rgba(167,139,250,.16),transparent 70%);pointer-events:none}
-.rsp-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:max(14px,env(safe-area-inset-top)) 14px 10px;background:linear-gradient(var(--bg) 60%,transparent);backdrop-filter:blur(10px)}
+.rsp-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px 6px;background:linear-gradient(var(--bg) 60%,transparent);backdrop-filter:blur(10px)}
 .rsp-back{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 14px 0 11px;border-radius:99px;background:var(--glass);border:1px solid var(--line);color:var(--acc);font-size:15px;font-weight:650;cursor:pointer}
 .rsp-share{width:38px;height:38px;border-radius:50%;background:var(--glass);border:1px solid var(--line);color:var(--ink);font-size:16px;cursor:pointer}
 .rsp-mini{display:flex;flex-direction:column;align-items:center;line-height:1.15;opacity:0;transform:translateY(6px);transition:all .3s;pointer-events:none}
@@ -551,6 +641,19 @@ const RSP_CSS = `
 .rsp-pod-v{font-size:26px;font-weight:800;margin:6px 0 8px;letter-spacing:-.02em}
 .rsp-bar-t{height:6px;border-radius:3px;background:var(--glass2);overflow:hidden}
 .rsp-bar-t i{display:block;height:100%;border-radius:3px}
+.rsp-tfrow{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.rsp-tf{display:inline-flex;padding:3px;border-radius:99px;background:var(--glass2);border:1px solid var(--line)}
+.rsp-tf button{border:none;background:none;color:var(--mu);font-size:13px;font-weight:700;padding:6px 16px;border-radius:99px;cursor:pointer}
+.rsp-tf button.on{background:linear-gradient(150deg,var(--acc),var(--acc2));color:#fff;box-shadow:0 6px 14px -6px var(--acc)}
+.rsp-reload{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--glass);color:var(--mu);cursor:pointer;font-size:16px}
+.rsp-stage{position:relative;min-height:220px;border-radius:14px;overflow:hidden;background:var(--glass)}
+.rsp-stage img{width:100%;display:block;transition:opacity .3s}.rsp-stage img.reloading{opacity:.35}
+.rsp-stage-load{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;font-size:12.5px;color:var(--mu);z-index:2}
+.rsp-stage-load i{width:26px;height:26px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--acc);animation:rspspin 1s linear infinite}
+@keyframes rspspin{to{transform:rotate(360deg)}}
+.rsp-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--mu)}
+.rsp-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.rsp-legend b{color:var(--ink);margin-left:4px}
 .rsp-toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);padding:11px 18px;border-radius:99px;background:var(--ink);color:var(--bg);font-size:13px;font-weight:650;z-index:80;animation:rdrfade .2s both}
 @media (prefers-reduced-motion:reduce){.rsp,.rsp-rise{animation-duration:.01ms!important}}
 `;
