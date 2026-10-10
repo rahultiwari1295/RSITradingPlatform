@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { quantsyncApi } from "../api/quantsyncApi";
 import { liveMarketSocket } from "../services/liveMarketSocket";
+import { normalizePatternId, getBreakoutClassification, matchesMcap } from "../lib/setupEngine";
+// Re-exported so existing imports keep working; the logic now lives in lib/setupEngine.ts
+export { normalizePatternId, getBreakoutClassification };
 
 interface ScreenerScreenProps {
   theme?: "dark" | "light";
@@ -160,20 +163,6 @@ const MASTER_PATTERNS = [
   { id: "INV_HEAD_SHOULDERS", label: "Inv. Head & Shoulders", icon: SvgInvHeadShoulders },
 ];
 
-export function normalizePatternId(rawType?: string): string {
-  if (!rawType) return "OTHER";
-  const s = rawType.toLowerCase();
-  if (s.includes("breakout rally") || s.includes("volume breakout") || s.includes("flag")) return "BREAKOUT_RALLY";
-  if (s.includes("double bottom") || s.includes("double") || s.includes("w-reversal")) return "DOUBLE_BOTTOM";
-  if (s.includes("horizontal") || s.includes("rectangle") || s.includes("box") || s.includes("multi_year") || s.includes("multi-year") || s.includes("saucer") || s.includes("darvas")) return "HORIZONTAL_RANGE";
-  if (s.includes("pullback") || s.includes("50-day") || s.includes("ema")) return "PULLBACK";
-  if (s.includes("volatility") || s.includes("vcp") || s.includes("squeeze")) return "VCP_SQUEEZE";
-  if (s.includes("triangle") || s.includes("wedge")) return "TRIANGLE";
-  if (s.includes("cup") || s.includes("handle")) return "CUP_HANDLE";
-  if (s.includes("head") || s.includes("ihns")) return "INV_HEAD_SHOULDERS";
-  return "OTHER";
-}
-
 interface MiniBaseSparklineProps {
   candlesJson?: string | any[];
   isBullish?: boolean;
@@ -309,69 +298,6 @@ export const BreakoutProximityGauge: React.FC<BreakoutProximityGaugeProps> = ({ 
   );
 };
 
-export function getBreakoutClassification(s: any) {
-  const cmp = Number(s.curr_price || 0);
-  const brk = Number(s.breakout_level || 0);
-  const tgt = Number(s.target_1 || 0);
-  const sl = Number(s.stop_loss || 0);
-  const hasPivot = brk > 0;
-  const diffPct = hasPivot ? ((cmp - brk) / brk) * 100 : 0;
-  const diffAbs = Math.abs(diffPct);
-  const targetGainPct = (tgt > 0 && cmp > 0) ? ((tgt - cmp) / cmp * 100) : null;
-  const tf = (s.timeframe || "DAILY").toUpperCase();
-
-  // Buy Zone Thresholds under Option B
-  const buyZoneLimit = tf === "MONTHLY" ? 10.0 : tf === "WEEKLY" ? 6.5 : 4.5;
-
-  const isTargetHit = s.lifecycle_state === "TARGET_ACHIEVED" ||
-    String(s.action_title || "").includes("Target Achieved") ||
-    String(s.stage || "").includes("Target Achieved") ||
-    s.stance === "NEUTRAL" ||
-    (tgt > 0 && cmp >= tgt && brk > 0 && tgt > brk);
-
-  let executionState: "BUY_ZONE" | "RETEST" | "EXTENDED" | "SUBMERGED" | "TARGET_ACHIEVED" = "BUY_ZONE";
-
-  if (isTargetHit) {
-    executionState = "TARGET_ACHIEVED";
-  } else if (diffPct >= -1.8 && diffPct <= 1.2 && (s.breakout_status === "SUCCESS" || s.breakout_status === "POST_BREAKOUT" || Number(s.days_since_breakout || 0) >= 1)) {
-    executionState = "RETEST";
-  } else if (diffPct >= 0 && diffPct <= buyZoneLimit) {
-    executionState = "BUY_ZONE";
-  } else if (diffPct > buyZoneLimit) {
-    executionState = "EXTENDED";
-  } else {
-    // Slipped below pivot floor (diffPct < -1.8%)
-    executionState = "SUBMERGED";
-  }
-
-  // Compatibility flags
-  const isGoodToBuy = executionState === "BUY_ZONE" || executionState === "RETEST";
-  const isMissed = executionState === "EXTENDED";
-  const isSkip = executionState === "SUBMERGED";
-
-  let status: "BUY" | "MISSED" | "SKIP" | "TARGET_ACHIEVED" = "BUY";
-  if (isTargetHit) status = "TARGET_ACHIEVED";
-  else if (executionState === "EXTENDED") status = "MISSED";
-  else if (executionState === "SUBMERGED") status = "SKIP";
-
-  return {
-    hasPivot,
-    cmp,
-    brk,
-    tgt,
-    sl,
-    diffPct,
-    diffAbs,
-    targetGainPct,
-    executionState,
-    status,
-    isGoodToBuy,
-    isMissed,
-    isSkip,
-    isTargetHit
-  };
-}
-
 // Market Cap Filter Options
 const MCAP_OPTIONS = [
   { id: "ALL", label: "All Caps" },
@@ -380,16 +306,6 @@ const MCAP_OPTIONS = [
   { id: "Small-Cap", label: "Small Cap" },
   { id: "Micro-Cap", label: "Micro Cap" },
 ];
-
-function matchesMcap(s: any, filter: string) {
-  if (filter === "ALL") return true;
-  const raw = (s.mcap_tier || "").toLowerCase();
-  if (filter === "Large-Cap") return raw.includes("large");
-  if (filter === "Mid-Cap") return raw.includes("mid");
-  if (filter === "Small-Cap") return raw.includes("small");
-  if (filter === "Micro-Cap") return raw.includes("micro");
-  return true;
-}
 
 function formatDateStr(d?: string) {
   if (!d) return "—";

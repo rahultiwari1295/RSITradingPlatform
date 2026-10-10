@@ -4850,6 +4850,8 @@ export default function App() {
           {hasOpenedRadar && (
             <RadarScreen
               theme={theme}
+              livePrices={livePrices}
+              onOpenAnalyst={(stock) => setAnalystStock(stock)}
               onSelectStock={(sym) => {
                 navigateToTab("dna", sym);
               }}

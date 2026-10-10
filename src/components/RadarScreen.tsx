@@ -1,1280 +1,905 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { quantsyncApi } from "../api/quantsyncApi";
+import { liveMarketSocket } from "../services/liveMarketSocket";
+import {
+  PATTERN_OPTIONS,
+  MCAP_OPTIONS,
+  DEFAULT_FILTERS,
+  mergeSetupPool,
+  isActionableSetup,
+  applyLivePrices,
+  buildMlGatesMap,
+  isLowEdge,
+  classifySetups,
+  applySetupFilters,
+  sortSetups,
+  entryPriceFor,
+  rewardRisk,
+  timeframeLabel,
+  expectedMarketClose,
+  sanitizeClosedRecords,
+  closedTradeView,
+  normalizePatternId,
+  type SetupFilters,
+  type TimeframeFilter,
+} from "../lib/setupEngine";
+
+/**
+ * Radar — the single screen for actionable breakout setups.
+ * Uses the same data pipeline as the Pattern screen (lib/setupEngine) so counts match exactly.
+ */
 
 interface RadarScreenProps {
   theme?: "dark" | "light";
-  onSelectStock?: (symbol: string) => void;
+  livePrices?: Record<string, { price: number; change_pct?: number }>;
+  onSelectStock?: (symbol: string, fullData?: any) => void;
+  onOpenAnalyst?: (stock: any) => void;
   onSwitchTab?: (tab: string) => void;
 }
 
-interface StockItem {
-  symbol: string;
-  company_name?: string;
-  sector?: string;
-  curr_price?: number;
-  dna_score?: number;
-  breakout_level?: number;
-  stop_loss?: number;
-  target_1?: number;
-  breakout_status?: string;
-  pattern_stage?: string;
-  setup?: string;
-  pattern_type?: string;
-  volume_ratio_20d?: number;
-  rsi?: number;
-  adx14?: number;
-  risk_reward_ratio?: number;
-  days_since_breakout?: number;
-  is_fno?: boolean | number;
-  market_cap_cr?: number;
-  pe_ratio?: number;
-  roce_pct?: number;
-  mini_candles_json?: string | any[];
-}
+type Setup = Record<string, any>;
 
 const TABS = [
-  { key: "success", label: "Confirmed", query: { breakout_status: "SUCCESS" } },
-  { key: "retest", label: "Retest", query: { setup: "breakout_retest" } },
-  { key: "near_breakout", label: "Near", query: { pattern_stage: "NEAR_BREAKOUT" } },
-  { key: "failed", label: "At risk", query: { breakout_status: "FAILED" } },
+  { key: "confirmed", label: "Confirmed" },
+  { key: "retest", label: "Retest" },
+  { key: "near", label: "Near" },
+  { key: "risk", label: "At risk" },
+  { key: "closed", label: "Closed" },
 ];
 
 const SORTS = [
-  { key: "default", label: "Closest to breakout" },
+  { key: "default", label: "Closest to trigger" },
   { key: "dna_score", label: "DNA score" },
   { key: "rsi", label: "RSI" },
   { key: "volume_ratio", label: "Volume surge" },
 ];
 
-const formatINR = (n: number | undefined) =>
-  Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const TF_CHIPS: { id: TimeframeFilter; label: string }[] = [
+  { id: "ALL", label: "All" },
+  { id: "DAILY", label: "1D" },
+  { id: "WEEKLY", label: "1W" },
+  { id: "MONTHLY", label: "1M" },
+];
 
-const formatCompactINR = (n: number | undefined) =>
-  Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 });
+const fmt = (n: any, d = 2) =>
+  Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmt0 = (n: any) => Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 });
+const patLabel = (s: Setup) => String(s.pattern_type || "").split("·")[0].trim();
 
-export default function RadarScreen({ theme = "dark", onSelectStock, onSwitchTab }: RadarScreenProps) {
+export default function RadarScreen({ theme = "dark", livePrices, onSelectStock, onOpenAnalyst, onSwitchTab }: RadarScreenProps) {
   const isLight = theme === "light";
 
-  // Tab & Filter States
+  // ── UI state
   const [activeTab, setActiveTab] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState<SetupFilters>(DEFAULT_FILTERS);
+  const [searchInput, setSearchInput] = useState("");
   const [sortKey, setSortKey] = useState("default");
-  const [patFilter, setPatFilter] = useState("");
-  const [secFilter, setSecFilter] = useState("");
-  const [mcFilter, setMcFilter] = useState("");
-  const [fnoOnly, setFnoOnly] = useState(false);
-  const [minScore, setMinScore] = useState(0);
-
-  // Sheets & Modals
+  const [mlGateOn, setMlGateOn] = useState(true);
+  const [closedFilter, setClosedFilter] = useState<"ALL" | "TARGET_HIT" | "STOP_HIT">("ALL");
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [selectedStock, setSelectedStock] = useState<StockItem | null>(null);
+  const [selectedStock, setSelectedStock] = useState<Setup | null>(null);
 
-  // Data States
-  const [rows, setRows] = useState<StockItem[]>([]);
+  // ── data state
+  const [breakouts, setBreakouts] = useState<{ success: Setup[]; near: Setup[]; failed: Setup[] }>({ success: [], near: [], failed: [] });
+  const [rows, setRows] = useState<Setup[]>([]);
+  const [failedRows, setFailedRows] = useState<Setup[]>([]);
+  const [searchRows, setSearchRows] = useState<Setup[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [accuracy, setAccuracy] = useState<any>(null);
-  const [tabCounts, setTabCounts] = useState<number[]>([0, 0, 0, 0]);
+  const [patAcc, setPatAcc] = useState<any>(null);
+  const [mlGates, setMlGates] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  // Detail Sheet Specific States
+  const [closedRecords, setClosedRecords] = useState<Setup[]>([]);
+  const [closedLoading, setClosedLoading] = useState(false);
+
+  // ── detail sheet state
   const [riskCapital, setRiskCapital] = useState("10000");
   const [alertActive, setAlertActive] = useState(false);
   const [detailCandles, setDetailCandles] = useState<any[]>([]);
+  const [chartState, setChartState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [hoveredCandle, setHoveredCandle] = useState<any | null>(null);
 
-  // Theme Colors
-  const colors = useMemo(() => {
-    return isLight
-      ? {
-          bg: "#F2F2F7",
-          card: "#FFFFFF",
-          card2: "#E5E5EA",
-          ink: "#000000",
-          mu: "rgba(60,60,67,0.6)",
-          dim: "rgba(60,60,67,0.3)",
-          line: "rgba(60,60,67,0.18)",
-          bl: "#007AFF",
-          gn: "#248A3D",
-          rd: "#D70015",
-          or: "#C93400",
-          track: "rgba(120,120,128,0.16)",
-          sh: "rgba(20,30,70,0.12)",
-          bar: "rgba(249,249,249,0.92)",
-        }
-      : {
-          bg: "#0A0A0C",
-          card: "#1C1C1E",
-          card2: "#2C2C2E",
-          ink: "#FFFFFF",
-          mu: "rgba(235,235,245,0.6)",
-          dim: "rgba(235,235,245,0.32)",
-          line: "rgba(84,84,88,0.45)",
-          bl: "#0A84FF",
-          gn: "#30D158",
-          rd: "#FF453A",
-          or: "#FF9F0A",
-          track: "rgba(120,120,128,0.24)",
-          sh: "rgba(0,0,0,0.6)",
-          bar: "rgba(28,28,30,0.85)",
-        };
-  }, [isLight]);
+  const colors = useMemo(
+    () =>
+      isLight
+        ? { bg: "#F2F2F7", card: "#FFFFFF", card2: "#E5E5EA", ink: "#000000", mu: "rgba(60,60,67,0.6)", dim: "rgba(60,60,67,0.3)", line: "rgba(60,60,67,0.18)", bl: "#007AFF", gn: "#248A3D", rd: "#D70015", or: "#C93400", track: "rgba(120,120,128,0.16)", sh: "rgba(20,30,70,0.12)", bar: "rgba(249,249,249,0.92)" }
+        : { bg: "#0A0A0C", card: "#1C1C1E", card2: "#2C2C2E", ink: "#FFFFFF", mu: "rgba(235,235,245,0.6)", dim: "rgba(235,235,245,0.32)", line: "rgba(84,84,88,0.45)", bl: "#0A84FF", gn: "#30D158", rd: "#FF453A", or: "#FF9F0A", track: "rgba(120,120,128,0.24)", sh: "rgba(0,0,0,0.6)", bar: "rgba(28,28,30,0.85)" },
+    [isLight]
+  );
 
-  // Fetch summary and accuracy once
+  // ── load once (same sources as the Pattern screen)
   useEffect(() => {
-    quantsyncApi.getScreenerSummary().then(setSummary).catch(() => {});
-    quantsyncApi.getScreenerAccuracy(90).then(setAccuracy).catch(() => {});
-  }, []);
-
-  // Fetch count totals for each tab
-  useEffect(() => {
-    Promise.all(
-      TABS.map((t) =>
-        quantsyncApi
-          .getScreenerRows({ ...t.query, limit: 1 })
-          .then((d) => d.total || 0)
-          .catch(() => 0)
-      )
-    ).then((counts) => setTabCounts(counts));
-  }, []);
-
-  // Main fetch function for current tab and filters
-  const fetchRadarData = () => {
+    let alive = true;
     setIsLoading(true);
     setLoadError(false);
-
-    const queryParams: Record<string, any> = {
-      ...TABS[activeTab].query,
-      limit: 60,
-    };
-
-    if (searchQuery.trim()) queryParams.search = searchQuery.trim();
-    if (patFilter) queryParams.pattern_type = patFilter;
-    if (secFilter) queryParams.sector = secFilter;
-    if (mcFilter) queryParams.mcap_tier = mcFilter;
-    if (fnoOnly) queryParams.is_fno = "1";
-    if (minScore > 0) queryParams.min_score = minScore;
-    if (sortKey !== "default") queryParams.sort = sortKey;
-
-    quantsyncApi
-      .getScreenerRows(queryParams)
-      .then((d) => {
-        setRows(Array.isArray(d.rows) ? d.rows : []);
+    Promise.all([
+      quantsyncApi.getScreenerBreakouts(),
+      quantsyncApi.getScreenerRows({ limit: 150 }),
+      quantsyncApi.getScreenerRows({ breakout_status: "FAILED", limit: 60 }).catch(() => ({ rows: [] as Setup[] })),
+    ])
+      .then(([b, r, f]) => {
+        if (!alive) return;
+        setBreakouts({ success: b.success || [], near: b.near_breakout || [], failed: b.failed || [] });
+        setRows(Array.isArray(r.rows) ? r.rows : []);
+        setFailedRows(Array.isArray((f as any).rows) ? (f as any).rows : []);
         setIsLoading(false);
       })
-      .catch((err) => {
-        console.warn("Radar fetch error:", err);
+      .catch((e) => {
+        console.warn("Radar load error:", e);
+        if (!alive) return;
         setLoadError(true);
         setIsLoading(false);
       });
-  };
+    quantsyncApi.getScreenerSummary().then((d) => alive && setSummary(d)).catch(() => {});
+    quantsyncApi.getScreenerAccuracy(90).then((d) => alive && setAccuracy(d)).catch(() => {});
+    quantsyncApi.getPatternAccuracy().then((d) => alive && setPatAcc(d)).catch(() => {});
+    quantsyncApi.getMlQualityGates().then((d) => alive && setMlGates(d)).catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [reloadKey]);
+
+  // ── debounced server search so stocks outside the 150-row sample can still be found
+  useEffect(() => {
+    const q = searchInput.trim();
+    const t = setTimeout(() => {
+      setFilters((f) => (f.query === q ? f : { ...f, query: q }));
+      if (q.length < 2) {
+        setSearchRows([]);
+        return;
+      }
+      quantsyncApi
+        .getScreenerRows({ search: q, limit: 40 })
+        .then((d) => setSearchRows(Array.isArray(d.rows) ? d.rows : []))
+        .catch(() => setSearchRows([]));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  // ── pipeline: merge → valid → live → ML gate → classify
+  const gatesMap = useMemo(() => buildMlGatesMap(mlGates), [mlGates]);
+
+  const validPool = useMemo(
+    () => mergeSetupPool(breakouts.success, breakouts.near, rows, searchRows).filter(isActionableSetup),
+    [breakouts, rows, searchRows]
+  );
 
   useEffect(() => {
-    fetchRadarData();
-  }, [activeTab, searchQuery, sortKey, patFilter, secFilter, mcFilter, fnoOnly, minScore]);
+    const syms = validPool.map((s) => s.symbol).filter(Boolean);
+    if (syms.length) liveMarketSocket.subscribe(syms);
+  }, [validPool]);
 
-  // Verdict calculation
-  const getVerdict = (s: StockItem) => {
+  const livePool = useMemo(() => applyLivePrices(validPool, livePrices), [validPool, livePrices]);
+
+  const { gated, hiddenByGate } = useMemo(() => {
+    if (!mlGateOn || !mlGates) return { gated: livePool, hiddenByGate: 0 };
+    const kept = livePool.filter((s) => !isLowEdge(s, gatesMap));
+    return { gated: kept, hiddenByGate: livePool.length - kept.length };
+  }, [livePool, gatesMap, mlGateOn, mlGates]);
+
+  const groups = useMemo(() => classifySetups(gated), [gated]);
+
+  const riskPool = useMemo(() => {
+    const seen = new Set<string>();
+    const out: Setup[] = [];
+    const activeSyms = new Set(gated.map((s) => String(s.symbol).toUpperCase()));
+    for (const s of mergeSetupPool(breakouts.failed, failedRows)) {
+      const cmp = Number(s.curr_price || 0);
+      const brk = Number(s.breakout_level || 0);
+      const sym = String(s.symbol || "").toUpperCase();
+      if (s.breakout_status !== "FAILED" || !(cmp > 0) || !(brk > 0) || seen.has(sym) || activeSyms.has(sym)) continue;
+      seen.add(sym);
+      out.push({ ...s, _tradeType: "FAILED" });
+    }
+    return applyLivePrices(out, livePrices);
+  }, [breakouts.failed, failedRows, gated, livePrices]);
+
+  // filters shared by every list (pattern chip excluded so chip counts stay meaningful)
+  const filtersNoPattern = useMemo(() => ({ ...filters, pattern: "ALL" }), [filters]);
+
+  const tabBase = useMemo(() => {
+    const f = (l: Setup[]) => applySetupFilters(l, filtersNoPattern);
+    return { buyZone: f(groups.buyZone), runners: f(groups.runners), retest: f(groups.retest), radar: f(groups.radar), risk: f(riskPool) };
+  }, [groups, riskPool, filtersNoPattern]);
+
+  const byPattern = (l: Setup[]) => (filters.pattern === "ALL" ? l : l.filter((s) => normalizePatternId(s.pattern_type) === filters.pattern));
+  const view = useMemo(
+    () => ({
+      buyZone: sortSetups(byPattern(tabBase.buyZone), sortKey),
+      runners: sortSetups(byPattern(tabBase.runners), sortKey),
+      retest: sortSetups(byPattern(tabBase.retest), sortKey),
+      radar: sortSetups(byPattern(tabBase.radar), sortKey),
+      risk: sortSetups(byPattern(tabBase.risk), sortKey),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tabBase, filters.pattern, sortKey]
+  );
+
+  const tabCounts = [view.buyZone.length + view.runners.length, view.retest.length, view.radar.length, view.risk.length, null as number | null];
+
+  const activeList: Setup[] =
+    activeTab === 0 ? [...view.buyZone, ...view.runners] : activeTab === 1 ? view.retest : activeTab === 2 ? view.radar : activeTab === 3 ? view.risk : [];
+
+  // pattern chips with counts for the active tab (only patterns that exist)
+  const patternChips = useMemo(() => {
+    const base = activeTab === 0 ? [...tabBase.buyZone, ...tabBase.runners] : activeTab === 1 ? tabBase.retest : activeTab === 2 ? tabBase.radar : tabBase.risk;
+    const counts: Record<string, number> = {};
+    base.forEach((s) => {
+      const id = normalizePatternId(s.pattern_type);
+      counts[id] = (counts[id] || 0) + 1;
+    });
+    return PATTERN_OPTIONS.filter((p) => counts[p.id] > 0).map((p) => ({ ...p, count: counts[p.id] }));
+  }, [tabBase, activeTab]);
+
+  const sectorOptions = useMemo(() => {
+    const counts: Record<string, number> = {};
+    gated.forEach((s) => s.sector && (counts[s.sector] = (counts[s.sector] || 0) + 1));
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [gated]);
+
+  // ── closed trades ledger
+  useEffect(() => {
+    if (activeTab !== 4) return;
+    let alive = true;
+    setClosedLoading(true);
+    const params: any = { limit: 80 };
+    if (filters.timeframe !== "ALL") params.timeframe = filters.timeframe;
+    if (closedFilter !== "ALL") params.outcome = closedFilter;
+    if (filters.pattern !== "ALL") params.pattern = filters.pattern;
+    quantsyncApi
+      .getHistoricalBreakoutRecords(params)
+      .then((res) => alive && setClosedRecords(sanitizeClosedRecords(res.records || [])))
+      .catch(() => alive && setClosedRecords([]))
+      .finally(() => alive && setClosedLoading(false));
+    return () => {
+      alive = false;
+    };
+  }, [activeTab, filters.timeframe, filters.pattern, closedFilter]);
+
+  // ── verdict (driven by the engine's classification, not by raw server flags)
+  const getVerdict = (s: Setup) => {
     const bk = Number(s.breakout_level) || 0;
     const cmp = Number(s.curr_price) || 0;
-    const tg = Number(s.target_1) || 0;
     const sl = Number(s.stop_loss) || 0;
-
-    if (!bk || !cmp) return { k: "b", color: colors.bl, t: "Evaluating", s: "Calculating breakout pivot" };
-
-    const d = ((cmp - bk) / bk) * 100;
+    const d = bk > 0 ? ((cmp - bk) / bk) * 100 : 0;
     const ad = Math.abs(d);
-    const tgain = tg > 0 ? ((tg - cmp) / cmp) * 100 : 0;
-
-    if (s.breakout_status === "SUCCESS") {
-      if (d > 5.0) return { k: "r", color: colors.rd, t: "Missed Entry", s: `${d.toFixed(1)}% above breakout ₹${bk.toFixed(1)}` };
-      if (tgain > 0 && tgain < 5.0) return { k: "w", color: colors.or, t: "Limited Upside", s: `Only ${tgain.toFixed(1)}% remaining to Target 1` };
-      return { k: "g", color: colors.gn, t: "Buy Zone", s: `${d >= 0 ? "+" : ""}${d.toFixed(1)}% from breakout ₹${bk.toFixed(1)}` };
+    switch (s._tradeType) {
+      case "BUY_ZONE":
+        return { color: colors.gn, t: "Buy zone", s: `${d >= 0 ? "+" : ""}${d.toFixed(1)}% from pivot ₹${bk.toFixed(1)}` };
+      case "RETEST":
+        return { color: colors.bl, t: "Retest zone", s: `Testing ₹${bk.toFixed(1)} as support` };
+      case "RADAR":
+        return { color: colors.bl, t: "Near breakout", s: `${ad.toFixed(1)}% below · trigger above ₹${bk.toFixed(1)}` };
+      case "RUNNER":
+        return { color: colors.or, t: "Running", s: `${d.toFixed(1)}% above pivot ₹${bk.toFixed(1)} · don't chase` };
+      default:
+        return { color: colors.rd, t: "At risk", s: `${ad.toFixed(1)}% ${d < 0 ? "below" : "from"} pivot${sl > 0 ? ` · stop ₹${sl.toFixed(1)}` : ""}` };
     }
-    if (s.pattern_stage === "NEAR_BREAKOUT") {
-      return { k: "b", color: colors.bl, t: "Near Breakout", s: `${ad.toFixed(1)}% below · Buy trigger above ₹${bk.toFixed(1)}` };
-    }
-    if (s.setup === "breakout_retest" || s.setup === "retest") {
-      return { k: "b", color: colors.bl, t: "Retest Zone", s: `Testing ₹${bk.toFixed(1)} as validated support base` };
-    }
-    if (s.breakout_status === "FAILED") {
-      return { k: "r", color: colors.rd, t: "At Risk", s: `${ad.toFixed(1)}% below pivot · Protective stop ₹${sl.toFixed(1)}` };
-    }
-    return { k: "g", color: colors.gn, t: "Active Setup", s: `Pivot ₹${bk.toFixed(1)} · Target ₹${tg.toFixed(1)}` };
   };
 
-  // Prepare candle data when opening detail sheet
+  // ── detail sheet: real chart only
   useEffect(() => {
+    setHoveredCandle(null);
+    setAlertActive(false);
+    setDetailCandles([]);
     if (!selectedStock) {
-      setDetailCandles([]);
-      setHoveredCandle(null);
-      setAlertActive(false);
+      setChartState("idle");
       return;
     }
-
-    let parsedBars: any[] = [];
-    if (selectedStock.mini_candles_json) {
-      try {
-        const raw =
-          typeof selectedStock.mini_candles_json === "string"
-            ? JSON.parse(selectedStock.mini_candles_json)
-            : selectedStock.mini_candles_json;
-        if (Array.isArray(raw) && raw.length > 0) {
-          parsedBars = raw.map((b: any, idx: number) => ({
-            o: Number(b.o),
-            h: Number(b.h),
-            l: Number(b.l),
-            c: Number(b.c),
-            v: Number(b.v || 0),
-            time: b.time || `2026-10-${String(idx + 1).padStart(2, "0")}`,
-          }));
-        }
-      } catch (_) {}
-    }
-
-    if (!parsedBars.length) {
-      const cmp = Number(selectedStock.curr_price) || 100;
-      let p = cmp * 0.92;
-      for (let i = 0; i < 30; i++) {
-        const prog = i / 29;
-        const target = cmp * 0.92 + (cmp - cmp * 0.92) * prog;
-        parsedBars.push({
-          o: p,
-          h: Math.max(p, target) * 1.01,
-          l: Math.min(p, target) * 0.99,
-          c: target,
-          v: 100000 + i * 2500,
-          time: `Day ${i + 1}`,
-        });
-        p = target;
-      }
-    }
-    setDetailCandles(parsedBars);
-
-    // Fetch full chart data in background
-    fetch(`/api/chart/${encodeURIComponent(selectedStock.symbol)}?limit=44`)
-      .then((r) => r.json())
-      .then((chartData) => {
-        if (chartData && Array.isArray(chartData.candles) && chartData.candles.length > 0) {
-          setDetailCandles(
-            chartData.candles.map((c: any) => ({
-              o: Number(c.open),
-              h: Number(c.high),
-              l: Number(c.low),
-              c: Number(c.close),
-              v: Number(c.volume || 0),
-              time: c.time,
-            }))
-          );
-        }
+    let alive = true;
+    setChartState("loading");
+    quantsyncApi
+      .getChartData(selectedStock.symbol, 60)
+      .then((cd) => {
+        if (!alive) return;
+        const c = (cd && cd.candles) || [];
+        if (c.length) {
+          setDetailCandles(c.map((x: any) => ({ o: Number(x.open), h: Number(x.high), l: Number(x.low), c: Number(x.close), v: Number(x.volume || 0), time: x.time })));
+          setChartState("ready");
+        } else setChartState("error");
       })
-      .catch(() => {});
-  }, [selectedStock]);
+      .catch(() => alive && setChartState("error"));
+    return () => {
+      alive = false;
+    };
+  }, [selectedStock?.symbol]);
 
-  // Position Sizing calculations
   const sizing = useMemo(() => {
-    if (!selectedStock) return { qty: 0, cap: 0, profit: 0, loss: 0 };
+    if (!selectedStock) return { qty: 0, cap: 0, profit: 0, loss: 0, ent: 0, sl: 0, tg: 0 };
     const r = Math.max(0, Number(riskCapital.replace(/\D/g, "")) || 0);
-    const bk = Number(selectedStock.breakout_level) || 0;
-    const cmp = Number(selectedStock.curr_price) || 0;
     const sl = Number(selectedStock.stop_loss) || 0;
     const tg = Number(selectedStock.target_1) || 0;
-
-    const ent = selectedStock.breakout_status === "SUCCESS" ? cmp : bk;
-    const riskPerShare = Math.abs(ent - sl);
+    const ent = entryPriceFor(selectedStock);
+    const riskPerShare = sl > 0 && ent > sl ? ent - sl : 0;
     const qty = riskPerShare > 0 ? Math.floor(r / riskPerShare) : 0;
-    const cap = qty * ent;
-    const profit = qty * (tg > ent ? tg - ent : 0);
-    const loss = qty * riskPerShare;
-
-    return { qty, cap, profit, loss, ent, sl, tg };
+    return { qty, cap: qty * ent, profit: qty * (tg > ent ? tg - ent : 0), loss: qty * riskPerShare, ent, sl, tg };
   }, [selectedStock, riskCapital]);
 
-  // Split into Good to Buy and Extended for Confirmed tab
-  const { goodSetups, extendedSetups } = useMemo(() => {
-    if (activeTab !== 0) return { goodSetups: rows, extendedSetups: [] };
-    const good = rows.filter((s) => getVerdict(s).k === "g");
-    const ext = rows.filter((s) => getVerdict(s).k !== "g");
-    return { goodSetups: good, extendedSetups: ext };
-  }, [rows, activeTab]);
-
   const activeFilterCount =
-    (patFilter ? 1 : 0) + (secFilter ? 1 : 0) + (mcFilter ? 1 : 0) + (fnoOnly ? 1 : 0) + (minScore > 0 ? 1 : 0);
+    (filters.pattern !== "ALL" ? 1 : 0) + (filters.sector ? 1 : 0) + (filters.mcap !== "ALL" ? 1 : 0) + (filters.fnoOnly ? 1 : 0) + (filters.minScore > 0 ? 1 : 0) + (!mlGateOn ? 1 : 0);
 
-  // Render SVG Ruler
-  const renderRuler = (s: StockItem) => {
-    const sl = Number(s.stop_loss) || (Number(s.curr_price) || 100) * 0.93;
-    const bk = Number(s.breakout_level) || (Number(s.curr_price) || 100);
-    const tg = Number(s.target_1) || (Number(s.curr_price) || 100) * 1.12;
-    const cmp = Number(s.curr_price) || 100;
+  const setF = (patch: Partial<SetupFilters>) => setFilters((f) => ({ ...f, ...patch }));
 
-    const lo = Math.min(sl, cmp, bk) * 0.985;
-    const hi = Math.max(tg, cmp, bk) * 1.015;
-    const calcPct = (v: number) => Math.max(3, Math.min(97, ((v - lo) / (hi - lo)) * 100));
+  // freshness
+  const scanDate: string = summary?.scan_date || "";
+  const expected = expectedMarketClose();
+  const isStale = !!scanDate && scanDate < expected;
 
-    const slPct = calcPct(sl);
-    const bkPct = calcPct(bk);
-    const tgPct = calcPct(tg);
-    const cmpPct = calcPct(cmp);
+  const winRate = Number(patAcc?.overall?.win_rate_pct ?? accuracy?.win_rate_pct ?? 0);
 
+  // ── UI pieces
+  const Chip = ({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) => (
+    <button
+      onClick={onClick}
+      style={{
+        flex: "0 0 auto",
+        padding: "6px 12px",
+        borderRadius: 99,
+        border: `0.5px solid ${colors.line}`,
+        background: on ? colors.bl : colors.card,
+        color: on ? "#FFFFFF" : colors.ink,
+        fontSize: 12,
+        fontWeight: 600,
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </button>
+  );
+
+  const renderRuler = (s: Setup) => {
+    const sl = Number(s.stop_loss) || 0;
+    const bk = Number(s.breakout_level) || 0;
+    const tg = Number(s.target_1) || 0;
+    const cmp = Number(s.curr_price) || 0;
+    const pts = [sl, bk, tg, cmp].filter((v) => v > 0);
+    if (pts.length < 2) return null;
+    const lo = Math.min(...pts) * 0.985;
+    const hi = Math.max(...pts) * 1.015;
+    const pct = (v: number) => Math.max(3, Math.min(97, ((v - lo) / (hi - lo)) * 100));
+    const mark = (v: number, color: string, label: string) =>
+      v > 0 ? (
+        <>
+          <div style={{ position: "absolute", left: `${pct(v)}%`, top: 11, width: 2, height: 18, background: color, borderRadius: 1 }} />
+          <div style={{ position: "absolute", left: `${pct(v)}%`, top: 30, transform: "translateX(-50%)", fontSize: 10, color: colors.mu, whiteSpace: "nowrap" }}>
+            {label} {fmt0(v)}
+          </div>
+        </>
+      ) : null;
     return (
       <div style={{ position: "relative", height: 42, margin: "6px 2px 2px" }}>
-        {/* Track Bar */}
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: 18,
-            height: 4,
-            borderRadius: 2,
-            background: `linear-gradient(90deg, ${colors.rd}, ${colors.track} 38%, ${colors.track} 62%, ${colors.gn})`,
-            opacity: 0.6,
-          }}
-        />
-
-        {/* Stop Mark */}
-        <div style={{ position: "absolute", left: `${slPct}%`, top: 11, width: 2, height: 18, background: colors.rd, borderRadius: 1 }} />
-        <div style={{ position: "absolute", left: `${slPct}%`, top: 30, transform: "translateX(-50%)", fontSize: 10, color: colors.mu, whiteSpace: "nowrap" }}>
-          Stop {formatCompactINR(sl)}
-        </div>
-
-        {/* Breakout Mark */}
-        <div style={{ position: "absolute", left: `${bkPct}%`, top: 11, width: 2, height: 18, background: colors.bl, borderRadius: 1 }} />
-        <div style={{ position: "absolute", left: `${bkPct}%`, top: 30, transform: "translateX(-50%)", fontSize: 10, color: colors.mu, whiteSpace: "nowrap" }}>
-          Break {formatCompactINR(bk)}
-        </div>
-
-        {/* Target Mark */}
-        <div style={{ position: "absolute", left: `${tgPct}%`, top: 11, width: 2, height: 18, background: colors.gn, borderRadius: 1 }} />
-        <div style={{ position: "absolute", left: `${tgPct}%`, top: 30, transform: "translateX(-50%)", fontSize: 10, color: colors.mu, whiteSpace: "nowrap" }}>
-          Target {formatCompactINR(tg)}
-        </div>
-
-        {/* Current Price Dot */}
-        <div
-          style={{
-            position: "absolute",
-            left: `${cmpPct}%`,
-            top: 13,
-            width: 14,
-            height: 14,
-            marginLeft: -7,
-            borderRadius: "50%",
-            background: "#FFFFFF",
-            border: `3px solid ${colors.bl}`,
-            boxShadow: "0 2px 6px rgba(0,0,0,0.4)",
-            transition: "left 0.4s ease",
-          }}
-        />
+        <div style={{ position: "absolute", left: 0, right: 0, top: 18, height: 4, borderRadius: 2, background: `linear-gradient(90deg, ${colors.rd}, ${colors.track} 38%, ${colors.track} 62%, ${colors.gn})`, opacity: 0.6 }} />
+        {mark(sl, colors.rd, "Stop")}
+        {mark(bk, colors.bl, "Pivot")}
+        {mark(tg, colors.gn, "Target")}
+        <div style={{ position: "absolute", left: `${pct(cmp)}%`, top: 13, width: 14, height: 14, marginLeft: -7, borderRadius: "50%", background: "#FFFFFF", border: `3px solid ${colors.bl}`, boxShadow: "0 2px 6px rgba(0,0,0,0.4)", transition: "left 0.4s ease" }} />
       </div>
     );
   };
 
-  // Render Single Card
-  const renderCard = (s: StockItem, idx: number, isExtended = false) => {
-    const v = getVerdict(s);
-    const score = s.dna_score || 70;
-    const scoreBg = score >= 75 ? colors.gn : score >= 50 ? colors.or : colors.rd;
-    const vol = Number(s.volume_ratio_20d) || 1;
-    const rr = Number(s.risk_reward_ratio) || 0;
+  const pill = (text: string, color?: string) => (
+    <span style={{ padding: "2px 7px", borderRadius: 99, background: colors.track, color: color || colors.mu, fontSize: 10.5, fontWeight: 600 }}>{text}</span>
+  );
 
+  const renderCard = (s: Setup, idx: number, dim = false) => {
+    const v = getVerdict(s);
+    const hasScore = Number(s.dna_score) > 0;
+    const score = Number(s.dna_score) || 0;
+    const scoreBg = score >= 75 ? colors.gn : score >= 50 ? colors.or : colors.rd;
+    const vol = Number(s.volume_ratio_20d) || 0;
+    const rr = rewardRisk(s);
+    const rsi = Number(s.rsi) || 0;
     return (
       <div
         key={`${s.symbol}-${idx}`}
         onClick={() => setSelectedStock(s)}
-        style={{
-          position: "relative",
-          background: colors.card,
-          borderRadius: 20,
-          padding: 16,
-          marginBottom: 12,
-          border: `1px solid ${colors.line}`,
-          boxShadow: `0 6px 18px -6px ${colors.sh}`,
-          cursor: "pointer",
-          opacity: isExtended ? 0.78 : 1,
-          transition: "transform 0.15s ease",
-          touchAction: "manipulation",
-        }}
+        style={{ position: "relative", background: colors.card, borderRadius: 20, padding: 16, marginBottom: 12, border: `1px solid ${colors.line}`, boxShadow: `0 6px 18px -6px ${colors.sh}`, cursor: "pointer", opacity: dim ? 0.8 : 1, touchAction: "manipulation" }}
       >
-        {/* Row 1: Symbol & Price */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: colors.ink, letterSpacing: "0.02em" }}>{s.symbol}</div>
-            <div style={{ fontSize: 12, color: colors.mu, marginTop: 1 }}>
-              {s.company_name || s.symbol} · {s.sector || "Equities"}
+            <div style={{ fontSize: 12, color: colors.mu, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {s.company_name || s.symbol}
+              {s.sector ? ` · ${s.sector}` : ""}
             </div>
           </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: colors.ink }}>₹{formatINR(s.curr_price)}</div>
-            <div
-              style={{
-                display: "inline-block",
-                padding: "2px 8px",
-                borderRadius: 99,
-                background: scoreBg,
-                color: "#FFFFFF",
-                fontSize: 11,
-                fontWeight: 700,
-                marginTop: 3,
-              }}
-            >
-              DNA {score}
-            </div>
+          <div style={{ textAlign: "right", flexShrink: 0 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: colors.ink }}>₹{fmt(s.curr_price)}</div>
+            {hasScore && (
+              <div style={{ display: "inline-block", padding: "2px 8px", borderRadius: 99, background: scoreBg, color: "#FFFFFF", fontSize: 11, fontWeight: 700, marginTop: 3 }}>DNA {Math.round(score)}</div>
+            )}
           </div>
         </div>
-
-        {/* Verdict Badge */}
-        <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 10, fontSize: 13, fontWeight: 600 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 10, fontSize: 13, fontWeight: 600, flexWrap: "wrap" }}>
           <span style={{ width: 8, height: 8, borderRadius: "50%", background: v.color, boxShadow: `0 0 6px ${v.color}` }} />
           <span style={{ color: v.color }}>{v.t}</span>
           <span style={{ color: colors.mu, fontWeight: 400, fontSize: 12 }}>{v.s}</span>
         </div>
-
-        {/* Ruler */}
+        <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+          {patLabel(s) && pill(patLabel(s))}
+          {pill(timeframeLabel(s.timeframe))}
+          {Number(s.is_fno) === 1 || s.is_fno === true ? pill("F&O") : null}
+        </div>
         {renderRuler(s)}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 6, paddingTop: 10, borderTop: `0.5px solid ${colors.line}`, fontSize: 11, color: colors.mu }}>
+          {[
+            ["Reward/Risk", rr > 0 ? `${rr.toFixed(1)}×` : "—"],
+            ["Volume surge", vol > 0 ? `${vol.toFixed(1)}×` : "—"],
+            ["RSI (14)", rsi > 0 ? rsi.toFixed(0) : "—"],
+          ].map(([k, val]) => (
+            <div key={k}>
+              <div>{k}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: colors.ink, marginTop: 1 }}>{val}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
-        {/* Stats Grid */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 8,
-            marginTop: 6,
-            paddingTop: 10,
-            borderTop: `0.5px solid ${colors.line}`,
-            fontSize: 11,
-            color: colors.mu,
-          }}
-        >
+  const renderClosed = (c: Setup, idx: number) => {
+    const v = closedTradeView(c);
+    const color = v.isWin ? colors.gn : v.isLoss ? colors.rd : colors.mu;
+    return (
+      <div key={`${c.symbol}-${c.breakout_date}-${idx}`} style={{ background: colors.card, borderRadius: 18, padding: 14, marginBottom: 10, border: `1px solid ${colors.line}` }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <div>Reward/Risk</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: colors.ink, marginTop: 1 }}>
-              {rr > 0 ? `${rr.toFixed(1)}×` : "—"}
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{c.symbol}</div>
+            <div style={{ fontSize: 11.5, color: colors.mu }}>
+              {v.pattern} · {timeframeLabel(c.timeframe)} · {v.days} bar{v.days === 1 ? "" : "s"}
             </div>
           </div>
-          <div>
-            <div>Volume Surge</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: colors.ink, marginTop: 1 }}>
-              {vol > 0 ? `${vol.toFixed(1)}×` : "—"}
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color }}>
+              {v.pnl >= 0 ? "+" : ""}
+              {v.pnl.toFixed(1)}%
             </div>
+            <div style={{ fontSize: 11, color, fontWeight: 600 }}>{v.isWin ? "Target hit" : v.isLoss ? "Stopped out" : String(c.outcome_status || "Closed")}</div>
           </div>
-          <div>
-            <div>RSI (14)</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: colors.ink, marginTop: 1 }}>
-              {Number(s.rsi || 50).toFixed(0)}
-            </div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 11, color: colors.mu }}>
+          <span>
+            {c.breakout_date || "—"} → {c.exit_date || "—"}
+          </span>
+          <span>
+            Pivot ₹{fmt(v.pivot)}
+            {v.peakRun ? ` · peak +${v.peakRun.toFixed(1)}%` : ""}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  const sectionHeader = (title: string, n: number, top = 14) => (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: `${top}px 4px 10px` }}>
+      <span style={{ fontSize: 14, fontWeight: 700 }}>{title}</span>
+      <span style={{ fontSize: 12, color: colors.mu }}>{n} setups</span>
+    </div>
+  );
+
+  const sheetShell = (onClose: () => void, children: React.ReactNode, maxH = "88vh") => (
+    <div style={{ position: "fixed", inset: 0, zIndex: 90, background: "rgba(0,0,0,0.6)", display: "flex", flexDirection: "column", justifyContent: "flex-end" }} onClick={onClose}>
+      <div style={{ background: colors.bg, borderRadius: "24px 24px 0 0", maxHeight: maxH, overflowY: "auto", padding: "16px 18px 36px", boxShadow: "0 -10px 40px rgba(0,0,0,0.4)" }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: colors.dim, margin: "0 auto 14px" }} />
+        {children}
+      </div>
+    </div>
+  );
+
+  const label = (t: string) => <div style={{ fontSize: 12, fontWeight: 700, color: colors.mu, textTransform: "uppercase", marginBottom: 8 }}>{t}</div>;
+  const row = (k: string, val: React.ReactNode, last = false) => (
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: last ? "none" : `0.5px solid ${colors.line}` }}>
+      <span style={{ color: colors.mu }}>{k}</span>
+      <span style={{ fontWeight: 700 }}>{val}</span>
+    </div>
+  );
+
+  // ── chart
+  const renderChart = (s: Setup) => {
+    if (chartState === "loading" || chartState === "idle") return <div style={{ marginTop: 14, padding: "30px 0", textAlign: "center", fontSize: 12, color: colors.mu }}>Loading chart…</div>;
+    if (chartState === "error" || !detailCandles.length) return <div style={{ marginTop: 14, padding: "30px 0", textAlign: "center", fontSize: 12, color: colors.mu }}>Chart data unavailable</div>;
+    const N = detailCandles.length;
+    const W = 340, H = 180, pt = 16, pb = 12, pl = 6, pr = 46;
+    const ch = H - pt - pb;
+    const cw = W - pl - pr;
+    const lo = Math.min(...detailCandles.map((b) => b.l)) * 0.985;
+    const hi = Math.max(...detailCandles.map((b) => b.h)) * 1.015;
+    const rg = hi - lo || 1;
+    const getY = (v: number) => pt + ch - ((Math.min(hi, Math.max(lo, v)) - lo) / rg) * ch;
+    const getX = (i: number) => pl + (i / (N - 1 || 1)) * cw;
+    const bw = Math.max(2, Math.min(6, (cw / N) * 0.65));
+    const line = (v: number, color: string, dashed = true) =>
+      v > 0 ? (
+        <g>
+          <line x1={pl} x2={W - pr} y1={getY(v)} y2={getY(v)} stroke={color} strokeWidth="1" strokeDasharray={dashed ? "3 3" : undefined} />
+          <text x={W - 2} y={getY(v) + 3} textAnchor="end" fill={color} fontSize="9" fontWeight="700">₹{v.toFixed(0)}</text>
+        </g>
+      ) : null;
+    return (
+      <div style={{ marginTop: 14 }}>
+        <div style={{ background: isLight ? "#F8F9FA" : "#141518", borderRadius: 12, padding: "8px 6px", overflow: "hidden" }}>
+          <svg
+            viewBox={`0 0 ${W} ${H}`}
+            style={{ width: "100%", height: "auto", display: "block", touchAction: "pan-y" }}
+            onPointerMove={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+              setHoveredCandle(detailCandles[Math.min(N - 1, Math.floor((x / rect.width) * N))]);
+            }}
+            onPointerLeave={() => setHoveredCandle(null)}
+          >
+            {line(Number(s.breakout_level) || 0, colors.bl)}
+            {line(Number(s.stop_loss) || 0, colors.rd)}
+            {line(Number(s.target_1) || 0, colors.gn)}
+            {detailCandles.map((b, i) => {
+              const x = getX(i);
+              const c = b.c >= b.o ? colors.gn : colors.rd;
+              const yTop = getY(Math.max(b.o, b.c));
+              const yBot = getY(Math.min(b.o, b.c));
+              return (
+                <g key={i}>
+                  <line x1={x} x2={x} y1={getY(b.h)} y2={getY(b.l)} stroke={c} strokeWidth="1" />
+                  <rect x={x - bw / 2} y={yTop} width={bw} height={Math.max(1.5, yBot - yTop)} fill={c} rx="0.5" />
+                </g>
+              );
+            })}
+          </svg>
+          <div style={{ fontSize: 11, color: colors.mu, marginTop: 4, minHeight: 18 }}>
+            {hoveredCandle ? (
+              <span>
+                <b>{hoveredCandle.time}</b> · O {hoveredCandle.o.toFixed(1)} · H {hoveredCandle.h.toFixed(1)} · L {hoveredCandle.l.toFixed(1)} · C{" "}
+                <span style={{ color: hoveredCandle.c >= hoveredCandle.o ? colors.gn : colors.rd, fontWeight: 700 }}>{hoveredCandle.c.toFixed(1)}</span>
+              </span>
+            ) : (
+              "Touch or drag across the chart to inspect sessions"
+            )}
           </div>
         </div>
       </div>
     );
   };
 
+  const emptyState = (t: string, sub: string) => (
+    <div style={{ textAlign: "center", padding: "40px 20px", color: colors.mu }}>
+      <div style={{ fontSize: 16, fontWeight: 700, color: colors.ink, margin: "8px 0" }}>{t}</div>
+      <div>{sub}</div>
+    </div>
+  );
+
+  const clearAll = () => {
+    setFilters(DEFAULT_FILTERS);
+    setSearchInput("");
+    setMlGateOn(true);
+  };
+
   return (
-    <div
-      style={{
-        position: "relative",
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        background: colors.bg,
-        color: colors.ink,
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', sans-serif",
-        overflowY: "auto",
-        WebkitOverflowScrolling: "touch",
-      }}
-    >
-      {/* Top Header Bar */}
-      <div
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 30,
-          background: colors.bar,
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          borderBottom: `0.5px solid ${colors.line}`,
-          padding: "12px 16px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
+    <div style={{ position: "relative", width: "100%", height: "100%", display: "flex", flexDirection: "column", background: colors.bg, color: colors.ink, fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', sans-serif", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+      {/* Header */}
+      <div style={{ position: "sticky", top: 0, zIndex: 30, background: colors.bar, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: `0.5px solid ${colors.line}`, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0, letterSpacing: "-0.02em" }}>Pattern Radar</h1>
-          <div style={{ fontSize: 12, color: colors.mu, marginTop: 1 }}>
-            {summary?.total_stocks ? `${summary.total_stocks.toLocaleString("en-IN")} NSE Stocks · ` : ""}
-            {summary?.scan_date || "Live Daily Scan"}
+          <div style={{ fontSize: 12, color: isStale ? colors.or : colors.mu, marginTop: 1 }}>
+            {scanDate ? `Scan ${scanDate}${isStale ? ` · latest expected ${expected}` : ""}` : "Daily scan"}
           </div>
         </div>
-
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            onClick={() => setIsFilterOpen(true)}
-            style={{
-              position: "relative",
-              padding: "7px 14px",
-              borderRadius: 14,
-              background: colors.track,
-              border: "none",
-              color: colors.ink,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Filters
-            {activeFilterCount > 0 && (
-              <span
-                style={{
-                  marginLeft: 6,
-                  padding: "1px 6px",
-                  borderRadius: 10,
-                  background: colors.bl,
-                  color: "#FFFFFF",
-                  fontSize: 10,
-                  fontWeight: 700,
-                }}
-              >
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
-        </div>
+        <button onClick={() => setIsFilterOpen(true)} style={{ padding: "7px 14px", borderRadius: 14, background: colors.track, border: "none", color: colors.ink, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          Filters
+          {activeFilterCount > 0 && <span style={{ marginLeft: 6, padding: "1px 6px", borderRadius: 10, background: colors.bl, color: "#FFFFFF", fontSize: 10, fontWeight: 700 }}>{activeFilterCount}</span>}
+        </button>
       </div>
 
-      {/* Main Container */}
       <div style={{ padding: "14px 16px 80px", maxWidth: 900, width: "100%", margin: "0 auto" }}>
-        {/* Search Bar */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            height: 40,
-            borderRadius: 12,
-            background: colors.track,
-            padding: "0 12px",
-            marginBottom: 14,
-          }}
-        >
-          <span style={{ color: colors.mu, fontSize: 16 }}>🔍</span>
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search stock by symbol or company"
-            style={{
-              flex: 1,
-              background: "none",
-              border: "none",
-              outline: "none",
-              color: colors.ink,
-              fontSize: 14,
-            }}
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              style={{ background: "none", border: "none", color: colors.mu, cursor: "pointer", fontSize: 14 }}
-            >
+        {/* Search */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, height: 40, borderRadius: 12, background: colors.track, padding: "0 12px", marginBottom: 12 }}>
+          <input type="search" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Search symbol or company" style={{ flex: 1, background: "none", border: "none", outline: "none", color: colors.ink, fontSize: 14 }} />
+          {searchInput && (
+            <button onClick={() => setSearchInput("")} style={{ background: "none", border: "none", color: colors.mu, cursor: "pointer", fontSize: 14 }}>
               ✕
             </button>
           )}
         </div>
 
-        {/* Segmented Control Tabs */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            background: colors.track,
-            borderRadius: 12,
-            padding: 3,
-            marginBottom: 16,
-          }}
-        >
+        {/* Tabs */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", background: colors.track, borderRadius: 12, padding: 3, marginBottom: 12 }}>
           {TABS.map((t, idx) => {
-            const isSel = idx === activeTab;
+            const sel = idx === activeTab;
             return (
-              <button
-                key={t.key}
-                onClick={() => setActiveTab(idx)}
-                style={{
-                  padding: "8px 4px",
-                  borderRadius: 9,
-                  border: "none",
-                  background: isSel ? colors.card : "transparent",
-                  color: isSel ? colors.ink : colors.mu,
-                  boxShadow: isSel ? "0 2px 6px rgba(0,0,0,0.18)" : "none",
-                  cursor: "pointer",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  fontSize: 12,
-                  fontWeight: isSel ? 700 : 500,
-                  transition: "all 0.2s ease",
-                }}
-              >
+              <button key={t.key} onClick={() => setActiveTab(idx)} style={{ padding: "7px 2px", borderRadius: 9, border: "none", background: sel ? colors.card : "transparent", color: sel ? colors.ink : colors.mu, boxShadow: sel ? "0 2px 6px rgba(0,0,0,0.18)" : "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", fontSize: 11.5, fontWeight: sel ? 700 : 500, transition: "all 0.2s ease" }}>
                 <span>{t.label}</span>
-                <span style={{ fontSize: 10, opacity: 0.8, marginTop: 1 }}>{tabCounts[idx] || "—"}</span>
+                <span style={{ fontSize: 10, opacity: 0.8, marginTop: 1 }}>{isLoading ? "…" : tabCounts[idx] ?? "—"}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Hero Banner */}
-        <div
-          style={{
-            padding: "16px 18px",
-            borderRadius: 20,
-            background: isLight
-              ? "linear-gradient(145deg, #FFFFFF, #EEF2F6)"
-              : "linear-gradient(145deg, #1A1C24, #121318)",
-            border: `1px solid ${colors.line}`,
-            marginBottom: 16,
-            display: "grid",
-            gridTemplateColumns: "1fr auto",
-            gap: 16,
-            alignItems: "center",
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: colors.gn, letterSpacing: "0.04em" }}>
-              ● LIVE SCAN ENGINE
-            </div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: colors.ink, marginTop: 2 }}>
-              {summary?.stances?.BULLISH || summary?.breakout_statuses?.SUCCESS || "492"} Bullish Setups
-            </div>
-            <div style={{ fontSize: 12, color: colors.mu, marginTop: 3 }}>
-              Scanned across {summary?.total_stocks ? summary.total_stocks.toLocaleString("en-IN") : "2,341"} verified NSE securities
-            </div>
-          </div>
-
-          <div
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: "50%",
-              background: `conic-gradient(${colors.gn} ${accuracy?.win_rate_pct || 51.8}%, ${colors.track} 0)`,
-              display: "grid",
-              placeItems: "center",
-            }}
-          >
-            <div
-              style={{
-                width: 60,
-                height: 60,
-                borderRadius: "50%",
-                background: colors.card,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <span style={{ fontSize: 14, fontWeight: 800, color: colors.ink }}>
-                {accuracy?.win_rate_pct ? `${accuracy.win_rate_pct}%` : "51.8%"}
-              </span>
-              <span style={{ fontSize: 8.5, color: colors.mu }}>Win Rate</span>
-            </div>
-          </div>
+        {/* Timeframe + pattern chips */}
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 6, marginBottom: 4 }}>
+          {TF_CHIPS.map((t) => (
+            <Chip key={t.id} on={filters.timeframe === t.id} onClick={() => setF({ timeframe: t.id })}>
+              {t.label}
+            </Chip>
+          ))}
         </div>
-
-        {/* Sort Bar */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, padding: "0 4px" }}>
-          <span style={{ fontSize: 13, color: colors.mu }}>
-            {rows.length} setups found
-          </span>
-          <button
-            onClick={() => setIsSortOpen(true)}
-            style={{
-              background: "none",
-              border: "none",
-              color: colors.bl,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Sort: {SORTS.find((s) => s.key === sortKey)?.label} ⌄
-          </button>
-        </div>
-
-        {/* Loading Skeletons */}
-        {isLoading && (
-          <div>
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                style={{
-                  height: 140,
-                  borderRadius: 20,
-                  marginBottom: 12,
-                  background: colors.card,
-                  opacity: 0.6,
-                  animation: "pulse 1.2s infinite ease-in-out",
-                }}
-              />
+        {patternChips.length > 0 && activeTab !== 4 && (
+          <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, marginBottom: 4 }}>
+            <Chip on={filters.pattern === "ALL"} onClick={() => setF({ pattern: "ALL" })}>
+              All patterns
+            </Chip>
+            {patternChips.map((p) => (
+              <Chip key={p.id} on={filters.pattern === p.id} onClick={() => setF({ pattern: filters.pattern === p.id ? "ALL" : p.id })}>
+                {p.label} {p.count}
+              </Chip>
             ))}
           </div>
         )}
 
-        {/* Error State */}
+        {/* Win-rate strip (real numbers only) */}
+        {winRate > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 14, background: colors.card, border: `1px solid ${colors.line}`, margin: "6px 0 12px", fontSize: 12, color: colors.mu }}>
+            <span>
+              Historical win rate <b style={{ color: colors.ink }}>{winRate.toFixed(1)}%</b>
+              {patAcc?.overall?.resolved_trades ? ` · ${fmt0(patAcc.overall.resolved_trades)} trades` : ""}
+            </span>
+            {patAcc?.overall?.avg_pnl_pct !== undefined && (
+              <span>
+                Avg <b style={{ color: Number(patAcc.overall.avg_pnl_pct) >= 0 ? colors.gn : colors.rd }}>{Number(patAcc.overall.avg_pnl_pct) >= 0 ? "+" : ""}{Number(patAcc.overall.avg_pnl_pct).toFixed(1)}%</b>
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Sort bar */}
+        {activeTab !== 4 && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, padding: "0 4px" }}>
+            <span style={{ fontSize: 13, color: colors.mu }}>
+              {activeList.length} setups
+              {mlGateOn && hiddenByGate > 0 ? ` · ${hiddenByGate} low-edge hidden` : ""}
+            </span>
+            <button onClick={() => setIsSortOpen(true)} style={{ background: "none", border: "none", color: colors.bl, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              Sort: {SORTS.find((s) => s.key === sortKey)?.label} ⌄
+            </button>
+          </div>
+        )}
+
+        {/* Loading */}
+        {isLoading && [1, 2, 3].map((i) => <div key={i} style={{ height: 140, borderRadius: 20, marginBottom: 12, background: colors.card, opacity: 0.6 }} />)}
+
         {loadError && !isLoading && (
           <div style={{ textAlign: "center", padding: "40px 20px", color: colors.mu }}>
-            <div style={{ fontSize: 32 }}>📡</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: colors.ink, margin: "8px 0" }}>
-              Could not load scan setups
-            </div>
-            <button
-              onClick={fetchRadarData}
-              style={{
-                marginTop: 10,
-                padding: "8px 20px",
-                borderRadius: 12,
-                background: colors.bl,
-                color: "#FFFFFF",
-                border: "none",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
+            <div style={{ fontSize: 16, fontWeight: 700, color: colors.ink, margin: "8px 0" }}>Could not load scan setups</div>
+            <button onClick={() => setReloadKey((k) => k + 1)} style={{ marginTop: 10, padding: "8px 20px", borderRadius: 12, background: colors.bl, color: "#FFFFFF", border: "none", fontWeight: 600, cursor: "pointer" }}>
               Retry
             </button>
           </div>
         )}
 
-        {/* Stock List */}
-        {!isLoading && !loadError && (
+        {/* Lists */}
+        {!isLoading && !loadError && activeTab !== 4 && (
           <div>
-            {rows.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "40px 20px", color: colors.mu }}>
-                <div style={{ fontSize: 32 }}>🔍</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: colors.ink, margin: "8px 0" }}>
-                  No setups match filters
-                </div>
-                <div>Try clearing active search or filters.</div>
-              </div>
+            {activeList.length === 0 ? (
+              <>
+                {emptyState("No setups match", "Try clearing search or filters.")}
+                {(activeFilterCount > 0 || searchInput) && (
+                  <button onClick={clearAll} style={{ display: "block", margin: "0 auto", padding: "8px 18px", borderRadius: 12, background: colors.track, color: colors.bl, border: "none", fontWeight: 600, cursor: "pointer" }}>
+                    Clear all
+                  </button>
+                )}
+              </>
             ) : activeTab === 0 ? (
               <>
-                {/* Good to buy section */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "14px 4px 10px" }}>
-                  <span style={{ fontSize: 14, fontWeight: 700 }}>Good to Buy</span>
-                  <span style={{ fontSize: 12, color: colors.mu }}>{goodSetups.length} setups</span>
-                </div>
-                {goodSetups.map((s, idx) => renderCard(s, idx, false))}
-
-                {/* Extended section */}
-                {extendedSetups.length > 0 && (
+                {sectionHeader("Good to buy", view.buyZone.length)}
+                {view.buyZone.length === 0 ? <div style={{ fontSize: 12, color: colors.mu, margin: "0 4px 8px" }}>Nothing in the buy zone right now.</div> : view.buyZone.map((s, i) => renderCard(s, i))}
+                {view.runners.length > 0 && (
                   <>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "20px 4px 10px" }}>
-                      <span style={{ fontSize: 14, fontWeight: 700 }}>Extended Trades</span>
-                      <span style={{ fontSize: 12, color: colors.mu }}>{extendedSetups.length} setups</span>
-                    </div>
-                    {extendedSetups.map((s, idx) => renderCard(s, goodSetups.length + idx, true))}
+                    {sectionHeader("Old trades · already running", view.runners.length, 20)}
+                    {view.runners.map((s, i) => renderCard(s, view.buyZone.length + i, true))}
                   </>
                 )}
               </>
             ) : (
-              rows.map((s, idx) => renderCard(s, idx, false))
+              activeList.map((s, i) => renderCard(s, i))
+            )}
+          </div>
+        )}
+
+        {/* Closed ledger */}
+        {activeTab === 4 && (
+          <div>
+            <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+              {([["ALL", "All"], ["TARGET_HIT", "Target hit"], ["STOP_HIT", "Stopped out"]] as const).map(([id, l]) => (
+                <Chip key={id} on={closedFilter === id} onClick={() => setClosedFilter(id)}>
+                  {l}
+                </Chip>
+              ))}
+            </div>
+            {closedLoading ? (
+              <div style={{ textAlign: "center", padding: 30, color: colors.mu }}>Loading closed trades…</div>
+            ) : closedRecords.length === 0 ? (
+              emptyState("No closed trades", "Nothing matches these filters.")
+            ) : (
+              closedRecords.map(renderClosed)
             )}
           </div>
         )}
       </div>
 
-      {/* Stock Detail Bottom Sheet Modal */}
-      {selectedStock && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 90,
-            background: "rgba(0,0,0,0.6)",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "flex-end",
-          }}
-          onClick={() => setSelectedStock(null)}
-        >
-          <div
-            style={{
-              background: colors.bg,
-              borderRadius: "24px 24px 0 0",
-              maxHeight: "88vh",
-              overflowY: "auto",
-              padding: "16px 18px 36px",
-              boxShadow: "0 -10px 40px rgba(0,0,0,0.4)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Grab handle */}
-            <div
-              style={{
-                width: 36,
-                height: 4,
-                borderRadius: 2,
-                background: colors.dim,
-                margin: "0 auto 14px",
-              }}
-            />
-
-            {/* Header */}
+      {/* Detail sheet */}
+      {selectedStock &&
+        sheetShell(
+          () => setSelectedStock(null),
+          <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
               <div>
                 <h3 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>{selectedStock.symbol}</h3>
                 <div style={{ fontSize: 13, color: colors.mu, marginTop: 2 }}>
-                  {selectedStock.company_name || selectedStock.symbol} · {selectedStock.sector || "Equities"}
-                  {selectedStock.is_fno ? " · F&O" : ""}
+                  {selectedStock.company_name || selectedStock.symbol}
+                  {selectedStock.sector ? ` · ${selectedStock.sector}` : ""}
+                  {Number(selectedStock.is_fno) === 1 || selectedStock.is_fno === true ? " · F&O" : ""}
                 </div>
               </div>
-              <button
-                onClick={() => setSelectedStock(null)}
-                style={{
-                  background: colors.track,
-                  border: "none",
-                  borderRadius: 12,
-                  padding: "6px 12px",
-                  color: colors.bl,
-                  fontWeight: 700,
-                  fontSize: 13,
-                  cursor: "pointer",
-                }}
-              >
+              <button onClick={() => setSelectedStock(null)} style={{ background: colors.track, border: "none", borderRadius: 12, padding: "6px 12px", color: colors.bl, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                 Done
               </button>
             </div>
 
-            {/* Price & Verdict Card */}
-            <div
-              style={{
-                background: colors.card,
-                borderRadius: 18,
-                padding: 16,
-                marginBottom: 16,
-                border: `1px solid ${colors.line}`,
-              }}
-            >
+            <div style={{ background: colors.card, borderRadius: 18, padding: 16, marginBottom: 16, border: `1px solid ${colors.line}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span
-                    style={{
-                      width: 9,
-                      height: 9,
-                      borderRadius: "50%",
-                      background: getVerdict(selectedStock).color,
-                    }}
-                  />
-                  <span style={{ fontWeight: 700, color: getVerdict(selectedStock).color, fontSize: 15 }}>
-                    {getVerdict(selectedStock).t}
-                  </span>
+                  <span style={{ width: 9, height: 9, borderRadius: "50%", background: getVerdict(selectedStock).color }} />
+                  <span style={{ fontWeight: 700, color: getVerdict(selectedStock).color, fontSize: 15 }}>{getVerdict(selectedStock).t}</span>
                 </div>
-                <div style={{ fontSize: 20, fontWeight: 800 }}>₹{formatINR(selectedStock.curr_price)}</div>
+                <div style={{ fontSize: 20, fontWeight: 800 }}>₹{fmt(selectedStock.curr_price)}</div>
               </div>
-              <div style={{ fontSize: 12, color: colors.mu, marginTop: 4 }}>
-                {getVerdict(selectedStock).s}
-              </div>
+              <div style={{ fontSize: 12, color: colors.mu, marginTop: 4 }}>{getVerdict(selectedStock).s}</div>
+              {renderChart(selectedStock)}
+            </div>
 
-              {/* Candlestick SVG Chart */}
-              {detailCandles.length > 0 && (
-                <div style={{ marginTop: 14 }}>
-                  <div
-                    style={{
-                      position: "relative",
-                      background: isLight ? "#F8F9FA" : "#141518",
-                      borderRadius: 12,
-                      padding: "8px 6px",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <svg
-                      viewBox="0 0 340 180"
-                      style={{ width: "100%", height: "auto", display: "block" }}
-                      onPointerMove={(e) => {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-                        const idx = Math.min(detailCandles.length - 1, Math.floor((x / rect.width) * detailCandles.length));
-                        setHoveredCandle(detailCandles[idx]);
-                      }}
-                      onPointerLeave={() => setHoveredCandle(null)}
-                    >
-                      {(() => {
-                        const N = detailCandles.length;
-                        const W = 340, H = 180, pt = 16, pb = 32, pl = 6, pr = 46;
-                        const ch = H - pt - pb;
-                        const cw = W - pl - pr;
-                        const lo = Math.min(...detailCandles.map((b) => b.l)) * 0.985;
-                        const hi = Math.max(...detailCandles.map((b) => b.h)) * 1.015;
-                        const rg = hi - lo || 1;
-                        const getY = (v: number) => pt + ch - ((v - lo) / rg) * ch;
-                        const getX = (i: number) => pl + (i / (N - 1 || 1)) * cw;
-                        const sw = cw / N;
-                        const bw = Math.max(2, Math.min(6, sw * 0.65));
+            {label("Trade execution plan")}
+            <div style={{ background: colors.card, borderRadius: 14, padding: "0 14px", marginBottom: 16 }}>
+              {row(selectedStock._tradeType === "RADAR" ? "Entry (buy above)" : "Entry (market)", <span style={{ color: colors.bl }}>₹{sizing.ent ? sizing.ent.toFixed(1) : "—"}</span>)}
+              {row("Stop loss", <span style={{ color: colors.rd }}>₹{sizing.sl ? sizing.sl.toFixed(1) : "—"}</span>)}
+              {row("Target 1", <span style={{ color: colors.gn }}>₹{sizing.tg ? sizing.tg.toFixed(1) : "—"}</span>)}
+              {row("Reward / risk", rewardRisk(selectedStock) > 0 ? `${rewardRisk(selectedStock).toFixed(1)}×` : "—", true)}
+            </div>
 
-                        const bk = Number(selectedStock.breakout_level) || 0;
-                        const sl = Number(selectedStock.stop_loss) || 0;
-                        const tg = Number(selectedStock.target_1) || 0;
-
-                        return (
-                          <>
-                            {/* Breakout Line */}
-                            {bk > 0 && (
-                              <g>
-                                <line x1={pl} x2={W - pr} y1={getY(bk)} y2={getY(bk)} stroke={colors.bl} strokeWidth="1" strokeDasharray="3 3" />
-                                <text x={W - 2} y={getY(bk) + 3} textAnchor="end" fill={colors.bl} fontSize="9" fontWeight="700">
-                                  ₹{bk.toFixed(0)}
-                                </text>
-                              </g>
-                            )}
-                            {/* Stop Line */}
-                            {sl > 0 && (
-                              <g>
-                                <line x1={pl} x2={W - pr} y1={getY(sl)} y2={getY(sl)} stroke={colors.rd} strokeWidth="1" strokeDasharray="3 3" />
-                                <text x={W - 2} y={getY(sl) + 3} textAnchor="end" fill={colors.rd} fontSize="9">
-                                  ₹{sl.toFixed(0)}
-                                </text>
-                              </g>
-                            )}
-                            {/* Target Line */}
-                            {tg > 0 && (
-                              <g>
-                                <line x1={pl} x2={W - pr} y1={getY(tg)} y2={getY(tg)} stroke={colors.gn} strokeWidth="1" strokeDasharray="3 3" />
-                                <text x={W - 2} y={getY(tg) + 3} textAnchor="end" fill={colors.gn} fontSize="9">
-                                  ₹{tg.toFixed(0)}
-                                </text>
-                              </g>
-                            )}
-
-                            {/* Candles */}
-                            {detailCandles.map((b, i) => {
-                              const x = getX(i);
-                              const up = b.c >= b.o;
-                              const c = up ? colors.gn : colors.rd;
-                              const yTop = getY(Math.max(b.o, b.c));
-                              const yBot = getY(Math.min(b.o, b.c));
-                              const h = Math.max(1.5, yBot - yTop);
-
-                              return (
-                                <g key={i}>
-                                  <line x1={x} x2={x} y1={getY(b.h)} y2={getY(b.l)} stroke={c} strokeWidth="1" />
-                                  <rect x={x - bw / 2} y={yTop} width={bw} height={h} fill={c} rx="0.5" />
-                                </g>
-                              );
-                            })}
-                          </>
-                        );
-                      })()}
-                    </svg>
-
-                    <div style={{ fontSize: 11, color: colors.mu, marginTop: 4, minHeight: 18 }}>
-                      {hoveredCandle ? (
-                        <span>
-                          <b>{hoveredCandle.time}</b> · O {hoveredCandle.o.toFixed(1)} · H {hoveredCandle.h.toFixed(1)} · L{" "}
-                          {hoveredCandle.l.toFixed(1)} · C{" "}
-                          <span style={{ color: hoveredCandle.c >= hoveredCandle.o ? colors.gn : colors.rd, fontWeight: 700 }}>
-                            {hoveredCandle.c.toFixed(1)}
-                          </span>
-                        </span>
-                      ) : (
-                        "Touch or drag across chart to inspect daily sessions"
-                      )}
-                    </div>
-                  </div>
+            {label("Position sizing")}
+            <div style={{ background: colors.card, borderRadius: 14, padding: "0 14px", marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `0.5px solid ${colors.line}` }}>
+                <span style={{ color: colors.mu }}>Max risk capital</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <span>₹</span>
+                  <input type="text" inputMode="numeric" value={riskCapital} onChange={(e) => setRiskCapital(e.target.value.replace(/\D/g, ""))} style={{ width: 90, textAlign: "right", background: colors.track, border: "none", borderRadius: 8, padding: "6px 8px", color: colors.ink, fontWeight: 700, outline: "none" }} />
                 </div>
+              </div>
+              {row("Quantity", `${sizing.qty.toLocaleString("en-IN")} shares`)}
+              {row("Capital required", `₹${Math.round(sizing.cap).toLocaleString("en-IN")}`)}
+              {row(
+                "Target profit / stop loss",
+                <span>
+                  <b style={{ color: colors.gn }}>+₹{Math.round(sizing.profit).toLocaleString("en-IN")}</b> / <b style={{ color: colors.rd }}>−₹{Math.round(sizing.loss).toLocaleString("en-IN")}</b>
+                </span>,
+                true
               )}
             </div>
 
-            {/* Trade Execution Plan */}
-            <div style={{ fontSize: 12, fontWeight: 700, color: colors.mu, textTransform: "uppercase", marginBottom: 6 }}>
-              Trade Execution Plan
-            </div>
-            <div style={{ background: colors.card, borderRadius: 14, padding: "0 14px", marginBottom: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: `0.5px solid ${colors.line}` }}>
-                <span style={{ color: colors.mu }}>Entry Level</span>
-                <span style={{ fontWeight: 700, color: colors.bl }}>₹{sizing.ent?.toFixed(1) || "—"}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: `0.5px solid ${colors.line}` }}>
-                <span style={{ color: colors.mu }}>Stop Loss</span>
-                <span style={{ fontWeight: 700, color: colors.rd }}>₹{sizing.sl?.toFixed(1) || "—"}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: `0.5px solid ${colors.line}` }}>
-                <span style={{ color: colors.mu }}>Upside Target 1</span>
-                <span style={{ fontWeight: 700, color: colors.gn }}>₹{sizing.tg?.toFixed(1) || "—"}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 0" }}>
-                <span style={{ color: colors.mu }}>Reward / Risk Ratio</span>
-                <span style={{ fontWeight: 700 }}>
-                  {Number(selectedStock.risk_reward_ratio || 0) > 0 ? `${Number(selectedStock.risk_reward_ratio).toFixed(1)}×` : "—"}
-                </span>
-              </div>
-            </div>
-
-            {/* Dynamic Position Sizing */}
-            <div style={{ fontSize: 12, fontWeight: 700, color: colors.mu, textTransform: "uppercase", marginBottom: 6 }}>
-              Dynamic Position Sizing
-            </div>
-            <div style={{ background: colors.card, borderRadius: 14, padding: "0 14px", marginBottom: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `0.5px solid ${colors.line}` }}>
-                <span style={{ color: colors.mu }}>Max Risk Capital</span>
-                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <span>₹</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={riskCapital}
-                    onChange={(e) => setRiskCapital(e.target.value.replace(/\D/g, ""))}
-                    style={{
-                      width: 90,
-                      textAlign: "right",
-                      background: colors.track,
-                      border: "none",
-                      borderRadius: 8,
-                      padding: "6px 8px",
-                      color: colors.ink,
-                      fontWeight: 700,
-                      outline: "none",
-                    }}
-                  />
-                </div>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: `0.5px solid ${colors.line}` }}>
-                <span style={{ color: colors.mu }}>Position Quantity</span>
-                <span style={{ fontWeight: 700 }}>{sizing.qty.toLocaleString("en-IN")} shares</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: `0.5px solid ${colors.line}` }}>
-                <span style={{ color: colors.mu }}>Capital Required</span>
-                <span style={{ fontWeight: 700 }}>₹{Math.round(sizing.cap).toLocaleString("en-IN")}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "12px 0" }}>
-                <span style={{ color: colors.mu }}>Target Profit / Stop Loss</span>
-                <span>
-                  <b style={{ color: colors.gn }}>+₹{Math.round(sizing.profit).toLocaleString("en-IN")}</b> /{" "}
-                  <b style={{ color: colors.rd }}>−₹{Math.round(sizing.loss).toLocaleString("en-IN")}</b>
-                </span>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
+            {onOpenAnalyst && (
+              <button
+                onClick={() => {
+                  const s = selectedStock;
+                  setSelectedStock(null);
+                  onOpenAnalyst(s);
+                }}
+                style={{ width: "100%", padding: 14, borderRadius: 14, background: colors.bl, color: "#FFFFFF", border: "none", fontWeight: 700, fontSize: 16, cursor: "pointer", marginBottom: 10 }}
+              >
+                Open analyst view
+              </button>
+            )}
             <button
               onClick={() => {
-                const sym = selectedStock.symbol;
+                const s = selectedStock;
                 setSelectedStock(null);
-                if (onSelectStock) {
-                  onSelectStock(sym);
-                } else if (onSwitchTab) {
-                  onSwitchTab("dna");
-                }
+                if (onSelectStock) onSelectStock(s.symbol, s);
+                else if (onSwitchTab) onSwitchTab("dna");
               }}
-              style={{
-                width: "100%",
-                padding: "14px",
-                borderRadius: 14,
-                background: colors.bl,
-                color: "#FFFFFF",
-                border: "none",
-                fontWeight: 700,
-                fontSize: 16,
-                cursor: "pointer",
-                marginBottom: 10,
-              }}
+              style={{ width: "100%", padding: 12, borderRadius: 14, background: onOpenAnalyst ? colors.track : colors.bl, color: onOpenAnalyst ? colors.bl : "#FFFFFF", border: "none", fontWeight: 700, fontSize: 15, cursor: "pointer", marginBottom: 10 }}
             >
-              Open Institutional DNA Report
+              Open DNA report
             </button>
-
-            <button
-              onClick={() => setAlertActive(true)}
-              style={{
-                width: "100%",
-                padding: "12px",
-                borderRadius: 14,
-                background: colors.track,
-                color: alertActive ? colors.gn : colors.bl,
-                border: "none",
-                fontWeight: 600,
-                fontSize: 14,
-                cursor: "pointer",
-              }}
-            >
+            <button onClick={() => setAlertActive(true)} style={{ width: "100%", padding: 12, borderRadius: 14, background: colors.track, color: alertActive ? colors.gn : colors.bl, border: "none", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
               {alertActive ? "✓ Price alert active" : `Alert me at ₹${Number(selectedStock.breakout_level || 0).toFixed(1)}`}
             </button>
-          </div>
-        </div>
-      )}
+          </>
+        )}
 
-      {/* Sort Sheet Modal */}
-      {isSortOpen && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 90,
-            background: "rgba(0,0,0,0.6)",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "flex-end",
-          }}
-          onClick={() => setIsSortOpen(false)}
-        >
-          <div
-            style={{
-              background: colors.bg,
-              borderRadius: "24px 24px 0 0",
-              padding: "18px 20px 32px",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Sort setups</h3>
-              <button
-                onClick={() => setIsSortOpen(false)}
-                style={{ background: "none", border: "none", color: colors.bl, fontWeight: 700, cursor: "pointer" }}
-              >
-                Done
-              </button>
-            </div>
+      {/* Sort sheet */}
+      {isSortOpen &&
+        sheetShell(
+          () => setIsSortOpen(false),
+          <>
+            <h3 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 14px" }}>Sort setups</h3>
             <div style={{ background: colors.card, borderRadius: 14, overflow: "hidden" }}>
               {SORTS.map((s) => (
-                <div
-                  key={s.key}
-                  onClick={() => {
-                    setSortKey(s.key);
-                    setIsSortOpen(false);
-                  }}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: "14px 16px",
-                    borderBottom: `0.5px solid ${colors.line}`,
-                    cursor: "pointer",
-                  }}
-                >
+                <div key={s.key} onClick={() => { setSortKey(s.key); setIsSortOpen(false); }} style={{ display: "flex", justifyContent: "space-between", padding: "14px 16px", borderBottom: `0.5px solid ${colors.line}`, cursor: "pointer" }}>
                   <span style={{ fontWeight: sortKey === s.key ? 700 : 500 }}>{s.label}</span>
                   {sortKey === s.key && <span style={{ color: colors.bl }}>✓</span>}
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      )}
+          </>,
+          "60vh"
+        )}
 
-      {/* Filters Modal */}
-      {isFilterOpen && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 90,
-            background: "rgba(0,0,0,0.6)",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "flex-end",
-          }}
-          onClick={() => setIsFilterOpen(false)}
-        >
-          <div
-            style={{
-              background: colors.bg,
-              borderRadius: "24px 24px 0 0",
-              padding: "18px 20px 32px",
-              maxHeight: "80vh",
-              overflowY: "auto",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
+      {/* Filter sheet */}
+      {isFilterOpen &&
+        sheetShell(
+          () => setIsFilterOpen(false),
+          <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Filter Setups</h3>
-              <button
-                onClick={() => setIsFilterOpen(false)}
-                style={{ background: "none", border: "none", color: colors.bl, fontWeight: 700, cursor: "pointer" }}
-              >
+              <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Filter setups</h3>
+              <button onClick={() => setIsFilterOpen(false)} style={{ background: "none", border: "none", color: colors.bl, fontWeight: 700, cursor: "pointer" }}>
                 Done
               </button>
             </div>
 
-            {/* Market Cap */}
-            <div style={{ fontSize: 12, fontWeight: 700, color: colors.mu, textTransform: "uppercase", marginBottom: 8 }}>
-              Market Cap Tier
-            </div>
+            {label("Market cap")}
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-              {["", "Large Cap", "Mid-Cap", "Small-Cap", "Micro-Cap"].map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMcFilter(m)}
-                  style={{
-                    padding: "7px 14px",
-                    borderRadius: 99,
-                    background: mcFilter === m ? colors.bl : colors.card,
-                    color: mcFilter === m ? "#FFFFFF" : colors.ink,
-                    border: `0.5px solid ${colors.line}`,
-                    fontWeight: 600,
-                    fontSize: 13,
-                    cursor: "pointer",
-                  }}
-                >
-                  {m || "Any Market Cap"}
-                </button>
+              {MCAP_OPTIONS.map((m) => (
+                <Chip key={m.id} on={filters.mcap === m.id} onClick={() => setF({ mcap: m.id })}>
+                  {m.label}
+                </Chip>
               ))}
             </div>
 
-            {/* F&O Only Toggle */}
-            <div style={{ background: colors.card, borderRadius: 14, padding: "12px 16px", marginBottom: 16 }}>
+            {sectorOptions.length > 0 && (
+              <>
+                {label("Sector")}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+                  <Chip on={!filters.sector} onClick={() => setF({ sector: "" })}>
+                    Any
+                  </Chip>
+                  {sectorOptions.map(([name, n]) => (
+                    <Chip key={name} on={filters.sector === name} onClick={() => setF({ sector: filters.sector === name ? "" : name })}>
+                      {name} {n}
+                    </Chip>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <div style={{ background: colors.card, borderRadius: 14, padding: "12px 16px", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span>F&amp;O stocks only</span>
+              <input type="checkbox" checked={filters.fnoOnly} onChange={(e) => setF({ fnoOnly: e.target.checked })} style={{ width: 20, height: 20, accentColor: colors.bl }} />
+            </div>
+
+            <div style={{ background: colors.card, borderRadius: 14, padding: "12px 16px", marginBottom: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span>F&amp;O Universe Only</span>
-                <input
-                  type="checkbox"
-                  checked={fnoOnly}
-                  onChange={(e) => setFnoOnly(e.target.checked)}
-                  style={{ width: 20, height: 20, accentColor: colors.bl }}
-                />
+                <div>
+                  <div>Hide low-edge patterns</div>
+                  <div style={{ fontSize: 11, color: colors.mu, marginTop: 2 }}>ML quality gate · same as Pattern page</div>
+                </div>
+                <input type="checkbox" checked={mlGateOn} onChange={(e) => setMlGateOn(e.target.checked)} style={{ width: 20, height: 20, accentColor: colors.bl }} />
               </div>
             </div>
 
-            {/* Min DNA Score */}
             <div style={{ background: colors.card, borderRadius: 14, padding: "12px 16px", marginBottom: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                <span>Minimum DNA Conviction</span>
-                <span style={{ fontWeight: 700, color: colors.bl }}>{minScore}</span>
+                <span>Minimum DNA score</span>
+                <span style={{ fontWeight: 700, color: colors.bl }}>{filters.minScore}</span>
               </div>
-              <input
-                type="range"
-                min="0"
-                max="95"
-                step="5"
-                value={minScore}
-                onChange={(e) => setMinScore(Number(e.target.value))}
-                style={{ width: "100%", accentColor: colors.bl }}
-              />
+              <input type="range" min="0" max="95" step="5" value={filters.minScore} onChange={(e) => setF({ minScore: Number(e.target.value) })} style={{ width: "100%", accentColor: colors.bl }} />
             </div>
 
-            {/* Reset Button */}
-            <button
-              onClick={() => {
-                setPatFilter("");
-                setSecFilter("");
-                setMcFilter("");
-                setFnoOnly(false);
-                setMinScore(0);
-                setIsFilterOpen(false);
-              }}
-              style={{
-                width: "100%",
-                padding: "12px",
-                borderRadius: 12,
-                background: "none",
-                border: "none",
-                color: colors.rd,
-                fontWeight: 600,
-                fontSize: 14,
-                cursor: "pointer",
-              }}
-            >
-              Reset Filters
+            <button onClick={() => { clearAll(); setIsFilterOpen(false); }} style={{ width: "100%", padding: 12, borderRadius: 12, background: "none", border: "none", color: colors.rd, fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
+              Reset filters
             </button>
-          </div>
-        </div>
-      )}
+          </>,
+          "80vh"
+        )}
     </div>
   );
 }

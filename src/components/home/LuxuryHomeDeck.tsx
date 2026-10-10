@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { TerminalSnapshot, quantsyncApi } from "../../api/quantsyncApi";
 import { liveMarketSocket } from "../../services/liveMarketSocket";
-import { getBreakoutClassification } from "../ScreenerScreen";
+import { getBreakoutClassification } from "../../lib/setupEngine";
 
 interface IndexTick {
   n: string;
