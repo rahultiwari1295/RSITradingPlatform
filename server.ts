@@ -1198,7 +1198,7 @@ async function startServer() {
     }
   });
 
-  // Screener API proxy to local Python FastAPI backend (http://127.0.0.1:8000) or VPS
+  // Screener API proxy directly to live production VPS backend
   app.all(["/api/screener", "/api/screener/*"], async (req, res) => {
     try {
       const targetPath = req.originalUrl || req.url;
@@ -1217,37 +1217,20 @@ async function startServer() {
         return data;
       };
 
-      // Try local python server first on port 8000
-      try {
-        const localRes = await fetch(`http://127.0.0.1:8000${targetPath}`, {
-          method: req.method,
-          headers: { Accept: "application/json" },
-          signal: AbortSignal.timeout(1500)
-        });
-        if (localRes.ok) {
-          const data = await localRes.json();
-          return res.json(filterHomeHero(data));
-        }
-      } catch (e) {
-        // Local server offline or timed out
+      // Connect directly to live production VPS engine
+      const vpsUrl = `https://quantsync-api.duckdns.org:8443${targetPath}`;
+      const vpsRes = await fetch(vpsUrl, {
+        method: req.method,
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(12000)
+      });
+      if (vpsRes.ok) {
+        const data = await vpsRes.json();
+        return res.json(filterHomeHero(data));
       }
-
-      // Fallback to VPS endpoint
-      try {
-        const vpsRes = await fetch(`https://quantsync-api.duckdns.org:8443${targetPath}`, {
-          method: req.method,
-          headers: { Accept: "application/json" },
-          signal: AbortSignal.timeout(12000)
-        });
-        if (vpsRes.ok) {
-          const data = await vpsRes.json();
-          return res.json(filterHomeHero(data));
-        }
-      } catch (e) {
-        console.error("VPS proxy error:", e);
-      }
-      return res.status(502).json({ error: "Could not connect to screener backend service" });
+      return res.status(vpsRes.status).json({ error: `Live VPS returned ${vpsRes.status}` });
     } catch (err: any) {
+      console.error("Live VPS screener proxy error:", err);
       return res.status(500).json({ error: err.message });
     }
   });
