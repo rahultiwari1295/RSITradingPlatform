@@ -25,6 +25,8 @@ import TradingViewStockDetail from "./components/TradingViewStockDetail";
 import StockDNAScreen from "./components/StockDNAScreen";
 import ScreenerScreen from "./components/ScreenerScreen";
 import RadarScreen from "./components/RadarScreen";
+import TrackRecordPanel from "./components/TrackRecordPanel";
+import DataStatusBadge from "./components/DataStatusBadge";
 import { useLiveMarket, liveMarketSocket } from "./services/liveMarketSocket";
 import { LuxuryHomeDeck } from "./components/home/LuxuryHomeDeck";
 import "./components/home/LuxuryHomeDeck.css";
@@ -107,55 +109,6 @@ function getTradeDaysHeld(t: any): number {
   return Math.max(calDays, explicitDays || 2);
 }
 
-function generateWhyThisTradeV2(t: any): string[] {
-  const sym = t.sym || t.symbol || "Asset";
-  const tag = (t.tag || t.strategyName || t.strategyId || "").toLowerCase();
-  const rr = (t.target && t.entry && t.stop && t.entry > t.stop)
-    ? ((t.target - t.entry) / (t.entry - t.stop)).toFixed(1)
-    : "2.4";
-  const mlProb = t.ml || t.mlProbability || 72;
-  const comp = t.comp || t.compositeScore || 78;
-
-  if (tag.includes("flag") || tag.includes("tight")) {
-    return [
-      `${sym} formed a textbook High-Tight Flag with institutional momentum continuation.`,
-      `Consolidating in a tight volatility band above 20-day EMA support.`,
-      `Volume surge above 50-day average confirms strong accumulation.`,
-      `ML Conviction: ${mlProb}% win probability with asymmetric ${rr}:1 risk-reward profile.`
-    ];
-  }
-  if (tag.includes("stage") || tag.includes("base")) {
-    return [
-      `${sym} completed a multi-week Stage-2 accumulation base clearing pivot resistance.`,
-      `Relative Strength rank sits in top 8% of the 1,318 NSE universe.`,
-      `Weekly volume signature indicates persistent institutional accumulation.`,
-      `Target ₹${Number(t.target || 0).toFixed(2)} based on base measurement with stop at ₹${Number(t.stop || 0).toFixed(2)}.`
-    ];
-  }
-  if (tag.includes("rs") || tag.includes("leader") || tag.includes("strength")) {
-    return [
-      `Elite relative strength leader outperforming 92% of the market universe.`,
-      `Higher-high swing structure intact with tightening consolidation above 10-day EMA.`,
-      `Sector money flows showing positive institutional capital rotation.`,
-      `Composite AI conviction score: ${comp}/100 with ${mlProb}% ML continuation confidence.`
-    ];
-  }
-  if (tag.includes("gap") || tag.includes("earnings") || tag.includes("power")) {
-    return [
-      `Power earnings gap-up holding cleanly above opening range pivot.`,
-      `Volume expansion 3.4× above 30-day baseline with negligible pullback.`,
-      `Strict risk stop anchored at swing low ₹${Number(t.stop || 0).toFixed(2)}.`,
-      `Projected upside target ₹${Number(t.target || 0).toFixed(2)} with ${rr}:1 risk-reward ratio.`
-    ];
-  }
-  return [
-    `Breakout above overhead resistance on rising institutional turnover.`,
-    `Favorable ${rr}:1 risk-reward ratio targeting ₹${Number(t.target || 0).toFixed(2)}.`,
-    `Technical composite score: ${comp}/100 with ML conviction of ${mlProb}%.`,
-    `Strict risk mitigation stop maintained at ₹${Number(t.stop || 0).toFixed(2)}.`
-  ];
-}
-
 function RocketTransitionOverlay({ targetEngine }: { targetEngine: "v2" | "v3" }) {
   return (
     <div className="rocket-trans-overlay">
@@ -214,6 +167,19 @@ function mulberry32(a: number) {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+/** Sparkline from REAL values only; returns "" when there are not enough points. */
+function realSparkPath(values: any[], width: number, height: number): string {
+  const pts = (values || []).map(Number).filter((v) => Number.isFinite(v));
+  if (pts.length < 3) return "";
+  const mn = Math.min(...pts), mx = Math.max(...pts);
+  const span = mx - mn || 1;
+  return pts.map((v, i) => {
+    const x = (i / (pts.length - 1)) * width;
+    const y = height - ((v - mn) / span) * height * 0.85 - height * 0.075;
+    return `${i === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`;
+  }).join(" ");
 }
 
 function getTerminalSparkPath(seed: number, n: number, trend: number, width: number, height: number) {
@@ -290,29 +256,10 @@ function getMarketStatusInfo() {
   };
 }
 
-const TERMINAL_INDICES = [
-  { n: 'Nifty 50', v: 23091.30, p: 0.12, seed: 11, trend: 0.12 },
-  { n: 'Sensex', v: 73698.12, p: 0.16, seed: 22, trend: 0.16 },
-  { n: 'Bank Nifty', v: 55545.80, p: 0.19, seed: 33, trend: 0.19 }
-];
 
 const TERMINAL_BRIEFS: any[] = [];
 
 
-const TERMINAL_SECTORS = [
-  { n: 'Banking', p: 1.17 },
-  { n: 'IT', p: 2.76 },
-  { n: 'Auto', p: 0.58 },
-  { n: 'Metals', p: 1.37 },
-  { n: 'Energy', p: 0.34 },
-  { n: 'Pharma', p: 1.51 },
-  { n: 'FMCG', p: 0.14 },
-  { n: 'Realty', p: 0.97 },
-  { n: 'Infra', p: 1.83 },
-  { n: 'Telecom', p: 2.20 },
-  { n: 'Chemicals', p: 1.40 },
-  { n: 'Consumer Durables', p: 1.50 }
-];
 
 const TERMINAL_MOVERS: any[] = [];
 
@@ -517,553 +464,14 @@ const NAV_SERIES = (() => {
   return arr.map(x => Math.round(x * scale));
 })();
 
-const DEMO_DATA = {
-  v2: {
-    nav: 414249,
-    pnl: 4361,
-    pnlPct: 1.06,
-    win: 68.4,
-    wins: 171,
-    losses: 79,
-    spark: NAV_SERIES.slice(-40),
-    active: [
-      {
-        sym: "VIJAYA",
-        ab: "VI",
-        name: "Vijaya Diagnostic",
-        tag: "Diversified · Breakout",
-        stars: 4.5,
-        ml: 70,
-        risk: "Low",
-        comp: 75,
-        entry: 1510.6,
-        now: 1554.9,
-        stop: 1388,
-        target: 1735,
-        r: 0.36,
-        days: 37,
-        pnl: 441,
-        pnlPct: 2.93,
-        seed: 501,
-        chartDays: 40,
-        grad: "linear-gradient(135deg,#6366F1,#8B5CF6)",
-        why: [
-          "Breakout above 20-day consolidation",
-          "Relative strength rank: Top 5% of universe",
-          "Sector showing institutional inflows",
-          "ML confidence: 70% probability of 2R+ gain",
-        ],
-        timeline: [
-          ["Aug 13", "Entered at ₹1,510.60 · 10 shares", "act"],
-          ["Aug 20", "Stop raised to ₹1,420 (break-even lock)", ""],
-          ["Sep 05", "Holding · +1.2R · Trailing stop active", "good"],
-          ["Live", "Current · +0.36R · ₹1,554.90", "act"],
-        ],
-        radar: [80, 70, 85, 75],
-      },
-      {
-        sym: "GRINFRA",
-        ab: "GR",
-        name: "G R Infraprojects",
-        tag: "Infrastructure · Base",
-        stars: 4,
-        ml: 66,
-        risk: "Low",
-        comp: 71,
-        entry: 1120.0,
-        now: 1177.4,
-        stop: 1042,
-        target: 1298,
-        r: 0.53,
-        days: 22,
-        pnl: 574,
-        pnlPct: 5.12,
-        seed: 502,
-        chartDays: 34,
-        grad: "linear-gradient(135deg,#0EA5E9,#2563EB)",
-        why: [
-          "Tight 18-day base with declining volatility",
-          "Volume expansion on breakout candle",
-          "Sector rotation into infrastructure",
-          "ML confidence: 66% probability of 2R+ gain",
-        ],
-        timeline: [
-          ["Aug 28", "Entered at ₹1,120.00 · 10 shares", "act"],
-          ["Sep 08", "Stop raised to ₹1,078", ""],
-          ["Live", "Current · +0.53R · ₹1,177.40", "act"],
-        ],
-        radar: [76, 66, 72, 80],
-      },
-      {
-        sym: "UNITEDPOLY",
-        ab: "UN",
-        name: "United Polyfab",
-        tag: "Textiles · Stage 2",
-        stars: 3.5,
-        ml: 61,
-        risk: "Medium",
-        comp: 64,
-        entry: 46.0,
-        now: 46.0,
-        stop: 42.32,
-        target: 47.67,
-        r: 0.0,
-        days: 1,
-        pnl: 0,
-        pnlPct: 0.0,
-        seed: 503,
-        chartDays: 40,
-        grad: "linear-gradient(135deg,#F59E0B,#D97706)",
-        why: [
-          "Fresh Stage-2 base breakout",
-          "Volume 2.4× the 20-day average",
-          "Sector momentum improving",
-          "ML confidence: 61% probability of 2R+ gain",
-        ],
-        timeline: [["Live", "Entered at ₹46.00 · 250 shares", "act"]],
-        radar: [64, 61, 58, 72],
-      },
-    ],
-    closed: [
-      {
-        sym: "KCPSUGIND",
-        ab: "KC",
-        name: "KCP Sugar",
-        entry: 25.81,
-        exit: 29.68,
-        pnl: 2179,
-        pnlPct: 14.99,
-        r: 2.23,
-        days: 58,
-        reason: "TARGET_HIT",
-        date: "Sep 15",
-      },
-      {
-        sym: "SIGACHI",
-        ab: "SI",
-        name: "Sigachi Industries",
-        entry: 26.44,
-        exit: 30.41,
-        pnl: 2182,
-        pnlPct: 15.02,
-        r: 2.09,
-        days: 35,
-        reason: "TARGET_HIT",
-        date: "Sep 15",
-      },
-      {
-        sym: "PRAJIND",
-        ab: "PR",
-        name: "Praj Industries",
-        entry: 612.0,
-        exit: 587.5,
-        pnl: -612,
-        pnlPct: -4.01,
-        r: -0.62,
-        days: 19,
-        reason: "STOP_HIT",
-        date: "Sep 11",
-      },
-      {
-        sym: "KIRLOSENG",
-        ab: "KI",
-        name: "Kirloskar Engines",
-        entry: 1445.0,
-        exit: 1588.2,
-        pnl: 1432,
-        pnlPct: 9.91,
-        r: 1.78,
-        days: 44,
-        reason: "TARGET_HIT",
-        date: "Sep 08",
-      },
-      {
-        sym: "DEEPAKFERT",
-        ab: "DE",
-        name: "Deepak Fertilisers",
-        entry: 842.0,
-        exit: 874.5,
-        pnl: 812,
-        pnlPct: 3.86,
-        r: 1.12,
-        days: 28,
-        reason: "TIME_EXIT",
-        date: "Sep 04",
-      },
-      {
-        sym: "NATCOPHARM",
-        ab: "NA",
-        name: "Natco Pharma",
-        entry: 1042.0,
-        exit: 1002.0,
-        pnl: -400,
-        pnlPct: -3.84,
-        r: -0.55,
-        days: 12,
-        reason: "STOP_HIT",
-        date: "Sep 02",
-      },
-    ],
-    scanner: {
-      scanned: 847,
-      tech: 142,
-      quality: 38,
-      selected: 3,
-      note: '"AI evaluated 847 stocks but capital allocation limits entries to top 3 conviction picks."',
-      top: [
-        { symbol: "STOCK_A", score: 94, stars: 5 },
-        { symbol: "STOCK_B", score: 87, stars: 4.5 },
-        { symbol: "STOCK_C", score: 81, stars: 4 },
-      ],
-    },
-  },
-  v3: {
-    nav: 286540,
-    pnl: 2918,
-    pnlPct: 1.03,
-    win: 61.2,
-    wins: 82,
-    losses: 52,
-    spark: NAV_SERIES.slice(-40).map(v => Math.round(v * 0.69)),
-    active: [
-      {
-        sym: "UNITEDPOLY",
-        ab: "UN",
-        name: "United Polyfab",
-        stage: "Stage 2 Base 📐",
-        price: 46.0,
-        chg: 0.0,
-        days: 1,
-        grad: "linear-gradient(135deg,#8B5CF6,#6366F1)",
-        seed: 101,
-        candles: 26,
-        start: 40.5,
-        overlays: [
-          { price: 45.05, color: "var(--gold)", label: "PIVOT ₹45.05" },
-          { price: 34.5, color: "var(--loss)", label: "FLOOR ₹34.50", opacity: 0.4 },
-          { price: 42.32, color: "var(--loss)", label: "STOP ₹42.32" },
-          { price: 46.0, color: "var(--accent)", label: "ENTRY ₹46.00" },
-          { price: 47.67, color: "var(--profit)", label: "T1 ₹47.67", dash: "2 3" },
-          { price: 53.15, color: "var(--profit)", label: "T2 ₹53.15", dash: "2 3", opacity: 0.45 },
-        ],
-        why: "Breaking out of a 29-day base with 3× volume. Fibonacci 1.272 extension sits at ₹47.67. Prior run: ₹22 → ₹38 (+72%). Classic Stage-2 accumulation with tightening volatility.",
-        fib: [
-          ["Fib 1.0", "₹43.37", "✅ Hit", "hit"],
-          ["Fib 1.272", "₹47.67", "🎯 Next", "next"],
-          ["Fib 1.618", "₹53.15", "Stretch", ""],
-        ],
-        radar: [88, 72, 80, 84],
-      },
-      {
-        sym: "AEGISLOG",
-        ab: "AE",
-        name: "Aegis Logistics",
-        stage: "52W High Breakout 🚀",
-        price: 812.4,
-        chg: 1.84,
-        days: 6,
-        grad: "linear-gradient(135deg,#10B981,#0EA5E9)",
-        seed: 202,
-        candles: 26,
-        start: 735,
-        overlays: [
-          { price: 790.0, color: "var(--gold)", label: "PIVOT ₹790" },
-          { price: 760.0, color: "var(--loss)", label: "STOP ₹760" },
-          { price: 812.4, color: "var(--accent)", label: "ENTRY ₹812" },
-          { price: 868.0, color: "var(--profit)", label: "T1 ₹868", dash: "2 3" },
-        ],
-        why: "New all-time high on 2.8× volume. Sector leader with rising relative strength. Base above the 50-DMA held for 14 sessions before the breakout candle closed near the high.",
-        fib: [
-          ["Fib 1.0", "₹802", "✅ Hit", "hit"],
-          ["Fib 1.272", "₹868", "🎯 Next", "next"],
-          ["Fib 1.618", "₹948", "Stretch", ""],
-        ],
-        radar: [91, 68, 86, 78],
-      },
-      {
-        sym: "CAPLIPOINT",
-        ab: "CA",
-        name: "Caplin Point",
-        stage: "Darvas Box 📦",
-        price: 1642.0,
-        chg: 0.62,
-        days: 3,
-        grad: "linear-gradient(135deg,#F59E0B,#EF4444)",
-        seed: 303,
-        candles: 26,
-        start: 1520,
-        overlays: [
-          { price: 1580.0, color: "var(--gold)", label: "BOX TOP ₹1,580" },
-          { price: 1470.0, color: "var(--loss)", label: "BOX FLOOR ₹1,470", opacity: 0.4 },
-          { price: 1552.0, color: "var(--loss)", label: "STOP ₹1,552" },
-          { price: 1740.0, color: "var(--profit)", label: "T1 ₹1,740", dash: "2 3" },
-        ],
-        why: "Darvas box breakout after 21 sessions of tight consolidation. Box height projects a ₹1,740 target. Volume confirmation at 2.3× average on the breakout candle.",
-        fib: [
-          ["Fib 1.0", "₹1,668", "🎯 Next", "next"],
-          ["Fib 1.272", "₹1,740", "Stretch", ""],
-          ["Fib 1.618", "₹1,862", "Stretch", ""],
-        ],
-        radar: [84, 64, 70, 76],
-      },
-    ],
-    closed: [
-      {
-        sym: "XYZSTOCK",
-        ab: "XY",
-        name: "XYZ Stock",
-        entry: 120,
-        exit: 148,
-        pnl: 2800,
-        pnlPct: 23.3,
-        r: 2.8,
-        days: 42,
-        reason: "TARGET_HIT (Fib 1.618)",
-        date: "Sep 15",
-      },
-      {
-        sym: "BHARATFORG",
-        ab: "BH",
-        name: "Bharat Forge",
-        entry: 1288,
-        exit: 1420,
-        pnl: 1320,
-        pnlPct: 10.2,
-        r: 1.92,
-        days: 31,
-        reason: "TARGET_HIT (Fib 1.272)",
-        date: "Sep 09",
-      },
-      {
-        sym: "NATCOPHARM",
-        ab: "NA",
-        name: "Natco Pharma",
-        entry: 1042,
-        exit: 1002,
-        pnl: -400,
-        pnlPct: -3.84,
-        r: -0.55,
-        days: 12,
-        reason: "STOP_HIT",
-        date: "Sep 04",
-      },
-    ],
-    scanner: {
-      scanned: 1318,
-      tech: 214,
-      quality: 38,
-      selected: 2,
-      note: '"V3 scanned 1,318 stocks across 5 pattern types. Capital allocation limited entries to the top 2 pattern-strength picks."',
-      top: [
-        { symbol: "UNITEDPOLY", score: 94, stars: 5 },
-        { symbol: "AEGISLOG", score: 91, stars: 4.5 },
-        { symbol: "CAPLIPOINT", score: 84, stars: 4 },
-      ],
-    },
-  },
-};
 
-const DEMO_PATTERNS = [
-  {
-    name: "Base Breakouts",
-    count: 7,
-    items: [
-      { s: "UNITEDPOLY", base: "32d", vol: "3.2×", score: 94, tier: "gold", seed: 101 },
-      { s: "STOCK_B", base: "18d", vol: "2.8×", score: 87, tier: "silver", seed: 202 },
-      { s: "STOCK_C", base: "45d", vol: "4.1×", score: 72, tier: "", seed: 303 },
-      { s: "STOCK_D", base: "26d", vol: "2.1×", score: 68, tier: "", seed: 404 },
-    ],
-  },
-  {
-    name: "52-Week High Breakouts",
-    count: 12,
-    items: [
-      { s: "AEGISLOG", base: "14d", vol: "2.8×", score: 91, tier: "gold", seed: 505 },
-      { s: "STOCK_E", base: "9d", vol: "3.0×", score: 78, tier: "", seed: 606 },
-    ],
-  },
-  {
-    name: "Darvas Box Breakouts",
-    count: 3,
-    items: [
-      { s: "CAPLIPOINT", base: "21d", vol: "2.3×", score: 84, tier: "silver", seed: 707 },
-      { s: "STOCK_F", base: "33d", vol: "2.0×", score: 71, tier: "", seed: 808 },
-    ],
-  },
-];
 
-const DEMO_BREAKOUTS = [
-  {
-    rank: 1,
-    rankIcon: "🥇",
-    symbol: "UNITEDPOLY",
-    pattern: "BASE",
-    score: 94,
-    volume_multiple: 3.2,
-    volFormatted: "3.2×",
-    price: 46.0,
-    priceFormatted: "₹46.00",
-    notes: "Breaking 29-day base · Fib aligned",
-    qualification_status: "AI_SELECTED",
-  },
-  {
-    rank: 2,
-    rankIcon: "🥈",
-    symbol: "AEGISLOG",
-    pattern: "52W_HIGH",
-    score: 91,
-    volume_multiple: 2.8,
-    volFormatted: "2.8×",
-    price: 812.4,
-    priceFormatted: "₹812.40",
-    notes: "New all-time high · Sector leader",
-    qualification_status: "QUALIFIED_SLOTS_FULL",
-  },
-  {
-    rank: 3,
-    rankIcon: "🥉",
-    symbol: "CAPLIPOINT",
-    pattern: "DARVAS",
-    score: 84,
-    volume_multiple: 2.3,
-    volFormatted: "2.3×",
-    price: 1642.0,
-    priceFormatted: "₹1,642.00",
-    notes: "Darvas box breakout · Strong volume",
-    qualification_status: "QUALIFIED_SLOTS_FULL",
-  },
-  {
-    rank: 4,
-    rankIcon: "4",
-    symbol: "STOCK_D",
-    pattern: "BASE",
-    score: 68,
-    volume_multiple: 1.8,
-    volFormatted: "1.8×",
-    price: 156.0,
-    priceFormatted: "₹156.00",
-    notes: "Narrow base but weak volume",
-    qualification_status: "FILTERED_VOLUME",
-  },
-  {
-    rank: 5,
-    rankIcon: "5",
-    symbol: "STOCK_G",
-    pattern: "52W_HIGH",
-    score: 64,
-    volume_multiple: 1.6,
-    volFormatted: "1.6×",
-    price: 342.1,
-    priceFormatted: "₹342.10",
-    notes: "Extended 8% above pivot",
-    qualification_status: "FILTERED_EXTENDED",
-  },
-];
 
-const DEMO_FEED = [
-  {
-    time: "15:45",
-    kind: "p",
-    icon: "🟢",
-    title: "KCPSUGIND sold at ₹29.68",
-    desc: '<b class="num up">+₹2,179 (+14.99%)</b> · 2.23R · Held 58 days<br>Reason: TARGET_HIT',
-    trade_symbol: "KCPSUGIND",
-  },
-  {
-    time: "15:45",
-    kind: "p",
-    icon: "🟢",
-    title: "SIGACHI sold at ₹30.41",
-    desc: '<b class="num up">+₹2,182 (+15.02%)</b> · 2.09R · Held 35 days<br>Reason: TARGET_HIT',
-    trade_symbol: "SIGACHI",
-  },
-  {
-    time: "15:15",
-    kind: "b",
-    icon: "🔵",
-    title: "No new entries today",
-    desc: 'AI scanned <b class="num">847</b> stocks → <b class="num">0</b> passed quality gate',
-    trade_symbol: null,
-  },
-  {
-    time: "09:15",
-    kind: "",
-    icon: "📡",
-    title: "Market opened · NIFTY 26,420 (+0.3%)",
-    desc: "Breadth: 62% advancing · Sentiment: Mildly Bullish",
-    trade_symbol: null,
-  },
-];
 
-const INITIAL_EQUITY_DATA: EquityCurveData = {
-  version: "v2",
-  rangeDays: 90,
-  currentNav: 414249,
-  currentEquity: 414249,
-  peakEquity: 426500,
-  maxDrawdownPct: -2.87,
-  maxDrawdownInr: 12251,
-  series: NAV_SERIES.slice(-90).map((nav, i) => ({
-    date: `Day ${i + 1}`,
-    nav,
-    cash: 50000,
-    drawdownPct: Math.min(0, ((nav - 426500) / 426500) * 100),
-    activePositions: 3 + (i % 2),
-  })),
-};
-
-const SUNFLAG_V3_FALLBACK: any = {
-  sym: "SUNFLAG",
-  symbol: "SUNFLAG",
-  ab: "SU",
-  name: "Sunflag Limited",
-  companyName: "Sunflag Iron & Steel Co.",
-  sector: "Metals & Mining",
-  tag: "Metals & Mining · 52W High Breakout",
-  stage: "52W High Breakout 📐",
-  strategyName: "52W High Breakout",
-  strategyId: "52W_HIGH",
-  engine: "v3",
-  engineBadge: "AI SNIPER (V3)",
-  stars: 5,
-  starsDisplay: "★★★★★",
-  ml: 90,
-  risk: "Low",
-  comp: 90,
-  compositeScore: 90,
-  entry: 449.20,
-  entryPrice: 449.20,
-  now: 433.50,
-  price: 433.50,
-  currentPrice: 433.50,
-  stop: 413.26,
-  stopLoss: 413.26,
-  target: 489.63,
-  targetPrice: 489.63,
-  pivot: 428.00,
-  floor: 426.74,
-  pnlPct: -3.50,
-  roiPct: -3.50,
-  currentROI: -3.50,
-  chg: -3.50,
-  pnl: -408.20,
-  r: -0.44,
-  days: 6,
-  holdingDays: 6,
-  shares: 26,
-  action: "BUY_NOW",
-  actionLabel: "BUY NOW",
-  actionColor: "green",
-  slippageText: "-3.5% slippage",
-  entryDate: "2026-09-28",
-  date: "2026-09-28",
-  grad: "linear-gradient(135deg,#8B5CF6,#6366F1)",
-  why: "Breaking out of a 28-day base with 2.4× volume. Fibonacci 1.272 extension sits at ₹489.63. Prior run held above weekly swing. Classic 52W High Breakout accumulation with tightening volatility."
-};
 
 function normalizeActiveTrade(t: any, idx: number, eng: "v2" | "v3") {
   const sym = t.sym || t.symbol || `STOCK_${idx + 1}`;
-  const isV3 = sym.toUpperCase() === "SUNFLAG" || t.engine === "v3";
+  const isV3 = t.engine === "v3";
   const effectiveEng: "v2" | "v3" = isV3 ? "v3" : eng;
   const ab = t.ab || sym.slice(0, 2).toUpperCase();
   const entry = Number(t.entry ?? t.entryPrice ?? 100);
@@ -1082,31 +490,21 @@ function normalizeActiveTrade(t: any, idx: number, eng: "v2" | "v3") {
     ? Math.round((now - entry) * shares)
     : Number(t.pnl ?? t.unrealizedPnl);
   const r = isLive || t.r == null
-    ? (Math.abs(entry - stop) > 0.001 ? (now - entry) / Math.abs(entry - stop) : 0.36)
+    ? (Math.abs(entry - stop) > 0.001 ? (now - entry) / Math.abs(entry - stop) : 0)
     : Number(t.r);
-  const stars = Number(t.stars ?? (t.compositeScore ? t.compositeScore / 20 : 4.5));
-  const ml = Number(t.ml ?? t.mlProbability ?? t.convictionScore ?? 70);
-  const comp = Number(t.comp ?? t.compositeScore ?? 75);
-  const risk = t.risk || (t.riskScore != null ? (t.riskScore < 30 ? "Low" : t.riskScore < 60 ? "Medium" : "High") : "Low");
+  // Only engine-published values. Unknown stays unknown (0 / null / "") — never a flattering default.
+  const stars = Number(t.stars ?? (t.compositeScore ? t.compositeScore / 20 : 0));
+  const ml = t.ml ?? t.mlProbability ?? t.convictionScore ?? null;
+  const comp = t.comp ?? t.compositeScore ?? null;
+  const risk = t.risk || (t.riskScore != null ? (t.riskScore < 30 ? "Low" : t.riskScore < 60 ? "Medium" : "High") : "—");
 
-  const tag = t.tag || `${t.sector || "Diversified"} · ${t.strategyName || (effectiveEng === "v2" ? "Breakout" : "Stage 2 Base")}`;
-  const stage = t.stage || (t.strategyName ? `${t.strategyName} 📐` : (effectiveEng === "v3" ? "Stage 2 Base 📐" : "Breakout Setup"));
+  const tag = t.tag || [t.sector, t.strategyName].filter(Boolean).join(" · ");
+  const stage = t.stage || (t.strategyName ? `${t.strategyName} 📐` : "");
   const grad = t.grad || GRADIENTS[idx % GRADIENTS.length];
   const seed = t.seed ?? stringSeed(sym);
 
-  let why = t.why;
-  if (!why) {
-    if (effectiveEng === "v2") {
-      why = [
-        `Breakout above ${days + 15}-day consolidation`,
-        "Relative strength rank: Top 5% of universe",
-        `${t.sector || "Sector"} showing institutional inflows`,
-        `ML confidence: ${ml}% probability of 2R+ gain`,
-      ];
-    } else {
-      why = `Breaking out of a ${days + 18}-day base with volume expansion. Fibonacci 1.272 extension sits at ₹${target.toFixed(2)}. Classic Stage-2 accumulation with tightening volatility.`;
-    }
-  }
+  // Reasons come only from the engine. No generated "why" text.
+  const why = t.why || [];
 
   const entryDate = t.entryDate || t.date || "Active";
   const timeline = t.timeline || [
@@ -1114,18 +512,8 @@ function normalizeActiveTrade(t: any, idx: number, eng: "v2" | "v3") {
     ["Live", `Current · ${r.toFixed(2)}R · ₹${now.toFixed(2)}`, "act"],
   ];
 
-  const radar = t.radar || [
-    Number(t.technicalScore ?? (comp + 5)),
-    ml,
-    comp,
-    100 - Number(t.riskScore ?? 25),
-  ];
-
-  const fib = t.fib || [
-    ["Fib 1.0", `₹${(entry * 1.03).toFixed(2)}`, "✅ Hit", "hit"],
-    ["Fib 1.272", `₹${target.toFixed(2)}`, "🎯 Next", "next"],
-    ["Fib 1.618", `₹${(target * 1.12).toFixed(2)}`, "Stretch", ""],
-  ];
+  const radar = t.radar || null;
+  const fib = t.fib || [];
 
   const overlays = t.overlays || [
     { price: pivot, color: "var(--gold)", label: `PIVOT ₹${pivot.toFixed(2)}` },
@@ -1134,10 +522,8 @@ function normalizeActiveTrade(t: any, idx: number, eng: "v2" | "v3") {
     { price: target, color: "var(--profit)", label: `T1 ₹${target.toFixed(2)}`, dash: "2 3" },
   ];
 
-  let candles = t.miniChart?.candles || t.candles_data;
-  if (!candles || candles.length === 0) {
-    candles = makeCandles(seed, 26, entry * 0.94, { vol: 0.014, baseEnd: 22, drift: 0.01, breakout: 1.4 });
-  }
+  // Real candles only; charts show an "unavailable" state otherwise.
+  const candles = t.miniChart?.candles || t.candles_data || [];
 
   return {
     ...t,
@@ -1173,11 +559,11 @@ function normalizeActiveTrade(t: any, idx: number, eng: "v2" | "v3") {
     risk,
     tag,
     stage,
-    patternName: t.pattern || (t.stage ? t.stage.replace(/📐|🚀|📦/g, "").trim() : (effectiveEng === "v3" ? "Stage 2 Flat Base" : "Breakout from Base")),
-    baseFloor: Number(t.baseFloor ?? (stop * 0.94)),
-    baseWeeks: t.baseWeeks || (stage?.includes("High-Tight") ? "6.4 wks" : stage?.includes("Darvas") ? "12.6 wks" : stage?.includes("Cup") ? "14.2 wks" : `${(days * 2 + 14).toFixed(1)} wks`),
-    breakoutVol: Number(t.breakoutVol ?? (typeof why === "string" && why.includes("3×") ? 3.2 : typeof why === "string" && why.includes("2.8×") ? 2.85 : 4.85)),
-    rsRating: Number(t.rsRating ?? comp ?? 91),
+    patternName: t.pattern || (t.stage ? t.stage.replace(/📐|🚀|📦/g, "").trim() : ""),
+    baseFloor: t.baseFloor != null ? Number(t.baseFloor) : undefined,
+    baseWeeks: t.baseWeeks || "",
+    breakoutVol: t.breakoutVol != null ? Number(t.breakoutVol) : undefined,
+    rsRating: t.rsRating != null ? Number(t.rsRating) : undefined,
     grad,
     seed,
     why,
@@ -1190,13 +576,13 @@ function normalizeActiveTrade(t: any, idx: number, eng: "v2" | "v3") {
     miniChart: {
       symbol: sym,
       candles,
-      sparkline: t.sparkline || t.miniChart?.sparkline || candles.map((c: any) => c.c || c.close || entry),
+      sparkline: t.sparkline || t.miniChart?.sparkline || candles.map((c: any) => c.c || c.close),
     },
   };
 }
 
 function formatExitReason(r: any) {
-  if (!r) return "Target Hit";
+  if (!r) return "Exit";
   const s = String(r).toUpperCase();
   if (s.includes("VOL_DIST")) return "Vol Guard 🛡️";
   if (s.includes("RATCHET") || s.includes("BREAKEVEN")) return "Ratchet 🔒";
@@ -1303,7 +689,17 @@ export default function App() {
     return "home";
   });
   const [isMoreOpen, setIsMoreOpen] = useState(false);
-  const [sigSub, setSigSub] = useState<"active" | "closed">("active");
+  const [sigSub, setSigSub] = useState<"active" | "closed" | "record">("active");
+  const [trackRecord, setTrackRecord] = useState<any | null>(null);
+  const [trackRecordLoading, setTrackRecordLoading] = useState(false);
+  useEffect(() => {
+    if (sigSub !== "record" || trackRecord || trackRecordLoading) return;
+    setTrackRecordLoading(true);
+    quantsyncApi.getTrackRecord()
+      .then((r) => setTrackRecord(r))
+      .catch(() => setTrackRecord(null))
+      .finally(() => setTrackRecordLoading(false));
+  }, [sigSub]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loungeIframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -1574,12 +970,6 @@ export default function App() {
         const parsed = JSON.parse(cached);
         const closedCount = (parsed?.closedTrades || parsed?.closed || []).length;
         if (closedCount >= 350) {
-          const act = parsed?.active || parsed?.inTradeTrades;
-          if (Array.isArray(act) && !act.some((t: any) => (t.sym || t.symbol || "").toUpperCase() === "SUNFLAG")) {
-            parsed.active = [SUNFLAG_V3_FALLBACK, ...act];
-            parsed.inTradeTrades = parsed.active;
-            parsed.activeCount = parsed.active.length;
-          }
           return parsed;
         }
       }
@@ -1595,12 +985,6 @@ export default function App() {
         const parsed = JSON.parse(cached);
         const closedCount = (parsed?.closedTrades || parsed?.closed || []).length;
         if (closedCount >= 350) {
-          const act = parsed?.active || parsed?.inTradeTrades;
-          if (Array.isArray(act) && !act.some((t: any) => (t.sym || t.symbol || "").toUpperCase() === "SUNFLAG")) {
-            parsed.active = [SUNFLAG_V3_FALLBACK, ...act];
-            parsed.inTradeTrades = parsed.active;
-            parsed.activeCount = parsed.active.length;
-          }
           return parsed;
         }
       }
@@ -1621,12 +1005,12 @@ export default function App() {
     }
   });
   const [showEngineExplainer, setShowEngineExplainer] = useState<boolean>(false);
-  const [equityData, setEquityData] = useState<EquityCurveData | null>(INITIAL_EQUITY_DATA);
-  const [feedItems, setFeedItems] = useState<ActivityFeedItem[]>(DEMO_FEED as any);
+  const [equityData, setEquityData] = useState<EquityCurveData | null>(null);
+  const [feedItems, setFeedItems] = useState<ActivityFeedItem[]>([]);
   const [scannerReport, setScannerReport] = useState<ScannerReport | null>(null);
-  const [patterns, setPatterns] = useState<PatternSection[]>(DEMO_PATTERNS as any);
+  const [patterns, setPatterns] = useState<PatternSection[]>([]);
   const [patternTimeframe, setPatternTimeframe] = useState<string>("all");
-  const [breakouts, setBreakouts] = useState<BreakoutItem[]>(DEMO_BREAKOUTS as any);
+  const [breakouts, setBreakouts] = useState<BreakoutItem[]>([]);
   const [marketPulse, setMarketPulse] = useState<MarketPulseData | null>(null);
   const [sectorsData, setSectorsData] = useState<Array<{ name: string; disp_value?: string; change_pct: number; color?: string }>>([]);
   const [newsData, setNewsData] = useState<Array<any>>([]);
@@ -1635,9 +1019,19 @@ export default function App() {
   const [openTimelineDays, setOpenTimelineDays] = useState<Record<number, boolean>>({ 0: true });
   const [dayReports, setDayReports] = useState<Array<any>>([]);
   const [newsMovers, setNewsMovers] = useState<Array<any>>([]);
-  const [terminalIndices, setTerminalIndices] = useState(TERMINAL_INDICES);
+  const [terminalIndices, setTerminalIndices] = useState<any[]>([]);
   const [terminalBriefs, setTerminalBriefs] = useState<any[]>(TERMINAL_BRIEFS);
-  const [terminalSectors, setTerminalSectors] = useState(TERMINAL_SECTORS);
+  const [terminalSectors, setTerminalSectors] = useState<Array<{ n: string; p: number }>>([]);
+  const [sectorsAsOf, setSectorsAsOf] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    quantsyncApi.getSectors("day").then((r: any) => {
+      if (!alive) return;
+      setTerminalSectors((r?.sectors || []).map((x: any) => ({ n: x.n || x.name, p: Number(x.p ?? x.change_pct ?? 0) })));
+      setSectorsAsOf(r?.as_of || null);
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
   const [terminalMovers, setTerminalMovers] = useState<any[]>(TERMINAL_MOVERS);
   const [terminalNewsGroups, setTerminalNewsGroups] = useState<Array<{ day: string; items: any[] }>>(TERMINAL_NEWS_GROUPS);
   const [terminalPulse, setTerminalPulse] = useState(() => {
@@ -1760,13 +1154,6 @@ export default function App() {
 
       if (termRes) {
         let activeList = termRes.active || termRes.inTradeTrades || [];
-        const hasSunflag = activeList.some((t: any) => (t.sym || t.symbol || "").toUpperCase() === "SUNFLAG");
-        if (!hasSunflag) {
-          activeList = [SUNFLAG_V3_FALLBACK, ...activeList];
-          termRes.active = activeList;
-          termRes.inTradeTrades = activeList;
-          termRes.activeCount = activeList.length;
-        }
 
         setTerminalData(termRes);
         if (currentEngine === "v2") {
@@ -2236,10 +1623,6 @@ export default function App() {
       ? terminalData.inTradeTrades
       : []);
 
-  // Guarantee SUNFLAG (V3 active setup) is always present in unified AI Pro display
-  if (rawActive.length > 0 && !rawActive.some((t: any) => (t.sym || t.symbol || "").toUpperCase() === "SUNFLAG")) {
-    rawActive = [SUNFLAG_V3_FALLBACK, ...rawActive];
-  }
 
   const activeTrades = rawActive.map((t: any, idx: number) => {
     const sym = (t.symbol || t.title || t.sym || "").toUpperCase().trim();
@@ -2997,6 +2380,7 @@ export default function App() {
       <main className="screens" id="screens">
         {/* ===== HOME SCREEN (LUXURY EXECUTIVE "WHAT TO BUY TODAY" DECK) ===== */}
         <section className={`screen ${activeTab === "home" ? "active" : ""}`} id="screen-home" style={{ padding: 0 }}>
+          <div style={{ display: "flex", justifyContent: "center", padding: "8px 16px 0" }}><DataStatusBadge /></div>
           <LuxuryHomeDeck
             terminalData={terminalData}
             livePrices={livePrices}
@@ -3052,21 +2436,21 @@ export default function App() {
                 {terminalIndices.map((idx) => {
                   const isUp = idx.p >= 0;
                   const arrow = isUp ? "▲" : "▼";
-                  const { d } = getTerminalSparkPath(idx.seed, 28, idx.trend, 100, 18);
-                  const fillId = `spark-fill-${idx.seed}`;
+                  const d = realSparkPath(idx.spark || [], 100, 18);
+                  const fillId = `spark-fill-${String(idx.n).replace(/\W/g, "")}`;
                   const colorVar = isUp ? "var(--up)" : "var(--down)";
 
                   return (
                     <div key={idx.n} className="idx-tile">
                       <div className="idx-name">{idx.n}</div>
                       <div className="idx-val num">
-                        {idx.v.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {Number(idx.v).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                       <div className={`idx-chg ${isUp ? "up" : "down"}`}>
                         <span>{arrow}</span>
                         <span>{isUp ? "+" : ""}{idx.p.toFixed(2)}%</span>
                       </div>
-                      <div className="idx-spark">
+                      {d ? <div className="idx-spark">
                         <svg viewBox="0 0 100 18" preserveAspectRatio="none">
                           <defs>
                             <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
@@ -3085,7 +2469,7 @@ export default function App() {
                             style={{ filter: `drop-shadow(0 0 4px ${isUp ? "rgba(66,197,142,0.4)" : "rgba(234,108,110,0.4)"})` }}
                           />
                         </svg>
-                      </div>
+                      </div> : null}
                     </div>
                   );
                 })}
@@ -3263,7 +2647,7 @@ export default function App() {
 
               <div className="sec-head">
                 <div className="h">Sector <span className="em">heatmap</span></div>
-                <div className="meta">Live · {terminalSectors.length} sectors</div>
+                <div className="meta">{terminalSectors.length ? `${terminalSectors.length} sectors${sectorsAsOf ? ` · as of ${new Date(sectorsAsOf).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}` : "Sector data unavailable"}</div>
               </div>
               <div className="card heatmap">
                 <div className="heat-head">
@@ -3531,6 +2915,7 @@ export default function App() {
             )}
           </div>
 
+          <div style={{ margin: "4px 0 8px" }}><DataStatusBadge /></div>
           <div className="subtabs" id="sigTabs">
             <button
               className={`subtab ${sigSub === "active" ? "on" : ""}`}
@@ -3544,7 +2929,19 @@ export default function App() {
             >
               Closed Trades {isTerminalLoading ? "(...)" : `(${sortedClosedTrades.length})`}
             </button>
+            <button
+              className={`subtab ${sigSub === "record" ? "on" : ""}`}
+              onClick={() => setSigSub("record")}
+            >
+              Track record
+            </button>
           </div>
+
+          {sigSub === "record" && (
+            <div id="sigRecord">
+              <TrackRecordPanel data={trackRecord} loading={trackRecordLoading} />
+            </div>
+          )}
 
           {/* ACTIVE TRADES TAB */}
           {sigSub === "active" && (
@@ -3687,7 +3084,7 @@ export default function App() {
                                 )}
 
                                 <span style={{ color: "var(--apple-gold)", fontSize: 12, letterSpacing: "1px" }}>
-                                  {"★".repeat(Math.min(5, Math.max(1, Math.round(t.stars || 5))))}
+                                  {"★".repeat(Math.min(5, Math.max(0, Math.round(t.stars || 0))))}
                                 </span>
                               </div>
                               <div style={{ fontSize: 11, color: "var(--ink3)", marginTop: 2, fontWeight: 500 }}>
@@ -3862,7 +3259,7 @@ export default function App() {
                                 </span>
                                 <span className="stars" style={{ verticalAlign: "middle" }}>
                                   ★★★★★
-                                  <i style={{ width: `${Math.min(100, Math.max(0, ((t.stars || 4.5) / 5) * 100))}%` }}>★★★★★</i>
+                                  <i style={{ width: `${Math.min(100, Math.max(0, ((t.stars || 0) / 5) * 100))}%` }}>★★★★★</i>
                                 </span>
                               </div>
                               <div style={{ fontSize: 10, color: "var(--accent)", marginTop: 2, fontWeight: 600 }}>
@@ -3952,21 +3349,19 @@ export default function App() {
                         <InstitutionalPatternChart
                           symbol={t.sym || t.symbol}
                           name={t.name}
-                          sector={t.sector || "Diversified"}
-                          stage={t.stage || "Stage 2 Base 📐"}
-                          patternName={t.patternName || (t.stage ? t.stage.replace(/📐|🚀|📦/g, "").trim() : "Stage 2 Base")}
+                          sector={t.sector || ""}
+                          stage={t.stage || ""}
+                          patternName={t.patternName || (t.stage ? t.stage.replace(/📐|🚀|📦/g, "").trim() : "")}
                           breakoutDate={formatSignalDate(t.entryDate || t.date)}
-                          pivotPrice={Number(t.pivot || t.pivotPrice || ((t.now || 46) * 0.98))}
-                          entryPrice={Number(t.price || t.entry || t.now || 46)}
-                          stopPrice={Number(t.stop || t.stopLoss || ((t.now || 46) * 0.92))}
-                          targetPrice={Number(t.target || t.targetPrice || ((t.now || 46) * 1.15))}
-                          currentPrice={Number(t.now || t.currentPrice || t.price || t.entry || 46)}
-                          baseFloor={Number(t.baseFloor || (t.stop || (t.now || 46) * 0.92) * 0.94)}
-                          baseLengthStr={t.baseWeeks || (t.stage?.includes("High-Tight") ? "6.4 wks" : t.stage?.includes("Darvas") ? "12.6 wks" : `${(daysHeld * 2 + 14).toFixed(1)} wks`)}
-                          handleLengthStr={t.stage?.includes("Base") || t.stage?.includes("Cup") ? `${(daysHeld * 1.2 + 4).toFixed(1)} wks` : undefined}
-                          breakoutVolumeMultiplier={Number(t.breakoutVol || 4.85)}
-                          closeInRange={0.82}
-                          rsRating={Number(t.rsRating ?? t.comp ?? 91)}
+                          pivotPrice={Number(t.pivot || t.pivotPrice || t.entry || t.price || 0) || undefined}
+                          entryPrice={Number(t.price || t.entry || 0) || undefined}
+                          stopPrice={Number(t.stop || t.stopLoss || 0) || undefined}
+                          targetPrice={Number(t.target || t.targetPrice || 0) || undefined}
+                          currentPrice={Number(t.now || t.currentPrice || t.price || t.entry || 0) || undefined}
+                          baseFloor={Number(t.baseFloor || 0) || undefined}
+                          baseLengthStr={t.baseWeeks || ""}
+                          breakoutVolumeMultiplier={Number(t.breakoutVol || 1)}
+                          rsRating={t.rsRating != null ? Number(t.rsRating) : undefined}
                           candles={t.miniChart?.candles || t.candles_data}
                           seed={t.seed || 101}
                           showOverviewGrid={true}
@@ -4009,7 +3404,7 @@ export default function App() {
                   <div className="row gap6" style={{ alignItems: "center" }}>
                     <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--profit)", boxShadow: "0 0 8px var(--profit)" }} />
                     <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--accent)", textTransform: "uppercase" }}>
-                      Verified Closed Record
+                      Closed record · live + simulated
                     </span>
                     <span style={{ fontSize: 9.5, padding: "2px 7px", borderRadius: 6, background: "rgba(56, 189, 248, 0.12)", color: "var(--accent)", fontWeight: 800 }}>
                       {closedStats.totalTrades} Signals

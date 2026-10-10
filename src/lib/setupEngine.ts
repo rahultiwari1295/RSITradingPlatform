@@ -21,7 +21,7 @@ export type SetupRow = Record<string, any>;
 export type TaggedSetup = SetupRow & { _tradeType: TradeType };
 
 /** Radar = below the pivot by at most this many percent. */
-export const RADAR_MAX_BELOW_PCT = 2.5;
+export const RADAR_MAX_BELOW_PCT = 3; // same 3% as the backend NEAR_BREAKOUT stage
 
 export const PATTERN_OPTIONS: { id: string; label: string }[] = [
   { id: "BREAKOUT_RALLY", label: "Breakout Rally" },

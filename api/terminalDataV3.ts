@@ -63,36 +63,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     let rawData: any = null;
 
-    // Primary: Wix Studio API (contains verified live unified multi-engine book)
+    // Primary: QuantSync VPS (source of truth). Wix is a dormant mirror used only if the VPS is down.
     try {
-      const wixRes = await fetch(wixEndpoint, {
-        method: "GET",
-        headers: {
-          "Accept": "application/json",
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        },
-        signal: AbortSignal.timeout(6000)
-      });
-      if (wixRes.ok) {
-        rawData = await wixRes.json();
-      }
-    } catch (e) {
-      console.warn("[TerminalData] Wix fetch error, falling back to VPS...", e);
-    }
-
-    // Secondary fallback: QuantSync VPS REST API
-    if (!rawData) {
       const vpsRes = await fetch(vpsEndpoint, {
         method: "GET",
-        headers: {
-          "Accept": "application/json",
-          "User-Agent": "Mozilla/5.0 (QuantSync-Vercel-Proxy)"
-        },
+        headers: { "Accept": "application/json", "User-Agent": "Mozilla/5.0 (QuantSync-Vercel-Proxy)" },
+        signal: AbortSignal.timeout(6000)
+      });
+      if (vpsRes.ok) {
+        rawData = await vpsRes.json();
+      }
+    } catch (e) {
+      console.warn("[TerminalData] VPS fetch error, falling back to Wix mirror...", e);
+    }
+
+    if (!rawData) {
+      const wixRes = await fetch(wixEndpoint, {
+        method: "GET",
+        headers: { "Accept": "application/json", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
         signal: AbortSignal.timeout(6000)
       }).catch(() => null);
-
-      if (vpsRes && vpsRes.ok) {
-        rawData = await vpsRes.json();
+      if (wixRes && wixRes.ok) {
+        rawData = await wixRes.json();
+        if (rawData && typeof rawData === "object") rawData.source = "wix-mirror-stale";
       }
     }
 

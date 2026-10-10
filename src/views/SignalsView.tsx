@@ -333,21 +333,19 @@ export default function SignalsView({
                 <InstitutionalPatternChart
                   symbol={t.symbol}
                   name={t.name}
-                  sector={t.sector || "Diversified"}
+                  sector={t.sector || ""}
                   stage={patternName}
                   patternName={cleanPattern}
-                  breakoutDate={t.entryDate || "2026-09-18"}
+                  breakoutDate={t.entryDate || ""}
                   pivotPrice={pivotPrice}
                   entryPrice={entryPrice}
                   stopPrice={stopPrice}
                   targetPrice={targetPrice}
                   currentPrice={currentPrice}
                   baseFloor={baseFloor}
-                  baseLengthStr={t.baseWeeks || "98.4 wks"}
-                  handleLengthStr={patternName.includes("Base") || patternName.includes("Cup") ? "54.4 wks" : undefined}
-                  breakoutVolumeMultiplier={Number(t.breakoutVol || 4.85)}
-                  closeInRange={0.82}
-                  rsRating={Number(t.rsRating || t.compositeScore || 91)}
+                  baseLengthStr={t.baseWeeks || ""}
+                  breakoutVolumeMultiplier={Number(t.breakoutVol || 1)}
+                  rsRating={t.rsRating != null ? Number(t.rsRating) : undefined}
                   seed={t.seed || (idx * 37 + 101)}
                   showOverviewGrid={true}
                 />

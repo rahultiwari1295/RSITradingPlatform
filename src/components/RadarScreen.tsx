@@ -1,3 +1,4 @@
+import DataStatusBadge from "./DataStatusBadge";
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { quantsyncApi } from "../api/quantsyncApi";
 import RadarStockPage from "./RadarStockPage";
@@ -183,7 +184,23 @@ function RadarScreenInner({ theme = "dark", livePrices, onSelectStock, onSwitchT
     return { gated: kept, hiddenByGate: livePool.length - kept.length };
   }, [livePool, gatesMap, mlGateOn, mlGates]);
 
-  const groups = useMemo(() => classifySetups(gated), [gated]);
+  // One verdict per stock: a chart breakout is only "Good to buy" if the deep research (DNA),
+  // the pattern's real track record and the data-quality check all agree.
+  const holdReason = (s: any): string | null => {
+    if (s.data_quarantine) return s.data_note ? `${s.data_note}.` : "Price data is under review.";
+    const st = String(s.stance || "").toUpperCase();
+    if (st && st !== "BULLISH" && st !== "ACCUMULATION") return "Deep research does not confirm the uptrend yet.";
+    if (String(s.action || "").toUpperCase() === "NO_TRADE_WAIT") return "Deep research says wait for a cleaner setup.";
+    const e = s.pattern_edge;
+    if (e && !e.low_confidence && e.edge_pts != null && Number(e.edge_pts) < 0) return "This pattern has historically done worse than a random stock.";
+    return null;
+  };
+  const groups = useMemo(() => {
+    const g = classifySetups(gated);
+    const hold = (l: Setup[]) => l.filter((x) => holdReason(x)).map((x) => ({ ...x, _tradeType: "RADAR", _hold: holdReason(x) } as Setup));
+    const keep = (l: Setup[]) => l.filter((x) => !holdReason(x));
+    return { ...g, buyZone: keep(g.buyZone), retest: keep(g.retest), radar: [...hold(g.buyZone), ...hold(g.retest), ...g.radar] };
+  }, [gated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const riskPool = useMemo(() => {
     const seen = new Set<string>();
@@ -314,9 +331,13 @@ function RadarScreenInner({ theme = "dark", livePrices, onSelectStock, onSwitchT
     const sl = Number(s.stop_loss) || 0;
     const d = diffOf(s);
     const a = Math.abs(d).toFixed(1);
+    const cmp = Number(s.curr_price) || 0;
+    const stopPct = sl > 0 && cmp > sl ? ((cmp - sl) / cmp) * 100 : null;
+    const stopTxt = stopPct == null ? "" : stopPct <= 6 ? ` Stop is ${stopPct.toFixed(1)}% away, so risk is small.` : ` Stop is ${stopPct.toFixed(1)}% away — size the position for that.`;
+    if ((s as any)._hold) return `Chart says breakout, but: ${(s as any)._hold}`;
     switch (s._tradeType) {
       case "BUY_ZONE":
-        return `Broke above ₹${fmt(bk, 1)} and is only ${a}% past it.${sl > 0 ? " Stop-loss is close, so risk is small." : ""}`;
+        return `Broke above ₹${fmt(bk, 1)} and is only ${a}% past it.${stopTxt}`;
       case "RETEST":
         return `Back testing ₹${fmt(bk, 1)} after the breakout, and holding.`;
       case "RADAR":
@@ -738,6 +759,7 @@ function RadarScreenInner({ theme = "dark", livePrices, onSelectStock, onSwitchT
             {dateStr}
             {isStale ? ` · latest scan ${scanDate}` : ""}
           </div>
+          <div style={{ margin: "6px 0 2px" }}><DataStatusBadge compact /></div>
           <div className="rdr-big">
             <em className="rdr-num">{isLoading ? "–" : shownReady}</em> {readyCount === 1 ? "stock is" : "stocks are"}
             <br />

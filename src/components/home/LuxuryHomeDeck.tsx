@@ -74,54 +74,8 @@ const formatThesisItems = (raw: any): string[] => {
 };
 
 
-// Curated breakout setups (zero fake hardcoded prices)
-const FEATURED_BREAKOUT_DATA = [
-  {
-    symbol: "AUROPHARMA",
-    name: "Aurobindo Pharma",
-    sector: "Healthcare & Pharma",
-    stage: "Stage-2 Base Breakout 🚀",
-    volRatio: "3.4×",
-    dnaScore: 92,
-    pnlPotential: "+12.0%",
-    rrRatio: "1 : 2.8",
-    why: "Institutional volume breakout after consolidation. High relative strength vs Nifty 50.",
-    currPrice: undefined,
-    breakoutPrice: undefined,
-    targetPrice: undefined,
-    stopPrice: undefined
-  },
-  {
-    symbol: "SMLMAH",
-    name: "SML Isuzu",
-    sector: "Commercial Auto",
-    stage: "52-Week High Volume Run ⚡",
-    volRatio: "2.8×",
-    dnaScore: 89,
-    pnlPotential: "+13.5%",
-    rrRatio: "1 : 2.5",
-    why: "Heavy institutional accumulation above pivot with surging volume. Clean multi-month cup pattern.",
-    currPrice: undefined,
-    breakoutPrice: undefined,
-    targetPrice: undefined,
-    stopPrice: undefined
-  },
-  {
-    symbol: "VIJAYA",
-    name: "Vijaya Diagnostic",
-    sector: "Diagnostic Labs",
-    stage: "Cup & Handle Pivot 🏆",
-    volRatio: "2.5×",
-    dnaScore: 87,
-    pnlPotential: "+14.5%",
-    rrRatio: "1 : 2.9",
-    why: "Healthcare sector momentum leader. Handle contraction with volume dry-up, then violent breakout.",
-    currPrice: undefined,
-    breakoutPrice: undefined,
-    targetPrice: undefined,
-    stopPrice: undefined
-  }
-];
+// No hand-written fallback cards: when no stock qualifies today, the section says so.
+const FEATURED_BREAKOUT_DATA: any[] = [];
 
 const POPULAR_DNA_STOCKS = [
   "RELIANCE", "TCS", "HDFCBANK", "AUROPHARMA", "EMUDHRA", "VIJAYA", "CAPLIPOINT", "DIXON"
@@ -254,27 +208,28 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
         
         const ep = Number(item.entry ?? item.entryPrice ?? item.buyPrice ?? item.price ?? 0);
         const live = livePrices[sym];
-        const cp = Number(live?.price || item.now || item.currentPrice || (ep > 0 ? ep : 100));
-        const tp = Number(item.target ?? item.targetPrice ?? item.target1 ?? item.target1Price ?? (ep > 0 ? ep * 1.12 : 0));
-        const sl = Number(item.stopLoss ?? item.stop ?? item.stopPrice ?? (ep > 0 ? ep * 0.94 : 0));
+        const cp = Number(live?.price || item.now || item.currentPrice || ep || 0);
+        const tp = Number(item.target ?? item.targetPrice ?? item.target1 ?? item.target1Price ?? 0);
+        const sl = Number(item.stopLoss ?? item.stop ?? item.stopPrice ?? 0);
         
-        const gainPct = ep > 0 && tp > ep ? (((tp - ep) / ep) * 100).toFixed(1) : "12.0";
-        const stopPct = ep > 0 && sl < ep ? (((ep - sl) / ep) * 100).toFixed(1) : "6.0";
+        // no invented targets/stops: if the engine did not publish one, show "—"
+        const gainPct = ep > 0 && tp > ep ? (((tp - ep) / ep) * 100).toFixed(1) : "—";
+        const stopPct = ep > 0 && sl > 0 && sl < ep ? (((ep - sl) / ep) * 100).toFixed(1) : "—";
         const diffPct = ep > 0 && cp > 0 ? (((cp - ep) / ep) * 100).toFixed(1) : null;
         
         const risk = ep - sl;
         const reward = tp - ep;
-        const rrRatio = risk > 0 && reward > 0 ? (reward / risk).toFixed(1) : "2.1";
+        const rrRatio = risk > 0 && reward > 0 ? (reward / risk).toFixed(1) : "—";
         
         const isV3 = Boolean(
           item.engine === 'v3' ||
           (item.engineBadge || '').toUpperCase().includes('SNIPER') ||
-          (item.engineBadge || '').toUpperCase().includes('V3') ||
-          sym === 'SUNFLAG'
+          (item.engineBadge || '').toUpperCase().includes('V3')
         );
         
-        const score = Number(item.compositeScore || item.comp || item.dnaScore || item.ml || (isV3 ? 92 : 88));
-        const ml = Number(item.ml || item.mlProbability || (isV3 ? 90 : 75));
+        const rawScore = item.compositeScore ?? item.comp ?? item.dnaScore ?? item.ml;
+        const score = rawScore != null && !isNaN(Number(rawScore)) ? Number(rawScore) : "—";
+        const ml = item.ml ?? item.mlProbability ?? null;
         
         // Safely extract institutional rationale (always a safe string)
         let safeWhy = "";
@@ -287,16 +242,14 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
         } else if (typeof item.rationale === "string" && item.rationale.trim().length > 0) {
           safeWhy = item.rationale;
         } else {
-          safeWhy = isV3 
-            ? "Institutional 52W high breakout with high volumetric accumulation and strict trailing floor." 
-            : "High-probability Stage-2 continuation breakout with institutional volume expansion.";
+          safeWhy = "";  // no generic thesis — only the engine's own reasons are shown
         }
 
         list.push({
           symbol: sym,
           name: item.name || item.companyName || sym,
-          sector: item.sector || item.tag || (isV3 ? "Metals & Mining" : "Healthcare & Tech"),
-          strategy: item.strategyName || (isV3 ? "52W High Breakout" : "Leader · Stage-2 Continuation"),
+          sector: item.sector || item.tag || "",
+          strategy: item.strategyName || item.strategyId || "",
           entryPrice: ep,
           currentPrice: cp,
           targetPrice: tp,
@@ -308,7 +261,7 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
           isV3,
           score,
           ml,
-          starsDisplay: item.starsDisplay || (isV3 ? "★★★★★" : "★★★★☆"),
+          starsDisplay: item.starsDisplay || "",
           why: safeWhy,
           raw: item
         });
@@ -340,6 +293,11 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
       .filter(({ cls, isAvoid, cp }) => {
         // MUST be strictly Good to Buy (diffAbs <= 5.0%, targetGainPct >= 5.0%)
         return cls.isGoodToBuy && !isAvoid && cp > 0;
+      })
+      .filter(({ r }, i, arr) => {
+        // one card per stock (a daily and a weekly pattern on the same stock are the same idea)
+        const sym = String(r.symbol || "").toUpperCase();
+        return arr.findIndex((x: any) => String(x.r.symbol || "").toUpperCase() === sym) === i;
       });
 
     // Rank candidates by:
@@ -367,18 +325,16 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
       const t1 = Number(r.target_1) || 0;
       const sl = Number(r.stop_loss) || 0;
 
-      let volRatioStr = "2.2×";
+      let volRatioStr = "n/a";
       const rawVol = Number(r.volume_ratio_20d);
-      if (!isNaN(rawVol) && rawVol > 0.05) {
+      if (r.volume_ratio_20d != null && !isNaN(rawVol) && rawVol > 0.05) {
         volRatioStr = `${rawVol.toFixed(1)}×`;
-      } else if (r.breakout_volume_spike) {
-        volRatioStr = "2.8×";
       }
 
-      const upsidePct = cp > 0 && t1 > cp ? (((t1 - cp) / cp) * 100).toFixed(1) : "10.0";
-      const pnlPotential = `+${upsidePct}%`;
+      const upsidePct = cp > 0 && t1 > cp ? (((t1 - cp) / cp) * 100).toFixed(1) : null;
+      const pnlPotential = upsidePct ? `+${upsidePct}%` : "";
 
-      let rrStr = "1 : 1.8";
+      let rrStr = "—";
       const rawRR = Number(r.risk_reward_ratio);
       if (!isNaN(rawRR) && rawRR > 0) {
         rrStr = `1 : ${rawRR.toFixed(1)}`;
@@ -390,13 +346,13 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
       return {
         symbol: r.symbol,
         name: r.company_name || r.symbol,
-        sector: r.sector || "Equities",
-        stage: r.pattern_type || "Stage-2 Base Breakout 🚀",
+        sector: r.sector || "",
+        stage: r.pattern_type || "",
         volRatio: volRatioStr,
-        dnaScore: r.dna_score || 85,
+        dnaScore: r.dna_score ?? "—",
         pnlPotential,
         rrRatio: rrStr,
-        why: r.action_title || "Confirmed stage breakout with volume expansion and defined risk boundaries.",
+        why: r.action_title || "",
         currPrice: cp > 0 ? cp : undefined,
         breakoutPrice: r.breakout_level,
         targetPrice: t1 > 0 ? t1 : undefined,
@@ -472,10 +428,16 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
     }
   };
 
-  const winRate = terminalData?.hero?.winRate || terminalData?.winRate || 74.2;
-  const profitFactor = terminalData?.profitFactor || terminalData?.kpis?.profitFactor || 2.14;
-  const activeCount = terminalData?.activeCount || (terminalData?.active ? terminalData.active.length : 8);
-  const closedCount = terminalData?.closedCount || (terminalData?.closed ? terminalData.closed.length : 240);
+  // Honest numbers only: live record first, simulation labelled as such, "—" when unknown.
+  const tr = terminalData?.trackRecord || null;
+  const liveRec = tr?.live || null;
+  const simRec = tr?.simulated || null;
+  const fmt = (v: any, suffix = "") => (v === null || v === undefined || v === "" ? "—" : `${v}${suffix}`);
+  const winRate = fmt(liveRec?.winRate ?? null, "%");
+  const profitFactor = fmt(liveRec?.profitFactor ?? null);
+  const activeCount = terminalData?.activeCount ?? terminalData?.active?.length ?? null;
+  const closedCount = liveRec?.trades ?? null;
+  const simLine = simRec?.trades ? `Simulation (pre-${tr.liveSince}): ${simRec.trades} trades · ${simRec.winRate}% win · PF ${simRec.profitFactor ?? "—"}` : "";
 
   return (
     <div className={`luxury-deck-container theme-${theme}`}>
@@ -608,6 +570,11 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
                 <div className="sk-bar sk-btn" style={{ width: 100, height: 34, borderRadius: 9 }} />
               </div>
             </div>
+          ) : featuredBreakouts.length === 0 ? (
+            <div className="breakout-master-card" style={{ textAlign: "center", padding: "28px 18px" }}>
+              <div style={{ fontWeight: 700, marginBottom: 6 }}>Nothing meets our bar today</div>
+              <div style={{ opacity: 0.7, fontSize: 13 }}>No stock is in a fresh buy zone with room to its target. We would rather show nothing than a weak idea.</div>
+            </div>
           ) : (
             featuredBreakouts.map((b) => (
               <div key={b.symbol} className="breakout-master-card">
@@ -674,9 +641,11 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
               </div>
 
               {/* Institutional Rationale Note */}
-              <div className="b-rationale-box">
-                <span className="rationale-lead">Setup Thesis:</span> {b.why}
-              </div>
+              {b.why ? (
+                <div className="b-rationale-box">
+                  <span className="rationale-lead">Setup Thesis:</span> {b.why}
+                </div>
+              ) : null}
 
               {/* Card Footer Actions */}
               <div className="b-card-footer">
@@ -685,7 +654,7 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M18 20V10M12 20V4M6 20v-6"/>
                   </svg>
-                  <span>{b.volRatio} Volume Surge · R:R {b.rrRatio}</span>
+                  <span>Volume {b.volRatio} of 20-day avg · R:R {b.rrRatio}</span>
                 </div>
 
                 <div className="b-action-buttons">
@@ -826,7 +795,7 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
                   </div>
 
                   {/* 3. Institutional Quant Thesis (Parsed clean bullet points) */}
-                  <div className="ai-luxury-thesis-box">
+                  {b.why ? <div className="ai-luxury-thesis-box">
                     <div className="thesis-title-bar">
                       <span className="thesis-star">✦</span>
                       <span className="thesis-heading">INSTITUTIONAL QUANT THESIS</span>
@@ -839,7 +808,7 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </div> : null}
 
                   {/* 4. Card Bottom Command Action */}
                   <div className="ai-luxury-footer clean">
@@ -1010,25 +979,28 @@ export const LuxuryHomeDeck: React.FC<LuxuryHomeDeckProps> = ({
       {/* ── 6. PLATFORM TRUST & PERFORMANCE METRICS RIBBON ──────────────────── */}
       <section className="performance-trust-ribbon">
         <div className="trust-pod">
-          <div className="trust-pod-value gold-tint">{winRate}%</div>
-          <div className="trust-pod-label">VERIFIED WIN RATE</div>
+          <div className="trust-pod-value gold-tint">{winRate}</div>
+          <div className="trust-pod-label">LIVE WIN RATE</div>
         </div>
         <div className="trust-divider" />
         <div className="trust-pod">
           <div className="trust-pod-value">{profitFactor}</div>
-          <div className="trust-pod-label">PROFIT FACTOR</div>
+          <div className="trust-pod-label">LIVE PROFIT FACTOR</div>
         </div>
         <div className="trust-divider" />
         <div className="trust-pod">
-          <div className="trust-pod-value">{activeCount} / 25</div>
+          <div className="trust-pod-value">{activeCount ?? "—"} / 25</div>
           <div className="trust-pod-label">SLOTS DEPLOYED</div>
         </div>
         <div className="trust-divider" />
         <div className="trust-pod">
-          <div className="trust-pod-value">{closedCount}+</div>
-          <div className="trust-pod-label">TRADES AUDITED</div>
+          <div className="trust-pod-value">{closedCount ?? "—"}</div>
+          <div className="trust-pod-label">LIVE TRADES CLOSED</div>
         </div>
       </section>
+      {simLine ? (
+        <div style={{ textAlign: "center", fontSize: 11, opacity: 0.65, margin: "6px 16px 0" }}>{simLine}</div>
+      ) : null}
     </div>
   );
 };

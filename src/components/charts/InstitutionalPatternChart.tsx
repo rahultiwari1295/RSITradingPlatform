@@ -57,6 +57,8 @@ export interface InstitutionalPatternChartProps {
   candles?: PatternChartBar[];
   seed?: number;
   showOverviewGrid?: boolean;
+  /** Draw the base/handle overlay box. Only enable when the base span comes from the pattern engine. */
+  showBaseBox?: boolean;
   className?: string;
 }
 
@@ -70,29 +72,46 @@ function pseudoRandom(seed: number) {
   };
 }
 
-export default function InstitutionalPatternChart({
+/**
+ * Real-data-only wrapper: with fewer than 30 real candles we show an explicit
+ * "unavailable" state instead of synthesising a textbook pattern.
+ */
+export default function InstitutionalPatternChart(props: InstitutionalPatternChartProps) {
+  const n = Array.isArray(props.candles) ? props.candles.length : 0;
+  if (n < 30) {
+    return (
+      <div className={props.className} style={{ padding: "18px 14px", borderRadius: 12, border: "1px dashed rgba(148,163,184,.35)", textAlign: "center", fontSize: 12, opacity: 0.75 }}>
+        Price chart for {props.symbol || "this stock"} is not available yet. We only draw charts from real exchange candles.
+      </div>
+    );
+  }
+  return <InstitutionalPatternChartInner {...props} />;
+}
+
+function InstitutionalPatternChartInner({
   symbol,
   name,
-  sector = "Diversified",
+  sector = "",
   industry,
-  stage = "Stage 2 Base 📐",
+  stage = "",
   strategyName,
   patternName,
-  breakoutDate = "17 Sep 2026",
+  breakoutDate = "",
   pivotPrice,
   entryPrice,
   stopPrice,
   targetPrice,
   currentPrice,
   baseFloor,
-  baseLengthStr = "18.4 wks",
+  baseLengthStr = "",
   handleLengthStr,
-  breakoutVolumeMultiplier = 4.85,
-  closeInRange = 0.82,
-  rsRating = 91,
+  breakoutVolumeMultiplier = 1,
+  closeInRange,
+  rsRating,
   candles,
   seed = 101,
   showOverviewGrid = true,
+  showBaseBox = false,
   className = "",
 }: InstitutionalPatternChartProps) {
   const current = Number(currentPrice || entryPrice || pivotPrice || 100);
@@ -379,7 +398,7 @@ export default function InstitutionalPatternChart({
           ))}
 
           {/* ── A. BASE CONSOLIDATION BOX (Image 2 & 3 signature overlay) ── */}
-          {boxEndX > boxStartX && (
+          {showBaseBox && boxEndX > boxStartX && (
             <g className="base-pattern-box">
               {/* Shaded base rectangle */}
               <rect

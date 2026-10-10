@@ -276,6 +276,16 @@ export const quantsyncApi = {
       `/api/intel/digest?version=${version}${date ? `&date=${date}` : ""}`
     ),
 
+  /** Honest AI Buy/Sell record: live vs walk-forward simulation, every closed trade with origin. */
+  getTrackRecord: (version?: "v2" | "v3") =>
+    apiFetch<any>(`/api/track-record${version ? `?version=${version}` : ""}`),
+
+  /** Data-as-of stamp + quality verdict of the last EOD pipeline. */
+  getDataStatus: () => apiFetch<any>(`/api/data-status`),
+
+  /** Per-pattern fair-test win rate vs random-day baseline. */
+  getPatternEdge: () => apiFetch<{ rows: any[]; method: string }>(`/api/screener/pattern-edge`),
+
   getSystemStatus: () =>
     apiFetch<any>(`/api/system/status`),
 

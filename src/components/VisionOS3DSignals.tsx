@@ -21,7 +21,7 @@ interface VisionOS3DSignalsProps {
   isTerminalLoading?: boolean;
 }
 
-const DEFAULT_INR = (n: number | string) => "₹" + Math.round(Number(n) || 0).toLocaleString("en-IN");
+const DEFAULT_INR = (n: number | string) => (Number(n) > 0 ? "₹" + Math.round(Number(n)).toLocaleString("en-IN") : "—");
 const DEFAULT_INR2 = (n: number | string) =>
   "₹" + (Number(n) || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -763,17 +763,17 @@ export default function VisionOS3DSignals({
   // Fallback enriched trade collections
   const activeList = useMemo(() => {
     if (propActiveTrades && propActiveTrades.length > 0) return propActiveTrades;
-    return FALLBACK_IN_TRADE_TRADES;
+    return [];  // empty state, never sample trades
   }, [propActiveTrades]);
 
   const toBuyList = useMemo(() => {
     if (propToBuyTrades && propToBuyTrades.length > 0) return propToBuyTrades;
-    return FALLBACK_TO_BUY_TRADES;
+    return [];  // empty state, never sample trades
   }, [propToBuyTrades]);
 
   const closedList = useMemo(() => {
     if (propClosedTrades && propClosedTrades.length > 0) return propClosedTrades;
-    return FALLBACK_CLOSED_TRADES;
+    return [];  // empty state, never sample trades
   }, [propClosedTrades]);
 
   const [selectedTrade, setSelectedTrade] = useState<any | null>(null);
@@ -781,12 +781,10 @@ export default function VisionOS3DSignals({
   const [orderShares, setOrderShares] = useState(25);
 
   const scanner = {
-    scanned: scannerStats?.scanned || 847,
-    technicalMatches: scannerStats?.technicalMatches || 34,
-    institutionalConviction: scannerStats?.institutionalConviction || (toBuyList.length || 3),
-    marketNote:
-      scannerStats?.marketNote ||
-      "Strict institutional filters applied. High relative momentum in electronics & consumer discretionary."
+    scanned: Number(scannerStats?.scanned ?? 0),
+    technicalMatches: Number(scannerStats?.technicalMatches ?? 0),
+    institutionalConviction: scannerStats?.institutionalConviction ?? toBuyList.length,
+    marketNote: scannerStats?.marketNote || ""
   };
 
   const handleAddOrder = (trade: any) => {
@@ -1133,7 +1131,7 @@ export default function VisionOS3DSignals({
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--ink-muted)" }}>
                   <span>Trigger Price</span>
                   <span className="num" style={{ fontWeight: 700, color: "var(--ink-primary)" }}>
-                    {INR2(orderModalTrade.currentPrice || orderModalTrade.now || orderModalTrade.entryPrice || 100)}
+                    {INR2(orderModalTrade.currentPrice || orderModalTrade.now || orderModalTrade.entryPrice || 0)}
                   </span>
                 </div>
                 <div
@@ -1147,7 +1145,7 @@ export default function VisionOS3DSignals({
                 >
                   <span>Target</span>
                   <span className="num" style={{ fontWeight: 700, color: "var(--apple-green)" }}>
-                    {INR(orderModalTrade.targetPrice || orderModalTrade.target || 115)}
+                    {INR(orderModalTrade.targetPrice || orderModalTrade.target || 0)}
                   </span>
                 </div>
                 <div
@@ -1210,7 +1208,7 @@ export default function VisionOS3DSignals({
                 <span style={{ fontSize: 11, color: "var(--ink-muted)" }}>Estimated Value</span>
                 <span className="num" style={{ fontSize: 13, fontWeight: 800, color: "var(--apple-blue)" }}>
                   {INR(
-                    Number(orderModalTrade.currentPrice || orderModalTrade.now || orderModalTrade.entryPrice || 100) *
+                    Number(orderModalTrade.currentPrice || orderModalTrade.now || orderModalTrade.entryPrice || 0) *
                       orderShares
                   )}
                 </span>
@@ -1322,13 +1320,13 @@ export default function VisionOS3DSignals({
                 <div>
                   <div style={{ fontSize: 9.5, color: "var(--ink-muted)", textTransform: "uppercase" }}>Stop</div>
                   <div className="num" style={{ fontSize: 13, fontWeight: 700, color: "var(--apple-red)", marginTop: 2 }}>
-                    {INR(selectedTrade.stopLoss || selectedTrade.stop || (selectedTrade.entryPrice || selectedTrade.entry || 100) * 0.94)}
+                    {INR(selectedTrade.stopLoss || selectedTrade.stop || 0)}
                   </div>
                 </div>
                 <div>
                   <div style={{ fontSize: 9.5, color: "var(--ink-muted)", textTransform: "uppercase" }}>Entry</div>
                   <div className="num" style={{ fontSize: 13, fontWeight: 700, color: "var(--ink-primary)", marginTop: 2 }}>
-                    {INR(selectedTrade.entryPrice || selectedTrade.entry || 100)}
+                    {INR(selectedTrade.entryPrice || selectedTrade.entry || 0)}
                   </div>
                 </div>
                 <div>
@@ -1338,7 +1336,7 @@ export default function VisionOS3DSignals({
                       selectedTrade.targetPrice ||
                         selectedTrade.target ||
                         selectedTrade.exitPrice ||
-                        (selectedTrade.entryPrice || selectedTrade.entry || 100) * 1.15
+                        0
                     )}
                   </div>
                 </div>

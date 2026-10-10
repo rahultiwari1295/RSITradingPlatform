@@ -216,6 +216,9 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
   const ema20 = num(detail?.ema20), ema50 = num(detail?.ema50), ema200 = num(detail?.ema200);
   const vol = num(detail?.volume_ratio_20d) ?? num(s.volume_ratio_20d);
   const r1 = num(detail?.resistance_1), r2 = num(detail?.resistance_2), s1 = num(detail?.support_1);
+  // Honest pattern evidence: fair test (+10% before −7%) vs a random stock-day, from /api/screener/breakouts
+  const edge = (s as any).pattern_edge || null;
+  const edgeOk = edge && edge.fair_win_rate != null && !edge.low_confidence;
   const ml = detail?.ml_decision;
   const fp = detail?.fingerprint_analysis;
 
@@ -223,7 +226,7 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
   const bad: string[] = Array.isArray(detail?.why_avoid_reasons) ? detail.why_avoid_reasons : [];
   if (!good.length) {
     if (vol != null && vol >= 1.5) good.push(`Heavy buying: volume is ${vol.toFixed(1)}× its 20-day average.`);
-    if (stats && Number(stats.win_rate_pct) >= 50) good.push(`This pattern has won ${Number(stats.win_rate_pct).toFixed(0)}% of ${stats.resolved} past trades.`);
+    if (edgeOk && Number(edge.edge_pts) > 0) good.push(`This pattern beat a random stock by ${Number(edge.edge_pts).toFixed(1)} points over ${edge.resolved} past breakouts.`);
     if (rsi != null && rsi >= 55 && rsi <= 70) good.push(`Momentum is healthy (RSI ${rsi.toFixed(0)}).`);
   }
   if (!bad.length) {
@@ -354,7 +357,9 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
   };
 
   const gradeColor = ml ? (ml.conviction_grade === "ELITE" ? colors.gn : ml.conviction_grade === "STRONG" ? colors.acc : ml.conviction_grade === "NEUTRAL" ? colors.am : colors.rd) : colors.mu;
-  const winPct = stats ? Math.max(0, Math.min(100, Number(stats.win_rate_pct))) : null;
+  const winPct = edgeOk ? Math.max(0, Math.min(100, Number(edge.fair_win_rate)))
+    : stats ? Math.max(0, Math.min(100, Number(stats.win_rate_pct))) : null;
+  const dataNote: string | null = (s as any).data_note || null;
   const tile = (label: string, value: React.ReactNode, note?: React.ReactNode, color?: string, bar?: { pct: number; bg: string }) => (
     <div className="rsp-tile">
       <div className="rsp-tile-l">{label}</div>
@@ -466,16 +471,40 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
         ), "profit and loss at the target and the stop")}
 
         {/* 4. Evidence */}
-        {(stats || ml || gate) && sec("Can you trust it?", 4, (
+        {(stats || ml || gate || edgeOk || dataNote) && sec("Can you trust it?", 4, (
           <div className="rsp-evidence">
-            {stats && winPct != null && (
+            {dataNote && (
+              <div className="rsp-ev-row" style={{ border: `1px solid ${colors.am}66`, borderRadius: 12, padding: 10 }}>
+                <div style={{ flex: 1 }}>
+                  <div className="rsp-ev-t" style={{ color: colors.am }}>Data check</div>
+                  <div className="rsp-ev-s">{dataNote}. Treat the levels on this page with caution until it clears.</div>
+                </div>
+              </div>
+            )}
+            {edgeOk && (
+              <div className="rsp-ev-row">
+                <div className="rsp-ring" style={{ background: `conic-gradient(${Number(edge.edge_pts) > 0 ? colors.gn : colors.am} ${winPct}%, var(--glass2) 0)` }}>
+                  <div><b className="rdr-num">{Number(edge.fair_win_rate).toFixed(0)}%</b><span>hit +10%</span></div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div className="rsp-ev-t">How this pattern has really done</div>
+                  <div className="rsp-ev-s">
+                    {edge.resolved.toLocaleString("en-IN")} past breakouts: {Number(edge.fair_win_rate).toFixed(0)}% rose 10% before falling 7%.
+                    {edge.baseline != null ? ` A random stock on a random day: ${Number(edge.baseline).toFixed(0)}%` : ""}
+                    {edge.edge_pts != null ? ` (${Number(edge.edge_pts) >= 0 ? "+" : ""}${Number(edge.edge_pts).toFixed(1)} pts edge).` : "."}
+                    {edge.median_ret_20d != null ? ` Typical move after 20 sessions: ${Number(edge.median_ret_20d) >= 0 ? "+" : ""}${Number(edge.median_ret_20d).toFixed(1)}%.` : ""}
+                  </div>
+                </div>
+              </div>
+            )}
+            {!edgeOk && stats && winPct != null && (
               <div className="rsp-ev-row">
                 <div className="rsp-ring" style={{ background: `conic-gradient(${winPct >= 50 ? colors.gn : colors.am} ${winPct}%, var(--glass2) 0)` }}>
                   <div><b className="rdr-num">{winPct.toFixed(0)}%</b><span>won</span></div>
                 </div>
                 <div style={{ flex: 1 }}>
                   <div className="rsp-ev-t">This pattern's track record</div>
-                  <div className="rsp-ev-s">{stats.resolved} similar setups · average {Number(stats.avg_pnl_pct) >= 0 ? "+" : ""}{Number(stats.avg_pnl_pct).toFixed(1)}% per trade{gate?.survival_verdict ? ` · quality check: ${gate.survival_verdict}` : ""}</div>
+                  <div className="rsp-ev-s">{stats.resolved} similar setups · average {Number(stats.avg_pnl_pct) >= 0 ? "+" : ""}{Number(stats.avg_pnl_pct).toFixed(1)}% per trade</div>
                 </div>
               </div>
             )}
@@ -486,8 +515,7 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
                   <span className="rdr-vtag" style={{ color: gradeColor, background: `${gradeColor}26` }}>{ml.conviction_grade}</span>
                 </div>
                 <div className="rsp-stats">
-                  <div><span>Win probability</span><b className="rdr-num" style={{ color: colors.gn }}>{ml.win_probability_pct}</b></div>
-                  <div><span>Expected value</span><b className="rdr-num" style={{ color: Number(ml.expected_value_pct) >= 0 ? colors.gn : colors.rd }}>{Number(ml.expected_value_pct) > 0 ? "+" : ""}{ml.expected_value_pct}%</b></div>
+                  {/* Model win probability / EV hidden: out-of-sample Brier 0.2499 = no better than a coin flip. */}
                   <div><span>Pattern match</span><b className="rdr-num" style={{ color: colors.acc }}>{fp?.top_similarity_pct || "—"}</b></div>
                   <div><span>Look-alikes that won</span><b className="rdr-num" style={{ color: colors.am }}>{fp?.twin_historical_win_rate_pct != null ? `${fp.twin_historical_win_rate_pct}%` : "—"}</b></div>
                 </div>
