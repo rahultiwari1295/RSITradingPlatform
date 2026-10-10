@@ -397,20 +397,22 @@ function RadarScreenInner({ theme = "dark", livePrices, onSelectStock, onSwitchT
       e.style.setProperty("--ro", t.toFixed(3));
       e.style.setProperty("--ry2", `${((1 - t) * 24).toFixed(1)}px`);
     });
-    const cont = sc.querySelector<HTMLElement>(".rdr-content");
-    const baseTop = cont ? cont.offsetTop : 0;
     sc.querySelectorAll<HTMLElement>(".rdr-card").forEach((el) => {
       // layout-based position (ignores the card's own transform, so no feedback jitter); short phone screens keep several cards visible
-      const mid = baseTop + el.offsetTop + el.offsetHeight / 2 - y;
+      let top = 0;
+      for (let n: HTMLElement | null = el; n && n !== sc; n = n.offsetParent as HTMLElement | null) top += n.offsetTop;
+      const mid = top + el.offsetHeight / 2 - y;
       const c = mid / h;
-      const enter = Math.max(0, (c - 0.8) / 0.2);
-      let e = Math.min(1, enter);
+      // rises + tilts back as it enters from the bottom, settles into focus mid-screen, then recedes gently as it leaves the top
+      // (tilt is always "away" from the viewer and recede only shrinks toward the bottom edge, so cards can never overlap)
+      let e = Math.min(1, Math.max(0, (c - 0.7) / 0.3));
       e = e * e * (3 - 2 * e);
-      // entry only: cards rise and settle as they come into view. Never tilt toward the viewer (it made cards overlap) and never fade the ones leaving.
-      el.style.setProperty("--rx", `${(e * 9).toFixed(2)}deg`);
-      el.style.setProperty("--s", (1 - e * 0.04).toFixed(3));
-      el.style.setProperty("--ty", `${(e * 22).toFixed(1)}px`);
-      el.style.setProperty("--o", (1 - e * 0.22).toFixed(3));
+      const lv = Math.min(1, Math.max(0, (0.24 - c) / 0.3));
+      const f = 1 - Math.min(1, Math.abs(c - 0.42) / 0.55);
+      el.style.setProperty("--rx", `${(e * 15).toFixed(2)}deg`);
+      el.style.setProperty("--s", ((0.965 + 0.035 * f) * (1 - e * 0.06) * (1 - lv * 0.07)).toFixed(3));
+      el.style.setProperty("--ty", `${(e * 34).toFixed(1)}px`);
+      el.style.setProperty("--o", Math.max(0.45, 1 - e * 0.5 - lv * 0.3).toFixed(3));
       el.style.setProperty("--sx", `${((c - 0.5) * 160 - 10).toFixed(0)}%`);
     });
     runPicksFx();
