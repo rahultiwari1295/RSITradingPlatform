@@ -22,8 +22,8 @@ export default function RadarScreen({ theme, onSelectStock, onSwitchTab }: Radar
 
   const activeTheme = theme || (typeof window !== "undefined" && (document.documentElement.dataset.theme as "dark" | "light")) || "dark";
 
-  // Build target iframe URL
-  const targetSrc = `/radar.html?embed=1&theme=${activeTheme}`;
+  // Build target iframe URL once to avoid unnecessary iframe reloads when parent re-renders
+  const [targetSrc] = useState(() => `/radar.html?embed=1&theme=${activeTheme}`);
 
   // Sync theme changes to iframe
   useEffect(() => {
