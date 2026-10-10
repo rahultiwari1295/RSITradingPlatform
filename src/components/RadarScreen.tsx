@@ -397,17 +397,21 @@ function RadarScreenInner({ theme = "dark", livePrices, onSelectStock, onSwitchT
       e.style.setProperty("--ro", t.toFixed(3));
       e.style.setProperty("--ry2", `${((1 - t) * 24).toFixed(1)}px`);
     });
+    const cont = sc.querySelector<HTMLElement>(".rdr-content");
+    const baseTop = cont ? cont.offsetTop : 0;
     sc.querySelectorAll<HTMLElement>(".rdr-card").forEach((el) => {
-      const r = el.getBoundingClientRect();
-      const c = (r.top + r.height / 2 - pr.top) / h;
-      const enter = Math.max(0, (c - 0.62) / 0.38);
-      const leave = Math.max(0, (0.2 - c) / 0.2);
+      // layout-based position (ignores the card's own transform, so no feedback jitter); short phone screens keep several cards visible
+      const mid = baseTop + el.offsetTop + el.offsetHeight / 2 - y;
+      const c = mid / h;
+      const enter = Math.max(0, (c - 0.8) / 0.2);
+      const leave = Math.max(0, (0.14 - c) / 0.2);
       let e = Math.min(1, enter);
-      e = e * e;
-      el.style.setProperty("--rx", `${(e * 22 + leave * -10).toFixed(2)}deg`);
-      el.style.setProperty("--s", (1 - e * 0.09 - leave * 0.05).toFixed(3));
-      el.style.setProperty("--ty", `${(e * 46 - leave * 14).toFixed(1)}px`);
-      el.style.setProperty("--o", Math.max(0, 1 - e * 0.85 - leave * 0.7).toFixed(3));
+      e = e * e * (3 - 2 * e);
+      const lv = Math.min(1, leave);
+      el.style.setProperty("--rx", `${(e * 16 + lv * -8).toFixed(2)}deg`);
+      el.style.setProperty("--s", (1 - e * 0.06 - lv * 0.04).toFixed(3));
+      el.style.setProperty("--ty", `${(e * 30 - lv * 10).toFixed(1)}px`);
+      el.style.setProperty("--o", Math.max(0.55, 1 - e * 0.45 - lv * 0.4).toFixed(3));
       el.style.setProperty("--sx", `${((c - 0.5) * 160 - 10).toFixed(0)}%`);
     });
     runPicksFx();
