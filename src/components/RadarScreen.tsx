@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { quantsyncApi } from "../api/quantsyncApi";
+import RadarStockPage from "./RadarStockPage";
 import { liveMarketSocket } from "../services/liveMarketSocket";
 import {
   PATTERN_OPTIONS,
@@ -35,7 +36,6 @@ interface RadarScreenProps {
   theme?: "dark" | "light";
   livePrices?: Record<string, { price: number; change_pct?: number }>;
   onSelectStock?: (symbol: string, fullData?: any) => void;
-  onOpenAnalyst?: (stock: any) => void;
   onSwitchTab?: (tab: string) => void;
 }
 
@@ -69,7 +69,7 @@ const fmt = (n: any, d = 2) =>
 const fmt0 = (n: any) => Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 });
 const patLabel = (s: Setup) => String(s.pattern_type || "").split("·")[0].trim();
 
-export default function RadarScreen({ theme = "dark", livePrices, onSelectStock, onOpenAnalyst, onSwitchTab }: RadarScreenProps) {
+export default function RadarScreen({ theme = "dark", livePrices, onSelectStock, onSwitchTab }: RadarScreenProps) {
   const isLight = theme === "light";
 
   // ── UI state
@@ -98,13 +98,6 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
 
   const [closedRecords, setClosedRecords] = useState<Setup[]>([]);
   const [closedLoading, setClosedLoading] = useState(false);
-
-  // ── detail sheet state
-  const [riskCapital, setRiskCapital] = useState("10000");
-  const [alertActive, setAlertActive] = useState(false);
-  const [detailCandles, setDetailCandles] = useState<any[]>([]);
-  const [chartState, setChartState] = useState<"idle" | "loading" | "ready" | "error">("idle");
-  const [hoveredCandle, setHoveredCandle] = useState<any | null>(null);
 
   const colors = useMemo(
     () =>
@@ -261,44 +254,6 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
       alive = false;
     };
   }, [activeTab, filters.timeframe, filters.pattern, closedFilter]);
-
-  // ── detail sheet: real chart only
-  useEffect(() => {
-    setHoveredCandle(null);
-    setAlertActive(false);
-    setDetailCandles([]);
-    if (!selectedStock) {
-      setChartState("idle");
-      return;
-    }
-    let alive = true;
-    setChartState("loading");
-    quantsyncApi
-      .getChartData(selectedStock.symbol, 60)
-      .then((cd) => {
-        if (!alive) return;
-        const c = (cd && cd.candles) || [];
-        if (c.length) {
-          setDetailCandles(c.map((x: any) => ({ o: Number(x.open), h: Number(x.high), l: Number(x.low), c: Number(x.close), v: Number(x.volume || 0), time: x.time })));
-          setChartState("ready");
-        } else setChartState("error");
-      })
-      .catch(() => alive && setChartState("error"));
-    return () => {
-      alive = false;
-    };
-  }, [selectedStock?.symbol]);
-
-  const sizing = useMemo(() => {
-    if (!selectedStock) return { qty: 0, cap: 0, profit: 0, loss: 0, ent: 0, sl: 0, tg: 0 };
-    const r = Math.max(0, Number(riskCapital.replace(/\D/g, "")) || 0);
-    const sl = Number(selectedStock.stop_loss) || 0;
-    const tg = Number(selectedStock.target_1) || 0;
-    const ent = entryPriceFor(selectedStock);
-    const riskPerShare = sl > 0 && ent > sl ? ent - sl : 0;
-    const qty = riskPerShare > 0 ? Math.floor(r / riskPerShare) : 0;
-    return { qty, cap: qty * ent, profit: qty * (tg > ent ? tg - ent : 0), loss: qty * riskPerShare, ent, sl, tg };
-  }, [selectedStock, riskCapital]);
 
   const activeFilterCount =
     (filters.pattern !== "ALL" ? 1 : 0) + (filters.sector ? 1 : 0) + (filters.mcap !== "ALL" ? 1 : 0) + (filters.fnoOnly ? 1 : 0) + (filters.minScore > 0 ? 1 : 0) + (!mlGateOn ? 1 : 0);
@@ -567,7 +522,7 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
     const d = diffOf(s);
     const st = patternStats(s);
     return (
-      <div key={`${s.symbol}-${idx}`} className="rdr-card" onClick={() => setSelectedStock(s)}>
+      <div key={`${s.symbol}-${idx}`} className="rdr-card" onClick={() => openStock(s)}>
         <div className="rdr-row">
           <div style={{ minWidth: 0 }}>
             <div className="rdr-cs">{s.symbol}</div>
@@ -657,78 +612,6 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
     </>
   );
 
-  // ── detail chart (real candles only)
-  const renderChart = (s: Setup) => {
-    if (chartState === "loading" || chartState === "idle") return <div className="rdr-chartmsg">Loading chart…</div>;
-    if (chartState === "error" || !detailCandles.length) return <div className="rdr-chartmsg">Chart data unavailable</div>;
-    const N = detailCandles.length;
-    const W = 340, H = 170, pt = 12, pb = 12, pl = 6, pr = 54;
-    const ch = H - pt - pb;
-    const cw = W - pl - pr;
-    const bk = Number(s.breakout_level) || 0, sl = Number(s.stop_loss) || 0, tg = Number(s.target_1) || 0, cmp = Number(s.curr_price) || 0;
-    const lo = Math.min(...detailCandles.map((b) => b.l), sl > 0 ? sl : Infinity) * 0.99;
-    const hi = Math.max(...detailCandles.map((b) => b.h), tg > 0 ? tg : 0) * 1.01;
-    const rg = hi - lo || 1;
-    const Y = (v: number) => pt + ch - ((Math.min(hi, Math.max(lo, v)) - lo) / rg) * ch;
-    const X = (i: number) => pl + (i / (N - 1 || 1)) * cw;
-    const bw = Math.max(2, Math.min(6, (cw / N) * 0.65));
-    const ln = (v: number, color: string, text: string) =>
-      v > 0 ? (
-        <g>
-          <line x1={pl} x2={W - pr + 4} y1={Y(v)} y2={Y(v)} stroke={color} strokeWidth="1" strokeDasharray="3 4" />
-          <text x={W - 2} y={Y(v) + 3} textAnchor="end" fill={color} fontSize="9.5" fontWeight="700">{text}</text>
-        </g>
-      ) : null;
-    return (
-      <div className="rdr-chart rdr-st">
-        <svg
-          viewBox={`0 0 ${W} ${H}`}
-          style={{ width: "100%", display: "block", touchAction: "pan-y" }}
-          onPointerMove={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-            setHoveredCandle(detailCandles[Math.min(N - 1, Math.floor((x / rect.width) * N))]);
-          }}
-          onPointerLeave={() => setHoveredCandle(null)}
-        >
-          {sl > 0 && bk > sl && <rect x={pl} y={Y(bk)} width={W - pr - pl + 4} height={Math.max(0, Y(sl) - Y(bk))} fill={colors.rd} opacity="0.09" />}
-          {tg > bk && bk > 0 && <rect x={pl} y={Y(tg)} width={W - pr - pl + 4} height={Math.max(0, Y(bk) - Y(tg))} fill={colors.gn} opacity="0.09" />}
-          {ln(bk, colors.acc, "Trigger")}
-          {ln(sl, colors.rd, "Stop")}
-          {ln(tg, colors.gn, "Target")}
-          {detailCandles.map((b, i) => {
-            const c = b.c >= b.o ? colors.gn : colors.rd;
-            const yT = Y(Math.max(b.o, b.c));
-            const yB = Y(Math.min(b.o, b.c));
-            return (
-              <g key={i} className="rdr-cand" style={{ ["--c" as any]: i }}>
-                <line x1={X(i)} x2={X(i)} y1={Y(b.h)} y2={Y(b.l)} stroke={c} strokeWidth="1" />
-                <rect x={X(i) - bw / 2} y={yT} width={bw} height={Math.max(1.5, yB - yT)} fill={c} rx="0.8" />
-              </g>
-            );
-          })}
-          {cmp > 0 && (
-            <g>
-              <line x1={pl} x2={W - pr + 4} y1={Y(cmp)} y2={Y(cmp)} stroke={colors.ink} strokeWidth="0.8" opacity="0.6" />
-              <rect x={W - pr + 5} y={Y(cmp) - 8} width={48} height={16} rx="4" fill={colors.ink} />
-              <text x={W - pr + 29} y={Y(cmp) + 3.5} textAnchor="middle" fill={colors.bg} fontSize="10" fontWeight="800">{cmp.toFixed(1)}</text>
-            </g>
-          )}
-        </svg>
-        <div style={{ fontSize: 11, color: colors.mu, marginTop: 6, minHeight: 16 }}>
-          {hoveredCandle ? (
-            <span>
-              <b>{hoveredCandle.time}</b> · O {hoveredCandle.o.toFixed(1)} · H {hoveredCandle.h.toFixed(1)} · L {hoveredCandle.l.toFixed(1)} · C{" "}
-              <span style={{ color: hoveredCandle.c >= hoveredCandle.o ? colors.gn : colors.rd, fontWeight: 700 }}>{hoveredCandle.c.toFixed(1)}</span>
-            </span>
-          ) : (
-            "Touch or drag across the chart to inspect sessions"
-          )}
-        </div>
-      </div>
-    );
-  };
-
   const emptyState = (t: string, sub: string) => (
     <div style={{ textAlign: "center", padding: "40px 20px", color: colors.mu }}>
       <div style={{ fontSize: 17, fontWeight: 700, color: colors.ink, margin: "8px 0" }}>{t}</div>
@@ -741,6 +624,42 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
     setSearchInput("");
     setMlGateOn(true);
   };
+
+  // ── stock page navigation: a real history entry so browser Back / edge-swipe returns to the list
+  const [pageClosing, setPageClosing] = useState(false);
+  const selectedRef = useRef<Setup | null>(null);
+  selectedRef.current = selectedStock;
+  const openStock = (st: Setup) => {
+    try {
+      window.history.pushState({ radarStock: st.symbol }, "", window.location.href);
+    } catch (_) {}
+    setPageClosing(false);
+    setSelectedStock(st);
+  };
+  const closePage = () => {
+    setPageClosing(true);
+    window.setTimeout(() => {
+      setSelectedStock(null);
+      setPageClosing(false);
+    }, 320);
+  };
+  const goBack = () => {
+    if (window.history.state && window.history.state.radarStock) window.history.back();
+    else closePage();
+  };
+  useEffect(() => {
+    const onPop = () => {
+      if (selectedRef.current) closePage();
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+  // keep the open page's numbers live as prices tick
+  const liveSelected = useMemo(() => {
+    if (!selectedStock) return null;
+    const all = [...view.buyZone, ...view.radar, ...view.retest, ...view.runners, ...view.risk];
+    return all.find((x) => x.symbol === selectedStock.symbol) || selectedStock;
+  }, [selectedStock, view]);
 
   const sheetOpen = !!selectedStock || trustOpen || isSortOpen || isFilterOpen;
   const dateStr = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
@@ -804,7 +723,7 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
                 const d = diffOf(s);
                 const st = patternStats(s);
                 return (
-                  <div key={s.symbol} className="rdr-pick" onClick={() => setSelectedStock(s)}>
+                  <div key={s.symbol} className="rdr-pick" onClick={() => openStock(s)}>
                     <div className="rdr-shine" />
                     <div className="rdr-rank">#{i + 1} pick</div>
                     <div className="rdr-psym">{s.symbol}</div>
@@ -918,86 +837,28 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
         <div style={{ height: 90 }} />
       </div>
 
-      {/* Detail sheet */}
-      {selectedStock &&
-        (() => {
-          const s = selectedStock;
-          const v = verdictOf(s);
-          const c = getBreakoutClassification(s);
-          const st = patternStats(s);
-          const gate = mlGateFor(s) as any;
-          const items: [React.ReactNode, React.ReactNode][] = [];
-          if (Number(s.dna_score) > 0) items.push([<Tip k="strength">Setup strength</Tip>, `${Math.round(Number(s.dna_score))} / 100`]);
-          items.push(["Pattern", `${patLabel(s) || "—"} · ${timeframeLabel(s.timeframe)}`]);
-          if (st) items.push(["Past results of this pattern", <span style={{ color: Number(st.win_rate_pct) >= 50 ? colors.gn : colors.am }}>{Number(st.win_rate_pct).toFixed(0)}% won · {st.resolved} trades</span>]);
-          if (st) items.push(["Average result", `${Number(st.avg_pnl_pct) >= 0 ? "+" : ""}${Number(st.avg_pnl_pct).toFixed(1)}%`]);
-          if (gate) items.push(["Quality check", `${gate.survival_verdict || "—"}${gate.post_win_rate !== undefined ? ` · ${Number(gate.post_win_rate).toFixed(0)}% after filter` : ""}`]);
-          if (Number(s.volume_ratio_20d) > 0) items.push(["Buying interest", `${Number(s.volume_ratio_20d).toFixed(1)}× normal${Number(s.volume_ratio_20d) >= 1.5 ? " (strong)" : Number(s.volume_ratio_20d) < 1 ? " (light)" : ""}`]);
-          if (Number(s.rsi) > 0) items.push(["Momentum (RSI)", `${Number(s.rsi).toFixed(0)}${Number(s.rsi) > 70 ? " (stretched)" : Number(s.rsi) < 40 ? " (weak)" : ""}`]);
-          if (Number(s.adx14) > 0) items.push(["Trend strength", Number(s.adx14).toFixed(0)]);
-          if (gate?.top_features?.length) items.push(["Model leans on", gate.top_features.slice(0, 3).join(", ")]);
-          return sheetShell(
-            () => setSelectedStock(null),
-            <>
-              <div className="rdr-row rdr-st">
-                <div>
-                  <div className="rdr-shsym">{s.symbol}</div>
-                  <div className="rdr-cc" style={{ fontSize: 13.5 }}>
-                    {s.company_name || s.symbol}
-                    {s.sector ? ` · ${s.sector}` : ""}
-                    {Number(s.is_fno) === 1 || s.is_fno === true ? " · F&O" : ""}
-                  </div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div className="rdr-cp rdr-num" style={{ fontSize: 24 }}>₹{fmt(s.curr_price)}</div>
-                  <span className="rdr-vtag" style={{ color: v.c, background: `${v.c}24`, display: "inline-block", marginTop: 4 }}>{v.w}</span>
-                </div>
-              </div>
-              <div className="rdr-why rdr-st" style={{ fontSize: 15, marginTop: 12 }}>{whyText(s)}</div>
-              <div className="rdr-sbox rdr-st" style={{ padding: "12px 10px 8px" }}>{renderChart(s)}</div>
-
-              {label("Why we like it")}
-              <div className="rdr-sbox rdr-st">
-                {row("Position vs trigger", c.hasPivot ? `${c.diffPct >= 0 ? "+" : ""}${c.diffPct.toFixed(2)}%` : "—")}
-                {items.map(([k, val], i) => <React.Fragment key={i}>{row(k, val, i === items.length - 1)}</React.Fragment>)}
-              </div>
-
-              {label("Your plan")}
-              <div className="rdr-sbox rdr-st">
-                {row(s._tradeType === "RADAR" ? "Buy above" : "Buy around", <span style={{ color: colors.acc }}>₹{sizing.ent ? sizing.ent.toFixed(1) : "—"}</span>)}
-                {row("Exit if it falls to", <span style={{ color: colors.rd }}>₹{sizing.sl ? sizing.sl.toFixed(1) : "—"}</span>)}
-                {row("Aim for", <span style={{ color: colors.gn }}>₹{sizing.tg ? sizing.tg.toFixed(1) : "—"}</span>)}
-                {row(<Tip k="rr">Reward vs risk</Tip>, rewardRisk(s) > 0 ? `${rewardRisk(s).toFixed(1)}×` : "—", true)}
-              </div>
-
-              {label("How much to buy")}
-              <div className="rdr-sbox rdr-st">
-                <div className="rdr-kv">
-                  <span>Most you're willing to lose</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <span>₹</span>
-                    <input className="rdr-input rdr-num" type="text" inputMode="numeric" value={riskCapital} onChange={(e) => setRiskCapital(e.target.value.replace(/\D/g, ""))} />
-                  </div>
-                </div>
-                {row("Quantity", `${sizing.qty.toLocaleString("en-IN")} shares`)}
-                {row("Money needed", `₹${Math.round(sizing.cap).toLocaleString("en-IN")}`)}
-                {row("If target / if stopped", <span><b style={{ color: colors.gn }}>+₹{Math.round(sizing.profit).toLocaleString("en-IN")}</b> / <b style={{ color: colors.rd }}>−₹{Math.round(sizing.loss).toLocaleString("en-IN")}</b></span>, true)}
-              </div>
-
-              {onOpenAnalyst && (
-                <button className="rdr-cta rdr-st" onClick={() => { const x = selectedStock; setSelectedStock(null); onOpenAnalyst(x); }}>
-                  Open analyst view
-                </button>
-              )}
-              <button className="rdr-btn2 rdr-st" onClick={() => { const x = selectedStock; setSelectedStock(null); if (onSelectStock) onSelectStock(x.symbol, x); else if (onSwitchTab) onSwitchTab("dna"); }}>
-                Open DNA report
-              </button>
-              <button className="rdr-btn2 rdr-st" onClick={() => setAlertActive(true)} style={{ color: alertActive ? colors.gn : undefined }}>
-                {alertActive ? "✓ Price alert active" : `Alert me at ₹${Number(s.breakout_level || 0).toFixed(1)}`}
-              </button>
-            </>
-          );
-        })()}
+      {/* Stock page */}
+      {liveSelected && (
+        <RadarStockPage
+          key={liveSelected.symbol}
+          stock={liveSelected}
+          theme={isLight ? "light" : "dark"}
+          colors={colors}
+          verdict={verdictOf(liveSelected)}
+          why={whyText(liveSelected)}
+          stats={patternStats(liveSelected)}
+          gate={mlGateFor(liveSelected)}
+          closing={pageClosing}
+          onBack={goBack}
+          onOpenDna={() => {
+            const x = liveSelected;
+            setSelectedStock(null);
+            setPageClosing(false);
+            if (onSelectStock) onSelectStock(x.symbol, x);
+            else if (onSwitchTab) onSwitchTab("dna");
+          }}
+        />
+      )}
 
       {/* Track record */}
       {trustOpen &&
