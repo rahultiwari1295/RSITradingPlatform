@@ -1195,16 +1195,23 @@ position:relative;width:100%;height:100%;overflow-y:auto;overflow-x:hidden;backg
 .rdr-skel{height:150px;border-radius:22px;margin:0 18px 14px;background:var(--glass);animation:rdrpulse 1.4s infinite}
 .rdr-scrim{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);animation:rdrfade .3s ease both}
 @keyframes rdrfade{from{opacity:0}to{opacity:1}}
-.rdr-sheet{position:fixed;left:50%;bottom:0;z-index:60;width:100%;max-width:620px;overflow-y:auto;border-radius:30px 30px 0 0;background:var(--bg2);color:var(--ink);border:1px solid var(--line);padding:12px 20px 40px;box-shadow:0 -30px 80px rgba(0,0,0,.6),0 -1px 0 rgba(255,255,255,.14) inset;scrollbar-width:none;animation:rdrsheet .55s cubic-bezier(.2,.9,.25,1) both}
+.rdr-sheet{position:fixed;left:0;right:0;margin:0 auto;bottom:0;z-index:60;width:100%;max-width:620px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y;border-radius:30px 30px 0 0;background:var(--bg2);color:var(--ink);border:1px solid var(--line);padding:12px 20px 40px;box-shadow:0 -30px 80px rgba(0,0,0,.6),0 -1px 0 rgba(255,255,255,.14) inset;scrollbar-width:none;animation:rdrsheet .55s cubic-bezier(.2,.9,.25,1) both}
 .rdr-sheet::-webkit-scrollbar{display:none}
-@keyframes rdrsheet{from{transform:translate(-50%,105%)}to{transform:translate(-50%,0)}}
+@keyframes rdrsheet{from{transform:translateY(105%)}to{transform:none}}
+.rdr-sheet *{min-width:0;max-width:100%}
+.rdr-sheet .rdr-row>div:first-child{flex:1 1 auto;min-width:0}
+.rdr-sheet .rdr-row>div:last-child{flex:0 0 auto;white-space:nowrap}
+.rdr-sheet .rdr-shsym{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rdr-kv>span:first-child{flex:1 1 auto}
+.rdr-kv b{flex:0 1 auto;overflow-wrap:anywhere}
+.rdr-sheet svg{max-width:100%}
 .rdr-st{animation:rdrrise .7s cubic-bezier(.2,.9,.25,1) both;animation-delay:.18s}
 .rdr-sheet .rdr-st:nth-child(n+3){animation-delay:.26s}.rdr-sheet .rdr-st:nth-child(n+5){animation-delay:.34s}.rdr-sheet .rdr-st:nth-child(n+7){animation-delay:.42s}.rdr-sheet .rdr-st:nth-child(n+9){animation-delay:.5s}
 @keyframes rdrrise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 .rdr-cand{animation:rdrgrow .6s cubic-bezier(.2,.9,.25,1) both;animation-delay:calc(var(--c)*14ms + 350ms);transform-box:fill-box;transform-origin:center}
 @keyframes rdrgrow{from{opacity:0;transform:scaleY(.2)}to{opacity:1;transform:none}}
 .rdr-grab{width:38px;height:5px;border-radius:3px;background:var(--dim);margin:0 auto 16px}
-.rdr-shsym{font-size:30px;font-weight:800;letter-spacing:-.03em}
+.rdr-shsym{font-size:clamp(21px,6.2vw,30px);font-weight:800;letter-spacing:-.03em}
 .rdr-sbox{margin-top:16px;border-radius:20px;background:var(--glass);border:1px solid var(--line);padding:4px 16px}
 .rdr-kv{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
 .rdr-kv>span:first-child{color:var(--mu)}
