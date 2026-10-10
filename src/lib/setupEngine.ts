@@ -58,6 +58,29 @@ export function normalizePatternId(rawType?: string): string {
   return "OTHER";
 }
 
+/**
+ * The backend (common/trade_rules.py) judges breakouts on closes, not on distance from the pivot, and the rows
+ * carry its verdict as trade_state / trade_action. When present it wins over the price-distance guesses below.
+ */
+export type ExecState = "BUY_ZONE" | "RETEST" | "EXTENDED" | "SUBMERGED" | "TARGET_ACHIEVED" | "NEAR" | "UNPROVEN" | "WATCH_RETEST";
+export function executionFromTrade(s: any): ExecState | null {
+  const st = s?.trade_state;
+  const act = s?.trade_action;
+  if (!st || st === "NA") return null;
+  if (act === "BUY") return st === "RETEST_HOLD" ? "RETEST" : "BUY_ZONE";
+  switch (st) {
+    case "RETEST_WATCH": return "WATCH_RETEST";
+    case "NEAR":
+    case "ATTEMPT": return "NEAR";
+    case "BREAKOUT":
+    case "RETEST_HOLD": return "UNPROVEN";
+    case "RUNNING":
+    case "EXTENDED": return "EXTENDED";
+    case "TARGET_ACHIEVED": return "TARGET_ACHIEVED";
+    default: return "SUBMERGED"; // forming / weak close / failed / stopped: not a setup
+  }
+}
+
 export function getBreakoutClassification(s: any) {
   const cmp = Number(s.curr_price || 0);
   const brk = Number(s.breakout_level || 0);
@@ -72,15 +95,20 @@ export function getBreakoutClassification(s: any) {
   // Buy Zone Thresholds under Option B
   const buyZoneLimit = tf === "MONTHLY" ? 10.0 : tf === "WEEKLY" ? 6.5 : 4.5;
 
-  const isTargetHit = s.lifecycle_state === "TARGET_ACHIEVED" ||
+  const isTargetHit0 = s.lifecycle_state === "TARGET_ACHIEVED" ||
     String(s.action_title || "").includes("Target Achieved") ||
     String(s.stage || "").includes("Target Achieved") ||
     s.stance === "NEUTRAL" ||
     (tgt > 0 && cmp >= tgt && brk > 0 && tgt > brk);
+  // with a trade verdict from the backend, only its own TARGET_ACHIEVED counts (DNA "NEUTRAL" must not hide a setup)
+  const isTargetHit = s.trade_state ? s.trade_state === "TARGET_ACHIEVED" : isTargetHit0;
 
-  let executionState: "BUY_ZONE" | "RETEST" | "EXTENDED" | "SUBMERGED" | "TARGET_ACHIEVED" = "BUY_ZONE";
+  let executionState: ExecState = "BUY_ZONE";
 
-  if (isTargetHit) {
+  const fromTrade = executionFromTrade(s);
+  if (fromTrade) {
+    executionState = fromTrade;
+  } else if (isTargetHit) {
     executionState = "TARGET_ACHIEVED";
   } else if (diffPct >= -1.8 && diffPct <= 1.2 && (s.breakout_status === "SUCCESS" || s.breakout_status === "POST_BREAKOUT" || Number(s.days_since_breakout || 0) >= 1)) {
     executionState = "RETEST";
@@ -194,6 +222,7 @@ export function patternCode(s: SetupRow): string {
 
 /** Step 4: true when the ML quality gate says this pattern has no edge. */
 export function isLowEdge(s: SetupRow, gates: Record<string, MlGate>): boolean {
+  if (s.trade_call) return false; // the measured track record travels with the row; the old pattern-name gate is retired
   const code = patternCode(s);
   if (!code) return false;
   const gate =
@@ -217,7 +246,8 @@ export function classifySetups(list: SetupRow[]): SetupGroups {
     const c = getBreakoutClassification(s);
     if (c.executionState === "RETEST") g.retest.push({ ...s, _tradeType: "RETEST" });
     else if (c.executionState === "BUY_ZONE") g.buyZone.push({ ...s, _tradeType: "BUY_ZONE" });
-    else if (c.cmp < c.brk && c.diffAbs <= RADAR_MAX_BELOW_PCT) g.radar.push({ ...s, _tradeType: "RADAR" });
+    else if (c.executionState === "NEAR" || c.executionState === "UNPROVEN" || c.executionState === "WATCH_RETEST") g.radar.push({ ...s, _tradeType: "RADAR" });
+    else if (!s.trade_state && c.cmp < c.brk && c.diffAbs <= RADAR_MAX_BELOW_PCT) g.radar.push({ ...s, _tradeType: "RADAR" });
     else if (c.executionState === "EXTENDED") g.runners.push({ ...s, _tradeType: "RUNNER" });
   }
   const diff = (s: SetupRow) => getBreakoutClassification(s).diffPct;

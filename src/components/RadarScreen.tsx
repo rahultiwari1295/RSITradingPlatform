@@ -188,6 +188,8 @@ function RadarScreenInner({ theme = "dark", livePrices, onSelectStock, onSwitchT
   // the pattern's real track record and the data-quality check all agree.
   const holdReason = (s: any): string | null => {
     if (s.data_quarantine) return s.data_note ? `${s.data_note}.` : "Price data is under review.";
+    // Radar and DNA are separate: a chart setup judged by the trade rules is not second-guessed by DNA or the old pattern gate.
+    if (s.trade_call) return null;
     const st = String(s.stance || "").toUpperCase();
     if (st && st !== "BULLISH" && st !== "ACCUMULATION") return "Deep research does not confirm the uptrend yet.";
     if (String(s.action || "").toUpperCase() === "NO_TRADE_WAIT") return "Deep research says wait for a cleaner setup.";
@@ -335,6 +337,16 @@ function RadarScreenInner({ theme = "dark", livePrices, onSelectStock, onSwitchT
     const stopPct = sl > 0 && cmp > sl ? ((cmp - sl) / cmp) * 100 : null;
     const stopTxt = stopPct == null ? "" : stopPct <= 6 ? ` Stop is ${stopPct.toFixed(1)}% away, so risk is small.` : ` Stop is ${stopPct.toFixed(1)}% away — size the position for that.`;
     if ((s as any)._hold) return `Chart says breakout, but: ${(s as any)._hold}`;
+    const tc = (s as any).trade_call;
+    if (tc && tc.state && tc.state !== "NA") {
+      const p = tc.plan;
+      const note = Array.isArray(tc.notes) && tc.notes.length ? tc.notes[0] : "";
+      if (tc.action === "BUY" && p) {
+        return `${tc.state === "RETEST_HOLD" ? "Held the retest of" : "Closed decisively above"} ₹${fmt(bk, 1)} (grade ${tc.grade}). Buy next open ≈ ₹${fmt(p.entry_ref, 1)}, stop ₹${fmt(p.stop, 1)} (−${p.risk_pct}%), target ₹${fmt(p.target, 1)}. Risking 1% of capital means a ${p.size_pct_for_1pct_risk}% position.`;
+      }
+      if (tc.state === "NEAR" || tc.state === "ATTEMPT") return `${a}% under its ₹${fmt(bk, 1)} level. ${tc.state === "ATTEMPT" ? "It tried and closed below. " : ""}Needs a decisive close above it (about ${tc.atr ? "₹" + fmt(bk + 0.8 * tc.atr, 1) : "0.8 ATR over"}).`;
+      if (note) return `${note}.`.replace("..", ".");
+    }
     switch (s._tradeType) {
       case "BUY_ZONE":
         return `Broke above ₹${fmt(bk, 1)} and is only ${a}% past it.${stopTxt}`;
@@ -369,6 +381,8 @@ function RadarScreenInner({ theme = "dark", livePrices, onSelectStock, onSwitchT
   // ── top picks: best reward for the risk, weighted by the pattern's real win rate
   const topPicks = useMemo(() => {
     const score = (s: Setup) => {
+      const conf = (s as any).trade_call?.confidence;
+      if (conf && conf.expectancy_pct != null) return Number(conf.expectancy_pct); // measured average result per trade
       const st = patternStats(s);
       const win = st ? Number(st.win_rate_pct) : 50;
       return rewardRisk(s) * win;
@@ -590,10 +604,19 @@ function RadarScreenInner({ theme = "dark", livePrices, onSelectStock, onSwitchT
           <span className="rdr-vtxt">{whyText(s)}</span>
         </div>
         {renderRuler(s)}
-        {st && (
-          <div className="rdr-foot rdr-num">
-            {Number(st.win_rate_pct).toFixed(0)}% of {st.resolved} similar setups won
+        {(s as any).trade_call?.confidence ? (
+          <div className="rdr-foot rdr-num" title={(s as any).trade_call.confidence.text}>
+            <b style={{ color: (s as any).trade_call.confidence.label === "Validated edge" ? colors.gn : colors.am }}>{(s as any).trade_call.confidence.label}</b>
+            {(s as any).trade_call.confidence.n != null &&
+              ` · ${Math.round(100 * (s as any).trade_call.confidence.win_rate)}% won, ${Math.round(100 * (s as any).trade_call.confidence.p_target)}% hit +2R (${Number((s as any).trade_call.confidence.n).toLocaleString()} similar)`}
+            {(s as any).trade_call.resolution?.conflict ? ` · ⚠ ${(s as any).trade_call.resolution.conflict}` : ""}
           </div>
+        ) : (
+          st && (
+            <div className="rdr-foot rdr-num">
+              {Number(st.win_rate_pct).toFixed(0)}% of {st.resolved} similar setups won
+            </div>
+          )
         )}
       </div>
     );

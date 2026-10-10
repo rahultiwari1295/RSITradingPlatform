@@ -217,8 +217,15 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
   const vol = num(detail?.volume_ratio_20d) ?? num(s.volume_ratio_20d);
   const r1 = num(detail?.resistance_1), r2 = num(detail?.resistance_2), s1 = num(detail?.support_1);
   // Honest pattern evidence: fair test (+10% before −7%) vs a random stock-day, from /api/screener/breakouts
+  const tcall: any = (s as any).trade_call && (s as any).trade_call.state && (s as any).trade_call.state !== "NA" ? (s as any).trade_call : null;
   const edge = (s as any).pattern_edge || null;
-  const edgeOk = edge && edge.fair_win_rate != null && !edge.low_confidence;
+  // the measured trade-rules record replaces the older +10%/-7% pattern yardstick when both exist (never show two sets of odds)
+  const edgeOk = !tcall?.confidence && edge && edge.fair_win_rate != null && !edge.low_confidence;
+  const STATE_TITLE: Record<string, string> = {
+    BREAKOUT: "Fresh breakout", RETEST_HOLD: "Retest is holding", RETEST_WATCH: "Back at the broken level", NEAR: "Approaching the level",
+    ATTEMPT: "Tried the level and failed today", BUILDING: "Base building", FORMING: "Base forming", WEAK_BREAKOUT: "Weak close above the level",
+    RUNNING: "Breakout in progress", EXTENDED: "Broke out a while ago", FAILED: "Failed breakout", STOPPED: "Stop was hit", TARGET_ACHIEVED: "Target reached",
+  };
   const ml = detail?.ml_decision;
   const fp = detail?.fingerprint_analysis;
 
@@ -439,6 +446,56 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
             <div><span>Exit at</span><b className="rdr-num" style={{ color: colors.rd }}>₹{fmt(sl, 1)}</b><em className="rdr-num">{toStop != null ? `${toStop.toFixed(1)}%` : ""}</em></div>
           </div>
         </section>
+
+        {/* 2.5 The trade call: one tested definition of the state, the plan, and what similar setups really did */}
+        {tcall && sec("The trade call", 2.5, (
+          <div className="rsp-evidence">
+            <div className="rsp-ev-row" style={{ border: `1px solid ${tcall.action === "BUY" ? colors.gn : colors.am}66`, borderRadius: 12, padding: 10 }}>
+              <div style={{ flex: 1 }}>
+                <div className="rsp-ev-t" style={{ color: tcall.action === "BUY" ? colors.gn : colors.am }}>
+                  {tcall.action === "BUY" ? (tcall.state === "RETEST_HOLD" ? "Buy the retest" : "Buy the breakout") : tcall.action === "HOLD" ? "In trade — hold" : tcall.action === "WATCH" ? "Watch — not a buy yet" : "Not a buy"}
+                  {tcall.grade ? ` · grade ${tcall.grade}` : ""}
+                </div>
+                <div className="rsp-ev-s">
+                  {STATE_TITLE[tcall.state] || tcall.state}
+                  {tcall.timeframe_label ? "" : ` (${tcall.tf === "W" ? "weekly" : tcall.tf === "M" ? "monthly" : "daily"} chart)`}.
+                  {Array.isArray(tcall.notes) && tcall.notes.length ? ` ${tcall.notes.join(". ")}.` : ""}
+                </div>
+              </div>
+            </div>
+            {tcall.plan && tcall.action === "BUY" && (
+              <div className="rsp-levels">
+                <div><span>Buy at</span><b className="rdr-num" style={{ color: colors.acc }}>₹{fmt(tcall.plan.entry_ref, 1)}</b><em>next open</em></div>
+                <div><span>Target (2×risk)</span><b className="rdr-num" style={{ color: colors.gn }}>₹{fmt(tcall.plan.target, 1)}</b></div>
+                <div><span>Stop</span><b className="rdr-num" style={{ color: colors.rd }}>₹{fmt(tcall.plan.stop, 1)}</b><em className="rdr-num">−{tcall.plan.risk_pct}%</em></div>
+              </div>
+            )}
+            {tcall.plan && tcall.action === "BUY" && (
+              <div className="rsp-ev-s">Risking 1% of your capital on this trade means putting about {tcall.plan.size_pct_for_1pct_risk}% of your capital into the position. Exit after {tcall.plan.horizon_bars} {tcall.tf === "W" ? "weeks" : tcall.tf === "M" ? "months" : "sessions"} if neither level is hit.</div>
+            )}
+            {tcall.confidence && (
+              <div className="rsp-ev-row">
+                <div className="rsp-ring" style={{ background: `conic-gradient(${tcall.confidence.label === "Validated edge" ? colors.gn : colors.am} ${Math.round(100 * (tcall.confidence.p_target || 0))}%, var(--glass2) 0)` }}>
+                  <div><b className="rdr-num">{Math.round(100 * (tcall.confidence.p_target || 0))}%</b><span>hit +2R</span></div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div className="rsp-ev-t">{tcall.confidence.label}</div>
+                  <div className="rsp-ev-s">{tcall.confidence.text}</div>
+                </div>
+              </div>
+            )}
+            {tcall.resolution?.conflict && (
+              <div className="rsp-ev-s" style={{ color: colors.am }}>⚠ {tcall.resolution.conflict}. Different timeframes are different trades with different stops — this card shows the one with the better record.</div>
+            )}
+            {tcall.resolution?.context && (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {Object.entries(tcall.resolution.context as Record<string, any>).map(([k, v]) => (
+                  <span key={k} className="rsp-twin">{k === "D" ? "Daily" : k === "W" ? "Weekly" : "Monthly"}: {String(v.state || "—").replace(/_/g, " ").toLowerCase()}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        ), "measured on past trades, not a promise")}
 
         {/* 3. Invest calculator */}
         {sec("If you invest", 3, (
