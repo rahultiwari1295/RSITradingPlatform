@@ -20,6 +20,8 @@ import {
   sanitizeClosedRecords,
   closedTradeView,
   normalizePatternId,
+  patternCode,
+  getBreakoutClassification,
   type SetupFilters,
   type TimeframeFilter,
 } from "../lib/setupEngine";
@@ -331,6 +333,22 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
 
   const winRate = Number(patAcc?.overall?.win_rate_pct ?? accuracy?.win_rate_pct ?? 0);
 
+  // track record of a setup's pattern (real closed-trade stats), null when the sample is too small
+  const patternStats = (s: Setup) => {
+    const map: Record<string, any> = patAcc?.by_pattern || {};
+    const code = patternCode(s);
+    const label = patLabel(s).toUpperCase();
+    const norm = (k: string) => k.toUpperCase().split("·")[0].trim().replace(/[\s\-&]+/g, "_");
+    const key = Object.keys(map).find((k) => norm(k) === code || k.toUpperCase() === label);
+    const st = key ? map[key] : null;
+    return st && Number(st.resolved) >= 10 ? st : null;
+  };
+  const mlGateFor = (s: Setup) => {
+    const code = patternCode(s);
+    if (!code) return null;
+    return (gatesMap as any)[code] || Object.values(gatesMap as any).find((g: any) => code.includes(g.pattern_type) || (g.pattern_type && g.pattern_type.includes(code))) || null;
+  };
+
   // ── UI pieces
   const Chip = ({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) => (
     <button
@@ -424,6 +442,10 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
           {patLabel(s) && pill(patLabel(s))}
           {pill(timeframeLabel(s.timeframe))}
           {Number(s.is_fno) === 1 || s.is_fno === true ? pill("F&O") : null}
+          {(() => {
+            const st = patternStats(s);
+            return st ? pill(`${Number(st.win_rate_pct).toFixed(0)}% win · ${st.resolved} trades`, Number(st.win_rate_pct) >= 50 ? colors.gn : colors.or) : null;
+          })()}
         </div>
         {renderRuler(s)}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 6, paddingTop: 10, borderTop: `0.5px solid ${colors.line}`, fontSize: 11, color: colors.mu }}>
@@ -533,6 +555,15 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
             }}
             onPointerLeave={() => setHoveredCandle(null)}
           >
+            {(() => {
+              const bk = Number(s.breakout_level) || 0, sl = Number(s.stop_loss) || 0, tg = Number(s.target_1) || 0;
+              return (
+                <>
+                  {sl > 0 && bk > sl && <rect x={pl} y={getY(bk)} width={W - pr - pl} height={Math.max(0, getY(sl) - getY(bk))} fill={colors.rd} opacity="0.08" />}
+                  {tg > bk && bk > 0 && <rect x={pl} y={getY(tg)} width={W - pr - pl} height={Math.max(0, getY(bk) - getY(tg))} fill={colors.gn} opacity="0.08" />}
+                </>
+              );
+            })()}
             {line(Number(s.breakout_level) || 0, colors.bl)}
             {line(Number(s.stop_loss) || 0, colors.rd)}
             {line(Number(s.target_1) || 0, colors.gn)}
@@ -548,6 +579,13 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
                 </g>
               );
             })}
+            {Number(s.curr_price) > 0 && (
+              <g>
+                <line x1={pl} x2={W - pr} y1={getY(Number(s.curr_price))} y2={getY(Number(s.curr_price))} stroke={colors.ink} strokeWidth="0.8" opacity="0.7" />
+                <rect x={W - pr + 1} y={getY(Number(s.curr_price)) - 7} width={44} height={14} rx="3" fill={colors.ink} />
+                <text x={W - pr + 23} y={getY(Number(s.curr_price)) + 3} textAnchor="middle" fill={colors.bg} fontSize="9" fontWeight="700">{Number(s.curr_price).toFixed(1)}</text>
+              </g>
+            )}
           </svg>
           <div style={{ fontSize: 11, color: colors.mu, marginTop: 4, minHeight: 18 }}>
             {hoveredCandle ? (
@@ -757,6 +795,27 @@ export default function RadarScreen({ theme = "dark", livePrices, onSelectStock,
               </div>
               <div style={{ fontSize: 12, color: colors.mu, marginTop: 4 }}>{getVerdict(selectedStock).s}</div>
               {renderChart(selectedStock)}
+            </div>
+
+            {label("Why this setup")}
+            <div style={{ background: colors.card, borderRadius: 14, padding: "0 14px", marginBottom: 16 }}>
+              {(() => {
+                const s = selectedStock;
+                const c = getBreakoutClassification(s);
+                const st = patternStats(s);
+                const gate = mlGateFor(s) as any;
+                const items: [string, React.ReactNode][] = [];
+                items.push(["Position vs pivot", c.hasPivot ? `${c.diffPct >= 0 ? "+" : ""}${c.diffPct.toFixed(2)}% (${getVerdict(s).t})` : "—"]);
+                if (Number(s.dna_score) > 0) items.push(["DNA score", `${Math.round(Number(s.dna_score))} / 100`]);
+                items.push(["Pattern", `${patLabel(s) || "—"} · ${timeframeLabel(s.timeframe)}`]);
+                if (st) items.push(["Pattern track record", <span><b style={{ color: Number(st.win_rate_pct) >= 50 ? colors.gn : colors.or }}>{Number(st.win_rate_pct).toFixed(0)}% win</b> · {st.resolved} trades · avg {Number(st.avg_pnl_pct) >= 0 ? "+" : ""}{Number(st.avg_pnl_pct).toFixed(1)}%</span>]);
+                if (gate) items.push(["ML quality gate", <span>{gate.survival_verdict || "—"}{gate.post_win_rate !== undefined ? ` · ${Number(gate.post_win_rate).toFixed(0)}% after filter` : ""}</span>]);
+                if (Number(s.volume_ratio_20d) > 0) items.push(["Volume vs 20d avg", `${Number(s.volume_ratio_20d).toFixed(1)}×${Number(s.volume_ratio_20d) >= 1.5 ? " (strong)" : Number(s.volume_ratio_20d) < 1 ? " (light)" : ""}`]);
+                if (Number(s.rsi) > 0) items.push(["RSI (14)", `${Number(s.rsi).toFixed(0)}${Number(s.rsi) > 70 ? " (stretched)" : Number(s.rsi) < 40 ? " (weak)" : ""}`]);
+                if (Number(s.adx14) > 0) items.push(["Trend strength (ADX)", Number(s.adx14).toFixed(0)]);
+                if (gate?.top_features?.length) items.push(["Model leans on", gate.top_features.slice(0, 3).join(", ")]);
+                return items.map(([k, v], i) => row(k, v, i === items.length - 1));
+              })()}
             </div>
 
             {label("Trade execution plan")}
