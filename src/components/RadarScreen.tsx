@@ -618,6 +618,21 @@ function RadarScreenInner({ theme = "dark", livePrices, onSelectStock, onSwitchT
             </div>
           )
         )}
+        {dnaPill(s)}
+      </div>
+    );
+  };
+
+  // Company-health gauge. Informational only: it never changes the trade call (Radar is price-driven).
+  const dnaPill = (s: Setup) => {
+    const raw = (s as any).dna_score;
+    const score = raw === undefined || raw === null || raw === "" ? null : Number(raw);
+    const [label, c] =
+      score === null || Number.isNaN(score) ? ["Fundamentals: no data", colors.mu] : score >= 75 ? ["Fundamentals: strong", colors.gn] : score >= 50 ? ["Fundamentals: mixed", colors.am] : ["Fundamentals: weak", colors.rd];
+    return (
+      <div className="rdr-foot rdr-num" title="Company health from the DNA score. Shown as a safety check; it does not change the trade call.">
+        <b style={{ color: c }}>{label}</b>
+        {score !== null && !Number.isNaN(score) && ` · DNA ${Math.round(score)}`}
       </div>
     );
   };
@@ -899,7 +914,14 @@ function RadarScreenInner({ theme = "dark", livePrices, onSelectStock, onSwitchT
           <div className="rdr-list">
             {activeList.length === 0 ? (
               <>
-                {emptyState("Nothing here right now", activeFilterCount > 0 || searchInput ? "Try clearing search or filters." : "Check another stage, or come back after the next scan.")}
+                {emptyState(
+                  activeTab === 0 && !(activeFilterCount > 0 || searchInput) ? "No validated buys right now" : "Nothing here right now",
+                  activeFilterCount > 0 || searchInput
+                    ? "Try clearing search or filters."
+                    : activeTab === 0
+                    ? `The bar is strict on purpose. Meanwhile ${stageCounts[1]} setups are close to breaking out and ${stageCounts[2]} are retesting a broken level. Check those tabs.`
+                    : "Check another stage, or come back after the next scan."
+                )}
                 {(activeFilterCount > 0 || searchInput) && (
                   <button className="rdr-chip" style={{ display: "block", margin: "0 auto" }} onClick={clearAll}>
                     Clear all
