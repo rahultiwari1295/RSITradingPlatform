@@ -404,14 +404,13 @@ function RadarScreenInner({ theme = "dark", livePrices, onSelectStock, onSwitchT
       const mid = baseTop + el.offsetTop + el.offsetHeight / 2 - y;
       const c = mid / h;
       const enter = Math.max(0, (c - 0.8) / 0.2);
-      const leave = Math.max(0, (0.14 - c) / 0.2);
       let e = Math.min(1, enter);
       e = e * e * (3 - 2 * e);
-      const lv = Math.min(1, leave);
-      el.style.setProperty("--rx", `${(e * 16 + lv * -8).toFixed(2)}deg`);
-      el.style.setProperty("--s", (1 - e * 0.06 - lv * 0.04).toFixed(3));
-      el.style.setProperty("--ty", `${(e * 30 - lv * 10).toFixed(1)}px`);
-      el.style.setProperty("--o", Math.max(0.55, 1 - e * 0.45 - lv * 0.4).toFixed(3));
+      // entry only: cards rise and settle as they come into view. Never tilt toward the viewer (it made cards overlap) and never fade the ones leaving.
+      el.style.setProperty("--rx", `${(e * 9).toFixed(2)}deg`);
+      el.style.setProperty("--s", (1 - e * 0.04).toFixed(3));
+      el.style.setProperty("--ty", `${(e * 22).toFixed(1)}px`);
+      el.style.setProperty("--o", (1 - e * 0.22).toFixed(3));
       el.style.setProperty("--sx", `${((c - 0.5) * 160 - 10).toFixed(0)}%`);
     });
     runPicksFx();
@@ -1072,7 +1071,7 @@ const RDR_CSS = `
 .rdr-root.light .rdr{background:transparent}
 .rdr-content{position:relative;max-width:620px;margin:0 auto;transform-origin:50% 0;transition:transform .6s cubic-bezier(.2,.9,.25,1),filter .6s}
 .rdr-content.recede{transform:scale(.95) translateY(8px);filter:brightness(.55)}
-.rdr-top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:16px 20px 10px;background:linear-gradient(var(--bg) 55%,transparent)}
+.rdr-top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:16px 20px 10px;background:linear-gradient(var(--bg) 85%,transparent)}
 .rdr-brand{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mu)}
 .rdr-ibtn{min-width:36px;height:36px;border-radius:99px;background:var(--glass);border:1px solid var(--line);display:grid;place-items:center;color:var(--ink);cursor:pointer;font-size:15px;box-shadow:var(--sh)}
 .rdr-hero{padding:6px 22px 8px;transform-origin:0 0;transform:translateY(var(--hy,0px)) scale(var(--hs,1));opacity:var(--ho,1);will-change:transform,opacity}
