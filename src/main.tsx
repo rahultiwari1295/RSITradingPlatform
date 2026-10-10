@@ -3,6 +3,10 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { AuthProvider } from './contexts/AuthContext';
+import { lazy, Suspense } from 'react';
+
+const OpsPage = lazy(() => import('./ops/OpsPage'));
+const IS_OPS = /^\/(ops|rahuldata)(\/|$)/.test(window.location.pathname);
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -76,7 +80,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
       <AuthProvider>
-        <App />
+        {IS_OPS ? <Suspense fallback={null}><OpsPage /></Suspense> : <App />}
       </AuthProvider>
     </ErrorBoundary>
   </StrictMode>,
