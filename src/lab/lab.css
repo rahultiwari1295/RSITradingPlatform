@@ -200,7 +200,7 @@ a.row:active, button.row:active { background: var(--fill); }
 @media (min-width: 720px) { .cond-main { grid-template-columns: 1.3fr .8fr 1.3fr; align-items: center; } .cond-main > :first-child { grid-column: auto; } .cond-main > .swap { grid-column: 1 / -1; } }
 .cond .inp, .cond .sel { font-size: 15px; padding-left: 12px; }
 .cond .sel { padding-right: 26px; background-position: calc(100% - 15px) 19px, calc(100% - 10px) 19px; text-overflow: ellipsis; }
-.cond-main { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+.cond-main { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
 
 /* ---- hosted live-app pages (Patterns, X-Ray, Portfolio) ---------------------------------------- */
 .lab-q { position: fixed; inset: 0; z-index: 20; height: auto; }
