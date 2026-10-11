@@ -6,6 +6,7 @@ import { TradeRow, go } from '../components';
 import { describeExit, describeRule } from '../rules';
 import { EmptyOrRows } from './shared';
 import { EnhancePanel } from './Enhance';
+import { BacktestPanel } from './Backtest';
 import { Seg, Sheet, Skeleton, StatStrip, ErrorBox, shortDate, toast, useAsync } from '../ui';
 
 export default function StrategyDetail({ id, uid }: { id: string; uid: string | null }) {
@@ -38,6 +39,7 @@ export default function StrategyDetail({ id, uid }: { id: string; uid: string | 
           {trades.loading ? <Skeleton n={3} /> : <EmptyOrRows items={trades.data ?? []} empty={tab === 'active' ? 'No active results' : 'No closed results yet'} render={t => <TradeRow key={t.id} t={t} />} />}
         </div>
       </section>
+      <section className="sec"><BacktestPanel id={id} uid={uid} /></section>
       {(d.mine || d.enhanced) && <section className="sec"><EnhancePanel s={d} cat={cat.data} onChanged={() => { s.reload(); trades.reload(); }} /></section>}
       {info && (
         <Sheet title="Strategy rules" onClose={() => setInfo(false)}>

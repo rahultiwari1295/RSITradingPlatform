@@ -58,21 +58,30 @@ def _ctx(con, sid):
     return r, json.loads(r["entry_json"]), json.loads(r["exit_json"])
 
 
+def run_backtest(cfg, con, e, x, tf, version_id="", prog=lambda pct, st: None) -> dict:
+    """Backtest with a cache keyed on (rule, exit, data as-of)."""
+    key = (rule_hash(e, tf), pipeline.exit_hash(x), (store.meta(cfg, tf) or {}).get("as_of", ""))
+    hit = con.execute("SELECT summary_json FROM backtest_runs WHERE rule_hash=? AND exit_hash=? AND as_of=?", key).fetchone()
+    if hit:
+        return json.loads(hit[0])
+    res = pipeline.backtest(cfg, e, x, tf, prog)
+    con.execute("INSERT INTO backtest_runs(id,version_id,rule_hash,exit_hash,as_of,summary_json,created_at) VALUES(?,?,?,?,?,?,?)",
+                (new_id("bt"), version_id, *key, jdump(res), time.time()))
+    return res
+
+
+def cached_backtest(con, tf, e, x) -> dict | None:
+    r = con.execute("SELECT summary_json FROM backtest_runs WHERE rule_hash=? AND exit_hash=? ORDER BY created_at DESC LIMIT 1",
+                    (rule_hash(e, tf), pipeline.exit_hash(x))).fetchone()
+    return json.loads(r[0]) if r else None
+
+
 # ---- job handlers -----------------------------------------------------------------------------
 def handle(cfg: Config, con: sqlite3.Connection, job: sqlite3.Row) -> dict:
     p = json.loads(job["payload_json"])
     prog = lambda pct, st: jobs.progress(con, job["id"], pct, st)
     if job["kind"] == "backtest":
-        tf = p["tf"]
-        e, x = normalise(p["entry"]), normalise_exit(p.get("exit"))
-        key = (rule_hash(e, tf), pipeline.exit_hash(x), (store.meta(cfg, tf) or {}).get("as_of", ""))
-        hit = con.execute("SELECT summary_json FROM backtest_runs WHERE rule_hash=? AND exit_hash=? AND as_of=?", key).fetchone()
-        if hit:
-            return json.loads(hit[0])
-        res = pipeline.backtest(cfg, e, x, tf, prog)
-        con.execute("INSERT INTO backtest_runs(id,version_id,rule_hash,exit_hash,as_of,summary_json,created_at) VALUES(?,?,?,?,?,?,?)",
-                    (new_id("bt"), p.get("version_id") or "", *key, jdump(res), time.time()))
-        return res
+        return run_backtest(cfg, con, normalise(p["entry"]), normalise_exit(p.get("exit")), p["tf"], p.get("version_id") or "", prog)
     if job["kind"] == "enhance":
         return _enhance(cfg, con, p, prog)
     if job["kind"] == "enhance_exit":

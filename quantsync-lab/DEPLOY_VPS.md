@@ -121,3 +121,10 @@ Remove the `location /lab/` block, `nginx -t && systemctl reload nginx`, and rem
 ```
 cd quantsync-lab && pip install -r requirements-dev.txt && pytest -q    # 22 tests
 ```
+
+## 16. Past-test (backtest) data for flagship and public strategies
+After seeding the flagships and the first cook, run once (and again whenever flagship rules change):
+
+    cd /opt/quantsync-lab/app && sudo -u qslab /opt/quantsync-lab/venv/bin/python -m lab.cli backtest-all
+
+It computes 2023–2026 results per strategy and caches them; the strategy screen shows them under "Past test". Any signed-in user can also press "Run past test" on a strategy that has none yet.

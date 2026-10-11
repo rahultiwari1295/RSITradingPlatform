@@ -98,3 +98,15 @@ def test_exit_enhancement(client, cfg):
     drain(cfg, "ai")
     ex = client.get(f"/lab/v1/strategies/{sid}/enhancement", headers=h).json()["exit"]
     assert ex["tested"] >= 20 and "improved" in ex and ex["gate"] == 50
+
+
+def test_strategy_backtest_cached(client, cfg):
+    rule = {**RULE, "entry": {"v": 1, "all": [{"l": {"f": "rsi_14"}, "op": ">", "r": {"c": 53}}]}}  # not shared with other tests' cache
+    sid = client.post("/lab/v1/strategies", json={**rule, "name": "BT"}, headers=H).json()["id"]
+    assert client.get(f"/lab/v1/strategies/{sid}/backtest", headers=H).json()["status"] == "none"
+    assert client.post(f"/lab/v1/strategies/{sid}/backtest").status_code == 401
+    jid = client.post(f"/lab/v1/strategies/{sid}/backtest", headers=H).json()["job_id"]
+    drain(cfg, "fast")
+    assert client.get(f"/lab/v1/jobs/{jid}", headers=H).json()["status"] == "done"
+    r = client.get(f"/lab/v1/strategies/{sid}/backtest", headers=H).json()
+    assert r["status"] == "done" and r["result"]["summary"]["All"]["trades"] > 50

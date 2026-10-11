@@ -174,6 +174,26 @@ def get_strategy(sid: str, uid: str | None = Depends(optional_uid), con=Depends(
     return out
 
 
+@router.get("/strategies/{sid}/backtest")
+def strategy_backtest(sid: str, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
+    s = _visible(con, sid, uid)
+    v = con.execute("SELECT * FROM strategy_versions WHERE id=?", (s["current_version"],)).fetchone()
+    res = service.cached_backtest(con, s["tf"], json.loads(v["entry_json"]), json.loads(v["exit_json"]))
+    return {"status": "done", "result": res} if res else {"status": "none"}
+
+
+@router.post("/strategies/{sid}/backtest")
+def strategy_backtest_run(sid: str, request: Request, uid: str = Depends(require_uid), con=Depends(get_con)):
+    cfg = cfg_of(request)
+    s = _visible(con, sid, uid)
+    v = con.execute("SELECT * FROM strategy_versions WHERE id=?", (s["current_version"],)).fetchone()
+    payload = {"tf": s["tf"], "entry": json.loads(v["entry_json"]), "exit": json.loads(v["exit_json"]), "version_id": v["id"]}
+    try:
+        return {"job_id": jobs.enqueue(con, "backtest", uid, payload, queue_cap=cfg.queue_cap, bt_hourly=cfg.free_backtests_per_hour)}
+    except jobs.QueueError as e:
+        raise HTTPException(e.code, e.msg)
+
+
 @router.get("/strategies/{sid}/trades")
 def trades(sid: str, status: str = "active", limit: int = 100, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
     s = _visible(con, sid, uid)

@@ -1,5 +1,5 @@
 // In-memory stand-in for the Lab API, used for ?demo=1 previews and UI work without the VPS.
-import type { Bar, Catalog, Enhancement, GateStat, JobStatus, LabApi, Portfolio, RuleJson, ScanRow, StrategyCard, TF, Trade, YearStat } from './types';
+import type { Bar, BacktestResult, Catalog, Enhancement, GateStat, JobStatus, LabApi, Portfolio, RuleJson, ScanRow, StrategyCard, TF, Trade, YearStat } from './types';
 
 let seed = 11;
 const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -63,6 +63,7 @@ function gates(): Record<string, GateStat> {
   return g;
 }
 
+const btResult = (id: string): BacktestResult => { const k = id === 'stg_alpha' ? 1.15 : id === 'stg_pattern' ? 1.05 : 0.9; return { years: [2023, 2024, 2025, 2026], summary: { All: { ...stat(131, 52.1 * k, 0.9 * k), profit_factor: 1.3, max_dd: -14.2 }, '2023': { ...stat(41, 51 * k, 0.7 * k), profit_factor: 1.2, max_dd: -6 }, '2024': { ...stat(44, 54.5 * k, 1.2 * k), profit_factor: 1.5, max_dd: -5 }, '2025': { ...stat(36, 50 * k, 0.6 * k), profit_factor: 1.1, max_dd: -7 }, '2026': { ...stat(10, 50 * k, 0.5 * k), profit_factor: 1.1, max_dd: -3 } }, months: [] }; };
 const jobs = new Map<string, { t0: number; dur: number; kind: string; sid: string; gate?: number }>();
 const startJob = (kind: string, sid: string, dur: number, gate?: number) => { const id = `job_${jobs.size + 1}`; jobs.set(id, { t0: Date.now(), dur, kind, sid, gate }); return { job_id: id }; };
 
@@ -89,6 +90,8 @@ export const demoApi: LabApi = {
     const rows: ScanRow[] = SYMS.filter(() => rnd() < 0.4).map(s => ({ symbol: s, date: day(1), close: price[s], rsi_14: 50 + rnd() * 20, ret_1: (rnd() - 0.4) * 4, vol_ratio: 0.8 + rnd() * 2 }));
     return { as_of: day(1), count: rows.length, rows };
   },
+  async strategyBacktest(id) { return { status: 'done', result: btResult(id) }; },
+  async runStrategyBacktest() { return startJob('backtest', '', 2500); },
   async backtest() { return startJob('backtest', '', 3500); },
   async job(id): Promise<JobStatus> {
     await sleep(150);

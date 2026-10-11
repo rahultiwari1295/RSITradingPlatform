@@ -40,6 +40,8 @@ export interface LabApi {
   today(): Promise<TodayData>;
   scan(tf: TF, entry: RuleJson): Promise<ScanResult>;
   backtest(tf: TF, entry: RuleJson, exit?: ExitJson): Promise<{ job_id: string }>;
+  strategyBacktest(id: string): Promise<{ status: 'none' | 'done'; result?: BacktestResult }>;
+  runStrategyBacktest(id: string): Promise<{ job_id: string }>;
   job(id: string): Promise<JobStatus>;
   strategies(scope: 'mine' | 'flagship' | 'people'): Promise<StrategyCard[]>;
   strategy(id: string): Promise<StrategyCard>;

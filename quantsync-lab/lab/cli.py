@@ -15,6 +15,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("cook"); c.add_argument("--tf", choices=["1D", "1W", "all"], default="all")
     sub.add_parser("live")
+    sub.add_parser("backtest-all", help="backtest every flagship + public strategy (cached for the UI)")
     s = sub.add_parser("seed-flagship"); s.add_argument("name"); s.add_argument("--tf", default="1D"); s.add_argument("file", help="JSON with entry/exit")
     a = ap.parse_args(argv)
     cfg = load_config(); db.migrate(cfg)
@@ -29,6 +30,12 @@ def main(argv=None):
         con = db.connect(cfg); print("live rows:", service.update_live(cfg, con))
     elif a.cmd == "live":
         print("live rows:", service.update_live(cfg, db.connect(cfg)))
+    elif a.cmd == "backtest-all":
+        con = db.connect(cfg)
+        for r in con.execute("SELECT s.name, s.tf, v.id vid, v.entry_json, v.exit_json FROM strategies s JOIN strategy_versions v ON v.id=s.current_version "
+                             "WHERE s.archived=0 AND (s.kind='flagship' OR s.visibility='public')").fetchall():
+            res = service.run_backtest(cfg, con, json.loads(r["entry_json"]), json.loads(r["exit_json"]), r["tf"], r["vid"])
+            print(r["name"], json.dumps(res["summary"].get("All")))
     else:
         d = json.load(open(a.file)); con = db.connect(cfg)
         print(service.create_strategy(con, cfg, None, a.name, a.tf, d["entry"], d.get("exit"), kind="flagship", visibility="public"))
