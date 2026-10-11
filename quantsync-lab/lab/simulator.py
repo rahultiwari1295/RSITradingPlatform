@@ -40,6 +40,8 @@ def simulate_symbol(symbol: str, b: pd.DataFrame, sig: np.ndarray, exit_: dict |
         if o[e] > c[t] * (1 + GAP_SKIP):
             continue
         ep, a = o[e], atr[t]
+        if ep <= 0 or not np.isfinite(ep):
+            continue
         stop = target = None
         fixed_stop = []
         if sp["stop_pct"]: fixed_stop.append(ep * (1 - sp["stop_pct"] / 100))

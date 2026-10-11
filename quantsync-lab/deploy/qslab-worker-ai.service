@@ -7,7 +7,7 @@ WorkingDirectory=/opt/quantsync-lab/app
 Environment=QSLAB_CONFIG=/opt/quantsync-lab/config.yaml
 ExecStart=/opt/quantsync-lab/venv/bin/python -m lab.worker ai
 Restart=always
-MemoryMax=1200M
+MemoryMax=900M
 CPUQuota=100%
 Nice=15
 NoNewPrivileges=true

@@ -6,8 +6,16 @@ import pandas as pd
 MIN_TRADES_SHOWN = 30  # win rate is not published below this many closed trades
 
 
+def _clean_num(v, ndigits=2):
+    if v is None or not np.isfinite(v):
+        return None
+    return round(float(v), ndigits)
+
+
 def summarize(t: pd.DataFrame) -> dict:
-    c = t[~t["is_open"]] if len(t) else t
+    c = t[~t["is_open"]].copy() if len(t) else t
+    if len(c):
+        c = c[np.isfinite(c["ret_pct"])]
     n = len(c)
     if n == 0:
         return {"trades": 0, "wins": 0, "losses": 0, "win_rate": None, "avg_ret": None, "median_ret": None,
@@ -15,13 +23,18 @@ def summarize(t: pd.DataFrame) -> dict:
     r = c["ret_pct"].to_numpy()
     w, ls = r[r > 0], r[r <= 0]
     eq = np.cumsum(c.sort_values("exit_date")["ret_pct"].to_numpy())
-    dd = float((eq - np.maximum.accumulate(np.concatenate([[0], eq]))[1:]).min())
+    diff = eq - np.maximum.accumulate(np.concatenate([[0], eq]))[1:]
+    dd = float(diff.min()) if len(diff) and np.isfinite(diff.min()) else None
+    pf = float(w.sum() / -ls.sum()) if ls.sum() < 0 and np.isfinite(w.sum() / -ls.sum()) else None
     return {"trades": n, "wins": int(len(w)), "losses": int(len(ls)),
-            "win_rate": round(len(w) / n * 100, 1), "avg_ret": round(float(r.mean()), 2),
-            "median_ret": round(float(np.median(r)), 2),
-            "profit_factor": round(float(w.sum() / -ls.sum()), 2) if ls.sum() < 0 else None,
-            "max_dd": round(dd, 2), "avg_bars": round(float(c["bars"].mean()), 1),
-            "best": round(float(r.max()), 2), "worst": round(float(r.min()), 2)}
+            "win_rate": _clean_num(len(w) / n * 100, 1),
+            "avg_ret": _clean_num(r.mean(), 2),
+            "median_ret": _clean_num(np.median(r), 2),
+            "profit_factor": _clean_num(pf, 2),
+            "max_dd": _clean_num(dd, 2),
+            "avg_bars": _clean_num(c["bars"].mean(), 1),
+            "best": _clean_num(r.max(), 2),
+            "worst": _clean_num(r.min(), 2)}
 
 
 def by_year(t: pd.DataFrame, years: list[int]) -> dict:
