@@ -1,0 +1,123 @@
+# QuantSync Lab: VPS deployment instructions
+
+Audience: the developer deploying to the Alibaba VPS (4 GB RAM, 2 vCPU).
+Goal: add the Lab as a separate service next to the live platform. **The live engine, crons and databases must not change.**
+
+Source: folder `quantsync-lab/` (inside `vps_data_live/`, also on GitHub branch `lab-ui`). Do not copy anything else from `vps_data_live` over the live files. Never commit `config.json` (it holds bot tokens and broker secrets).
+
+## 0. What gets installed
+| Item | Value |
+|---|---|
+| Linux user | `qslab` (no login, separate from the live user) |
+| Folder | `/opt/quantsync-lab/{app,data,db,models,run,logs,backups}` |
+| Python | own venv `/opt/quantsync-lab/venv` |
+| Services | `qslab-api` (127.0.0.1:8100), `qslab-worker-fast`, `qslab-worker-ai`, timer `qslab-cook.timer` |
+| Public path | nginx `location /lab/` → 127.0.0.1:8100 |
+| Resource caps | api 600M/60% CPU, fast worker 700M/60%, AI worker 1200M/100% (nice 15), cook 1200M (nice 19, idle IO) |
+
+## 1. Pre-checks (do not skip)
+1. `free -m` and `swapon --show`. If swap is under 2 GB, add a 2 GB swapfile.
+2. `python3 --version` (3.10+; 3.11 or newer preferred). `pip` access to PyPI works.
+3. Confirm the live candle DB path (expected `/root/quantsync/Data/stock_history.db`, table `StockHistory`, column `rawCandles` as JSON `[{"t","o","h","l","c","v"}]`).
+4. Note the live daily schedule (candle sync 15:35 IST, EOD pipeline after it). The Lab cook must run **after** the EOD pipeline has finished.
+
+## 2. Create user and folders
+```
+useradd -r -m -s /usr/sbin/nologin qslab
+mkdir -p /opt/quantsync-lab/{app,data,db,models,run,logs,backups}
+chown -R qslab:qslab /opt/quantsync-lab
+```
+
+## 3. Copy the code
+Copy the contents of `quantsync-lab/` to `/opt/quantsync-lab/app/` (so `/opt/quantsync-lab/app/lab/...` exists). Then:
+```
+python3 -m venv /opt/quantsync-lab/venv
+/opt/quantsync-lab/venv/bin/pip install -r /opt/quantsync-lab/app/requirements.txt
+chown -R qslab:qslab /opt/quantsync-lab
+```
+
+## 4. Candle data: use a snapshot, not the live file
+The live DB is in WAL mode and owned by the live user. Do not give the Lab write access to it and do not point the Lab at it directly. Instead the cook takes a consistent copy first:
+```
+sqlite3 /root/quantsync/Data/stock_history.db ".backup '/opt/quantsync-lab/data/stock_history.snapshot.db'"
+chown qslab:qslab /opt/quantsync-lab/data/stock_history.snapshot.db
+```
+Add the same two lines as `ExecStartPre=` (run as root with `+` prefix, e.g. `ExecStartPre=+/opt/quantsync-lab/app/deploy/snapshot.sh`) in `qslab-cook.service`, with `snapshot.sh` containing the commands above. Then set `candles_db` to the snapshot path in config (step 5).
+
+## 5. Config
+```
+cp /opt/quantsync-lab/app/config.example.yaml /opt/quantsync-lab/config.yaml
+```
+Edit:
+- `candles_db: /opt/quantsync-lab/data/stock_history.snapshot.db`
+- `firebase_project_id:` your Firebase project id
+- `auth_mode: firebase` (never `dev` on the VPS)
+- leave `pricing_enabled: false`
+
+Firebase: the API verifies user ID tokens. To also mirror strategy ids to Firestore (`users/{uid}.lab`), create a service account with Firestore access, save the JSON to `/opt/quantsync-lab/firebase-sa.json` (`chmod 600`, owner `qslab`) and add to the API unit: `Environment=GOOGLE_APPLICATION_CREDENTIALS=/opt/quantsync-lab/firebase-sa.json`. If you skip it, set `firestore_mirror: false`; the Lab still works from its own database.
+
+## 6. First cook (manual) and sanity checks
+```
+sudo -u qslab QSLAB_CONFIG=/opt/quantsync-lab/config.yaml /opt/quantsync-lab/venv/bin/python -m lab.cli cook
+```
+Expected: two JSON lines (1D and 1W) with `symbols` roughly 2,300+, a recent `as_of` date, few `skipped`. Watch `htop` during the run; memory should stay under about 1.2 GB. Record how long it took. Check `/opt/quantsync-lab/data/features/tf=1D/` contains one `.parquet` per symbol.
+
+## 7. Install and start services
+```
+cp /opt/quantsync-lab/app/deploy/qslab-*.service /opt/quantsync-lab/app/deploy/qslab-cook.timer /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now qslab-api qslab-worker-fast qslab-worker-ai qslab-cook.timer
+systemctl status qslab-api qslab-worker-fast qslab-worker-ai
+curl -s http://127.0.0.1:8100/lab/v1/health
+```
+Health must return `"ok": true` and show both timeframes with `as_of`. The cook timer runs Mon-Fri 19:30 IST; change `OnCalendar` if the live EOD pipeline finishes later than that.
+
+## 8. nginx
+Add the contents of `deploy/nginx-lab.conf` inside the existing `server {}` block that serves `quantsync-api.duckdns.org:8443`. Then:
+```
+nginx -t && systemctl reload nginx     # reload, never restart
+curl -s https://quantsync-api.duckdns.org:8443/lab/v1/health
+```
+
+## 9. Frontend (Vercel)
+Deploy GitHub branch `lab-ui` to a Vercel preview first. It adds `/lab` (page `lab.html`) and a rewrite `/lab/api/*` → `https://quantsync-api.duckdns.org:8443/lab/*`. No other live route changes. Open `<preview>/lab`, sign in with Google, then run a Scanner query. Promote to production only after the checks in step 11.
+
+## 10. Seed the two flagship strategies
+Rahul will provide the entry/exit rules for AI Alpha and AI Pattern as JSON files:
+```
+sudo -u qslab ... python -m lab.cli seed-flagship "AI Alpha" alpha.json
+sudo -u qslab ... python -m lab.cli seed-flagship "AI Pattern" pattern.json
+```
+Format: `{"entry": {"v":1,"all":[...]}, "exit": {"v":1,"any":[...]}}` (see `lab/rules.py` and `/lab/v1/catalog`). Until these are seeded the Today page shows no flagship tiles.
+
+## 11. Acceptance checks
+1. `GET /lab/v1/health` shows fresh `as_of` for 1D and 1W.
+2. Scanner: RSI > 55 AND close > SMA 50 returns results in under 2 seconds.
+3. Create a strategy, run a backtest job (completes in under 60 s), then run "Enhance with AI". Record the duration and peak RAM. It should finish within 5 minutes with RAM under 1.2 GB.
+4. While an enhancement runs, confirm the live platform's API response times and `free -m` are unaffected.
+5. During a cook, confirm the AI worker waits (`/opt/quantsync-lab/run/cook.lock` exists) and resumes after.
+6. `journalctl -u qslab-api -u qslab-worker-ai -n 100` shows no tracebacks.
+7. Compare 3 stocks' RSI(14) and SMA 50 from the Lab (`/lab/v1/chart/<SYMBOL>`) with the live platform; small differences are expected, large ones must be reported.
+
+## 12. Backups and monitoring
+- Nightly: `sqlite3 /opt/quantsync-lab/db/lab.db ".backup '/opt/quantsync-lab/backups/lab-$(date +%F).db'"`, keep 14 days. `lab.db` holds users' strategies and live track records; the cooked data and models can be rebuilt.
+- Alert if `GET /lab/v1/health` `as_of` is more than 3 days old, or any `qslab-*` unit is failed.
+
+## 13. Rollback (nothing else is touched)
+```
+systemctl disable --now qslab-api qslab-worker-fast qslab-worker-ai qslab-cook.timer
+```
+Remove the `location /lab/` block, `nginx -t && systemctl reload nginx`, and remove the `/lab` rewrites from `vercel.json`. `/opt/quantsync-lab` can stay or be deleted.
+
+## 14. Known limits and open items (tell Rahul, do not try to fix silently)
+- The Charts pattern scan and pattern-based exits show "coming soon" until the live engine's pattern output is exported to `/opt/quantsync-lab/data/patterns/latest_1D.parquet` (and `_1W`). Rahul/developer to decide the export.
+- Candle history is capped at about 2,000 bars (about 8 years) in `StockHistory`; stocks with shorter history have fewer past trades for AI training. Delisted stocks absent from `StockHistory` are not in the tests (survivorship bias); mention this to Rahul.
+- Prices are assumed split-adjusted as stored by the live engine; verify with a stock that had a recent split.
+- Live tracking and win rate: win rate is hidden until a strategy has 30 closed live results; this is intentional.
+- No payments or credits are active (`pricing_enabled: false`). Do not enable charging before a legal review.
+- The Lab is a research tool: no screen or API text may say buy, sell, target or stop-loss advice.
+
+## 15. Tests (optional, on any machine)
+```
+cd quantsync-lab && pip install -r requirements-dev.txt && pytest -q    # 22 tests
+```
