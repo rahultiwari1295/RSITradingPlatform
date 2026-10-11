@@ -17,7 +17,7 @@ export function Chart({ bars }: { bars: Bar[] }) {
       const lo = Math.min(...bars.map(b => b.low)), hi = Math.max(...bars.map(b => b.high));
       const y = (v: number) => padT + (1 - (v - lo) / (hi - lo || 1)) * ch;
       const step = cw / bars.length;
-      g.strokeStyle = col('--line'); g.fillStyle = col('--ink3'); g.font = '10.5px JetBrains Mono, monospace'; g.lineWidth = 1;
+      g.strokeStyle = col('--line'); g.lineWidth = 0.5; g.fillStyle = col('--ink3'); g.font = '11px -apple-system, BlinkMacSystemFont, Inter, sans-serif'; g.lineWidth = 1;
       for (let i = 0; i <= 4; i++) { const v = lo + (hi - lo) * i / 4, yy = y(v); g.beginPath(); g.moveTo(0, yy); g.lineTo(W - padR, yy); g.stroke(); g.fillText(v.toFixed(v > 100 ? 0 : 1), W - padR + 6, yy + 3); }
       const up = col('--up'), dn = col('--down');
       bars.forEach((b, i) => {
@@ -29,7 +29,7 @@ export function Chart({ bars }: { bars: Bar[] }) {
       });
       g.save(); g.beginPath(); g.rect(0, padT, W - padR, ch); g.clip();
       (['sma_50', 'sma_200'] as const).forEach((k, j) => {
-        g.beginPath(); g.lineWidth = 1.4; g.strokeStyle = j ? col('--ink3') : col('--accent'); let on = false;
+        g.beginPath(); g.lineWidth = 1.5; g.strokeStyle = j ? col('--ink2') : col('--accent'); let on = false;
         bars.forEach((b, i) => { const v = b[k]; if (v == null) { on = false; return; } const x = 4 + i * step + step / 2; on ? g.lineTo(x, y(v)) : g.moveTo(x, y(v)); on = true; });
         g.stroke();
       });
