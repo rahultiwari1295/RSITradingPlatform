@@ -122,9 +122,26 @@ Remove the `location /lab/` block, `nginx -t && systemctl reload nginx`, and rem
 cd quantsync-lab && pip install -r requirements-dev.txt && pytest -q    # 22 tests
 ```
 
-## 16. Past-test (backtest) data for flagship and public strategies
-After seeding the flagships and the first cook, run once (and again whenever flagship rules change):
+## 16. Flagships (AI Alpha, AI Pattern) and past-test data
+The two flagship strategies are built from the live engine's own signals (P1 RS leader, P9 Stage-2 base, P4 power gap
+→ AI Alpha; P2 apex base, P5 high tight flag → AI Pattern). They are ported to `lab/signals.py` and verified bar for bar
+against copies of the engine functions (`tests/test_signals.py`).
 
-    cd /opt/quantsync-lab/app && sudo -u qslab /opt/quantsync-lab/venv/bin/python -m lab.cli backtest-all
+IMPORTANT after pulling this version: the feature set changed (FSV 2: more indicators and the five `sig_*` signals).
+The cooked store must be rebuilt once, otherwise scans using the new fields fail:
 
-It computes 2023–2026 results per strategy and caches them; the strategy screen shows them under "Past test". Any signed-in user can also press "Run past test" on a strategy that has none yet.
+    cd /opt/quantsync-lab/app
+    sudo -u qslab /opt/quantsync-lab/venv/bin/python -m lab.cli cook          # ~ same time as the first cook
+    sudo systemctl restart qslab-api qslab-worker-fast qslab-worker-ai
+
+Then create/refresh the flagships, their past tests and the AI score gate (heavy; run when nothing else is running,
+and cap its memory so the live API is never at risk):
+
+    sudo systemd-run --scope -p MemoryMax=1500M -p CPUQuota=150% \
+      sudo -u qslab /opt/quantsync-lab/venv/bin/python -m lab.cli build-flagships
+
+- Re-runnable and idempotent. It prints the past-test summary and whether the AI gate was kept.
+- The AI gate is only applied when the walk-forward test finds a real edge (score 60, else 50); otherwise the flagship
+  stays plain and the UI shows no AI badge. That is intentional: no edge, no claim.
+- Any strategy (public ones too) can get past-test data with `python -m lab.cli backtest-all`.
+- Send the printed output back so the numbers can be reviewed before the pages are shared.

@@ -1,4 +1,5 @@
 // In-memory stand-in for the Lab API, used for ?demo=1 previews and UI work without the VPS.
+import catalogJson from './catalog.json';
 import type { Bar, BacktestResult, Catalog, Enhancement, GateStat, JobStatus, LabApi, Portfolio, RuleJson, ScanRow, StrategyCard, TF, Trade, YearStat } from './types';
 
 let seed = 11;
@@ -8,17 +9,7 @@ const price: Record<string, number> = Object.fromEntries(SYMS.map(s => [s, Math.
 const sleep = (ms = 250) => new Promise(r => setTimeout(r, ms));
 const day = (back: number) => new Date(Date.now() - back * 864e5).toISOString().slice(0, 10);
 
-const catalog: Catalog = {
-  features: [
-    ['close', 'Close', 'Price', '₹'], ['volume', 'Volume', 'Volume', ''], ['vol_ratio', 'Volume vs 20-bar avg', 'Volume', 'x'],
-    ['ret_1', 'Change 1 bar', 'Momentum', '%'], ['ret_20', 'Change 20 bars', 'Momentum', '%'], ['rsi_14', 'RSI (14)', 'Momentum', ''],
-    ['macd', 'MACD', 'Momentum', ''], ['macd_signal', 'MACD signal', 'Momentum', ''], ['adx_14', 'ADX (14)', 'Trend', ''],
-    ['sma_20', 'SMA 20', 'Trend', '₹'], ['sma_50', 'SMA 50', 'Trend', '₹'], ['sma_200', 'SMA 200', 'Trend', '₹'],
-    ['atr_pct', 'ATR % of price', 'Volatility', '%'], ['dist_hh52_pct', 'Distance from 52-wk high', 'Levels', '%'], ['hh_20', 'Prior 20-bar high', 'Levels', '₹'],
-  ].map(([key, label, group, unit]) => ({ key, label, group, unit, kind: 'number' as const })),
-  operators: [['>', 'is above'], ['<', 'is below'], ['>=', 'is at least'], ['<=', 'is at most'], ['between', 'is between'], ['crosses_above', 'crosses above'], ['crosses_below', 'crosses below']].map(([op, label]) => ({ op, label })),
-  exits: [['stop_pct', 'Stop at % below entry', '%'], ['target_pct', 'Target at % above entry', '%'], ['time', 'Exit after N bars', 'bars']].map(([type, label, unit]) => ({ type, label, unit })),
-};
+const catalog = catalogJson as unknown as Catalog; // generated from lab/catalog.py (python -m lab.cli is not needed in demo)
 
 const stat = (n: number, wr: number, avg: number): YearStat => ({ trades: n, wins: Math.round(n * wr / 100), losses: n - Math.round(n * wr / 100), win_rate: n ? wr : null, avg_ret: n ? avg : null });
 
@@ -40,8 +31,8 @@ function makeTrades(vid: string, closed: number, active: number, edge = 0): Trad
 
 const entry = (f: string, op: string, c: number) => ({ l: { f }, op, r: { c } });
 const strategies: StrategyCard[] = [
-  { id: 'stg_alpha', name: 'AI Alpha', tf: '1D', kind: 'flagship', visibility: 'public', owner: 'QuantSync', mine: false, followers: 1840, version: 3, live_from: '2026-01-05', ai_gate: 70, enhanced: true, exit_choice: 'user', enhancement: { id: 'ai_1', status: 'done' }, stats: { trades: 212, wins: 141, losses: 71, win_rate: 66.5, avg_ret: 2.4, open: 6, shown: true }, info: { entry: { v: 1, all: [entry('rsi_14', '>', 55), entry('vol_ratio', '>', 1.5)] }, exit: { v: 1, any: [{ type: 'stop_pct', v: 5 }, { type: 'target_pct', v: 10 }] } } },
-  { id: 'stg_pattern', name: 'AI Pattern', tf: '1D', kind: 'flagship', visibility: 'public', owner: 'QuantSync', mine: false, followers: 1210, version: 2, live_from: '2026-02-02', ai_gate: 60, enhanced: true, exit_choice: 'user', enhancement: { id: 'ai_2', status: 'done' }, stats: { trades: 96, wins: 58, losses: 38, win_rate: 60.4, avg_ret: 1.9, open: 4, shown: true }, info: { entry: { v: 1, all: [entry('close', '>', 0)] }, exit: { v: 1, any: [{ type: 'time', v: 20 }] } } },
+  { id: 'stg_alpha', name: 'AI Alpha', tf: '1D', kind: 'flagship', visibility: 'public', owner: 'QuantSync', mine: false, followers: 1840, version: 3, live_from: '2026-01-05', ai_gate: 70, enhanced: true, exit_choice: 'user', enhancement: { id: 'ai_1', status: 'done' }, stats: { trades: 212, wins: 141, losses: 71, win_rate: 66.5, avg_ret: 2.4, open: 6, shown: true }, info: { entry: { v: 1, any: [{ l: { f: 'sig_rs_leader' }, op: 'is_true' }, { l: { f: 'sig_stage2_base' }, op: 'is_true' }, { l: { f: 'sig_power_gap' }, op: 'is_true' }] }, exit: { v: 1, any: [{ type: 'stop_pct', v: 6 }, { type: 'trail_atr', v: 3 }, { type: 'time', v: 40 }] } } },
+  { id: 'stg_pattern', name: 'AI Pattern', tf: '1D', kind: 'flagship', visibility: 'public', owner: 'QuantSync', mine: false, followers: 1210, version: 2, live_from: '2026-02-02', ai_gate: 60, enhanced: true, exit_choice: 'user', enhancement: { id: 'ai_2', status: 'done' }, stats: { trades: 96, wins: 58, losses: 38, win_rate: 60.4, avg_ret: 1.9, open: 4, shown: true }, info: { entry: { v: 1, any: [{ l: { f: 'sig_apex_base' }, op: 'is_true' }, { l: { f: 'sig_high_tight_flag' }, op: 'is_true' }] }, exit: { v: 1, any: [{ type: 'stop_pct', v: 5.5 }, { type: 'target_pct', v: 12 }, { type: 'time', v: 40 }] } } },
   { id: 'stg_monk', name: 'Momentum Monk', tf: '1D', kind: 'user', visibility: 'public', owner: 'monk_trades', mine: false, followers: 312, version: 1, live_from: '2026-03-10', ai_gate: null, enhanced: false, exit_choice: 'user', enhancement: null, stats: { trades: 58, wins: 31, losses: 27, win_rate: 53.4, avg_ret: 0.8, open: 3, shown: true }, info: { entry: { v: 1, all: [entry('ret_20', '>', 8), entry('rsi_14', '<', 75)] }, exit: { v: 1, any: [{ type: 'stop_pct', v: 6 }] } } },
   { id: 'stg_weekly', name: 'Weekly Breakouts', tf: '1W', kind: 'user', visibility: 'public', owner: 'swing_ria', mine: false, followers: 148, version: 1, live_from: '2026-04-01', ai_gate: null, enhanced: false, exit_choice: 'user', enhancement: null, stats: { trades: 19, wins: 11, losses: 8, win_rate: null, avg_ret: 1.1, open: 2, shown: false }, info: { entry: { v: 1, all: [entry('dist_hh52_pct', '>', -3)] }, exit: { v: 1, any: [{ type: 'time', v: 8 }] } } },
   { id: 'stg_mine', name: 'My RSI trend', tf: '1D', kind: 'user', visibility: 'private', owner: 'you', mine: true, followers: 0, version: 1, live_from: '2026-08-20', ai_gate: null, enhanced: false, exit_choice: 'user', enhancement: null, stats: { trades: 7, wins: 4, losses: 3, win_rate: null, avg_ret: 1.4, open: 2, shown: false }, info: { entry: { v: 1, all: [entry('rsi_14', '>', 50), entry('rsi_14', '<', 70)] }, exit: { v: 1, any: [{ type: 'stop_pct', v: 5 }, { type: 'target_pct', v: 10 }] } } },

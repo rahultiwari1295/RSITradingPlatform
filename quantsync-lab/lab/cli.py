@@ -1,4 +1,4 @@
-"""python -m lab.cli cook|live|seed-flagship ..."""
+"""python -m lab.cli cook|live|build-flagships|backtest-all|seed-flagship ..."""
 from __future__ import annotations
 
 import argparse
@@ -16,6 +16,7 @@ def main(argv=None):
     c = sub.add_parser("cook"); c.add_argument("--tf", choices=["1D", "1W", "all"], default="all")
     sub.add_parser("live")
     sub.add_parser("backtest-all", help="backtest every flagship + public strategy (cached for the UI)")
+    b = sub.add_parser("build-flagships", help="create AI Alpha + AI Pattern, run past tests and the AI score gate"); b.add_argument("--no-ai", action="store_true")
     s = sub.add_parser("seed-flagship"); s.add_argument("name"); s.add_argument("--tf", default="1D"); s.add_argument("file", help="JSON with entry/exit")
     a = ap.parse_args(argv)
     cfg = load_config(); db.migrate(cfg)
@@ -30,6 +31,11 @@ def main(argv=None):
         con = db.connect(cfg); print("live rows:", service.update_live(cfg, con))
     elif a.cmd == "live":
         print("live rows:", service.update_live(cfg, db.connect(cfg)))
+    elif a.cmd == "build-flagships":
+        from . import flagship
+        con = db.connect(cfg)
+        for name in flagship.FLAGSHIPS:
+            print(json.dumps(flagship.build(cfg, con, name, ai=not a.no_ai), default=str))
     elif a.cmd == "backtest-all":
         con = db.connect(cfg)
         for r in con.execute("SELECT s.name, s.tf, v.id vid, v.entry_json, v.exit_json FROM strategies s JOIN strategy_versions v ON v.id=s.current_version "

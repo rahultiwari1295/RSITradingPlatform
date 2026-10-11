@@ -155,3 +155,11 @@ def test_cook_from_live_stockhistory_db(tmp_path):
     cfg = Config(data_dir=tmp_path / "data", candles_db=db)
     m = store.cook(cfg, "1D")
     assert m["symbols"] == 1 and any(s.startswith("BAD") for s in m["skipped"])
+
+
+def test_demo_catalog_in_sync():
+    import json, pathlib
+    from lab.catalog import catalog
+    p = pathlib.Path(__file__).resolve().parents[2] / "src" / "lab" / "catalog.json"
+    if p.exists():  # the web demo ships a copy of the catalog; regenerate it when features change
+        assert json.loads(p.read_text()) == json.loads(json.dumps(catalog()))

@@ -4,6 +4,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from .signals import add_signals
+
 BASE = ["open", "high", "low", "close", "volume"]
 FLAGS = ["is_green", "is_inside_bar"]
 YEAR_BARS = {"1D": 252, "1W": 52}
@@ -32,10 +34,12 @@ def compute(df: pd.DataFrame, tf: str = "1D") -> pd.DataFrame:
     f["ret_5"] = (c / c.shift(5) - 1) * 100
     f["ret_20"] = (c / c.shift(20) - 1) * 100
     f["rsi_14"] = rsi(c, 14)
-    for n in (20, 50, 200):
+    for n in (10, 20, 50, 100, 150, 200):
         f[f"sma_{n}"] = c.rolling(n, min_periods=n).mean()
-    for n in (9, 21):
+    for n in (9, 10, 20, 21, 50, 100, 200):
         f[f"ema_{n}"] = c.ewm(span=n, adjust=False, min_periods=n).mean()
+    f["rsi_ema_10"] = f["rsi_14"].ewm(span=10, adjust=False, min_periods=10).mean()   # smoothed RSI: "EMA 10 of RSI 14"
+    f["rsi_sma_10"] = f["rsi_14"].rolling(10, min_periods=10).mean()
     ema12, ema26 = c.ewm(span=12, adjust=False, min_periods=26).mean(), c.ewm(span=26, adjust=False, min_periods=26).mean()
     f["macd"] = ema12 - ema26
     f["macd_signal"] = f["macd"].ewm(span=9, adjust=False, min_periods=9).mean()
@@ -47,6 +51,7 @@ def compute(df: pd.DataFrame, tf: str = "1D") -> pd.DataFrame:
     f["atr_pct"] = atr / c * 100
     mid, sd = c.rolling(20, min_periods=20).mean(), c.rolling(20, min_periods=20).std(ddof=0)
     f["bb_upper"], f["bb_lower"] = mid + 2 * sd, mid - 2 * sd
+    f["bb_width_pct"] = (f["bb_upper"] - f["bb_lower"]) / mid.replace(0, np.nan) * 100
     f["bb_pct"] = (c - f["bb_lower"]) / (f["bb_upper"] - f["bb_lower"]).replace(0, np.nan)
     ll14, hh14 = l.rolling(14, min_periods=14).min(), h.rolling(14, min_periods=14).max()
     f["stoch_k"] = (c - ll14) / (hh14 - ll14).replace(0, np.nan) * 100
@@ -56,6 +61,10 @@ def compute(df: pd.DataFrame, tf: str = "1D") -> pd.DataFrame:
     a14 = atr.replace(0, np.nan)
     pdi, ndi = 100 * _wilder(pdm, 14) / a14, 100 * _wilder(ndm, 14) / a14
     dx = 100 * (pdi - ndi).abs() / (pdi + ndi).replace(0, np.nan)
+    f["pdi_14"], f["ndi_14"] = pdi.where(atr.notna()), ndi.where(atr.notna())
+    tp = (h + l + c) / 3
+    md = tp.rolling(20, min_periods=20).apply(lambda x: np.abs(x - x.mean()).mean(), raw=True)
+    f["cci_20"] = (tp - tp.rolling(20, min_periods=20).mean()) / (0.015 * md.replace(0, np.nan))
     f["adx_14"] = _wilder(dx.fillna(0), 14).where(atr.notna())
     f["vol_sma_20"] = v.rolling(20, min_periods=20).mean()
     f["vol_ratio"] = v / f["vol_sma_20"].replace(0, np.nan)
@@ -74,6 +83,12 @@ def compute(df: pd.DataFrame, tf: str = "1D") -> pd.DataFrame:
     f["is_green"] = (c > o).astype("float64")
     f["is_inside_bar"] = ((h <= h.shift(1)) & (l >= l.shift(1))).astype("float64")
     f.loc[pc.isna(), ["is_green", "is_inside_bar"]] = np.nan
+    f["vol_surge"] = v / v.shift(1).rolling(20, min_periods=20).mean().replace(0, np.nan)   # vs the PRIOR 20 bars (today excluded)
+    rg = (h - l).replace(0, np.nan)
+    f["close_loc"] = (c - l) / rg * 100
+    f["upper_wick_pct"] = (h - np.maximum(c, o)) / rg * 100
+    f["dist_hh20_pct"] = (c / f["hh_20"] - 1) * 100
+    add_signals(f, tf)
     cols = [k for k in f.columns if k != "date"]
     f[cols] = f[cols].replace([np.inf, -np.inf], np.nan).astype("float32")
     return f

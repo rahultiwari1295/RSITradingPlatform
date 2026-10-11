@@ -2,7 +2,8 @@ export type TF = '1D' | '1W';
 
 export interface Operand { f?: string; c?: number; list?: (number | string)[]; lag?: number }
 export interface Condition { l: Operand; op: string; r?: Operand }
-export interface RuleJson { v: 1; all?: Condition[]; any?: Condition[] }
+export interface GroupJson { all?: (Condition | GroupJson)[]; any?: (Condition | GroupJson)[] }
+export interface RuleJson extends GroupJson { v: 1 }
 export interface ExitItem { type: string; v?: number; rule?: RuleJson }
 export interface ExitJson { v: 1; any: ExitItem[] }
 

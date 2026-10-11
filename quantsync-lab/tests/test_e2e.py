@@ -110,3 +110,19 @@ def test_strategy_backtest_cached(client, cfg):
     assert client.get(f"/lab/v1/jobs/{jid}", headers=H).json()["status"] == "done"
     r = client.get(f"/lab/v1/strategies/{sid}/backtest", headers=H).json()
     assert r["status"] == "done" and r["result"]["summary"]["All"]["trades"] > 50
+
+
+def test_build_flagships(cfg):
+    from lab import flagship
+    con = db.connect(cfg)
+    out = [flagship.build(cfg, con, n, ai=True, log=lambda *_: None) for n in flagship.FLAGSHIPS]
+    assert [o["name"] for o in out] == ["AI Alpha", "AI Pattern"]
+    assert all(o["past_test"] is not None for o in out)
+    ids = {o["name"]: o["id"] for o in out}
+    # idempotent: a re-run neither duplicates strategies nor restarts the version
+    again = flagship.build(cfg, con, "AI Alpha", ai=False, log=lambda *_: None)
+    assert again["id"] == ids["AI Alpha"]
+    assert con.execute("SELECT count(*) FROM strategies WHERE kind='flagship' AND archived=0").fetchone()[0] == 2
+    assert flagship.pick_gate({"edge_found": False}) is None
+    assert flagship.pick_gate({"edge_found": True, "gates": {"60": {"All": {"trades": 80}, "lift": 0.05}}}) == 60
+    assert flagship.pick_gate({"edge_found": True, "gates": {"60": {"All": {"trades": 12}, "lift": 0.05}, "50": {"All": {"trades": 60}, "lift": 0.02}}}) == 50
