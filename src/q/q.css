@@ -200,7 +200,7 @@
 .q-root .q-tpill{position:absolute;top:5px;bottom:5px;left:5px;width:calc((100% - 10px)/5);border-radius:27px;background:color-mix(in srgb,var(--t,var(--fg)) 14%,transparent)}
 .q-root .q-tab{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:27px;font:600 10.5px/1 var(--font);color:var(--dim);transition:color .3s}
 .q-root .q-tab[aria-current="page"]{color:var(--t)}
-.q-root .q-tbtn{position:absolute;z-index:31;top:9px;right:14px;width:34px;height:34px;border-radius:50%;background:var(--mat);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:grid;place-items:center;color:var(--mu);box-shadow:0 0 0 .5px var(--line2)}
+.q-root .q-tbtn{position:relative;flex:none;width:34px;height:34px;border-radius:50%;background:var(--mat);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:grid;place-items:center;color:var(--mu);box-shadow:0 0 0 .5px var(--line2)}
 .q-root .q-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (prefers-reduced-motion:reduce){.q-root *,.q-root *::before,.q-root *::after{transition-duration:.01ms!important;animation-duration:.01ms!important}
 .q-root .q-rv{opacity:1;transform:none}}
@@ -304,3 +304,14 @@
 .q-root .q-empty{padding:28px 18px;text-align:center;color:var(--mu)}
 .q-root .q-sym{font-size:clamp(26px,8.5vw,38px)}
 .q-root .q-top>div:first-child>div:first-child{min-width:0;flex:1}
+
+.q-root .q-appbar{position:absolute;z-index:31;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 14px 12px 18px;background:linear-gradient(var(--bg,var(--stage)) 55%,transparent);pointer-events:none}
+.q-root .q-appbar>*{pointer-events:auto}
+.q-root .q-brand{display:flex;align-items:center;gap:11px;min-width:0}
+.q-root .q-logo{width:34px;height:34px;flex:none;filter:drop-shadow(0 4px 12px color-mix(in srgb,var(--ax) 45%,transparent))}
+.q-root .q-bt{display:flex;flex-direction:column;min-width:0;line-height:1.1}
+.q-root .q-bt b{font-size:19px;font-weight:800;letter-spacing:-.03em;color:var(--fg)}
+.q-root .q-bt b i{font-style:normal;background:linear-gradient(90deg,var(--ax),var(--ai));-webkit-background-clip:text;background-clip:text;color:transparent}
+.q-root .q-bt span{font-size:12px;font-weight:600;color:var(--tc,var(--mu));margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:q-subin .5s cubic-bezier(.2,.9,.2,1) both}
+@keyframes q-subin{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.q-root .q-bt span{animation:none}}

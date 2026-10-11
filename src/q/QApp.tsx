@@ -18,6 +18,7 @@ const TABS: [Tab, string, string, string][] = [
   ["patterns", "Patterns", "pat", "var(--pt)"],
   ["portfolio", "Portfolio", "pie", "var(--pf)"],
 ];
+const SUBS: Record<Tab, string> = { home: "Your market, in plain words", xray: "Know any company in seconds", calls: "Ideas with entry, stop and target", patterns: "Breakouts with measured odds", portfolio: "Your holdings, checked daily" };
 const PARENT: Record<Kind, Tab> = { xray: "xray", call: "calls", closed: "calls", pattern: "patterns" };
 const TITLES: Record<Tab, string> = { home: "QuantSync", xray: "Stock X-Ray", calls: "AI Calls", patterns: "Pattern Calls", portfolio: "Portfolio" };
 
@@ -215,7 +216,16 @@ export default function QApp() {
             </section>
           ))}
         </main>
-        <button className={q("tbtn")} onClick={toggleTheme} aria-label="Switch light or dark theme"><Icon n="moon" s={18} /></button>
+        <header className={q("appbar")} style={{ ["--tc" as any]: TABS.find((x) => x[0] === route.tab)![3] }}>
+          <div className={q("brand")}>
+            <svg className={q("logo")} viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="qlg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#A497FF" /><stop offset="1" stopColor="#3DDC97" /></linearGradient></defs><rect x="1" y="1" width="30" height="30" rx="10" fill="url(#qlg)" /><path d="M9 20l4.5-5 3.5 3.5L23 11" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /><circle cx="23" cy="11" r="2" fill="#fff" /></svg>
+            <div className={q("bt")}>
+              <b>Quant<i>Sync</i></b>
+              <span key={route.tab}>{SUBS[route.tab]}</span>
+            </div>
+          </div>
+          <button className={q("tbtn")} onClick={toggleTheme} aria-label="Switch light or dark theme"><Icon n="moon" s={18} /></button>
+        </header>
         <section className={q("page")} ref={pageRef as any} aria-label="Details">
           {d?.kind === "xray" ? <XRayReport key={routeKey(d)} sym={d.id!} go={go} onBack={back} onShare={share} /> :
             d?.kind === "call" ? <CallPage key={routeKey(d)} sym={d.id!} go={go} onBack={back} onShare={share} /> :
