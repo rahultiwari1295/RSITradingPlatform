@@ -42,7 +42,7 @@ The live DB is in WAL mode and owned by the live user. Do not give the Lab write
 sqlite3 /root/quantsync/Data/stock_history.db ".backup '/opt/quantsync-lab/data/stock_history.snapshot.db'"
 chown qslab:qslab /opt/quantsync-lab/data/stock_history.snapshot.db
 ```
-Add the same two lines as `ExecStartPre=` (run as root with `+` prefix, e.g. `ExecStartPre=+/opt/quantsync-lab/app/deploy/snapshot.sh`) in `qslab-cook.service`, with `snapshot.sh` containing the commands above. Then set `candles_db` to the snapshot path in config (step 5).
+This is already done for you: `deploy/qslab-cook.service` runs `deploy/snapshot.sh` (as root) before every cook. Run it once by hand now (`sh /opt/quantsync-lab/app/deploy/snapshot.sh`, needs the `sqlite3` CLI) and set `candles_db` to the snapshot path in config (step 5).
 
 ## 5. Config
 ```
