@@ -342,3 +342,10 @@
 .q-root .q-hero{scroll-snap-align:start}
 .q-root .q-screen .q-sec,.q-root .q-page .q-sec{scroll-snap-align:start;scroll-margin-top:62px}
 @media (prefers-reduced-motion:reduce){.q-root .q-screen,.q-root .q-page{scroll-snap-type:none}}
+
+/* search focus mode */
+.q-root .q-tabs{transition:transform .45s cubic-bezier(.32,.72,0,1),opacity .3s}
+.q-root.q-typing .q-tabs{transform:translate(-50%,140%);opacity:0;pointer-events:none}
+.q-root.q-typing .q-screen.q-on{scroll-snap-type:none}
+.q-root.q-typing .q-screen.q-on .q-inner{padding-bottom:75vh}
+.q-root.q-typing .q-sug{max-height:calc(var(--q-vvh,100vh) - 62px - 80px);overflow-y:auto;overscroll-behavior:contain}

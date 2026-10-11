@@ -100,6 +100,21 @@ export function Home({ go }: { go: Go }) {
 }
 
 /* ================= STOCK X-RAY ================= */
+/* while typing: hide the dock, lift the search box to the top and size the list to the space above the keyboard */
+function typingOn(el: HTMLElement) {
+  const root = el.closest(".q-root") as HTMLElement | null, sc = el.closest(".q-screen") as HTMLElement | null, box = el.closest(".q-srch") as HTMLElement | null;
+  if (!root || !sc || !box) return;
+  const vv = window.visualViewport, size = () => root.style.setProperty("--q-vvh", Math.round(vv ? vv.height : innerHeight) + "px");
+  size(); root.classList.add("q-typing"); vv?.addEventListener("resize", size);
+  (root as any).__qvv = size;
+  const lift = () => { const r = box.getBoundingClientRect(), s = sc.getBoundingClientRect(); sc.scrollTo({ top: sc.scrollTop + r.top - s.top - 70, behavior: RM ? "auto" : "smooth" }); };
+  requestAnimationFrame(lift); setTimeout(lift, 380);
+}
+function typingOff() {
+  const root = document.querySelector(".q-root") as HTMLElement | null; if (!root) return;
+  root.classList.remove("q-typing");
+  const f = (root as any).__qvv; if (f) window.visualViewport?.removeEventListener("resize", f);
+}
 export function XRay({ go }: { go: Go }) {
   const [qq, setQq] = useState("");
   const [res, setRes] = useState<any[] | null>(null);
@@ -136,7 +151,7 @@ export function XRay({ go }: { go: Go }) {
             <Icon n="search" s={22} w={2.3} />
             <span className={q("sr")}>Search a company</span>
             <input ref={inp} type="search" autoComplete="off" placeholder="Search a company" value={qq}
-              onChange={(e) => { setQq(e.target.value); setOpen(true); }} onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 180)}
+              onChange={(e) => { setQq(e.target.value); setOpen(true); }} onFocus={(e) => { setOpen(true); typingOn(e.currentTarget); }} onBlur={() => { setTimeout(() => setOpen(false), 180); typingOff(); }}
               onKeyDown={(e) => { if (e.key === "Enter") { const s = res && res[0] ? res[0].symbol : qq.trim().toUpperCase(); if (s) pick(s); } }} />
           </label>
           {open && res ? (
