@@ -18,7 +18,7 @@ SIM_COLS = ["date", "open", "high", "low", "close", "atr_14"]
 
 
 def report_years(cfg: Config, today: pd.Timestamp | None = None) -> list[int]:
-    return list(range(int(cfg.report_start[:4]), (today or pd.Timestamp.today()).year + 1))
+    return list(range(int(str(cfg.report_start)[:4]), (today or pd.Timestamp.today()).year + 1))
 
 
 def exit_hash(exit_: dict) -> str:
@@ -29,8 +29,10 @@ def scan(cfg: Config, entry: dict, tf: str, limit: int = 200) -> dict:
     entry = normalise(entry)
     df = store.signals(cfg, entry, tf, only_last=True, columns='"symbol","date","close","rsi_14","ret_1","vol_ratio"')
     m = store.meta(cfg, tf)
+    records = df.sort_values("symbol").head(limit).assign(date=lambda d: d["date"].astype(str)).to_dict("records")
+    clean = [{k: (None if (isinstance(v, float) and np.isnan(v)) else v) for k, v in r.items()} for r in records]
     return {"as_of": m["as_of"] if m else None, "count": int(len(df)), "rule_hash": rule_hash(entry, tf),
-            "rows": df.sort_values("symbol").head(limit).assign(date=lambda d: d["date"].astype(str)).to_dict("records")}
+            "rows": clean}
 
 
 def _signal_frame(cfg, entry, tf, extra_cols=()):

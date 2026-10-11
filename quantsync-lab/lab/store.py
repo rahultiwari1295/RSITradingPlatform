@@ -128,6 +128,9 @@ def signals(cfg: Config, rule: dict, tf: str, start: str | None = None, end: str
         lo = ""
         if only_last:  # lags need a little history, never the full file
             lo = f"WHERE \"date\" >= (SELECT max(\"date\") FROM {src}) - INTERVAL 120 DAY"
+        elif start:
+            s_date = pd.Timestamp(start).strftime("%Y-%m-%d")
+            lo = f"WHERE \"date\" >= CAST('{s_date}' AS DATE) - INTERVAL 120 DAY"
         sql = f'SELECT * FROM (SELECT *{lag_select(c)} FROM {src} {lo})'
         conds, params = [c.where], list(c.params)
         if only_last:

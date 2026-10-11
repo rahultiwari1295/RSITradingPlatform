@@ -38,6 +38,7 @@ class Config:
 
 
 _PATH_KEYS = {"data_dir", "db_path", "models_dir", "candles_dir", "candles_db", "run_dir"}
+_DATE_KEYS = {"train_start", "report_start", "select_end"}
 
 
 def load_config(path: str | os.PathLike | None = None) -> Config:
@@ -46,5 +47,5 @@ def load_config(path: str | os.PathLike | None = None) -> Config:
     if path and Path(path).exists():
         raw = yaml.safe_load(Path(path).read_text()) or {}
     known = Config.__dataclass_fields__.keys()
-    kw = {k: (Path(v) if k in _PATH_KEYS else v) for k, v in raw.items() if k in known and k != "extra"}
+    kw = {k: (Path(v) if k in _PATH_KEYS else str(v) if k in _DATE_KEYS else v) for k, v in raw.items() if k in known and k != "extra"}
     return Config(**kw)

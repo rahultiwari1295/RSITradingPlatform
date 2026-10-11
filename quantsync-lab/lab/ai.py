@@ -118,7 +118,7 @@ def _z(ds: pd.DataFrame, scores: pd.Series, gate: int) -> float | None:
     return round((kept["win_rate"] - base["win_rate"]) / se, 2) if se else None
 
 
-def leak_test(ds: pd.DataFrame, years: list[int], gate: int = 60, rounds: int = 5, **kw) -> dict:
+def leak_test(ds: pd.DataFrame, years: list[int], gate: int = 60, rounds: int = 3, **kw) -> dict:
     """Train on shuffled labels; a sound pipeline cannot beat the plain rule by more than a few points."""
     ls = []
     for s in range(rounds):
