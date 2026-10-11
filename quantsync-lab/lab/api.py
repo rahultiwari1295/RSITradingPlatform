@@ -238,7 +238,7 @@ def strategy_backtest_run(sid: str, request: Request, uid: str = Depends(require
 
 
 @router.get("/strategies/{sid}/trades")
-def trades(sid: str, request: Request, status: str = "active", limit: int = 200, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
+def trades(sid: str, request: Request, status: str = "active", limit: int = 1000, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
     s = _visible(con, sid, uid)
     eng = _engine(request, s)
     if eng:

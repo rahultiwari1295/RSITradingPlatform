@@ -69,7 +69,9 @@ def new_id(prefix: str) -> str:
 
 def connect(cfg: Config) -> sqlite3.Connection:
     cfg.db_path.parent.mkdir(parents=True, exist_ok=True)
-    con = sqlite3.connect(cfg.db_path, timeout=15, isolation_level=None)
+    # check_same_thread=False: FastAPI may open the per-request connection (dependency) on one threadpool thread and run
+    # the endpoint on another. Each request still has its own connection, used by one thread at a time.
+    con = sqlite3.connect(cfg.db_path, timeout=15, isolation_level=None, check_same_thread=False)
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA journal_mode=WAL"); con.execute("PRAGMA synchronous=NORMAL")
     con.execute("PRAGMA foreign_keys=ON"); con.execute("PRAGMA busy_timeout=15000")
