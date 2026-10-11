@@ -13,7 +13,10 @@ async function call<T>(method: string, path: string, body?: unknown, authed = tr
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   const token = authed ? await auth.currentUser?.getIdToken() : undefined;
   if (token) headers.Authorization = `Bearer ${token}`;
-  const r = await fetch(`/lab/api/v1${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+  const send = (h: Record<string, string>) => fetch(`/lab/api/v1${path}`, { method, headers: h, body: body === undefined ? undefined : JSON.stringify(body) });
+  let r = await send(headers);
+  // a token the server cannot verify must not block public pages: retry reads and scans anonymously
+  if (r.status === 401 && headers.Authorization && (method === 'GET' || path === '/scan')) { const { Authorization: _drop, ...anon } = headers; r = await send(anon); }
   if (!r.ok) {
     let msg = 'Something went wrong. Please try again.';
     try { const j = await r.json(); if (typeof j.detail === 'string') msg = j.detail; } catch { /* keep default */ }

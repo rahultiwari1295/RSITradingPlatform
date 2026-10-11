@@ -85,6 +85,7 @@ export default function Scanner() {
       <div className="head"><div><div className="eyebrow">Scanner</div><h1>Scan the market</h1>
         <p className="sub" style={{ margin: '4px 0 0' }}>Start with a ready-made scan, or build your own below.</p></div></div>
 
+      {(cat.data.fsv ?? 1) < 2 && <p className="plain" role="status">The scan server is still on the previous data version, so some ready-made scans may not run until it is refreshed.</p>}
       <div className="sec-h"><h2>Ready-made scans</h2></div>
       <div className="pre-row" role="list">
         {PRESET_SCANS.map(p => (

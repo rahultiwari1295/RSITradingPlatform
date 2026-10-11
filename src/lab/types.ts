@@ -8,7 +8,7 @@ export interface ExitItem { type: string; v?: number; rule?: RuleJson }
 export interface ExitJson { v: 1; any: ExitItem[] }
 
 export interface FeatureDef { key: string; label: string; group: string; kind: 'number' | 'bool'; unit: string }
-export interface Catalog { features: FeatureDef[]; operators: { op: string; label: string }[]; exits: { type: string; label: string; unit: string }[] }
+export interface Catalog { fsv?: number; features: FeatureDef[]; operators: { op: string; label: string }[]; exits: { type: string; label: string; unit: string }[] }
 
 export interface Stats { trades: number; wins: number; losses: number; win_rate: number | null; avg_ret: number | null; open: number; shown: boolean }
 export interface StrategyCard {

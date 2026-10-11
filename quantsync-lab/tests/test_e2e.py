@@ -126,3 +126,15 @@ def test_build_flagships(cfg):
     assert flagship.pick_gate({"edge_found": False}) is None
     assert flagship.pick_gate({"edge_found": True, "gates": {"60": {"All": {"trades": 80}, "lift": 0.05}}}) == 60
     assert flagship.pick_gate({"edge_found": True, "gates": {"60": {"All": {"trades": 12}, "lift": 0.05}, "50": {"All": {"trades": 60}, "lift": 0.02}}}) == 50
+
+
+def test_unverifiable_token_does_not_break_public_pages(cfg):
+    from dataclasses import replace
+    c = replace(cfg, auth_mode="firebase", firebase_project_id="x")
+    bad = {"Authorization": "Bearer not-a-real-token"}
+    with TestClient(api.create_app(c)) as cl:
+        for path in ("/lab/v1/today", "/lab/v1/strategies?scope=flagship", "/lab/v1/catalog"):
+            assert cl.get(path, headers=bad).status_code == 200, path
+        assert cl.post("/lab/v1/scan", json=RULE, headers=bad).status_code == 200
+        assert cl.post("/lab/v1/backtest", json=RULE, headers=bad).status_code == 401   # needs a real user
+        assert cl.get("/lab/v1/health").json()["auth"]["mode"] == "firebase"

@@ -25,8 +25,12 @@ def optional_uid(request: Request, authorization: str | None = Header(None), x_d
         from firebase_admin import auth
         _init_firebase(cfg.firebase_project_id)
         return auth.verify_id_token(authorization[7:])["uid"]
-    except Exception:  # noqa: BLE001
-        raise HTTPException(401, "Sign in again to continue.")
+    except Exception as e:  # noqa: BLE001
+        # Public pages (today, strategies, scans, charts) must keep working for anyone, so an unverifiable token is treated
+        # as "not signed in". Endpoints that need a user answer 401 through require_uid.
+        log.warning("id token rejected (%s: %s) - check firebase_project_id=%r and outbound access to Google certs",
+                    type(e).__name__, str(e)[:160], cfg.firebase_project_id)
+        return None
 
 
 def require_uid(uid: str | None = Depends(optional_uid)) -> str:

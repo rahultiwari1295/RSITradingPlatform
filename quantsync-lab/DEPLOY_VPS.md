@@ -145,3 +145,9 @@ and cap its memory so the live API is never at risk):
   stays plain and the UI shows no AI badge. That is intentional: no edge, no claim.
 - Any strategy (public ones too) can get past-test data with `python -m lab.cli backtest-all`.
 - Send the printed output back so the numbers can be reviewed before the pages are shared.
+
+## 17. If signed-in users see "Sign in again to continue"
+The API could not verify the Firebase token. Public pages now keep working anyway, but sign-in dependent actions will fail until this is fixed.
+1. `curl -s http://127.0.0.1:8100/lab/v1/health` → `auth.firebase_project_id` must be `scantoknow-a1593` (set `firebase_project_id` in `config.yaml`).
+2. `journalctl -u qslab-api -n 50 | grep "token rejected"` shows the exact reason (wrong project id, no outbound access to Google's public certificates, or a wrong server clock).
+3. The VPS needs outbound HTTPS to `www.googleapis.com` (used by firebase-admin to fetch signing certificates) and a correct clock (`timedatectl`).

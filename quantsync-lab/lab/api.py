@@ -75,7 +75,8 @@ def _bad(e: Exception):
 @router.get("/health")
 def health(request: Request):
     cfg = cfg_of(request)
-    return {"ok": True, "version": __version__, "data": {tf: store.meta(cfg, tf) for tf in ("1D", "1W")}}
+    return {"ok": True, "version": __version__, "data": {tf: store.meta(cfg, tf) for tf in ("1D", "1W")},
+            "auth": {"mode": cfg.auth_mode, "firebase_project_id": cfg.firebase_project_id or None}}
 
 
 @router.get("/catalog")

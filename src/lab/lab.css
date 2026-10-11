@@ -225,3 +225,8 @@ html.lab-modal .lab-q { z-index: 70; }
 .lab-q .lab-ptile.all { grid-column: 1 / -1; min-height: 0; }
 .lab-q .lab-glyph { color: var(--pt); margin-bottom: 2px; }
 .lab-q .lab-res { display: grid; gap: 14px; scroll-margin-top: 14px; }
+
+/* X-Ray search stays in the page: the live app's full-screen typing mode assumes its own header and dock */
+.q-root.lab-q.q-typing::before { display: none; }
+.q-root.lab-q.q-typing .q-srch { position: relative; left: auto; right: auto; top: auto; z-index: 5; }
+.q-root.lab-q.q-typing .q-sug { top: 64px; max-height: 60vh; }
