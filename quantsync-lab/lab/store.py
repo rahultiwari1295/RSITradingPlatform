@@ -126,15 +126,23 @@ def signals(cfg: Config, rule: dict, tf: str, start: str | None = None, end: str
     try:
         src = f"read_parquet('{_glob(cfg, tf)}')"
         lo = ""
+        m = meta(cfg, tf) if only_last else None
+        as_of = m.get("as_of") if m else None
         if only_last:  # lags need a little history, never the full file
-            lo = f"WHERE \"date\" >= (SELECT max(\"date\") FROM {src}) - INTERVAL 120 DAY"
+            if as_of:
+                lo = f"WHERE \"date\" >= DATE '{as_of}' - INTERVAL 120 DAY"
+            else:
+                lo = f"WHERE \"date\" >= (SELECT max(\"date\") FROM {src}) - INTERVAL 120 DAY"
         elif start:
             s_date = pd.Timestamp(start).strftime("%Y-%m-%d")
             lo = f"WHERE \"date\" >= CAST('{s_date}' AS DATE) - INTERVAL 120 DAY"
         sql = f'SELECT * FROM (SELECT *{lag_select(c)} FROM {src} {lo})'
         conds, params = [c.where], list(c.params)
         if only_last:
-            conds.append(f'"date" = (SELECT max("date") FROM {src})')
+            if as_of:
+                conds.append(f'"date" = DATE \'{as_of}\'')
+            else:
+                conds.append(f'"date" = (SELECT max("date") FROM {src})')
         if start:
             conds.append('"date" >= CAST(? AS DATE)'); params.append(start)
         if end:

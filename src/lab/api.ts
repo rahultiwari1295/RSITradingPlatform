@@ -11,7 +11,15 @@ export class ApiError extends Error {
 async function call<T>(method: string, path: string, body?: unknown, authed = true): Promise<T> {
   const headers: Record<string, string> = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
-  const token = authed ? await auth.currentUser?.getIdToken() : undefined;
+  let token: string | undefined;
+  if (authed && auth.currentUser) {
+    try {
+      token = await Promise.race([
+        auth.currentUser.getIdToken(),
+        new Promise<undefined>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
+      ]);
+    } catch { /* proceed without token if Firebase auth hangs */ }
+  }
   if (token) headers.Authorization = `Bearer ${token}`;
   const send = (h: Record<string, string>) => fetch(`/lab/api/v1${path}`, { method, headers: h, body: body === undefined ? undefined : JSON.stringify(body) });
   let r = await send(headers);
@@ -29,13 +37,13 @@ const q = (o: Record<string, string | number | boolean | undefined>) =>
 
 const real: LabApi = {
   catalog: () => call('GET', '/catalog', undefined, false),
-  today: () => call('GET', '/today'),
-  scan: (tf, entry) => call('POST', '/scan', { tf, entry }),
+  today: () => call('GET', '/today', undefined, false),
+  scan: (tf, entry) => call('POST', '/scan', { tf, entry }, false),
   backtest: (tf, entry, exit) => call('POST', '/backtest', { tf, entry, exit }),
   strategyBacktest: id => call('GET', `/strategies/${id}/backtest`, undefined, false),
   runStrategyBacktest: id => call('POST', `/strategies/${id}/backtest`),
   job: id => call('GET', `/jobs/${id}`),
-  strategies: scope => call('GET', `/strategies${q({ scope })}`),
+  strategies: scope => call('GET', `/strategies${q({ scope })}`, undefined, scope === 'mine'),
   strategy: id => call('GET', `/strategies/${id}`),
   createStrategy: b => call('POST', '/strategies', b),
   copyStrategy: id => call('POST', `/strategies/${id}/copy`),

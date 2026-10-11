@@ -11,7 +11,20 @@ _fb = {"ready": False}
 def _init_firebase(project_id: str) -> None:
     if not _fb["ready"]:
         import firebase_admin
-        firebase_admin.initialize_app(options={"projectId": project_id} if project_id else None)
+        from firebase_admin import credentials
+        import google.auth.credentials
+
+        class NoAuth(google.auth.credentials.AnonymousCredentials):
+            pass
+
+        class DummyCred(credentials.Base):
+            def get_credential(self):
+                return NoAuth()
+
+        firebase_admin.initialize_app(
+            credential=DummyCred(),
+            options={"projectId": project_id} if project_id else None,
+        )
         _fb["ready"] = True
 
 
