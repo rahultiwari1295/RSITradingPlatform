@@ -1,0 +1,354 @@
+"""FastAPI app mounted at /lab/v1 (nginx forwards /lab/ to 127.0.0.1:8100)."""
+from __future__ import annotations
+
+import json
+import re
+import time
+from contextlib import asynccontextmanager
+
+import pandas as pd
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
+from fastapi.concurrency import run_in_threadpool
+from pydantic import BaseModel, Field
+
+from . import __version__, db, jobs, pipeline, service, store
+from .auth import mirror_strategy_ids, optional_uid, require_uid
+from .catalog import catalog
+from .config import Config, load_config
+from .db import jdump, new_id, tx
+from .rules import RuleError, normalise, normalise_exit
+
+router = APIRouter(prefix="/lab/v1")
+HANDLE = re.compile(r"^[a-z0-9_]{3,20}$")
+
+
+def get_con(request: Request):
+    con = db.connect(request.app.state.cfg)
+    try:
+        yield con
+    finally:
+        con.close()
+
+
+def cfg_of(request: Request) -> Config:
+    return request.app.state.cfg
+
+
+class RuleBody(BaseModel):
+    tf: str = Field(pattern="^(1D|1W)$")
+    entry: dict
+    exit: dict | None = None
+
+
+class StrategyBody(RuleBody):
+    name: str = Field(min_length=2, max_length=60)
+
+
+class GateBody(BaseModel):
+    gate: int | None = Field(default=None, ge=50, le=90)
+
+
+class ExitChoiceBody(BaseModel):
+    choice: str = Field(pattern="^(user|ai)$")
+
+
+def _owned(con, sid: str, uid: str):
+    r = con.execute("SELECT * FROM strategies WHERE id=? AND archived=0", (sid,)).fetchone()
+    if not r:
+        raise HTTPException(404, "Strategy not found.")
+    if r["owner_uid"] != uid:
+        raise HTTPException(403, "This strategy belongs to someone else.")
+    return r
+
+
+def _visible(con, sid: str, uid: str | None):
+    r = con.execute("SELECT * FROM strategies WHERE id=? AND archived=0", (sid,)).fetchone()
+    if not r or (r["visibility"] != "public" and r["owner_uid"] != uid):
+        raise HTTPException(404, "Strategy not found.")
+    return r
+
+
+def _bad(e: Exception):
+    return HTTPException(400, str(e))
+
+
+@router.get("/health")
+def health(request: Request):
+    cfg = cfg_of(request)
+    return {"ok": True, "version": __version__, "data": {tf: store.meta(cfg, tf) for tf in ("1D", "1W")}}
+
+
+@router.get("/catalog")
+def get_catalog():
+    return catalog()
+
+
+@router.post("/scan")
+async def scan(body: RuleBody, request: Request, uid: str | None = Depends(optional_uid)):
+    try:
+        return await run_in_threadpool(pipeline.scan, cfg_of(request), body.entry, body.tf)
+    except RuleError as e:
+        raise _bad(e)
+    except FileNotFoundError:
+        raise HTTPException(503, "Market data is being prepared.")
+
+
+@router.post("/backtest")
+def backtest(body: RuleBody, request: Request, uid: str = Depends(require_uid), con=Depends(get_con)):
+    cfg = cfg_of(request)
+    try:
+        payload = {"tf": body.tf, "entry": normalise(body.entry), "exit": normalise_exit(body.exit)}
+        jid = jobs.enqueue(con, "backtest", uid, payload, queue_cap=cfg.queue_cap, bt_hourly=cfg.free_backtests_per_hour)
+    except RuleError as e:
+        raise _bad(e)
+    except jobs.QueueError as e:
+        raise HTTPException(e.code, e.msg)
+    return {"job_id": jid}
+
+
+@router.get("/jobs/{jid}")
+def job(jid: str, uid: str = Depends(require_uid), con=Depends(get_con)):
+    s = jobs.status(con, jid, uid)
+    if not s:
+        raise HTTPException(404, "Job not found.")
+    return s
+
+
+def _mirror(cfg, con, uid):
+    sids = [r[0] for r in con.execute("SELECT id FROM strategies WHERE owner_uid=? AND archived=0 ORDER BY created_at", (uid,))]
+    fids = [r[0] for r in con.execute("SELECT strategy_id FROM follows WHERE uid=?", (uid,))]
+    h = con.execute("SELECT handle FROM users WHERE uid=?", (uid,)).fetchone()
+    mirror_strategy_ids(cfg, uid, sids, fids, h[0] if h else None)
+
+
+def _ensure_user(con, uid):
+    con.execute("INSERT OR IGNORE INTO users(uid,created_at) VALUES(?,?)", (uid, time.time()))
+
+
+@router.post("/strategies")
+def create_strategy(body: StrategyBody, request: Request, uid: str = Depends(require_uid), con=Depends(get_con)):
+    cfg = cfg_of(request)
+    _ensure_user(con, uid)
+    try:
+        out = service.create_strategy(con, cfg, uid, body.name, body.tf, body.entry, body.exit)
+    except (RuleError, ValueError) as e:
+        raise _bad(e)
+    _mirror(cfg, con, uid)
+    return out
+
+
+def _card(con, s, uid=None) -> dict:
+    v = con.execute("SELECT * FROM strategy_versions WHERE id=?", (s["current_version"],)).fetchone()
+    owner = con.execute("SELECT handle FROM users WHERE uid=?", (s["owner_uid"],)).fetchone() if s["owner_uid"] else None
+    followers = con.execute("SELECT count(*) FROM follows WHERE strategy_id=?", (s["id"],)).fetchone()[0]
+    enh = con.execute("SELECT id,status FROM ai_enhancements WHERE version_id=? OR id=? ORDER BY created_at DESC LIMIT 1",
+                      (v["id"], v["ai_enhancement_id"])).fetchone()
+    return {"id": s["id"], "name": s["name"], "tf": s["tf"], "kind": s["kind"], "visibility": s["visibility"],
+            "owner": owner[0] if owner else ("QuantSync" if s["kind"] == "flagship" else None), "mine": bool(uid and uid == s["owner_uid"]),
+            "followers": followers, "version": v["n"], "live_from": v["live_from"], "ai_gate": v["ai_gate"],
+            "enhanced": bool(v["ai_gate"]), "exit_choice": v["exit_choice"],
+            "enhancement": {"id": enh["id"], "status": enh["status"]} if enh else None,
+            "stats": service.live_stats(con, v["id"])}
+
+
+@router.get("/strategies")
+def list_strategies(scope: str = "mine", uid: str | None = Depends(optional_uid), con=Depends(get_con)):
+    if scope == "mine":
+        if not uid:
+            raise HTTPException(401, "Sign in to continue.")
+        q, a = "SELECT * FROM strategies WHERE owner_uid=? AND archived=0 ORDER BY created_at DESC", (uid,)
+    elif scope == "flagship":
+        q, a = "SELECT * FROM strategies WHERE kind='flagship' AND archived=0", ()
+    else:  # people's strategies: ranked by followers, never by returns
+        q, a = ("SELECT s.* FROM strategies s LEFT JOIN follows f ON f.strategy_id=s.id WHERE s.visibility='public' AND s.kind='user' "
+                "AND s.archived=0 GROUP BY s.id ORDER BY count(f.uid) DESC, s.created_at DESC LIMIT 50"), ()
+    return [_card(con, s, uid) for s in con.execute(q, a)]
+
+
+@router.get("/strategies/{sid}")
+def get_strategy(sid: str, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
+    s = _visible(con, sid, uid)
+    v = con.execute("SELECT * FROM strategy_versions WHERE id=?", (s["current_version"],)).fetchone()
+    out = _card(con, s, uid)
+    out["info"] = {"entry": json.loads(v["entry_json"]), "exit": json.loads(v["exit_json"])}
+    return out
+
+
+@router.get("/strategies/{sid}/trades")
+def trades(sid: str, status: str = "active", limit: int = 100, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
+    s = _visible(con, sid, uid)
+    open_ = 1 if status == "active" else 0
+    rows = con.execute("SELECT * FROM live_trades WHERE version_id=? AND is_open=? ORDER BY signal_date DESC, symbol LIMIT ?",
+                       (s["current_version"], open_, min(limit, 500))).fetchall()
+    cfg = None
+    out = []
+    for r in rows:
+        d = dict(r)
+        d["age_days"] = (pd.Timestamp.today().normalize() - pd.Timestamp(r["signal_date"])).days
+        out.append(d)
+    return out
+
+
+@router.post("/strategies/{sid}/visibility")
+def set_visibility(sid: str, public: bool, uid: str = Depends(require_uid), con=Depends(get_con)):
+    _owned(con, sid, uid)
+    if public and not con.execute("SELECT handle FROM users WHERE uid=?", (uid,)).fetchone()[0]:
+        raise HTTPException(400, "Pick a public handle first.")
+    con.execute("UPDATE strategies SET visibility=? WHERE id=?", ("public" if public else "private", sid))
+    return {"ok": True}
+
+
+@router.post("/strategies/{sid}/copy")
+def copy_strategy(sid: str, request: Request, uid: str = Depends(require_uid), con=Depends(get_con)):
+    s = _visible(con, sid, uid)
+    v = con.execute("SELECT * FROM strategy_versions WHERE id=?", (s["current_version"],)).fetchone()
+    _ensure_user(con, uid)
+    out = service.create_strategy(con, cfg_of(request), uid, f"{s['name']} (copy)", s["tf"], json.loads(v["entry_json"]),
+                                  json.loads(v["exit_json"]), copied_from=sid)
+    _mirror(cfg_of(request), con, uid)
+    return out
+
+
+@router.delete("/strategies/{sid}")
+def archive(sid: str, request: Request, uid: str = Depends(require_uid), con=Depends(get_con)):
+    _owned(con, sid, uid)
+    con.execute("UPDATE strategies SET archived=1 WHERE id=?", (sid,))
+    _mirror(cfg_of(request), con, uid)
+    return {"ok": True}
+
+
+@router.post("/strategies/{sid}/enhance")
+def enhance(sid: str, request: Request, uid: str = Depends(require_uid), con=Depends(get_con)):
+    cfg = cfg_of(request)
+    s = _owned(con, sid, uid)
+    aid = new_id("ai")
+    try:
+        jid = jobs.enqueue(con, "enhance", uid, {"strategy_id": sid, "enhancement_id": aid}, queue_cap=cfg.queue_cap, ai_daily=cfg.free_ai_jobs_per_day)
+    except jobs.QueueError as e:
+        raise HTTPException(e.code, e.msg)
+    con.execute("INSERT INTO ai_enhancements(id,version_id,status,created_at) VALUES(?,?,?,?)", (aid, s["current_version"], "queued", time.time()))
+    return {"job_id": jid, "enhancement_id": aid}
+
+
+@router.get("/strategies/{sid}/enhancement")
+def enhancement(sid: str, uid: str = Depends(require_uid), con=Depends(get_con)):
+    s = _owned(con, sid, uid)
+    r = con.execute("SELECT * FROM ai_enhancements WHERE version_id=? OR id=(SELECT ai_enhancement_id FROM strategy_versions WHERE id=?) ORDER BY created_at DESC LIMIT 1",
+                    (s["current_version"], s["current_version"])).fetchone()
+    if not r:
+        return {"status": "none"}
+    return {"id": r["id"], "status": r["status"], "reason": r["reason"], "result": json.loads(r["result_json"]) if r["result_json"] else None,
+            "exit": json.loads(r["exit_result_json"]) if r["exit_result_json"] else None}
+
+
+@router.post("/strategies/{sid}/ai-gate")
+def set_gate(sid: str, body: GateBody, uid: str = Depends(require_uid), con=Depends(get_con)):
+    s = _owned(con, sid, uid)
+    r = con.execute("SELECT id FROM ai_enhancements WHERE version_id=? AND status='done' ORDER BY created_at DESC LIMIT 1", (s["current_version"],)).fetchone()
+    cur = con.execute("SELECT ai_enhancement_id FROM strategy_versions WHERE id=?", (s["current_version"],)).fetchone()[0]
+    eid = r[0] if r else cur
+    if body.gate and not eid:
+        raise HTTPException(409, "Enhance this strategy first.")
+    vid = service.new_version(con, sid, ai_enhancement_id=eid if body.gate else None, ai_gate=body.gate)
+    return {"version_id": vid, "note": "Live record restarts from today for the new setting."}
+
+
+@router.post("/strategies/{sid}/enhance-exit")
+def enhance_exit(sid: str, body: GateBody, request: Request, uid: str = Depends(require_uid), con=Depends(get_con)):
+    cfg = cfg_of(request)
+    _owned(con, sid, uid)
+    if not body.gate:
+        raise HTTPException(400, "Choose a score first.")
+    try:
+        jid = jobs.enqueue(con, "enhance_exit", uid, {"strategy_id": sid, "gate": body.gate}, queue_cap=cfg.queue_cap, ai_daily=cfg.free_ai_jobs_per_day)
+    except jobs.QueueError as e:
+        raise HTTPException(e.code, e.msg)
+    return {"job_id": jid}
+
+
+@router.post("/strategies/{sid}/exit-choice")
+def exit_choice(sid: str, body: ExitChoiceBody, uid: str = Depends(require_uid), con=Depends(get_con)):
+    _owned(con, sid, uid)
+    return {"version_id": service.new_version(con, sid, exit_choice=body.choice)}
+
+
+@router.post("/strategies/{sid}/follow")
+def follow(sid: str, on: bool = True, alerts: bool = False, request: Request = None, uid: str = Depends(require_uid), con=Depends(get_con)):
+    _visible(con, sid, uid)
+    _ensure_user(con, uid)
+    if on:
+        n = con.execute("SELECT count(*) FROM follows WHERE uid=?", (uid,)).fetchone()[0]
+        if n >= 200:
+            raise HTTPException(400, "Follow limit reached.")
+        con.execute("INSERT INTO follows VALUES(?,?,?,?) ON CONFLICT(uid,strategy_id) DO UPDATE SET alerts=excluded.alerts", (uid, sid, int(alerts), time.time()))
+    else:
+        con.execute("DELETE FROM follows WHERE uid=? AND strategy_id=?", (uid, sid))
+    _mirror(cfg_of(request), con, uid)
+    return {"ok": True}
+
+
+@router.post("/strategies/{sid}/report")
+def report(sid: str, reason: str = "", uid: str | None = Depends(optional_uid), con=Depends(get_con)):
+    _visible(con, sid, uid)
+    con.execute("INSERT INTO reports(strategy_id,uid,reason,created_at) VALUES(?,?,?,?)", (sid, uid, reason[:300], time.time()))
+    return {"ok": True}
+
+
+@router.get("/me")
+def me(uid: str = Depends(require_uid), con=Depends(get_con)):
+    _ensure_user(con, uid)
+    u = con.execute("SELECT * FROM users WHERE uid=?", (uid,)).fetchone()
+    return {"handle": u["handle"], "plan": u["plan"], "pricing_enabled": con.execute("SELECT v FROM app_config WHERE k='pricing_enabled'").fetchone()[0] == "true"}
+
+
+@router.put("/me/handle")
+def set_handle(handle: str, request: Request, uid: str = Depends(require_uid), con=Depends(get_con)):
+    h = handle.strip().lower()
+    if not HANDLE.match(h):
+        raise HTTPException(400, "3-20 letters, numbers or underscores.")
+    _ensure_user(con, uid)
+    try:
+        con.execute("UPDATE users SET handle=? WHERE uid=?", (h, uid))
+    except Exception:
+        raise HTTPException(409, "That handle is taken.")
+    _mirror(cfg_of(request), con, uid)
+    return {"handle": h}
+
+
+@router.get("/chart/{symbol}")
+def chart(symbol: str, request: Request, tf: str = "1D", n: int = 180):
+    cfg = cfg_of(request)
+    if not re.fullmatch(r"[A-Za-z0-9&-]{1,20}", symbol) or tf not in ("1D", "1W"):
+        raise HTTPException(400, "Bad request.")
+    b = store.bars(cfg, tf, [symbol.upper()], columns=["open", "high", "low", "close", "volume", "sma_50", "sma_200", "rsi_14"])
+    if symbol.upper() not in b:
+        raise HTTPException(404, "Symbol not found.")
+    df = b[symbol.upper()].tail(min(n, 600)).copy()
+    df["date"] = df["date"].dt.strftime("%Y-%m-%d")
+    return {"symbol": symbol.upper(), "tf": tf, "bars": json.loads(df.to_json(orient="records"))}
+
+
+@router.get("/today")
+def today(request: Request, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
+    cfg = cfg_of(request)
+    flag = [_card(con, s, uid) for s in con.execute("SELECT * FROM strategies WHERE kind='flagship' AND archived=0")]
+    fresh = con.execute("""SELECT l.symbol, l.signal_date, s.id sid, s.name FROM live_trades l
+        JOIN strategies s ON s.current_version=l.version_id WHERE s.kind='flagship' AND l.is_open=1
+        ORDER BY l.signal_date DESC LIMIT 20""").fetchall()
+    return {"data": {tf: store.meta(cfg, tf) for tf in ("1D", "1W")}, "flagship": flag, "fresh": [dict(r) for r in fresh]}
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    db.migrate(app.state.cfg)
+    yield
+
+
+def create_app(cfg: Config | None = None) -> FastAPI:
+    app = FastAPI(title="QuantSync Lab", version=__version__, lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url="/lab/openapi.json")
+    app.state.cfg = cfg or load_config()
+    app.include_router(router)
+    return app
+
+
+
