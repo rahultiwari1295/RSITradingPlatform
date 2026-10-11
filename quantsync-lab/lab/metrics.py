@@ -22,9 +22,13 @@ def summarize(t: pd.DataFrame) -> dict:
                 "profit_factor": None, "max_dd": None, "avg_bars": None, "best": None, "worst": None}
     r = c["ret_pct"].to_numpy()
     w, ls = r[r > 0], r[r <= 0]
-    eq = np.cumsum(c.sort_values("exit_date")["ret_pct"].to_numpy())
-    diff = eq - np.maximum.accumulate(np.concatenate([[0], eq]))[1:]
-    dd = float(diff.min()) if len(diff) and np.isfinite(diff.min()) else None
+    # Equal-weight curve: trades closing on the same day are averaged, then compounded.
+    # (A plain running sum of per-trade % gave dips beyond -100%, which is meaningless.)
+    daily = c.groupby("exit_date")["ret_pct"].mean().sort_index().to_numpy() / 100.0
+    eq = np.cumprod(1.0 + np.maximum(daily, -0.999))
+    peak = np.maximum.accumulate(np.concatenate([[1.0], eq]))[1:]
+    dd = float(((eq / peak - 1.0) * 100).min()) if len(eq) else None
+    dd = dd if dd is not None and np.isfinite(dd) else None
     pf = float(w.sum() / -ls.sum()) if ls.sum() < 0 and np.isfinite(w.sum() / -ls.sum()) else None
     return {"trades": n, "wins": int(len(w)), "losses": int(len(ls)),
             "win_rate": _clean_num(len(w) / n * 100, 1),
