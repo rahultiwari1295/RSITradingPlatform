@@ -226,3 +226,14 @@ def test_flagships_use_engine_record(client, cfg, monkeypatch):
     monkeypatch.setattr(engine_feed, "_fetch", lambda c: (_ for _ in ()).throw(OSError("down")))
     assert client.get(f"/lab/v1/strategies/{a['id']}/backtest").json()["result"]["summary"]["All"]["trades"] == 41
     engine_feed._cache.update(t=0, data=None)
+
+
+def test_cards_carry_full_record(client, cfg):
+    h = {"X-Dev-Uid": "rec1"}
+    sid = client.post("/lab/v1/strategies", json={**RULE, "name": "Rec"}, headers=h).json()["id"]
+    drain(cfg, "fast")
+    card = client.get(f"/lab/v1/strategies/{sid}", headers=h).json()
+    bt = client.get(f"/lab/v1/strategies/{sid}/backtest", headers=h).json()["result"]["summary"]["All"]
+    r = card["record"]
+    assert r["trades"] == bt["trades"] > 50 and r["wins"] + r["losses"] == r["trades"] and r["win_rate"] == bt["win_rate"]
+    assert [c for c in client.get("/lab/v1/strategies?scope=mine", headers=h).json() if c["id"] == sid][0]["record"]["trades"] == r["trades"]

@@ -11,10 +11,11 @@ export interface FeatureDef { key: string; label: string; group: string; kind: '
 export interface Catalog { fsv?: number; features: FeatureDef[]; operators: { op: string; label: string }[]; exits: { type: string; label: string; unit: string }[] }
 
 export interface Stats { trades: number; wins: number; losses: number; win_rate: number | null; avg_ret: number | null; open: number; shown: boolean }
+export interface Rec { label: string; trades: number; wins: number; losses: number; win_rate: number | null; avg_ret: number | null; profit_factor: number | null; max_dd: number | null }
 export interface StrategyCard {
   id: string; name: string; tf: TF; kind: 'user' | 'flagship'; visibility: 'private' | 'public'; owner: string | null; mine: boolean;
   followers: number; version: number; live_from: string | null; ai_gate: number | null; enhanced: boolean; exit_choice: 'user' | 'ai';
-  enhancement: { id: string; status: string } | null; stats: Stats; broken?: boolean; source?: 'engine' | 'lab'; info?: { entry: RuleJson; exit: ExitJson };
+  enhancement: { id: string; status: string } | null; stats: Stats; broken?: boolean; source?: 'engine' | 'lab'; record?: Rec | null; info?: { entry: RuleJson; exit: ExitJson };
 }
 export interface Trade {
   id: number; symbol: string; signal_date: string; entry_date: string | null; entry_price: number | null; exit_date: string | null;

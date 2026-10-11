@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
-import type { Stats } from './types';
+import type { Rec, Stats } from './types';
 
 export const pct = (v: number | null | undefined, d = 1) => (v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(d)}%`);
 export const plainPct = (v: number | null | undefined, d = 1) => (v == null ? '—' : `${v.toFixed(d)}%`);
@@ -45,17 +45,22 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
   );
 }
 
-export function StatStrip({ s }: { s: Stats }) {
-  const shown = s.shown && s.win_rate != null;
+export function StatStrip({ s, rec }: { s: Stats; rec?: Rec | null }) {
   return (
-    <div className="strip num" aria-label="Track record">
-      <div><b>{shown ? plainPct(s.win_rate, 0) : '—'}</b><small>Win rate</small></div>
-      <div><b>{s.open}</b><small>Active</small></div>
-      <div><b>{s.trades}</b><small>Closed (live)</small></div>
-      <div><b className="up">{s.wins}</b><small>Wins</small></div>
-      <div><b className="down">{s.losses}</b><small>Losses</small></div>
-      <div><b className={tone(s.avg_ret)}>{pct(s.avg_ret)}</b><small>Avg</small></div>
-    </div>
+    <>
+      <div className="strip num" aria-label="Record">
+        <div><b>{rec ? plainPct(rec.win_rate, 1) : '—'}</b><small>Win rate</small></div>
+        <div><b>{rec ? rec.trades.toLocaleString('en-IN') : '—'}</b><small>Closed</small></div>
+        <div><b className="up">{rec ? rec.wins.toLocaleString('en-IN') : '—'}</b><small>Won</small></div>
+        <div><b className="down">{rec ? rec.losses.toLocaleString('en-IN') : '—'}</b><small>Lost</small></div>
+        <div><b className={tone(rec?.avg_ret)}>{pct(rec?.avg_ret, 2)}</b><small>Avg</small></div>
+        <div><b className={s.open > 0 ? 'up' : ''}>{s.open}</b><small>Active</small></div>
+      </div>
+      <p className="mute num" style={{ fontSize: 12, margin: '8px 2px 0' }}>
+        {rec ? rec.label : 'Past test running…'}{rec?.profit_factor != null ? ` · PF ${rec.profit_factor.toFixed(2)}` : ''}{rec?.max_dd != null ? ` · worst dip ${pct(rec.max_dd, 1)}` : ''}
+        {' · '}Live so far: {s.trades} closed, <span className="up">{s.wins}</span>/<span className="down">{s.losses}</span>{s.avg_ret != null ? `, ${pct(s.avg_ret, 2)} avg` : ''}
+      </p>
+    </>
   );
 }
 

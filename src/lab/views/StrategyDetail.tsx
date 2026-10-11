@@ -31,7 +31,7 @@ export default function StrategyDetail({ id, uid }: { id: string; uid: string | 
         <button className="btn sm" onClick={() => needAuth(async () => { await api.follow(id, true, true); toast('Alerts on for this strategy'); })}><BellRing /> Get alert</button>
         <button className="btn sm" onClick={() => setInfo(true)}><Info /> Show info</button>
       </div>
-      <StatStrip s={d.stats} />
+      <StatStrip s={d.stats} rec={d.record} />
       <p className="mute" style={{ fontSize: 12, margin: '10px 2px 0' }}>{d.source === 'engine' ? <>Live results recorded by the QuantSync engine since {shortDate(d.live_from)}. Closed shows every result, live and tested; the full record is below.</> : <>Live since {shortDate(d.live_from)} (v{d.version}). Results are recorded after each market close; entries happen at the next open after a scan result. The past test below shows history.</>}</p>
       <section className="sec">
         <Seg label="Trades" value={tab} onChange={v => setTab(v)} options={[{ v: 'active', label: `Active${d.stats.open ? ` · ${d.stats.open}` : ''}` }, { v: 'closed', label: 'Closed' }]} />
@@ -39,7 +39,7 @@ export default function StrategyDetail({ id, uid }: { id: string; uid: string | 
           {trades.loading ? <Skeleton n={3} /> : <EmptyOrRows items={trades.data ?? []} empty={tab === 'active' ? (d.stats.trades === 0 ? 'No live results yet. They appear after the next market close that this scan matches.' : 'No active results') : 'No closed live results yet. See the past test below for history.'} render={t => <TradeRow key={t.id} t={t} />} />}
         </div>
       </section>
-      <section className="sec"><BacktestPanel id={id} /></section>
+      <section className="sec"><BacktestPanel id={id} onReady={s.reload} /></section>
       {d.source !== 'engine' && (d.mine || d.enhanced) && <section className="sec"><EnhancePanel s={d} cat={cat.data} onChanged={() => { s.reload(); trades.reload(); }} /></section>}
       {info && (
         <Sheet title="Strategy rules" onClose={() => setInfo(false)}>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import type { BacktestResult, BacktestTrade } from '../types';
 import { Seg, Skeleton, inr, pct, plainPct, shortDate, tone, useAsync } from '../ui';
@@ -6,9 +6,11 @@ import { Seg, Skeleton, inr, pct, plainPct, shortDate, tone, useAsync } from '..
 const yearOf = (d: string | null) => (d ? d.slice(0, 4) : '');
 
 /** Past test for a strategy (2023 onwards). The server queues it on save and recomputes stale results; this panel polls. */
-export function BacktestPanel({ id }: { id: string; uid?: string | null }) {
+export function BacktestPanel({ id, onReady }: { id: string; uid?: string | null; onReady?: () => void }) {
   const bt = useAsync(() => api.strategyBacktest(id), [id]);
   const status = bt.data?.status;
+  const wasRunning = useRef(false);
+  useEffect(() => { if (status === 'running') wasRunning.current = true; else if (status === 'done' && wasRunning.current) { wasRunning.current = false; onReady?.(); } }, [status, onReady]);
   useEffect(() => {
     if (status !== 'running') return;
     const t = setTimeout(bt.reload, 4000);

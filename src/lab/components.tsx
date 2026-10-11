@@ -19,13 +19,17 @@ export function StrategyTile({ s, hero }: { s: StrategyCard; hero?: boolean }) {
           <span className="pill">{s.tf === '1D' ? 'Daily' : 'Weekly'}</span>
         </div>
       </div>
-      <div className="kv num" style={{ marginTop: 16 }}>
-        <div><span className="mute" style={{ fontSize: 11 }}>Win rate</span><b>{st.shown ? plainPct(st.win_rate, 0) : '—'}</b></div>
-        <div><span className="mute" style={{ fontSize: 11 }}>Active</span><b className={st.open > 0 ? 'up' : ''}>{st.open}</b></div>
-        <div><span className="mute" style={{ fontSize: 11 }}>Closed (W/L)</span><b><span className="up">{st.wins}</span> / <span className="down">{st.losses}</span></b></div>
-        {s.kind === 'user' && <div><span className="mute" style={{ fontSize: 11 }}>Followers</span><b><Users size={13} style={{ verticalAlign: -1 }} /> {s.followers}</b></div>}
-      </div>
-      {!st.shown && <p className="mute" style={{ fontSize: 12, marginTop: 12 }}>Win rate shows after 30 closed results.</p>}
+      {(() => { const r = s.record; return (
+        <div className="kv num" style={{ marginTop: 16 }}>
+          <div><span className="mute" style={{ fontSize: 11 }}>Win rate</span><b>{r ? plainPct(r.win_rate, 1) : '—'}</b></div>
+          <div><span className="mute" style={{ fontSize: 11 }}>Closed</span><b>{r ? r.trades.toLocaleString('en-IN') : '—'}</b></div>
+          <div><span className="mute" style={{ fontSize: 11 }}>Won / lost</span><b>{r ? <><span className="up">{r.wins.toLocaleString('en-IN')}</span> / <span className="down">{r.losses.toLocaleString('en-IN')}</span></> : '—'}</b></div>
+          <div><span className="mute" style={{ fontSize: 11 }}>Active</span><b className={st.open > 0 ? 'up' : ''}>{st.open}</b></div>
+        </div>); })()}
+      <p className="mute" style={{ fontSize: 12, marginTop: 12 }}>
+        {s.record ? `${s.record.label}${s.record.profit_factor != null ? ` · PF ${s.record.profit_factor.toFixed(2)}` : ''} · ` : 'Past test running… · '}
+        Live: <span className="up">{st.wins}</span>/<span className="down">{st.losses}</span>{s.kind === 'user' ? ` · ${s.followers} follower${s.followers === 1 ? '' : 's'}` : ''}
+      </p>
     </a>
   );
 }

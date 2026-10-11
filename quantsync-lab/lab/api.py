@@ -174,7 +174,21 @@ def _card(con, s, uid=None, cfg: Config | None = None) -> dict:
     if eng:  # flagships show the live engine's own record
         card.update(stats=engine_feed.stats(cfg, eng), source="engine", ai_gate=None, enhanced=False, enhancement=None,
                     live_from=(engine_feed.feed(cfg) or {}).get("live_since"))
+        bt = engine_feed.backtest(cfg, eng)
+        card["record"] = _record(bt, "Full record") if bt else None
+    else:
+        bt = service.cached_backtest(con, s["tf"], json.loads(v["entry_json"]), json.loads(v["exit_json"]),
+                                     v["ai_gate"] if v["ai_enhancement_id"] else None, v["ai_enhancement_id"] if v["ai_gate"] else None)
+        card["record"] = _record(bt, "Past test 2023–26") if bt else None
     return card
+
+
+def _record(bt: dict, label: str) -> dict | None:
+    """Headline numbers for tiles: the whole closed record (past test or engine record), all trades counted."""
+    a = (bt.get("summary") or {}).get("All")
+    if not a:
+        return None
+    return {"label": label, **{k: a.get(k) for k in ("trades", "wins", "losses", "win_rate", "avg_ret", "profit_factor", "max_dd")}}
 
 
 @router.get("/strategies")
