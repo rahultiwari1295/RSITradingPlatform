@@ -10,9 +10,18 @@ export default defineConfig({
       '@': path.resolve(__dirname, '.'),
     },
   },
+  build: {
+    rollupOptions: { input: { main: path.resolve(__dirname, 'index.html'), lab: path.resolve(__dirname, 'lab.html') } },
+  },
   server: {
     hmr: process.env.DISABLE_HMR !== 'true',
     proxy: {
+      '/lab/api': {
+        target: process.env.VITE_VPS_API_URL || 'https://quantsync-api.duckdns.org:8443',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (p: string) => p.replace(/^\/lab\/api/, '/lab'),
+      },
       '/api': {
         target: process.env.VITE_VPS_API_URL || 'https://quantsync-api.duckdns.org:8443',
         changeOrigin: true,

@@ -315,6 +315,36 @@ def set_handle(handle: str, request: Request, uid: str = Depends(require_uid), c
     return {"handle": h}
 
 
+@router.get("/me/portfolio")
+def portfolio(status: str = "active", uid: str = Depends(require_uid), con=Depends(get_con)):
+    """Trades from the strategies the user owns or follows (current versions)."""
+    rows = con.execute("""SELECT l.*, s.id AS strategy_id, s.name AS strategy_name, (v.ai_gate IS NOT NULL) AS enhanced
+        FROM live_trades l JOIN strategy_versions v ON v.id=l.version_id JOIN strategies s ON s.current_version=v.id
+        WHERE s.archived=0 AND (s.owner_uid=? OR s.id IN (SELECT strategy_id FROM follows WHERE uid=?))
+        ORDER BY l.signal_date DESC, l.symbol LIMIT 1000""", (uid, uid)).fetchall()
+    df = pd.DataFrame([dict(r) for r in rows])
+    if df.empty:
+        return {"summary": {"active": 0, "closed": 0, "win_rate": None, "avg_ret": None, "wins": 0, "losses": 0}, "trades": []}
+    closed = df[df.is_open == 0]
+    wins = int((closed.ret_pct > 0).sum())
+    summary = {"active": int((df.is_open == 1).sum()), "closed": len(closed), "wins": wins, "losses": len(closed) - wins,
+               "win_rate": round(wins / len(closed) * 100, 1) if len(closed) >= 30 else None,
+               "avg_ret": round(float(closed.ret_pct.mean()), 2) if len(closed) else None,
+               "active_avg": round(float(df[df.is_open == 1].ret_pct.mean()), 2) if (df.is_open == 1).any() else None}
+    sel = df[df.is_open == (1 if status == "active" else 0)].head(200)
+    return {"summary": summary, "trades": json.loads(sel.to_json(orient="records"))}
+
+
+@router.get("/patterns")
+def patterns(request: Request, tf: str = "1D"):
+    """Chart-pattern scan results. Reads the pattern feed written by the live engine's export (see README)."""
+    f = cfg_of(request).data_dir / "patterns" / f"latest_{tf}.parquet"
+    if not f.exists():
+        return {"configured": False, "rows": []}
+    df = pd.read_parquet(f).head(300)
+    return {"configured": True, "rows": json.loads(df.to_json(orient="records", date_format="iso"))}
+
+
 @router.get("/chart/{symbol}")
 def chart(symbol: str, request: Request, tf: str = "1D", n: int = 180):
     cfg = cfg_of(request)

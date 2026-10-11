@@ -58,6 +58,8 @@ def test_live_tracker_and_min_trades_rule(client, cfg):
     assert service.update_live(cfg, con) > 0
     t = client.get(f"/lab/v1/strategies/{sid}/trades?status=closed", headers={"X-Dev-Uid": "u3"}).json()
     assert t and all(x["is_open"] == 0 for x in t)
+    pf = client.get("/lab/v1/me/portfolio?status=closed", headers={"X-Dev-Uid": "u3"}).json()
+    assert pf["summary"]["closed"] > 0 and pf["trades"][0]["strategy_name"] == "Live one"
     stats = client.get(f"/lab/v1/strategies/{sid}", headers={"X-Dev-Uid": "u3"}).json()["stats"]
     assert stats["shown"] == (stats["trades"] >= 30)
     if not stats["shown"]:
