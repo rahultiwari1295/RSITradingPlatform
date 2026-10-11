@@ -14,14 +14,15 @@ export function StrategyTile({ s, hero }: { s: StrategyCard; hero?: boolean }) {
           <h2 style={{ fontSize: hero ? 22 : 17, marginTop: 4 }}>{s.name}</h2>
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          {st.open > 0 && <span className="pill up">{st.open} active</span>}
           {s.enhanced && <span className="pill gold"><Sparkles /> AI ≥ {s.ai_gate}</span>}
           <span className="pill">{s.tf === '1D' ? 'Daily' : 'Weekly'}</span>
         </div>
       </div>
       <div className="kv num" style={{ marginTop: 16 }}>
         <div><span className="mute" style={{ fontSize: 11 }}>Win rate</span><b>{st.shown ? plainPct(st.win_rate, 0) : '—'}</b></div>
-        <div><span className="mute" style={{ fontSize: 11 }}>Scanned</span><b>{st.trades}</b></div>
-        <div><span className="mute" style={{ fontSize: 11 }}>Wins / Losses</span><b><span className="up">{st.wins}</span> / <span className="down">{st.losses}</span></b></div>
+        <div><span className="mute" style={{ fontSize: 11 }}>Active</span><b className={st.open > 0 ? 'up' : ''}>{st.open}</b></div>
+        <div><span className="mute" style={{ fontSize: 11 }}>Closed (W/L)</span><b><span className="up">{st.wins}</span> / <span className="down">{st.losses}</span></b></div>
         {s.kind === 'user' && <div><span className="mute" style={{ fontSize: 11 }}>Followers</span><b><Users size={13} style={{ verticalAlign: -1 }} /> {s.followers}</b></div>}
       </div>
       {!st.shown && <p className="mute" style={{ fontSize: 12, marginTop: 12 }}>Win rate shows after 30 closed results.</p>}
