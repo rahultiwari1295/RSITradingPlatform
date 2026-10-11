@@ -337,7 +337,7 @@ export function Patterns({ go }: { go: Go }) {
 
 /* ================= PORTFOLIO ================= */
 const PAL = ["var(--p1)", "var(--p2)", "var(--p5)", "var(--p3)", "var(--p4)", "var(--p6)"];
-export function Portfolio({ go, onAdd, version }: { go: Go; onAdd: () => void; version: number }) {
+export function Portfolio({ go, onAdd, onAccount, signedIn, version }: { go: Go; onAdd: () => void; onAccount: () => void; signedIn: boolean; version: number }) {
   const [hs, setHs] = useState<Holding[]>(() => getHoldings());
   const [edit, setEdit] = useState(false);
   const [quotes, setQuotes] = useState<Record<string, any>>({});
@@ -369,7 +369,14 @@ export function Portfolio({ go, onAdd, version }: { go: Go; onAdd: () => void; v
     <div className={q("inner")} style={{ ["--acc" as any]: "var(--pf)" }}>
       <Hero art="portfolio" artOpts={{ seg, value: tv > 0 ? (tv >= 1e5 ? "₹" + (tv / 1e5).toFixed(2) + "L" : inr(tv)) : "Your stocks", sub: rows.length ? rows.length + " HOLDINGS" : "CHECKED DAILY" }}
         label="Portfolio" icon="pie" ey="Portfolio" h="Everything you own, checked every day." hl={["checked"]}
-        lede="Add your stocks by hand. We X-Ray each company and tell you if an AI call is live on it. Saved only on this device." />
+        lede={signedIn ? "Add your stocks by hand. We X-Ray each company and tell you if an AI call is live on it. Saved to your account." : "Add your stocks by hand. We X-Ray each company and tell you if an AI call is live on it."} />
+      {!signedIn ? (
+        <div className={q("card pfsave en")}>
+          <span className={q("ico sm")} style={{ ["--c" as any]: "var(--ax)" }}><Icon n="user" s={17} w={2.2} /></span>
+          <div className={q("grow")}><div className={q("t1")}>Save your portfolio</div><div className={q("t2")}>Sign in to keep it safe and see it on every device.</div></div>
+          <button className={q("btn sm acc")} style={{ ["--acc" as any]: "var(--ax)" }} onClick={onAccount}>Sign in</button>
+        </div>
+      ) : null}
       {!rows.length ? (
         <div className={q("card pad en")} style={{ textAlign: "center" }}>
           <h3>Add your first stock</h3>
@@ -413,7 +420,7 @@ export function Portfolio({ go, onAdd, version }: { go: Go; onAdd: () => void; v
           </section>
         </>
       )}
-      <p className={q("note")}>Prices are last traded prices from our data feed. Saved only in this browser.</p>
+      <p className={q("note")}>Prices are last traded prices from our data feed. {signedIn ? "Saved to your account." : "Saved only in this browser."}</p>
     </div>
   );
 }

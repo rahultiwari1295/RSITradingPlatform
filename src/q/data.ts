@@ -228,7 +228,9 @@ const HK = "q-holdings";
 export function getHoldings(): Holding[] {
   try { const v = JSON.parse(localStorage.getItem(HK) || "[]"); return Array.isArray(v) ? v : []; } catch { return []; }
 }
-export function setHoldings(h: Holding[]) { try { localStorage.setItem(HK, JSON.stringify(h)); } catch { /* storage blocked */ } }
+const hsubs = new Set<() => void>();
+export const onHoldingsChange = (f: () => void) => { hsubs.add(f); };
+export function setHoldings(h: Holding[], silent = false) { try { localStorage.setItem(HK, JSON.stringify(h)); } catch { /* storage blocked */ } if (!silent) hsubs.forEach((f) => f()); }
 
 /* ---------------- market clock ---------------- */
 export function marketStatus(): { open: boolean; text: string } {

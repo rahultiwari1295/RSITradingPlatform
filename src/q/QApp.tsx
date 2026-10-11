@@ -5,6 +5,8 @@ import "./q.css";
 import { q, Spring, clamp, RM, startEngine, setScroller, guardScroll } from "./core";
 import { searchStocks, getHoldings, setHoldings } from "./data";
 import { Icon } from "./ui";
+import { AccountSheet } from "./AccountSheet";
+import { useAccount, onCloudPortfolio } from "./account";
 import { Home, XRay, Calls, Patterns, Portfolio } from "./tabs";
 import { XRayReport, CallPage, ClosedPage, PatternPage } from "./details";
 
@@ -62,7 +64,7 @@ export default function QApp() {
   const [route, setRoute] = useState<Route>(() => parseRoute(location.pathname, location.search));
   const [shown, setShown] = useState<Route | null>(() => (route.kind ? route : null));
   const [visited, setVisited] = useState<Set<Tab>>(() => new Set([route.tab]));
-  const [modal, setModal] = useState<null | "share" | "add">(null);
+  const [modal, setModal] = useState<null | "share" | "add" | "account">(null);
   const [pfVersion, setPfVersion] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null), devRef = useRef<HTMLDivElement>(null), screensRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef<HTMLElement>(null), tabsRef = useRef<HTMLElement>(null), pillRef = useRef<HTMLSpanElement>(null);
@@ -79,7 +81,12 @@ export default function QApp() {
     try { const t = localStorage.getItem("q-theme"); if (t) document.documentElement.dataset.theme = t; } catch { /* ignore */ }
     document.title = "QuantSync";
   }, []);
+  const [, setThemeTick] = useState(0);
+  const isDark = () => (document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")) === "dark";
+  const { user: acct } = useAccount();
+  useEffect(() => onCloudPortfolio(() => setPfVersion((v) => v + 1)), []);
   const toggleTheme = () => {
+    setThemeTick((n) => n + 1);
     const r = document.documentElement, cur = r.dataset.theme || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"), nx = cur === "dark" ? "light" : "dark";
     r.dataset.theme = nx;
     try { localStorage.setItem("q-theme", nx); } catch { /* ignore */ }
@@ -203,7 +210,7 @@ export default function QApp() {
     if (t === "xray") return <XRay go={go} />;
     if (t === "calls") return <Calls go={go} />;
     if (t === "patterns") return <Patterns go={go} />;
-    return <Portfolio go={go} onAdd={() => setModal("add")} version={pfVersion} />;
+    return <Portfolio go={go} onAdd={() => setModal("add")} onAccount={() => setModal("account")} signedIn={!!acct} version={pfVersion} />;
   };
   const d = shown;
   return (
@@ -224,7 +231,10 @@ export default function QApp() {
               <span key={route.tab}>{SUBS[route.tab]}</span>
             </div>
           </div>
-          <button className={q("tbtn")} onClick={toggleTheme} aria-label="Switch light or dark theme"><Icon n="moon" s={18} /></button>
+          <div className={q("actions")}>
+            <button className={q("tbtn")} onClick={toggleTheme} aria-label="Switch light or dark theme"><Icon n={isDark() ? "moon" : "sun"} s={18} /></button>
+            <button className={q("avatar" + (acct ? " on" : ""))} onClick={() => setModal("account")} aria-label={acct ? "Your account and settings" : "Sign in or sign up"}>{acct ? (acct.displayName || acct.email || "?").trim().charAt(0).toUpperCase() : <Icon n="user" s={18} />}</button>
+          </div>
         </header>
         <section className={q("page")} ref={pageRef as any} aria-label="Details">
           {d?.kind === "xray" ? <XRayReport key={routeKey(d)} sym={d.id!} go={go} onBack={back} onShare={share} /> :
@@ -233,8 +243,8 @@ export default function QApp() {
             d?.kind === "pattern" ? <PatternPage key={routeKey(d)} sym={d.id!} tf={d.tf} go={go} onBack={back} onShare={share} /> : null}
         </section>
         <div className={q("scrim" + (modal ? " on" : ""))} onClick={() => setModal(null)} />
-        <section className={q("modal" + (modal ? " open" : ""))} role="dialog" aria-label={modal === "add" ? "Add a stock" : "Share"}>
-          {modal === "share" ? <ShareSheet onClose={() => setModal(null)} /> : modal === "add" ? <AddSheet onClose={() => setModal(null)} onAdded={() => { setModal(null); setPfVersion((v) => v + 1); }} /> : null}
+        <section className={q("modal" + (modal ? " open" : ""))} role="dialog" aria-label={modal === "add" ? "Add a stock" : modal === "account" ? "Account" : "Share"}>
+          {modal === "share" ? <ShareSheet onClose={() => setModal(null)} /> : modal === "account" ? <AccountSheet onClose={() => setModal(null)} onTheme={toggleTheme} dark={isDark()} /> : modal === "add" ? <AddSheet onClose={() => setModal(null)} onAdded={() => { setModal(null); setPfVersion((v) => v + 1); }} /> : null}
         </section>
         <nav className={q("tabs")} ref={tabsRef as any} aria-label="Main">
           <span className={q("tpill")} ref={pillRef} />
