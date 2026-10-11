@@ -3,6 +3,8 @@ import { q, px, sgn, num, cr, clamp, RM } from "./core";
 import { useLoad, loadReport, loadTerminal, loadCandles, loadNews, loadPatterns, searchPattern, actionInfo, scoreTone, type PatternRow } from "./data";
 import { Icon, Ring, Rail, Pill, Sh, Words, Skeleton, ErrorBox, PriceChart, Spark, type Level } from "./ui";
 import { STG, tfName, gapTxt, type Go } from "./tabs";
+import { fitPattern, geoFromLines, type Geo } from "./pattern";
+const GEO_MEMO = new WeakMap<object, Geo | null>();
 
 export function PageBar({ back, title, onBack, onShare }: { back: string; title: string; onBack: () => void; onShare: () => void }) {
   return (
@@ -372,6 +374,11 @@ export function PatternPage({ sym, tf, go, onBack, onShare }: { sym: string; tf?
     </div>
   );
   const s = STG[row.stage], live = (t.data?.active || []).find((c) => c.sym === sym);
+  let geo: Geo | null = null;
+  if (ch.data && ch.data.length > 20) {
+    if (!GEO_MEMO.has(ch.data)) GEO_MEMO.set(ch.data, geoFromLines(row.raw?.trendlines || row.raw?.pattern_lines, ch.data) || fitPattern(ch.data, row.pattern, row.level));
+    geo = GEO_MEMO.get(ch.data) || null;
+  }
   const levels: Level[] = [
     { y: row.level, label: "Ceiling", color: "--pt", dash: [4, 4] },
     ...(isFinite(row.target) ? [{ y: row.target, label: "Take profit", color: "--up", dash: [2, 3] }] : []),
@@ -393,8 +400,8 @@ export function PatternPage({ sym, tf, go, onBack, onShare }: { sym: string; tf?
         <p className={q("lede")} style={{ marginTop: 4 }}>{row.name}. {s.ex}</p>
       </div>
       <div className={q("card jl en")} style={{ padding: 12 }}>
-        {ch.data && ch.data.length > 5 ? <PriceChart candles={ch.data} levels={levels} accent="--pt" /> : <Spark values={[]} id={sym} height={200} />}
-        <p className={q("note")} style={{ padding: "8px 6px 2px" }}>Dashed line: the ceiling at {px(row.level)}.</p>
+        {ch.data && ch.data.length > 5 ? <PriceChart candles={ch.data} levels={levels} accent="--pt" geo={geo} /> : <Spark values={[]} id={sym} height={200} />}
+        <p className={q("note")} style={{ padding: "8px 6px 2px" }}>{geo && geo.lines.length ? <><b style={{ color: "var(--pt)" }}>Amber</b> line: the ceiling it must close above{geo.lines.some((l) => l.k === "sup") ? <>. <b style={{ color: "var(--up)" }}>Green</b> line: the floor holding it up.</> : "."}{geo.pts.length ? " Dots: the lows that built the base." : ""} Ceiling price {px(row.level)}.</> : <>Dashed line: the ceiling at {px(row.level)}.</>}</p>
       </div>
       <div className={q("g2")}>
         <div className={q("list kv en")}>

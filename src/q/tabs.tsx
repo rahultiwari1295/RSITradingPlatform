@@ -4,6 +4,7 @@ import {
   useLoad, loadTerminal, loadPatterns, loadEdge, loadDiscovery, searchStocks, loadCandles, loadQuote, loadReport,
   actionInfo, marketStatus, getHoldings, setHoldings, scoreTone, type Call, type ClosedCall, type PatternRow, type Stage, type Holding,
 } from "./data";
+import { fitPattern, geoFromLines, type Geo } from "./pattern";
 import { Icon, Chev, Ring, Rail, Pill, Sh, Count, Hero, ListSkeleton, ErrorBox, Spark } from "./ui";
 
 export type Go = (path: string) => void;
@@ -100,20 +101,21 @@ export function Home({ go }: { go: Go }) {
 }
 
 /* ================= STOCK X-RAY ================= */
-/* while typing: hide the dock, lift the search box to the top and size the list to the space above the keyboard */
+/* while typing: the search box floats under the header (no scrolling), the dock hides and the list fits above the keyboard */
+let vvOff: (() => void) | null = null;
 function typingOn(el: HTMLElement) {
-  const root = el.closest(".q-root") as HTMLElement | null, sc = el.closest(".q-screen") as HTMLElement | null, box = el.closest(".q-srch") as HTMLElement | null;
-  if (!root || !sc || !box) return;
-  const vv = window.visualViewport, size = () => root.style.setProperty("--q-vvh", Math.round(vv ? vv.height : innerHeight) + "px");
-  size(); root.classList.add("q-typing"); vv?.addEventListener("resize", size);
-  (root as any).__qvv = size;
-  const lift = () => { const r = box.getBoundingClientRect(), s = sc.getBoundingClientRect(); sc.scrollTo({ top: sc.scrollTop + r.top - s.top - 70, behavior: RM ? "auto" : "smooth" }); };
-  requestAnimationFrame(lift); setTimeout(lift, 380);
+  const root = el.closest(".q-root") as HTMLElement | null, box = el.closest(".q-srch") as HTMLElement | null;
+  if (!root || !box) return;
+  const w = box.parentElement as HTMLElement; w.style.minHeight = box.offsetHeight + "px";
+  const vv = window.visualViewport;
+  const size = () => { root.style.setProperty("--q-vvh", Math.round(vv ? vv.height : innerHeight) + "px"); root.style.setProperty("--q-vvt", Math.round(vv ? vv.offsetTop : 0) + "px"); };
+  size(); root.classList.add("q-typing");
+  vv?.addEventListener("resize", size); vv?.addEventListener("scroll", size);
+  vvOff = () => { vv?.removeEventListener("resize", size); vv?.removeEventListener("scroll", size); };
 }
 function typingOff() {
   const root = document.querySelector(".q-root") as HTMLElement | null; if (!root) return;
-  root.classList.remove("q-typing");
-  const f = (root as any).__qvv; if (f) window.visualViewport?.removeEventListener("resize", f);
+  root.classList.remove("q-typing"); vvOff?.(); vvOff = null;
 }
 export function XRay({ go }: { go: Go }) {
   const [qq, setQq] = useState("");
@@ -146,7 +148,7 @@ export function XRay({ go }: { go: Go }) {
     <div className={q("inner")} style={{ ["--acc" as any]: "var(--ax)" }}>
       <Hero art="xray" label="Stock X-Ray" icon="xray" ey="Stock X-Ray" h="Is it a good company? Find out in seconds." hl={["good", "company?"]}
         lede="Search any NSE stock. X-Ray checks its trend, momentum, buying activity and business quality, then gives one health score from 0 to 100.">
-        <div className={q("srch hx")} style={{ ["--i" as any]: 10, marginTop: 18 }}>
+        <div className={q("srchw")} style={{ marginTop: 18 }}><div className={q("srch hx")} style={{ ["--i" as any]: 10 }}>
           <label className={q("sbox")}>
             <Icon n="search" s={22} w={2.3} />
             <span className={q("sr")}>Search a company</span>
@@ -164,7 +166,7 @@ export function XRay({ go }: { go: Go }) {
               )) : <div className={q("row")}><div className={q("grow")}><div className={q("t1")}>No match</div><div className={q("t2")}>Try the NSE symbol, for example TRENT.</div></div></div>}
             </div>
           ) : null}
-        </div>
+        </div></div>
         <div className={q("chips hx")} style={{ ["--i" as any]: 11, marginTop: 12 }}>
           {["TRENT", "RELIANCE", "HDFCBANK", "INFY", "TATASTEEL", "BEL"].map((s) => <button key={s} className={q("chip")} onClick={() => go(`/xray/${s}`)}>{s}</button>)}
         </div>
@@ -286,8 +288,8 @@ export const gapTxt = (p: PatternRow) => { if (!(p.level > 0)) return ""; const 
 function PatternCard({ p, go }: { p: PatternRow; go: Go }) {
   const ref = useRef<HTMLButtonElement>(null);
   const seen = useInView(ref as any);
-  const [vals, setVals] = useState<number[]>([]);
-  useEffect(() => { if (seen) loadCandles(p.sym, 60).then((c: any[]) => setVals(c.map((x) => x.c)), () => setVals([])); }, [seen, p.sym]);
+  const [vals, setVals] = useState<number[]>([]), [geo, setGeo] = useState<Geo | null>(null);
+  useEffect(() => { if (seen) loadCandles(p.sym, 90).then((c: any[]) => { const w = c.slice(-70); setVals(w.map((x) => x.c)); setGeo(geoFromLines(p.raw?.trendlines || p.raw?.pattern_lines, w) || fitPattern(w, p.pattern, p.level)); }, () => setVals([])); }, [seen, p.sym]);
   const s = STG[p.stage], gap = p.level > 0 ? (p.price / p.level - 1) * 100 : 0;
   return (
     <button ref={ref} className={q("card pcard press jl en")} onClick={() => go(`/patterns/${p.sym}${p.tf.startsWith("D") ? "" : "?tf=" + p.tf}`)}>
@@ -295,7 +297,7 @@ function PatternCard({ p, go }: { p: PatternRow; go: Go }) {
         <div className={q("grow")}><div className={q("t1")} style={{ fontSize: 18 }}>{p.sym}<Pill k={s.k}>{p.stage}</Pill><Pill>{tfName(p.tf).replace(" chart", "")}</Pill></div><div className={q("t2")}>{s.say}{p.pattern ? " · " + p.pattern : ""}</div></div>
         <div className={q("rt")}><b className={q("num")}>{px(p.price)}</b><small className={q("num " + (gap >= 0 ? "up" : "mu"))}>{gapTxt(p)}</small></div>
       </div>
-      <Spark values={vals} level={p.level} id={p.sym + p.tf} />
+      <Spark values={vals} level={p.level} id={p.sym + p.tf} geo={geo} />
       <div className={q("odds")}>
         {p.conf && isFinite(p.conf.win) ? (<><span><span className={q("dot")} style={{ background: p.conf.label === "Validated edge" ? "var(--up)" : "var(--warn)", marginRight: 7 }} />{p.conf.label === "Validated edge" ? "Proven in testing" : p.conf.label}</span><b>{p.conf.win.toFixed(0)}% made money · avg {sgn(p.conf.avgPct)}</b></>)
           : <span>{p.stage === "Near" ? "Odds apply once it breaks out. Until then, watch." : p.stage === "Retest" ? "Retests have not shown a proven edge yet. Watch only." : p.stage === "Forming" ? "Too early to judge." : p.conf?.label || "No measured odds for this setup."}</span>}

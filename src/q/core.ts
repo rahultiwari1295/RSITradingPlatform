@@ -99,78 +99,84 @@ export function reveal(el: Element) {
 }
 
 /* ---------------- engine ---------------- */
-type Jl = { el: HTMLElement; x: number; v: number };
+/* Scrolling is native. Nothing here touches layout per frame: entrances and reveals run from one
+   IntersectionObserver (CSS transitions on transform/opacity), and the loop only steps springs and
+   the hero parallax when the scroll position actually changed. */
 const E = {
   scroller: null as HTMLElement | null,
-  en: [] as HTMLElement[],
-  jl: [] as Jl[],
-  t0: 0,
-  lastSt: 0,
-  vel: 0,
-  lastSc: null as HTMLElement | null,
-  frame: 0,
   running: false,
   guards: [] as HTMLElement[],
+  io: null as IntersectionObserver | null,
+  seen: new WeakSet<Element>(),
+  lastSt: -1,
+  lastSc: null as HTMLElement | null,
+  touching: false,
+  settleT: 0 as any,
 };
+const WATCH = ".q-en,.q-card,.q-list,.q-hero,.q-spark,.q-reveal";
+function show(el: Element, i: number) {
+  reveal(el);
+  if (el.classList.contains("q-en")) {
+    (el as HTMLElement).style.transitionDelay = RM ? "" : Math.min(i, 6) * 70 + "ms";
+    el.classList.add("q-in");
+  }
+}
+function observer(): IntersectionObserver | null {
+  if (E.io) return E.io;
+  if (typeof IntersectionObserver === "undefined") return null;
+  E.io = new IntersectionObserver((ents) => {
+    let i = 0;
+    for (const en of ents) if (en.isIntersecting) { show(en.target, i++); E.io!.unobserve(en.target); }
+  }, { rootMargin: "0px 0px -6% 0px", threshold: 0.01 });
+  return E.io;
+}
 
 /** Point the engine at the scroller the user is looking at (a tab screen or the detail page). */
-export function setScroller(el: HTMLElement | null, replay = true) {
+export function setScroller(el: HTMLElement | null, _replay = true) {
   E.scroller = el;
-  rescan(replay);
+  E.lastSt = -1;
+  rescan();
 }
-/** Re-read the animated blocks after content changes (data arrived, filter changed). */
-export function rescan(replay = false) {
-  const sc = E.scroller;
-  if (!sc) { E.en = []; E.jl = []; return; }
-  const prev = new Set(E.en);
-  E.en = Array.from(sc.querySelectorAll<HTMLElement>(".q-en"));
-  if (replay) { E.t0 = performance.now(); E.en.forEach((e) => ((e as any)._k = -1)); }
-  else E.en.forEach((e) => { if (!prev.has(e)) (e as any)._k = -1; });
-  const old = new Map(E.jl.map((j) => [j.el, j]));
-  E.jl = Array.from(sc.querySelectorAll<HTMLElement>(".q-jl")).map((el) => old.get(el) || { el, x: 0, v: 0 });
+/** Pick up new animated blocks after content changes (data arrived, filter changed). */
+export function rescan(_replay = false) {
+  const sc = E.scroller; if (!sc) return;
+  const io = observer();
+  sc.querySelectorAll(WATCH).forEach((el) => {
+    if (E.seen.has(el)) return;
+    E.seen.add(el);
+    if (!io || RM) show(el, 0); else io.observe(el);
+  });
 }
 export function guardScroll(...els: HTMLElement[]) { E.guards = els; }
 
-function entrance(sc: HTMLElement, now: number) {
-  const sr = sc.getBoundingClientRect(), vh = sr.height;
-  let idx = 0;
-  for (const el of E.en) {
-    const r = el.getBoundingClientRect(), top = r.top - sr.top;
-    const ps = clamp((vh - top) / (vh * 0.3), 0, 1);
-    let pt = 1;
-    if (top < vh) { pt = clamp((now - E.t0 - 220 - idx * 90) / 650, 0, 1); idx++; }
-    const p = Math.min(ps, pt), e = 1 - Math.pow(1 - p, 3);
-    const k = (el as any)._k;
-    if (k != null && Math.abs(e - k) < 0.002) continue;
-    (el as any)._k = e;
-    if (e >= 0.999) { el.style.transform = ""; el.style.opacity = ""; }
-    else { el.style.transform = `translate3d(0,${((1 - e) * 54).toFixed(1)}px,0) scale(${(0.93 + 0.07 * e).toFixed(4)})`; el.style.opacity = e.toFixed(3); }
-  }
-}
-function jelly(sc: HTMLElement, dt: number) {
-  if (sc !== E.lastSc) { E.lastSc = sc; E.lastSt = sc.scrollTop; }
-  const st = sc.scrollTop, raw = st - E.lastSt;
-  E.lastSt = st; E.vel = lerp(E.vel, raw, 0.5);
-  const sr = sc.getBoundingClientRect(), vh = sr.height, mid = vh * 0.5;
-  for (const j of E.jl) {
-    const r = j.el.getBoundingClientRect(), c = r.top - sr.top + r.height / 2;
-    if (c < -300 || c > vh + 300) { if (j.x) { j.x = 0; j.v = 0; j.el.style.translate = ""; } continue; }
-    const f = 0.25 + Math.min(Math.abs(c - mid) / vh, 1) * 0.75, t = clamp(E.vel * f * 0.9, -22, 22);
-    const a = -320 * (j.x - t) - 22 * j.v;
-    j.v += a * dt; j.x += j.v * dt;
-    const rx = Math.round(j.x);
-    j.el.style.translate = rx ? `0 ${rx}px` : "";
-  }
-}
-function revealScan(sc: HTMLElement) {
-  const sr = sc.getBoundingClientRect();
-  sc.querySelectorAll(".q-en:not(.q-vis),.q-card:not(.q-vis),.q-list:not(.q-vis),.q-hero:not(.q-vis),.q-spark:not(.q-vis),.q-reveal:not(.q-vis)").forEach((el) => {
-    const r = el.getBoundingClientRect();
-    if (r.top < sr.bottom - sr.height * 0.1 && r.bottom > sr.top) reveal(el);
+/* after a scroll comes to rest, ease a nearby section heading up under the header */
+function settle(sc: HTMLElement) {
+  if (RM || E.touching) return;
+  const sr = sc.getBoundingClientRect(), want = sr.top + 62;
+  let best: HTMLElement | null = null, bd = 1e9;
+  sc.querySelectorAll<HTMLElement>(".q-sec").forEach((el) => {
+    const d = el.getBoundingClientRect().top - want;
+    if (d > -40 && d < 110 && Math.abs(d) < bd) { bd = Math.abs(d); best = el; }
   });
+  if (best && bd > 6) sc.scrollBy({ top: (best as HTMLElement).getBoundingClientRect().top - want, behavior: "smooth" });
 }
+if (typeof window !== "undefined") {
+  window.addEventListener("touchstart", () => { E.touching = true; }, { passive: true, capture: true });
+  const end = () => { E.touching = false; };
+  window.addEventListener("touchend", end, { passive: true, capture: true });
+  window.addEventListener("touchcancel", end, { passive: true, capture: true });
+  document.addEventListener("scroll", (e) => {
+    const sc = e.target as HTMLElement;
+    if (!sc || sc !== E.scroller) return;
+    clearTimeout(E.settleT);
+    E.settleT = setTimeout(() => settle(sc), 180);
+  }, { passive: true, capture: true });
+}
+
 function chrome(sc: HTMLElement) {
   const st = sc.scrollTop;
+  if (sc === E.lastSc && st === E.lastSt) return;
+  E.lastSc = sc; E.lastSt = st;
   const pb = sc.querySelector(".q-pbar");
   if (pb) pb.classList.toggle("q-sc", st > 60);
   const nav = sc.querySelector<HTMLElement>(".q-nav");
@@ -178,19 +184,19 @@ function chrome(sc: HTMLElement) {
   if (RM || st > 900) return;
   const art = sc.querySelector<HTMLElement>(".q-hero .q-art"), hc = sc.querySelector<HTMLElement>(".q-hero .q-hcopy");
   if (art) {
-    art.style.transform = st > 0 ? `translate3d(0,${(st * 0.42).toFixed(1)}px,0) scale(${(1 + st / 1600).toFixed(4)})` : st < 0 ? `scale(${(1 - st / 500).toFixed(4)})` : "";
-    art.style.opacity = (1 - clamp(st / 380, 0, 1)).toFixed(3);
+    art.style.transform = st > 0 ? `translate3d(0,${(st * 0.3).toFixed(1)}px,0) scale(${(1 + st / 2400).toFixed(4)})` : "";
+    art.style.opacity = (1 - clamp(st / 420, 0, 1)).toFixed(3);
   }
   if (hc) {
-    hc.style.transform = st > 0 ? `translate3d(0,${(st * 0.14).toFixed(1)}px,0)` : "";
-    hc.style.opacity = (1 - clamp((st - 120) / 360, 0, 1)).toFixed(3);
+    hc.style.transform = st > 0 ? `translate3d(0,${(st * 0.1).toFixed(1)}px,0)` : "";
+    hc.style.opacity = (1 - clamp((st - 120) / 380, 0, 1)).toFixed(3);
   }
 }
 
 export function startEngine() {
   if (E.running) return;
   E.running = true;
-  let last = performance.now();
+  let last = performance.now(), n = 0;
   const loop = (now: number) => {
     if (!E.running) return;
     const dt = clamp((now - last) / 1000, 0, 1 / 30);
@@ -199,10 +205,8 @@ export function startEngine() {
     for (const g of E.guards) if (g.scrollLeft || g.scrollTop) { g.scrollLeft = 0; g.scrollTop = 0; }
     const sc = E.scroller;
     if (sc && sc.isConnected) {
-      if (!RM) { jelly(sc, dt); entrance(sc, now); }
       chrome(sc);
-      if (E.frame++ % 6 === 0) revealScan(sc);
-      if (E.frame % 45 === 0) rescan(false);
+      if (++n % 30 === 0) rescan();
     }
     requestAnimationFrame(loop);
   };

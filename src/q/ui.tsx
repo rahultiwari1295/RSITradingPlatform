@@ -193,9 +193,10 @@ export function Hero({ art, artOpts, label, icon, ey, h, hl, lede, children }: {
 
 /* ---------------- charts ---------------- */
 export type Candle = { t: string; o: number; h: number; l: number; c: number };
+import { GEO_COL, type Geo } from "./pattern";
 export type Level = { y: number; label: string; color: string; dash?: number[] };
-export function PriceChart({ candles, levels = [], markIndex, height = 240, accent = "--ai", closes }: {
-  candles?: Candle[]; closes?: number[]; levels?: Level[]; markIndex?: number; height?: number; accent?: string;
+export function PriceChart({ candles, levels = [], markIndex, height = 240, accent = "--ai", closes, geo }: {
+  candles?: Candle[]; closes?: number[]; levels?: Level[]; markIndex?: number; height?: number; accent?: string; geo?: Geo | null;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -205,19 +206,21 @@ export function PriceChart({ candles, levels = [], markIndex, height = 240, acce
     const dates = (candles || []).map((c) => c.t);
     if (ser.length < 2) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 3), FONT = "-apple-system,BlinkMacSystemFont,Inter,system-ui,sans-serif";
-    let ptr = -1, raf = 0, alive = true;
+    let ptr = -1, raf = 0, alive = true, lastDraw = 0;
     const t0 = performance.now() + 150;
     const css = (n: string) => getComputedStyle(cv).getPropertyValue(n).trim();
     const draw = (now: number) => {
       if (!alive) return;
       const W = cv.clientWidth, H = cv.clientHeight;
-      if (!W) { raf = requestAnimationFrame(draw); return; }
+      if (!W || (!RM && now - lastDraw < (now - t0 > 1400 && ptr < 0 ? 66 : 0))) { raf = requestAnimationFrame(draw); return; }
+      lastDraw = now;
       if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
       const x = cv.getContext("2d")!;
       x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, W, H);
       const fg = css("--fg"), dim = css("--dim"), line = css("--line2"), ac = css(accent);
       const pr = RM ? 1 : clamp((now - t0) / 1200, 0, 1), ease = 1 - Math.pow(1 - pr, 3);
-      const vals = ser.concat(levels.map((l) => l.y).filter((v) => isFinite(v)));
+      const gy = geo ? geo.lines.flatMap((l) => [l.a[1], l.b[1]]).filter((v) => v > 0) : [];
+      const vals = ser.concat(levels.map((l) => l.y).filter((v) => isFinite(v)), gy);
       const mn = Math.min(...vals) * 0.992, mx = Math.max(...vals) * 1.008, pad = { l: 6, r: 58, t: 14, b: 10 }, n = ser.length;
       const X = (i: number) => pad.l + (i / (n - 1)) * (W - pad.l - pad.r), Y = (v: number) => pad.t + (1 - (v - mn) / (mx - mn)) * (H - pad.t - pad.b);
       x.font = "500 11px " + FONT; x.textBaseline = "middle";
@@ -226,8 +229,18 @@ export function PriceChart({ candles, levels = [], markIndex, height = 240, acce
         x.strokeStyle = line; x.lineWidth = 0.5; x.beginPath(); x.moveTo(pad.l, gy); x.lineTo(W - pad.r, gy); x.stroke();
         x.fillStyle = dim; x.textAlign = "left"; x.fillText(gv >= 1000 ? Math.round(gv).toLocaleString("en-IN") : gv.toFixed(1), W - pad.r + 8, gy);
       }
+      if (geo) {
+        geo.lines.forEach((g) => {
+          const col = css(GEO_COL[g.k]);
+          x.strokeStyle = col; x.lineWidth = 2; x.setLineDash(g.k === "neck" ? [6, 5] : []); x.lineCap = "round";
+          x.globalAlpha = 0.95 * ease; x.beginPath(); x.moveTo(X(g.a[0]), Y(g.a[1])); x.lineTo(X(g.a[0] + (g.b[0] - g.a[0]) * ease), Y(g.a[1] + (g.b[1] - g.a[1]) * ease)); x.stroke();
+          x.setLineDash([]); x.globalAlpha = 1;
+        });
+        geo.pts.forEach((p) => { x.fillStyle = css("--pt"); x.globalAlpha = ease; x.beginPath(); x.arc(X(p.i), Y(p.y), 4.5, 0, 7); x.fill(); x.strokeStyle = css("--bg"); x.lineWidth = 2; x.stroke(); x.globalAlpha = 1; });
+      }
       levels.forEach((l) => {
         if (!isFinite(l.y)) return;
+        if (geo && geo.lines.length && /ceiling/i.test(l.label)) return;
         const y = Y(l.y), col = l.color.startsWith("--") ? css(l.color) : l.color;
         x.strokeStyle = col; x.lineWidth = 1.2; x.setLineDash(l.dash || [3, 4]); x.beginPath(); x.moveTo(pad.l, y); x.lineTo(W - pad.r, y); x.stroke(); x.setLineDash([]);
         x.fillStyle = col; x.textAlign = "left"; x.font = "600 11px " + FONT; x.fillText(l.label, pad.l + 4, y - 8);
@@ -261,23 +274,25 @@ export function PriceChart({ candles, levels = [], markIndex, height = 240, acce
     cv.addEventListener("pointermove", mv); cv.addEventListener("pointerdown", mv); cv.addEventListener("pointerleave", lv);
     raf = requestAnimationFrame(draw);
     return () => { alive = false; cancelAnimationFrame(raf); cv.removeEventListener("pointermove", mv); cv.removeEventListener("pointerdown", mv); cv.removeEventListener("pointerleave", lv); };
-  }, [candles, closes, levels, markIndex, accent]);
+  }, [candles, closes, levels, markIndex, accent, geo]);
   return <canvas ref={ref} className={q("chart")} style={{ height }} aria-label="Price chart. Drag across it to read prices." />;
 }
 /** Small line chart with a dashed ceiling. Draws itself when it scrolls into view. */
-export function Spark({ values, level, height = 74, id, big }: { values: number[]; level?: number; height?: number; id: string; big?: boolean }) {
+export function Spark({ values, level, height = 74, id, big, geo }: { values: number[]; level?: number; height?: number; id: string; big?: boolean; geo?: Geo | null }) {
   const s = values.filter((v) => isFinite(v));
   if (s.length < 3) return <div className={q("sk")} style={{ height, borderRadius: 12, marginTop: 12 }} />;
-  const W = 320, n = s.length, vals = isFinite(level as number) ? s.concat([level as number]) : s;
+  const hasG = !!(geo && geo.lines.length), W = 320, n = s.length, vals = (isFinite(level as number) && !hasG ? s.concat([level as number]) : s).concat(hasG ? geo!.lines.flatMap((l) => [l.a[1], l.b[1]]).filter((v) => v > 0) : []);
   const mn = Math.min(...vals) * 0.99, mx = Math.max(...vals) * 1.01, cw = W - (big ? 54 : 8);
   const X = (i: number) => ((i / (n - 1)) * cw).toFixed(1), Y = (v: number) => (6 + (1 - (v - mn) / (mx - mn)) * (height - 14)).toFixed(1);
   const d = s.map((v, i) => (i ? "L" : "M") + X(i) + "," + Y(v)).join("");
-  const ly = isFinite(level as number) ? Y(level as number) : null, gid = "sg" + id.replace(/\W/g, "");
+  const ly = isFinite(level as number) && !hasG ? Y(level as number) : null, gid = "sg" + id.replace(/\W/g, "");
   return (
     <svg className={q("spark")} viewBox={`0 0 ${W} ${height}`} style={{ height }} preserveAspectRatio="none" role="img" aria-label="Price line with the ceiling">
       <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="var(--pt)" stopOpacity=".22" /><stop offset="1" stopColor="var(--pt)" stopOpacity="0" /></linearGradient></defs>
       <path className={q("ar")} d={`${d}L${X(n - 1)},${height}L0,${height}Z`} fill={`url(#${gid})`} />
       {ly ? <line className={q("dash")} x1="0" x2={cw} y1={ly} y2={ly} stroke="var(--pt)" strokeWidth="1.3" vectorEffect="non-scaling-stroke" /> : null}
+      {hasG ? geo!.lines.map((g, i) => <line key={i} className={q("gl")} x1={X(g.a[0])} y1={Y(g.a[1])} x2={X(g.b[0])} y2={Y(g.b[1])} stroke={`var(${GEO_COL[g.k]})`} strokeWidth="2" strokeLinecap="round" strokeDasharray={g.k === "neck" ? "6 5" : undefined} vectorEffect="non-scaling-stroke" />) : null}
+      {hasG ? geo!.pts.map((p, i) => <circle key={"p" + i} cx={X(p.i)} cy={Y(p.y)} r="3.6" fill="var(--pt)" stroke="var(--card)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />) : null}
       <path className={q("ln")} pathLength={1} d={d} fill="none" stroke="var(--fg)" strokeWidth="1.8" strokeLinejoin="round" />
       <circle cx={X(n - 1)} cy={Y(s[n - 1])} r="3.5" fill="var(--pt)" />
       {big && ly ? <text x={W - 48} y={+ly + 4} fontSize="11" fontWeight={600} fill="var(--pt)" fontFamily={F}>{px(level).replace("₹", "")}</text> : null}
