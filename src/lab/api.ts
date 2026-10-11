@@ -22,11 +22,13 @@ async function call<T>(method: string, path: string, body?: unknown, authed = tr
   }
   if (token) headers.Authorization = `Bearer ${token}`;
   const send = (h: Record<string, string>) => fetch(`/lab/api/v1${path}`, { method, headers: h, body: body === undefined ? undefined : JSON.stringify(body) });
-  let r = await send(headers);
+  let r: Response;
+  try { r = await send(headers); } catch { if (method !== 'GET') throw new ApiError(0, 'Network error. Check your connection.'); await new Promise(x => setTimeout(x, 800)); r = await send(headers); }
+  if (method === 'GET' && r.status >= 502 && r.status <= 504) { await new Promise(x => setTimeout(x, 800)); r = await send(headers); }
   // a token the server cannot verify must not block public pages: retry reads and scans anonymously
   if (r.status === 401 && headers.Authorization && (method === 'GET' || path === '/scan')) { const { Authorization: _drop, ...anon } = headers; r = await send(anon); }
   if (!r.ok) {
-    let msg = 'Something went wrong. Please try again.';
+    let msg = r.status >= 502 && r.status <= 504 ? 'The Lab server is busy or restarting. Try again in a moment.' : `Something went wrong (${r.status}). Please try again.`;
     try { const j = await r.json(); if (typeof j.detail === 'string') msg = j.detail; } catch { /* keep default */ }
     throw new ApiError(r.status, msg);
   }
@@ -40,7 +42,7 @@ const real: LabApi = {
   today: () => call('GET', '/today', undefined, false),
   scan: (tf, entry) => call('POST', '/scan', { tf, entry }, false),
   backtest: (tf, entry, exit) => call('POST', '/backtest', { tf, entry, exit }),
-  strategyBacktest: id => call('GET', `/strategies/${id}/backtest`, undefined, false),
+  strategyBacktest: id => call('GET', `/strategies/${id}/backtest`),
   runStrategyBacktest: id => call('POST', `/strategies/${id}/backtest`),
   job: id => call('GET', `/jobs/${id}`),
   strategies: scope => call('GET', `/strategies${q({ scope })}`, undefined, scope === 'mine'),

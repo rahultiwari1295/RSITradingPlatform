@@ -29,7 +29,7 @@ export function EnhancePanel({ s, cat, onChanged }: { s: StrategyCard; cat: Cata
   const alive = useRef(true);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
 
-  const load = useCallback(async () => { const r = await api.enhancement(s.id); if (alive.current) setE(r); return r; }, [s.id]);
+  const load = useCallback(async () => { const r: Enhancement = await api.enhancement(s.id).catch(err => ({ status: 'failed', reason: (err as Error).message, result: null, exit: null })); if (alive.current) setE(r); return r; }, [s.id]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
     if (busy || !e || (e.status !== 'queued' && e.status !== 'running')) return;

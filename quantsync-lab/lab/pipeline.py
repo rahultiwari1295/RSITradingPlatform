@@ -66,7 +66,27 @@ def backtest(cfg: Config, entry: dict, exit_: dict, tf: str, progress: Progress 
     progress(90, "Summarising")
     return {"tf": tf, "as_of": (store.meta(cfg, tf) or {}).get("as_of"), "years": yrs,
             "summary": metrics.by_year(trades, yrs), "months": metrics.monthly_counts(rep),
-            "open_trades": int(trades["is_open"].sum()) if len(trades) else 0}
+            "open_trades": int(trades["is_open"].sum()) if len(trades) else 0,
+            "trades": recent_trades(rep), "metrics_v": metrics.METRICS_V}
+
+
+TRADE_COLS = ["symbol", "signal_date", "entry_date", "entry_price", "exit_date", "exit_price", "exit_reason", "ret_pct", "bars", "is_open"]
+
+
+def recent_trades(t: pd.DataFrame, n: int = 300) -> list[dict]:
+    """Most recent past-test trades (newest first) so a strategy page can list them."""
+    if not len(t):
+        return []
+    d = t.sort_values(["entry_date", "symbol"], ascending=[False, True]).head(n)[[c for c in TRADE_COLS if c in t.columns]].copy()
+    for c in ("signal_date", "entry_date", "exit_date"):
+        if c in d:
+            d[c] = pd.to_datetime(d[c]).dt.strftime("%Y-%m-%d")
+    out = []
+    for r in d.to_dict("records"):
+        out.append({k: (None if (isinstance(v, float) and not np.isfinite(v)) or (v is pd.NaT) or (isinstance(v, str) and v == "NaT")
+                        else (bool(v) if k == "is_open" else (round(float(v), 2) if isinstance(v, (float, np.floating)) else (int(v) if isinstance(v, (np.integer,)) else v))))
+                    for k, v in r.items()})
+    return out
 
 
 def _dataset(trades: pd.DataFrame, sg: pd.DataFrame) -> pd.DataFrame:

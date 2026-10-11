@@ -60,7 +60,7 @@ def _ctx(con, sid):
 
 def run_backtest(cfg, con, e, x, tf, version_id="", prog=lambda pct, st: None) -> dict:
     """Backtest with a cache keyed on (rule, exit, data as-of)."""
-    key = (rule_hash(e, tf), pipeline.exit_hash(x), (store.meta(cfg, tf) or {}).get("as_of", ""))
+    key = (rule_hash(e, tf), pipeline.exit_hash(x), f'{(store.meta(cfg, tf) or {}).get("as_of", "")}|m{metrics.METRICS_V}')
     hit = con.execute("SELECT summary_json FROM backtest_runs WHERE rule_hash=? AND exit_hash=? AND as_of=?", key).fetchone()
     if hit:
         return json.loads(hit[0])
@@ -71,9 +71,26 @@ def run_backtest(cfg, con, e, x, tf, version_id="", prog=lambda pct, st: None) -
 
 
 def cached_backtest(con, tf, e, x) -> dict | None:
-    r = con.execute("SELECT summary_json FROM backtest_runs WHERE rule_hash=? AND exit_hash=? ORDER BY created_at DESC LIMIT 1",
-                    (rule_hash(e, tf), pipeline.exit_hash(x))).fetchone()
+    """Newest past test computed with the current metric definitions (older ones are recomputed, never shown)."""
+    r = con.execute("SELECT summary_json FROM backtest_runs WHERE rule_hash=? AND exit_hash=? AND as_of LIKE ? ORDER BY created_at DESC LIMIT 1",
+                    (rule_hash(e, tf), pipeline.exit_hash(x), f"%|m{metrics.METRICS_V}")).fetchone()
     return json.loads(r[0]) if r else None
+
+
+def ensure_backtest(con, s, v) -> dict:
+    """Cached past test, or a queued system job computing it (one per version). Never needs a signed-in user."""
+    e, x = json.loads(v["entry_json"]), json.loads(v["exit_json"])
+    res = cached_backtest(con, s["tf"], e, x)
+    if res:
+        return {"status": "done", "result": res}
+    j = con.execute("""SELECT id, status, error, finished_at FROM jobs WHERE kind='backtest' AND json_extract(payload_json,'$.version_id')=?
+                       ORDER BY created_at DESC LIMIT 1""", (v["id"],)).fetchone()
+    if j and j["status"] in ("queued", "running"):
+        return {"status": "running", "job_id": j["id"]}
+    if j and j["status"] == "failed" and time.time() - (j["finished_at"] or 0) < 600:  # don't hammer a failing rule
+        return {"status": "failed", "error": j["error"]}
+    jid = jobs.enqueue(con, "backtest", None, {"tf": s["tf"], "entry": e, "exit": x, "version_id": v["id"]}, queue_cap=10_000)
+    return {"status": "running", "job_id": jid}
 
 
 # ---- job handlers -----------------------------------------------------------------------------

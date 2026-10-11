@@ -103,13 +103,42 @@ def test_exit_enhancement(client, cfg):
 def test_strategy_backtest_cached(client, cfg):
     rule = {**RULE, "entry": {"v": 1, "all": [{"l": {"f": "rsi_14"}, "op": ">", "r": {"c": 53}}]}}  # not shared with other tests' cache
     sid = client.post("/lab/v1/strategies", json={**rule, "name": "BT"}, headers=H).json()["id"]
-    assert client.get(f"/lab/v1/strategies/{sid}/backtest", headers=H).json()["status"] == "none"
+    first = client.get(f"/lab/v1/strategies/{sid}/backtest", headers=H).json()
+    assert first["status"] == "running"  # queued automatically on save
+    again = client.get(f"/lab/v1/strategies/{sid}/backtest", headers=H).json()
+    assert again["job_id"] == first["job_id"]  # no duplicate jobs
     assert client.post(f"/lab/v1/strategies/{sid}/backtest").status_code == 401
-    jid = client.post(f"/lab/v1/strategies/{sid}/backtest", headers=H).json()["job_id"]
     drain(cfg, "fast")
-    assert client.get(f"/lab/v1/jobs/{jid}", headers=H).json()["status"] == "done"
     r = client.get(f"/lab/v1/strategies/{sid}/backtest", headers=H).json()
     assert r["status"] == "done" and r["result"]["summary"]["All"]["trades"] > 50
+    t = r["result"]["trades"]
+    assert t and {"symbol", "entry_date", "exit_date", "ret_pct", "is_open"} <= set(t[0])
+    assert t[0]["entry_date"] >= t[-1]["entry_date"]
+    dd = r["result"]["summary"]["All"]["max_dd"]
+    assert dd is None or -100 < dd <= 0
+
+
+def test_stale_cache_is_recomputed(client, cfg):
+    """A past test cached under an older metric definition is never shown; a fresh one is queued."""
+    con = db.connect(cfg)
+    rule = {**RULE, "entry": {"v": 1, "all": [{"l": {"f": "rsi_14"}, "op": ">", "r": {"c": 57}}]}}
+    sid = client.post("/lab/v1/strategies", json={**rule, "name": "Stale"}, headers=H).json()["id"]
+    drain(cfg, "fast")
+    con.execute("UPDATE backtest_runs SET as_of=replace(as_of,'|m','|old')")
+    assert client.get(f"/lab/v1/strategies/{sid}/backtest", headers=H).json()["status"] == "running"
+    drain(cfg, "fast")
+    assert client.get(f"/lab/v1/strategies/{sid}/backtest", headers=H).json()["status"] == "done"
+
+
+def test_list_survives_bad_record(client, cfg):
+    sid = client.post("/lab/v1/strategies", json={**RULE, "name": "Good"}, headers=H).json()["id"]
+    con = db.connect(cfg)
+    con.execute("PRAGMA foreign_keys=OFF")
+    con.execute("INSERT INTO strategies(id,owner_uid,kind,name,tf,visibility,current_version,created_at,updated_at) VALUES('stg_bad','u1','user','Bad','1D','private','ver_missing',0,0)")
+    r = client.get("/lab/v1/strategies?scope=mine", headers=H)
+    assert r.status_code == 200
+    names = {c["name"] for c in r.json()}
+    assert {"Good", "Bad"} <= names and sid in {c["id"] for c in r.json()}
 
 
 def test_build_flagships(cfg):

@@ -10,7 +10,7 @@ export function StrategyTile({ s, hero }: { s: StrategyCard; hero?: boolean }) {
     <a className={`tile ${s.enhanced ? 'enh' : ''} ${hero ? 'hero' : ''}`} href={`#s-${s.id}`}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
         <div style={{ minWidth: 0 }}>
-          <div className="eyebrow">{s.kind === 'flagship' ? 'QuantSync' : `@${s.owner ?? 'you'}`}</div>
+          <div className="eyebrow">{s.kind === 'flagship' ? 'QuantSync' : s.mine ? 'Yours' : s.owner ? `@${s.owner}` : 'Member'}</div>
           <h2 style={{ fontSize: hero ? 22 : 17, marginTop: 4 }}>{s.name}</h2>
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>

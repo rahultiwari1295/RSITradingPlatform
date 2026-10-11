@@ -23,7 +23,7 @@ export default function StrategyDetail({ id, uid }: { id: string; uid: string | 
     <>
       <a href="#strategies" className="sub" style={{ fontSize: 13 }}>‹ Strategies</a>
       <div className="head" style={{ marginTop: 10 }}>
-        <div><div className="eyebrow">{d.kind === 'flagship' ? 'QuantSync' : `@${d.owner}`} · {d.tf === '1D' ? 'Daily' : 'Weekly'} · v{d.version}</div>
+        <div><div className="eyebrow">{d.kind === 'flagship' ? 'QuantSync' : d.mine ? 'Yours' : d.owner ? `@${d.owner}` : 'Member'} · {d.tf === '1D' ? 'Daily' : 'Weekly'} · v{d.version}</div>
           <h1>{d.name}</h1>{d.enhanced && <span className="pill gold">AI score ≥ {d.ai_gate}</span>}</div>
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
@@ -32,14 +32,14 @@ export default function StrategyDetail({ id, uid }: { id: string; uid: string | 
         <button className="btn sm" onClick={() => setInfo(true)}><Info /> Show info</button>
       </div>
       <StatStrip s={d.stats} />
-      <p className="mute" style={{ fontSize: 12, margin: '10px 2px 0' }}>Live since {shortDate(d.live_from)}. Results are recorded as they happen; past tests are shown separately.</p>
+      <p className="mute" style={{ fontSize: 12, margin: '10px 2px 0' }}>Live since {shortDate(d.live_from)} (v{d.version}). Results are recorded after each market close; entries happen at the next open after a scan result. The past test below shows history.</p>
       <section className="sec">
         <Seg label="Trades" value={tab} onChange={v => setTab(v)} options={[{ v: 'active', label: `Active${d.stats.open ? ` · ${d.stats.open}` : ''}` }, { v: 'closed', label: 'Closed' }]} />
         <div style={{ marginTop: 12 }}>
-          {trades.loading ? <Skeleton n={3} /> : <EmptyOrRows items={trades.data ?? []} empty={tab === 'active' ? 'No active results' : 'No closed results yet'} render={t => <TradeRow key={t.id} t={t} />} />}
+          {trades.loading ? <Skeleton n={3} /> : <EmptyOrRows items={trades.data ?? []} empty={tab === 'active' ? (d.stats.trades === 0 ? 'No live results yet. They appear after the next market close that this scan matches.' : 'No active results') : 'No closed live results yet. See the past test below for history.'} render={t => <TradeRow key={t.id} t={t} />} />}
         </div>
       </section>
-      <section className="sec"><BacktestPanel id={id} uid={uid} /></section>
+      <section className="sec"><BacktestPanel id={id} /></section>
       {(d.mine || d.enhanced) && <section className="sec"><EnhancePanel s={d} cat={cat.data} onChanged={() => { s.reload(); trades.reload(); }} /></section>}
       {info && (
         <Sheet title="Strategy rules" onClose={() => setInfo(false)}>

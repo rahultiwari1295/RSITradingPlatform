@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 import time
 from contextlib import asynccontextmanager
 
 import pandas as pd
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
@@ -19,6 +21,7 @@ from .db import jdump, new_id, tx
 from .rules import RuleError, normalise, normalise_exit
 
 router = APIRouter(prefix="/lab/v1")
+log = logging.getLogger("qslab.api")
 HANDLE = re.compile(r"^[a-z0-9_]{3,20}$")
 
 
@@ -134,8 +137,19 @@ def create_strategy(body: StrategyBody, request: Request, uid: str = Depends(req
         out = service.create_strategy(con, cfg, uid, body.name, body.tf, body.entry, body.exit)
     except (RuleError, ValueError) as e:
         raise _bad(e)
+    _kick_backtest(con, out["id"])
     _mirror(cfg, con, uid)
     return out
+
+
+def _kick_backtest(con, sid: str) -> None:
+    """Every saved strategy gets its past test computed straight away, so its page has results to show."""
+    try:
+        s = con.execute("SELECT * FROM strategies WHERE id=?", (sid,)).fetchone()
+        v = con.execute("SELECT * FROM strategy_versions WHERE id=?", (s["current_version"],)).fetchone()
+        service.ensure_backtest(con, s, v)
+    except Exception:  # noqa: BLE001 - the strategy is saved; the page will retry
+        log.exception("could not queue past test for %s", sid)
 
 
 def _card(con, s, uid=None) -> dict:
@@ -145,7 +159,7 @@ def _card(con, s, uid=None) -> dict:
     enh = con.execute("SELECT id,status FROM ai_enhancements WHERE version_id=? OR id=? ORDER BY created_at DESC LIMIT 1",
                       (v["id"], v["ai_enhancement_id"])).fetchone()
     return {"id": s["id"], "name": s["name"], "tf": s["tf"], "kind": s["kind"], "visibility": s["visibility"],
-            "owner": owner[0] if owner else ("QuantSync" if s["kind"] == "flagship" else None), "mine": bool(uid and uid == s["owner_uid"]),
+            "owner": owner[0] if owner and owner[0] else ("QuantSync" if s["kind"] == "flagship" else None), "mine": bool(uid and uid == s["owner_uid"]),
             "followers": followers, "version": v["n"], "live_from": v["live_from"], "ai_gate": v["ai_gate"],
             "enhanced": bool(v["ai_gate"]), "exit_choice": v["exit_choice"],
             "enhancement": {"id": enh["id"], "status": enh["status"]} if enh else None,
@@ -163,7 +177,17 @@ def list_strategies(scope: str = "mine", uid: str | None = Depends(optional_uid)
     else:  # people's strategies: ranked by followers, never by returns
         q, a = ("SELECT s.* FROM strategies s LEFT JOIN follows f ON f.strategy_id=s.id WHERE s.visibility='public' AND s.kind='user' "
                 "AND s.archived=0 GROUP BY s.id ORDER BY count(f.uid) DESC, s.created_at DESC LIMIT 50"), ()
-    return [_card(con, s, uid) for s in con.execute(q, a)]
+    out = []
+    for s in con.execute(q, a).fetchall():
+        try:
+            out.append(_card(con, s, uid))
+        except Exception:  # noqa: BLE001 - one bad record must not hide the whole list
+            log.exception("card failed for %s", s["id"])
+            out.append({"id": s["id"], "name": s["name"], "tf": s["tf"], "kind": s["kind"], "visibility": s["visibility"], "owner": None,
+                        "mine": bool(uid and uid == s["owner_uid"]), "followers": 0, "version": 0, "live_from": None, "ai_gate": None,
+                        "enhanced": False, "exit_choice": "user", "enhancement": None, "broken": True,
+                        "stats": {"trades": 0, "wins": 0, "losses": 0, "win_rate": None, "avg_ret": None, "open": 0, "shown": False}})
+    return out
 
 
 @router.get("/strategies/{sid}")
@@ -179,8 +203,10 @@ def get_strategy(sid: str, uid: str | None = Depends(optional_uid), con=Depends(
 def strategy_backtest(sid: str, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
     s = _visible(con, sid, uid)
     v = con.execute("SELECT * FROM strategy_versions WHERE id=?", (s["current_version"],)).fetchone()
-    res = service.cached_backtest(con, s["tf"], json.loads(v["entry_json"]), json.loads(v["exit_json"]))
-    return {"status": "done", "result": res} if res else {"status": "none"}
+    try:
+        return service.ensure_backtest(con, s, v)
+    except jobs.QueueError as e:
+        return {"status": "failed", "error": e.msg}
 
 
 @router.post("/strategies/{sid}/backtest")
@@ -226,6 +252,7 @@ def copy_strategy(sid: str, request: Request, uid: str = Depends(require_uid), c
     _ensure_user(con, uid)
     out = service.create_strategy(con, cfg_of(request), uid, f"{s['name']} (copy)", s["tf"], json.loads(v["entry_json"]),
                                   json.loads(v["exit_json"]), copied_from=sid)
+    _kick_backtest(con, out["id"])
     _mirror(cfg_of(request), con, uid)
     return out
 
@@ -252,8 +279,8 @@ def enhance(sid: str, request: Request, uid: str = Depends(require_uid), con=Dep
 
 
 @router.get("/strategies/{sid}/enhancement")
-def enhancement(sid: str, uid: str = Depends(require_uid), con=Depends(get_con)):
-    s = _owned(con, sid, uid)
+def enhancement(sid: str, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
+    s = _visible(con, sid, uid)  # read-only: anyone who can see the strategy (flagships included) can see its AI result
     r = con.execute("SELECT * FROM ai_enhancements WHERE version_id=? OR id=(SELECT ai_enhancement_id FROM strategy_versions WHERE id=?) ORDER BY created_at DESC LIMIT 1",
                     (s["current_version"], s["current_version"])).fetchone()
     if not r:
@@ -263,14 +290,14 @@ def enhancement(sid: str, uid: str = Depends(require_uid), con=Depends(get_con))
 
 
 @router.post("/strategies/{sid}/ai-gate")
-def set_gate(sid: str, body: GateBody, uid: str = Depends(require_uid), con=Depends(get_con)):
+def set_gate(sid: str, body: GateBody, request: Request, uid: str = Depends(require_uid), con=Depends(get_con)):
     s = _owned(con, sid, uid)
     r = con.execute("SELECT id FROM ai_enhancements WHERE version_id=? AND status='done' ORDER BY created_at DESC LIMIT 1", (s["current_version"],)).fetchone()
     cur = con.execute("SELECT ai_enhancement_id FROM strategy_versions WHERE id=?", (s["current_version"],)).fetchone()[0]
     eid = r[0] if r else cur
     if body.gate and not eid:
         raise HTTPException(409, "Enhance this strategy first.")
-    vid = service.new_version(con, sid, ai_enhancement_id=eid if body.gate else None, ai_gate=body.gate)
+    vid = service.new_version(con, sid, ai_enhancement_id=eid if body.gate else None, ai_gate=body.gate, live_from_new=_as_of(request, s["tf"]))
     return {"version_id": vid, "note": "Live record restarts from today for the new setting."}
 
 
@@ -288,9 +315,14 @@ def enhance_exit(sid: str, body: GateBody, request: Request, uid: str = Depends(
 
 
 @router.post("/strategies/{sid}/exit-choice")
-def exit_choice(sid: str, body: ExitChoiceBody, uid: str = Depends(require_uid), con=Depends(get_con)):
-    _owned(con, sid, uid)
-    return {"version_id": service.new_version(con, sid, exit_choice=body.choice)}
+def exit_choice(sid: str, body: ExitChoiceBody, request: Request, uid: str = Depends(require_uid), con=Depends(get_con)):
+    s = _owned(con, sid, uid)
+    return {"version_id": service.new_version(con, sid, exit_choice=body.choice, live_from_new=_as_of(request, s["tf"]))}
+
+
+def _as_of(request: Request, tf: str) -> str | None:
+    """A new version's live record starts at the latest data date, like a new strategy (entries follow at the next open)."""
+    return (store.meta(cfg_of(request), tf) or {}).get("as_of")
 
 
 @router.post("/strategies/{sid}/follow")
@@ -399,6 +431,11 @@ def create_app(cfg: Config | None = None) -> FastAPI:
     app = FastAPI(title="QuantSync Lab", version=__version__, lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url="/lab/openapi.json")
     app.state.cfg = cfg or load_config()
     app.include_router(router)
+
+    @app.exception_handler(Exception)
+    async def _unhandled(request: Request, exc: Exception):  # JSON, so the UI can show what happened
+        log.exception("unhandled error on %s %s", request.method, request.url.path)
+        return JSONResponse(status_code=500, content={"detail": f"Server error ({type(exc).__name__}). Please try again."})
     return app
 
 

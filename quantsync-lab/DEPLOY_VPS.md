@@ -151,3 +151,33 @@ The API could not verify the Firebase token. Public pages now keep working anywa
 1. `curl -s http://127.0.0.1:8100/lab/v1/health` → `auth.firebase_project_id` must be `scantoknow-a1593` (set `firebase_project_id` in `config.yaml`).
 2. `journalctl -u qslab-api -n 50 | grep "token rejected"` shows the exact reason (wrong project id, no outbound access to Google's public certificates, or a wrong server clock).
 3. The VPS needs outbound HTTPS to `www.googleapis.com` (used by firebase-admin to fetch signing certificates) and a correct clock (`timedatectl`).
+
+## Update 2026-10-11: past tests, live record, strategy lists
+
+What changed (all in `lab/`): past tests are queued automatically when a strategy is saved or copied, and recomputed when the
+metric definitions change (`metrics.METRICS_V`, now 2, fixes the "worst dip -3523%" values). Each past test now carries its
+latest 300 results so strategy pages can list them. `GET /strategies/{id}/backtest` never needs a sign-in for public strategies
+and returns `running` while a job works. One bad record no longer breaks `GET /strategies?scope=mine`; unhandled errors return
+JSON with the error type and are logged with a traceback. `GET /strategies/{id}/enhancement` is readable by anyone who can see
+the strategy. New versions (AI gate / exit change) start their live record at the data date, like new strategies.
+
+Deploy (no schema change, no downtime beyond the restart):
+
+```bash
+cd /opt/quantsync-lab/app && git fetch origin && git checkout lab-ui && git pull --ff-only
+/opt/quantsync-lab/venv/bin/python -m pytest -q quantsync-lab/tests        # expect 30 passed
+systemctl restart qslab-api qslab-worker-fast qslab-worker-ai
+cd quantsync-lab && QSLAB_CONFIG=/opt/quantsync-lab/config.yaml /opt/quantsync-lab/venv/bin/python -m lab.cli backtest-all
+```
+
+Check:
+
+```bash
+curl -s https://quantsync-api.duckdns.org:8443/lab/v1/strategies?scope=flagship | python3 -c 'import sys,json;[print(s["name"]) for s in json.load(sys.stdin)]'
+# for each flagship id: status done, All.max_dd between -100 and 0, and a trades list
+curl -s https://quantsync-api.duckdns.org:8443/lab/v1/strategies/<id>/backtest | python3 -c 'import sys,json;r=json.load(sys.stdin)["result"];print(r["summary"]["All"]["max_dd"],len(r["trades"]))'
+journalctl -u qslab-api --since "10 min ago" | grep -i "unhandled\|card failed" || echo "no API errors"
+```
+
+Daily: the live record only updates when `python -m lab.cli cook` runs after the close (it calls `update_live`). Confirm the
+cron entry exists: `crontab -l | grep "lab.cli cook"`.

@@ -3,7 +3,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-MIN_TRADES_SHOWN = 30  # win rate is not published below this many closed trades
+MIN_TRADES_SHOWN = 30
+METRICS_V = 2  # bump when a summary definition changes; cached past tests from older versions are recomputed  # win rate is not published below this many closed trades
 
 
 def _clean_num(v, ndigits=2):
