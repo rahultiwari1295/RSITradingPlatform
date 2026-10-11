@@ -9,6 +9,7 @@ from lab import api, db, service
 
 
 def test_parallel_requests_real_server(cfg):
+    db.migrate(cfg)
     con = db.connect(cfg)
     sid = service.create_strategy(con, cfg, "cc1", "Parallel", "1D", {"v": 1, "all": [{"l": {"f": "rsi_14"}, "op": ">", "r": {"c": 55}}]}, None)["id"]
     srv = uvicorn.Server(uvicorn.Config(api.create_app(cfg), port=8766, log_level="error"))
