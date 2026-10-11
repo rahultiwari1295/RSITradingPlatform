@@ -197,3 +197,13 @@ Check after deploy:
 curl -s http://127.0.0.1:8100/lab/v1/strategies?scope=flagship | python3 -c 'import sys,json;[print(s["name"],s["source"],s["stats"]["open"],s["stats"]["trades"]) for s in json.load(sys.stdin)]'
 # expect: AI Alpha engine 3 8 / AI Pattern engine 0 9 (live closed counts grow over time)
 ```
+
+## Update: new Lab screens (matches, alerts, year view, AI before/after)
+
+Backend changes (`lab/api.py`, `lab/ai.py`): new `GET /lab/v1/matches` and `GET /lab/v1/alerts`; `follow` keeps a muted row for QuantSync strategies; strategies are switched on for alerts when saved or copied; the owner no longer counts as a follower; the AI result gains `plain_by_year`. No schema change.
+
+Deploy as before: `git pull` on the Mac, rsync to `/opt/quantsync-lab/app/`, `chown -R qslab:qslab`, `pytest` (35 tests), then
+`systemctl restart qslab-api qslab-worker-fast qslab-worker-ai`. Redeploy `lab-ui` on Vercel for the frontend.
+An AI run made before this update has no `plain_by_year`; the page then shows all-years numbers as "before" until Enhance is tapped again.
+
+Check: `curl -s http://127.0.0.1:8100/lab/v1/alerts` lists AI Alpha and AI Pattern with `"on": true`; `/lab/v1/matches` returns `counts`.

@@ -44,6 +44,7 @@ def test_full_flow(client, cfg):
     en = client.get(f"/lab/v1/strategies/{sid}/enhancement", headers=H).json()
     assert en["status"] == "done" and set(en["result"]["gates"]) == {"50", "60", "70", "80", "90"}
     assert en["result"]["leak"]["rounds"] >= 1
+    assert en["result"]["plain_by_year"] and all("trades" in v for v in en["result"]["plain_by_year"].values())
     assert client.post(f"/lab/v1/strategies/{sid}/ai-gate", json={"gate": 70}, headers=H).status_code == 200
     card = client.get(f"/lab/v1/strategies/{sid}", headers=H).json()
     assert card["enhanced"] and card["ai_gate"] == 70 and card["version"] == 2
@@ -237,3 +238,50 @@ def test_cards_carry_full_record(client, cfg):
     r = card["record"]
     assert r["trades"] == bt["trades"] > 50 and r["wins"] + r["losses"] == r["trades"] and r["win_rate"] == bt["win_rate"]
     assert [c for c in client.get("/lab/v1/strategies?scope=mine", headers=h).json() if c["id"] == sid][0]["record"]["trades"] == r["trades"]
+
+
+def test_alerts_and_matches(client, cfg, monkeypatch):
+    from lab import engine_feed
+    today = pd.Timestamp.today().normalize()
+    d = lambda n: (today - pd.Timedelta(days=n)).strftime("%Y-%m-%d")  # noqa: E731
+    eng = {**ENGINE, "active": [{"engine": "v2", "symbol": "NEWQ", "strategy": "Leader", "entry_date": d(1), "entry_price": 20, "price": 21, "ret_pct": 5.0},
+                                {"engine": "v2", "symbol": "OLDQ", "strategy": "Leader", "entry_date": d(9), "entry_price": 20, "price": 19, "ret_pct": -5.0}]}
+    monkeypatch.setattr(engine_feed, "_fetch", lambda c: eng)
+    engine_feed._cache.update(t=0, data=None)
+    con = db.connect(cfg)
+    if not con.execute("SELECT 1 FROM strategies WHERE kind='flagship' AND name='AI Alpha'").fetchone():
+        service.create_strategy(con, cfg, None, "AI Alpha", "1D", RULE["entry"], RULE["exit"], kind="flagship", visibility="public")
+    H1, H2 = {"X-Dev-Uid": "al1"}, {"X-Dev-Uid": "al2"}
+    flag = [x for x in client.get("/lab/v1/alerts").json()["items"] if x["cat"] == "q"]
+    assert flag and all(x["on"] for x in flag)  # signed out: QuantSync listed and on
+    m = client.get("/lab/v1/matches").json()
+    assert {r["symbol"]: r["latest"] for r in m["rows"] if r["strategy"] == "AI Alpha"} == {"NEWQ": True, "OLDQ": False}
+    assert m["counts"]["latest"] >= 1 and m["counts"]["older"] >= 1 and m["rows"][0]["date"] >= m["rows"][-1]["date"]
+    # a member's own strategy is switched on when saved; unticking removes it from the list
+    sid = client.post("/lab/v1/strategies", json={**RULE, "name": "Mine A"}, headers=H1).json()["id"]
+    items = client.get("/lab/v1/alerts", headers=H1).json()["items"]
+    assert [x["cat"] for x in items if x["id"] == sid] == ["y"]
+    assert client.get(f"/lab/v1/strategies/{sid}", headers=H1).json()["followers"] == 0  # owner is not their own follower
+    con.execute("INSERT INTO live_trades(version_id,symbol,signal_date,entry_date,entry_price,exit_price,ret_pct,is_open) "
+                "SELECT current_version,'MYSYM',?,?,100,103,3.0,1 FROM strategies WHERE id=?", (d(0), d(0), sid))
+    rows = client.get("/lab/v1/matches", headers=H1).json()["rows"]
+    assert any(r["symbol"] == "MYSYM" and r["cat"] == "y" and r["latest"] for r in rows)
+    assert not any(r["symbol"] == "MYSYM" for r in client.get("/lab/v1/matches", headers=H2).json()["rows"])  # someone else's: not shown
+    assert client.post(f"/lab/v1/strategies/{sid}/follow?on=false", headers=H1).status_code == 200
+    assert sid not in [x["id"] for x in client.get("/lab/v1/alerts", headers=H1).json()["items"]]
+    assert not any(r["symbol"] == "MYSYM" for r in client.get("/lab/v1/matches", headers=H1).json()["rows"])
+    # QuantSync stays listed when switched off, and its matches go away until it is switched back on
+    qid = flag[0]["id"]
+    assert client.post(f"/lab/v1/strategies/{qid}/follow?on=false", headers=H1).status_code == 200
+    off = {x["id"]: x for x in client.get("/lab/v1/alerts", headers=H1).json()["items"]}
+    assert off[qid]["on"] is False
+    assert not any(r["sid"] == qid for r in client.get("/lab/v1/matches", headers=H1).json()["rows"])
+    assert client.post(f"/lab/v1/strategies/{qid}/follow?on=true&alerts=true", headers=H1).status_code == 200
+    assert {x["id"]: x["on"] for x in client.get("/lab/v1/alerts", headers=H1).json()["items"]}[qid] is True
+    # a public strategy followed with alerts shows as Followed, and disappears when removed
+    assert client.put("/lab/v1/me/handle?handle=alerter", headers=H1).status_code == 200
+    assert client.post(f"/lab/v1/strategies/{sid}/visibility?public=true", headers=H1).status_code == 200
+    assert client.post(f"/lab/v1/strategies/{sid}/follow?on=true&alerts=true", headers=H2).status_code == 200
+    assert [x["cat"] for x in client.get("/lab/v1/alerts", headers=H2).json()["items"] if x["id"] == sid] == ["f"]
+    assert client.get(f"/lab/v1/strategies/{sid}", headers=H1).json()["followers"] == 1
+    engine_feed._cache.update(t=0, data=None)

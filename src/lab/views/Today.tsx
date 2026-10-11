@@ -14,7 +14,7 @@ export default function Today() {
         <>
           <div className="grid two">{t.data!.flagship.map(s => <StrategyTile key={s.id} s={s} hero />)}</div>
           <section className="sec">
-            <div className="sec-h"><h2>Fresh results</h2><span className="mute" style={{ fontSize: 12.5 }}>Last 3 days</span></div>
+            <div className="sec-h"><h2>Fresh results</h2><a href="#matches" className="sub" style={{ fontSize: 13 }}>All matches</a></div>
             {t.data!.fresh.length === 0 ? <div className="rows"><Empty title="Nothing new yet" body="New results appear after the daily update." /></div> : (
               <div className="rows">{t.data!.fresh.map(f => (
                 <button key={f.sid + f.symbol} className="row" onClick={() => go(`s-${f.sid}`)}>

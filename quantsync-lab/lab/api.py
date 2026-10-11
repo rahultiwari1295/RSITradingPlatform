@@ -138,6 +138,7 @@ def create_strategy(body: StrategyBody, request: Request, uid: str = Depends(req
     except (RuleError, ValueError) as e:
         raise _bad(e)
     _kick_backtest(con, out["id"])
+    _subscribe(con, uid, out["id"])
     _mirror(cfg, con, uid)
     return out
 
@@ -161,7 +162,7 @@ def _engine(request_or_cfg, s) -> str | None:
 def _card(con, s, uid=None, cfg: Config | None = None) -> dict:
     v = con.execute("SELECT * FROM strategy_versions WHERE id=?", (s["current_version"],)).fetchone()
     owner = con.execute("SELECT handle FROM users WHERE uid=?", (s["owner_uid"],)).fetchone() if s["owner_uid"] else None
-    followers = con.execute("SELECT count(*) FROM follows WHERE strategy_id=?", (s["id"],)).fetchone()[0]
+    followers = con.execute("SELECT count(*) FROM follows WHERE strategy_id=? AND uid IS NOT ?", (s["id"], s["owner_uid"])).fetchone()[0]
     enh = con.execute("SELECT id,status FROM ai_enhancements WHERE version_id=? OR id=? ORDER BY created_at DESC LIMIT 1",
                       (v["id"], v["ai_enhancement_id"])).fetchone()
     card = {"id": s["id"], "name": s["name"], "tf": s["tf"], "kind": s["kind"], "visibility": s["visibility"],
@@ -200,7 +201,7 @@ def list_strategies(request: Request, scope: str = "mine", uid: str | None = Dep
     elif scope == "flagship":
         q, a = "SELECT * FROM strategies WHERE kind='flagship' AND archived=0", ()
     else:  # people's strategies: ranked by followers, never by returns
-        q, a = ("SELECT s.* FROM strategies s LEFT JOIN follows f ON f.strategy_id=s.id WHERE s.visibility='public' AND s.kind='user' "
+        q, a = ("SELECT s.* FROM strategies s LEFT JOIN follows f ON f.strategy_id=s.id AND f.uid IS NOT s.owner_uid WHERE s.visibility='public' AND s.kind='user' "
                 "AND s.archived=0 GROUP BY s.id ORDER BY count(f.uid) DESC, s.created_at DESC LIMIT 50"), ()
     out = []
     for s in con.execute(q, a).fetchall():
@@ -251,6 +252,65 @@ def strategy_backtest_run(sid: str, request: Request, uid: str = Depends(require
         raise HTTPException(e.code, e.msg)
 
 
+LATEST_DAYS = 4  # "Latest" on the matches page = matched within the last 4 calendar days
+
+
+def _subscribe(con, uid: str, sid: str, on: bool = True) -> None:
+    con.execute("INSERT INTO follows VALUES(?,?,?,?) ON CONFLICT(uid,strategy_id) DO UPDATE SET alerts=excluded.alerts", (uid, sid, int(on), time.time()))
+
+
+def _alert_subs(con, uid: str | None) -> list[dict]:
+    """Strategies whose matches this person sees, with their colour group.
+    QuantSync strategies are always listed (on unless muted). Yours and Followed are listed only while switched on."""
+    flags = con.execute("SELECT * FROM strategies WHERE kind='flagship' AND archived=0 ORDER BY name").fetchall()
+    mine = {r["strategy_id"]: r["alerts"] for r in con.execute("SELECT strategy_id, alerts FROM follows WHERE uid=?", (uid,)).fetchall()} if uid else {}
+    out = [{"s": s, "cat": "q", "on": bool(mine.get(s["id"], 1))} for s in flags]
+    if uid:
+        rows = con.execute("""SELECT s.* FROM follows f JOIN strategies s ON s.id=f.strategy_id
+            WHERE f.uid=? AND f.alerts=1 AND s.kind='user' AND s.archived=0 AND (s.owner_uid=? OR s.visibility='public')
+            ORDER BY s.name""", (uid, uid)).fetchall()
+        out += [{"s": s, "cat": "y" if s["owner_uid"] == uid else "f", "on": True} for s in rows]
+    return out
+
+
+@router.get("/alerts")
+def alerts(uid: str | None = Depends(optional_uid), con=Depends(get_con)):
+    items = []
+    for x in _alert_subs(con, uid):
+        s = x["s"]
+        owner = con.execute("SELECT handle FROM users WHERE uid=?", (s["owner_uid"],)).fetchone() if s["owner_uid"] else None
+        items.append({"id": s["id"], "name": s["name"], "tf": s["tf"], "cat": x["cat"], "on": x["on"], "owner": owner[0] if owner and owner[0] else None})
+    return {"signed_in": bool(uid), "items": items}
+
+
+@router.get("/matches")
+def matches(request: Request, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
+    """Open matches from every strategy switched on in Your alerts, newest first, split into Latest (last 4 days) and Older."""
+    cfg = cfg_of(request)
+    today_ = pd.Timestamp.today().normalize()
+    rows: list[dict] = []
+    for x in _alert_subs(con, uid):
+        if not x["on"]:
+            continue
+        s = x["s"]
+        try:
+            eng = _engine(cfg, s)
+            if eng:
+                found = [{"symbol": a["symbol"], "date": a["entry_date"], "price": a["entry_price"], "now": a["price"], "chg": a["ret_pct"]} for a in engine_feed.active(cfg, eng)]
+            else:
+                found = [{"symbol": r["symbol"], "date": r["signal_date"], "price": r["entry_price"], "now": r["exit_price"], "chg": r["ret_pct"]}
+                         for r in con.execute("SELECT * FROM live_trades WHERE version_id=? AND is_open=1 ORDER BY signal_date DESC LIMIT 500", (s["current_version"],))]
+        except Exception:  # noqa: BLE001 - one strategy must not hide the others
+            log.exception("matches failed for %s", s["id"])
+            continue
+        for f in found:
+            age = (today_ - pd.Timestamp(f["date"])).days if f["date"] else None
+            rows.append({**f, "sid": s["id"], "strategy": s["name"], "cat": x["cat"], "age_days": age, "latest": age is not None and age <= LATEST_DAYS})
+    rows.sort(key=lambda r: (r["date"] or "", r["symbol"]), reverse=True)
+    n_latest = sum(1 for r in rows if r["latest"])
+    return {"signed_in": bool(uid), "latest_days": LATEST_DAYS, "rows": rows[:1000], "counts": {"latest": n_latest, "older": len(rows) - n_latest}}
+
+
 @router.get("/strategies/{sid}/trades")
 def trades(sid: str, request: Request, status: str = "active", limit: int = 1000, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
     s = _visible(con, sid, uid)
@@ -286,6 +346,7 @@ def copy_strategy(sid: str, request: Request, uid: str = Depends(require_uid), c
     out = service.create_strategy(con, cfg_of(request), uid, f"{s['name']} (copy)", s["tf"], json.loads(v["entry_json"]),
                                   json.loads(v["exit_json"]), copied_from=sid)
     _kick_backtest(con, out["id"])
+    _subscribe(con, uid, out["id"])
     _mirror(cfg_of(request), con, uid)
     return out
 
@@ -360,8 +421,12 @@ def _as_of(request: Request, tf: str) -> str | None:
 
 @router.post("/strategies/{sid}/follow")
 def follow(sid: str, on: bool = True, alerts: bool = False, request: Request = None, uid: str = Depends(require_uid), con=Depends(get_con)):
-    _visible(con, sid, uid)
+    s = _visible(con, sid, uid)
     _ensure_user(con, uid)
+    if s["kind"] == "flagship":  # QuantSync strategies are never removed from the list: switching off keeps a muted row
+        _subscribe(con, uid, sid, alerts if on else False)
+        _mirror(cfg_of(request), con, uid)
+        return {"ok": True}
     if on:
         n = con.execute("SELECT count(*) FROM follows WHERE uid=?", (uid,)).fetchone()[0]
         if n >= 200:

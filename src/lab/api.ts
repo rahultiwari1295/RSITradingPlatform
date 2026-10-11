@@ -40,6 +40,8 @@ const q = (o: Record<string, string | number | boolean | undefined>) =>
 const real: LabApi = {
   catalog: () => call('GET', '/catalog', undefined, false),
   today: () => call('GET', '/today', undefined, false),
+  matches: () => call('GET', '/matches'),
+  alerts: () => call('GET', '/alerts'),
   scan: (tf, entry) => call('POST', '/scan', { tf, entry }, false),
   backtest: (tf, entry, exit) => call('POST', '/backtest', { tf, entry, exit }),
   strategyBacktest: id => call('GET', `/strategies/${id}/backtest`),

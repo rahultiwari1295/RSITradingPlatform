@@ -30,7 +30,7 @@ export interface BacktestResult { trades?: BacktestTrade[]; source?: 'engine' | 
 export interface GateStat { All: YearStat; months: { month: string; trades: number }[]; lift: number | null; z: number | null; [year: string]: unknown }
 export interface Enhancement {
   id?: string; status: 'none' | 'queued' | 'running' | 'done' | 'failed' | 'insufficient'; reason?: string | null;
-  result: null | { status: string; reason?: string; edge_found: boolean; plain: YearStat; gates: Record<string, GateStat>; drivers: string[]; leak: { passed: boolean } };
+  result: null | { status: string; reason?: string; edge_found: boolean; plain: YearStat; plain_by_year?: Record<string, YearStat>; gates: Record<string, GateStat>; drivers: string[]; leak: { passed: boolean } };
   exit: null | { gate: number; improved: boolean; tested: number; yours: YearStat; best: YearStat | null; best_exit: ExitJson | null };
 }
 export interface JobStatus { id: string; status: 'queued' | 'running' | 'done' | 'failed'; progress: number; stage: string | null; position?: number; eta_s?: number; error: string | null; result: unknown }
@@ -38,7 +38,15 @@ export interface Portfolio { summary: { active: number; closed: number; wins: nu
 export interface Bar { date: string; open: number; high: number; low: number; close: number; volume: number; sma_50: number | null; sma_200: number | null }
 export interface TodayData { data: Record<string, { as_of: string } | null>; flagship: StrategyCard[]; fresh: { symbol: string; signal_date: string; sid: string; name: string }[] }
 
+export type Cat = 'q' | 'y' | 'f';
+export interface MatchRow { symbol: string; sid: string; strategy: string; cat: Cat; date: string | null; price: number | null; now: number | null; chg: number | null; age_days: number | null; latest: boolean }
+export interface MatchesData { signed_in: boolean; latest_days: number; rows: MatchRow[]; counts: { latest: number; older: number } }
+export interface AlertItem { id: string; name: string; tf: TF; cat: Cat; on: boolean; owner: string | null }
+export interface AlertsData { signed_in: boolean; items: AlertItem[] }
+
 export interface LabApi {
+  matches(): Promise<MatchesData>;
+  alerts(): Promise<AlertsData>;
   catalog(): Promise<Catalog>;
   today(): Promise<TodayData>;
   scan(tf: TF, entry: RuleJson): Promise<ScanResult>;

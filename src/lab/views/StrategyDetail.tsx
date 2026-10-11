@@ -1,46 +1,101 @@
 import { useState } from 'react';
-import { BellRing, Copy, Info } from 'lucide-react';
+import { Bell, BellRing, Copy, Info } from 'lucide-react';
 import { api } from '../api';
 import { signIn } from '../auth';
 import { TradeRow, go } from '../components';
+import { HowTo, SrcPill, StatBoxes, YearSelect, DEFAULT_YEAR } from '../kit';
 import { describeExit, describeRule } from '../rules';
+import type { Cat } from '../types';
 import { EmptyOrRows } from './shared';
-import { EnhancePanel } from './Enhance';
-import { BacktestPanel } from './Backtest';
-import { Seg, Sheet, Skeleton, StatStrip, ErrorBox, shortDate, toast, useAsync } from '../ui';
+import { AiEnhance } from './AiEnhance';
+import { BacktestState, ClosedList, useBacktest, yearStat } from './Backtest';
+import { Seg, Sheet, Skeleton, ErrorBox, shortDate, toast, useAsync } from '../ui';
 
 export default function StrategyDetail({ id, uid }: { id: string; uid: string | null }) {
   const s = useAsync(() => api.strategy(id), [id]);
   const cat = useAsync(() => api.catalog(), []);
-  const [tab, setTab] = useState<'active' | 'closed'>('active');
+  const al = useAsync(() => (uid ? api.alerts() : Promise.resolve({ signed_in: false, items: [] })), [uid, id]);
+  const [year, setYear] = useState(DEFAULT_YEAR);
+  const [tab, setTab] = useState<'open' | 'closed'>('closed');
   const [info, setInfo] = useState(false);
-  const trades = useAsync(() => api.trades(id, tab), [id, tab, s.data?.version]);
+  const bt = useBacktest(id, s.reload);
+  const open = useAsync(() => api.trades(id, 'active'), [id, s.data?.version]);
   if (s.error) return <ErrorBox msg={s.error} retry={s.reload} />;
   if (s.loading || !s.data || !cat.data) return <Skeleton />;
   const d = s.data;
-  const needAuth = async (fn: () => Promise<void>) => { if (!uid) { await signIn(); } await fn(); };
+  const source: Cat = d.kind === 'flagship' ? 'q' : d.mine ? 'y' : 'f';
+  const alertsOn = !!al.data?.items.find(i => i.id === id && i.on);
+  const needAuth = async (fn: () => Promise<void>) => { if (!uid) { await signIn(); return; } await fn(); };
+  const toggleAlert = () => needAuth(async () => {
+    const next = !alertsOn;
+    await api.follow(id, d.kind === 'flagship' ? true : next, next);
+    toast(next ? 'Alerts on. Matches show in Today’s matches.' : 'Alerts off.');
+    al.reload();
+  });
+  const stat = yearStat(bt.result, year);
+  const nOpen = open.data?.length ?? d.stats.open;
   return (
     <>
-      <a href="#strategies" className="sub" style={{ fontSize: 13 }}>‹ Strategies</a>
-      <div className="head" style={{ marginTop: 10 }}>
-        <div><div className="eyebrow">{d.kind === 'flagship' ? 'QuantSync' : d.mine ? 'Yours' : d.owner ? `@${d.owner}` : 'Member'} · {d.tf === '1D' ? 'Daily' : 'Weekly'} · v{d.version}</div>
-          <h1>{d.name}</h1>{d.enhanced && <span className="pill gold">AI score ≥ {d.ai_gate}</span>}</div>
-      </div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-        <button className="btn sm" onClick={() => needAuth(async () => { const r = await api.copyStrategy(id); toast('Copied to your strategies'); go(`s-${r.id}`); })}><Copy /> Copy &amp; edit</button>
-        <button className="btn sm" onClick={() => needAuth(async () => { await api.follow(id, true, true); toast('Alerts on for this strategy'); })}><BellRing /> Get alert</button>
-        <button className="btn sm" onClick={() => setInfo(true)}><Info /> Show info</button>
-      </div>
-      <StatStrip s={d.stats} rec={d.record} />
-      <p className="mute" style={{ fontSize: 12, margin: '10px 2px 0' }}>{d.source === 'engine' ? <>Live results recorded by the QuantSync engine since {shortDate(d.live_from)}. Closed shows every result, live and tested; the full record is below.</> : <>Live since {shortDate(d.live_from)} (v{d.version}). Results are recorded after each market close; entries happen at the next open after a scan result. The past test below shows history.</>}</p>
-      <section className="sec">
-        <Seg label="Trades" value={tab} onChange={v => setTab(v)} options={[{ v: 'active', label: `Active${d.stats.open ? ` · ${d.stats.open}` : ''}` }, { v: 'closed', label: 'Closed' }]} />
-        <div style={{ marginTop: 12 }}>
-          {trades.loading ? <Skeleton n={3} /> : <EmptyOrRows items={trades.data ?? []} empty={tab === 'active' ? (d.stats.trades === 0 ? 'No live results yet. They appear after the next market close that this scan matches.' : 'No active results') : 'No closed live results yet. See the past test below for history.'} render={t => <TradeRow key={t.id} t={t} />} />}
+      <div className="pagehead">
+        <a href="#strategies" className="crumb">‹ Strategies</a>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 14 }}>
+          <SrcPill cat={source}>{source === 'q' ? 'QuantSync' : source === 'y' ? 'Yours' : d.owner ? `@${d.owner}` : 'Followed'}</SrcPill>
+          <span className="pill">{d.tf === '1D' ? 'Daily' : 'Weekly'}</span>
+          {(d.kind === 'flagship' || d.enhanced || d.exit_choice === 'ai') && <span className="pill gold">AI enhanced</span>}
         </div>
+        <h1>{d.name}</h1>
+        <p className="lede">{d.kind === 'flagship'
+          ? 'A QuantSync scan. It looks at every NSE stock after each market close and lists the ones that fit its rules.'
+          : 'A scan that looks at every NSE stock after each market close and lists the ones that fit its rules.'}</p>
+        <div className="actions">
+          <button className="btn sm" onClick={toggleAlert}>{alertsOn ? <BellRing /> : <Bell />} {alertsOn ? 'Alerts on' : 'Get alerts'}</button>
+          <button className="btn sm" onClick={() => needAuth(async () => { const r = await api.copyStrategy(id); toast('Copied to your strategies'); go(`s-${r.id}`); })}><Copy /> Copy &amp; edit</button>
+          <button className="btn sm" onClick={() => setInfo(true)}><Info /> Show rules</button>
+        </div>
+      </div>
+
+      <HowTo id="strategy" title="How to read this page">
+        <ol>
+          <li>The three numbers show how this scan did in the year you pick.</li>
+          <li>Tap an AI button to see if we can make it better. You choose whether to use it.</li>
+          <li>Below, see what is open now and what has already closed.</li>
+        </ol>
+      </HowTo>
+
+      <section>
+        <div className="sech"><h2>How it did</h2><YearSelect value={year} onChange={setYear} /></div>
+        <p className="secnote">Every time this scan matched a stock in {year}, we followed it until it closed. Here is how those ended. Past results do not predict future results.</p>
+        <BacktestState bt={bt} />
+        {bt.status !== 'running' && !bt.error && <StatBoxes s={stat} year={year} loading={bt.loading} />}
+        <p className="tally">{d.source === 'engine'
+          ? <>Recorded by the QuantSync engine; results since {shortDate(d.live_from)} are live, earlier ones were tested on past data.</>
+          : <>Tested on past data with costs of 0.10% per side. Live tracking started {shortDate(d.live_from)}.</>}</p>
       </section>
-      <section className="sec"><BacktestPanel id={id} onReady={s.reload} /></section>
-      {d.source !== 'engine' && (d.mine || d.enhanced) && <section className="sec"><EnhancePanel s={d} cat={cat.data} onChanged={() => { s.reload(); trades.reload(); }} /></section>}
+
+      {d.source !== 'engine' && (d.mine || d.enhanced || d.exit_choice === 'ai') && (
+        <section className="sec">
+          <AiEnhance s={d} year={year} uid={uid} onChanged={() => { s.reload(); open.reload(); bt.reload(); }} />
+        </section>
+      )}
+      {d.source === 'engine' && (
+        <section className="sec">
+          <div className="opt" style={{ marginTop: 0 }}><h3><span className="pill gold">AI enhanced</span> Already enhanced by QuantSync</h3>
+            <p className="why" style={{ marginBottom: 0 }}>Every match from this strategy is already filtered by our AI. Copy it to make your own version.</p></div>
+        </section>
+      )}
+
+      <section className="sec">
+        <div className="tabs2">
+          <Seg label="Results" value={tab} onChange={v => setTab(v as 'open' | 'closed')} options={[{ v: 'closed', label: 'Closed' }, { v: 'open', label: `Open${nOpen ? ` · ${nOpen}` : ''}` }]} />
+        </div>
+        {tab === 'open' ? (
+          <>
+            <p className="listnote">Matched recently and still open. Shown for every year.</p>
+            {open.loading ? <Skeleton n={3} /> : <EmptyOrRows items={open.data ?? []} empty="Nothing open right now. New matches appear after the next market close." render={t => <TradeRow key={t.id} t={t} />} />}
+          </>
+        ) : bt.result ? <ClosedList r={bt.result} year={year} /> : bt.status === 'running' || bt.loading ? <Skeleton n={3} /> : null}
+      </section>
+
       {info && (
         <Sheet title="Strategy rules" onClose={() => setInfo(false)}>
           <div className="eyebrow">Entry</div>

@@ -54,7 +54,7 @@ function gates(): Record<string, GateStat> {
   return g;
 }
 
-const btResult = (id: string): BacktestResult => { const k = id === 'stg_alpha' ? 1.15 : id === 'stg_pattern' ? 1.05 : 0.9; return { years: [2023, 2024, 2025, 2026], summary: { All: { ...stat(131, 52.1 * k, 0.9 * k), profit_factor: 1.3, max_dd: -14.2 }, '2023': { ...stat(41, 51 * k, 0.7 * k), profit_factor: 1.2, max_dd: -6 }, '2024': { ...stat(44, 54.5 * k, 1.2 * k), profit_factor: 1.5, max_dd: -5 }, '2025': { ...stat(36, 50 * k, 0.6 * k), profit_factor: 1.1, max_dd: -7 }, '2026': { ...stat(10, 50 * k, 0.5 * k), profit_factor: 1.1, max_dd: -3 } }, months: [] }; };
+const btResult = (id: string): BacktestResult => { const k = id === 'stg_alpha' ? 1.15 : id === 'stg_pattern' ? 1.05 : 0.9; const trades = (tradeStore[id] ?? []).filter(t => !t.is_open).map(t => ({ symbol: t.symbol, signal_date: t.signal_date, entry_date: t.entry_date!, entry_price: t.entry_price, exit_date: t.exit_date, exit_price: t.exit_price, exit_reason: t.exit_reason, ret_pct: t.ret_pct, bars: 6, is_open: false })).sort((a, b) => (b.entry_date > a.entry_date ? 1 : -1)); return { trades, years: [2023, 2024, 2025, 2026], summary: { All: { ...stat(131, 52.1 * k, 0.9 * k), profit_factor: 1.3, max_dd: -14.2 }, '2023': { ...stat(41, 51 * k, 0.7 * k), profit_factor: 1.2, max_dd: -6 }, '2024': { ...stat(44, 54.5 * k, 1.2 * k), profit_factor: 1.5, max_dd: -5 }, '2025': { ...stat(36, 50 * k, 0.6 * k), profit_factor: 1.1, max_dd: -7 }, '2026': { ...stat(10, 50 * k, 0.5 * k), profit_factor: 1.1, max_dd: -3 } }, months: [] }; };
 const jobs = new Map<string, { t0: number; dur: number; kind: string; sid: string; gate?: number }>();
 const startJob = (kind: string, sid: string, dur: number, gate?: number) => { const id = `job_${jobs.size + 1}`; jobs.set(id, { t0: Date.now(), dur, kind, sid, gate }); return { job_id: id }; };
 
@@ -69,6 +69,8 @@ function bars(sym: string, n = 180): Bar[] {
   return out;
 }
 
+const alertState: Record<string, boolean> = { stg_alpha: true, stg_pattern: true };
+const alertIds = new Set<string>(['stg_mine', 'stg_monk']);
 export const demoApi: LabApi = {
   async catalog() { return catalog; },
   async today() {
@@ -92,7 +94,7 @@ export const demoApi: LabApi = {
       const stages = j.kind === 'enhance' ? ['Collecting past trades', 'Preparing features', 'Training and testing gates', 'Checking for leaks'] : ['Finding entries', 'Simulating trades', 'Summarising'];
       return { id, status: f < 0.05 ? 'queued' : 'running', progress: Math.round(f * 95), stage: stages[Math.min(stages.length - 1, Math.floor(f * stages.length))], position: 1, eta_s: Math.round((1 - f) * j.dur / 1000), error: null, result: null };
     }
-    if (j.kind === 'enhance' && !enh[j.sid]) enh[j.sid] = { id: 'ai_new', status: 'done', result: { status: 'done', edge_found: true, plain: stat(131, 52.1, 0.9), gates: gates(), drivers: ['RSI (14) higher than usual helped', 'Volume vs 20-bar avg higher than usual helped', 'Distance from 52-wk high lower than usual helped'], leak: { passed: true } }, exit: null };
+    if (j.kind === 'enhance' && !enh[j.sid]) enh[j.sid] = { id: 'ai_new', status: 'done', result: { status: 'done', edge_found: true, plain: stat(131, 52.1, 0.9), plain_by_year: { '2023': stat(41, 51, 0.7), '2024': stat(44, 52.5, 1.0), '2025': stat(36, 50, 0.6), '2026': stat(10, 50, 0.5) }, gates: gates(), drivers: ['RSI (14) higher than usual helped', 'Volume vs 20-bar avg higher than usual helped', 'Distance from 52-wk high lower than usual helped'], leak: { passed: true } }, exit: null };
     if (j.kind === 'enhance_exit') enh[j.sid].exit = { gate: j.gate ?? 70, improved: true, tested: 24, yours: stat(52, 68.4, 2.5), best: stat(51, 70.6, 3.2), best_exit: { v: 1, any: [{ type: 'trail_atr', v: 3 }] } };
     const result = j.kind === 'backtest' ? { years: [2023, 2024, 2025, 2026], summary: { All: { ...stat(131, 52.1, 0.9), profit_factor: 1.3, max_dd: -14.2 }, '2023': { ...stat(41, 51, 0.7), profit_factor: 1.2, max_dd: -6 }, '2024': { ...stat(44, 54.5, 1.2), profit_factor: 1.5, max_dd: -5 }, '2025': { ...stat(36, 50, 0.6), profit_factor: 1.1, max_dd: -7 }, '2026': { ...stat(10, 50, 0.5), profit_factor: 1.1, max_dd: -3 } }, months: [] } : {};
     return { id, status: 'done', progress: 100, stage: 'done', error: null, result };
@@ -107,9 +109,27 @@ export const demoApi: LabApi = {
   },
   async copyStrategy(id) { const s = strategies.find(x => x.id === id)!; return demoApi.createStrategy({ name: `${s.name} (copy)`, tf: s.tf, entry: s.info!.entry, exit: s.info!.exit }); },
   async trades(id, status) { await sleep(150); return (tradeStore[id] ?? []).filter(t => (status === 'active') === !!t.is_open); },
-  async follow(id, on) { if (on) following.add(id); else following.delete(id); },
+  async follow(id, on, alerts) {
+    if (on) following.add(id); else following.delete(id);
+    const s = strategies.find(x => x.id === id);
+    if (s?.kind === 'flagship') alertState[id] = on && !!alerts;
+    else if (on && alerts) alertIds.add(id); else alertIds.delete(id);
+  },
+  async alerts() {
+    await sleep(150);
+    const items = strategies.filter(s => s.kind === 'flagship' || alertIds.has(s.id)).map(s => ({ id: s.id, name: s.name, tf: s.tf, cat: (s.kind === 'flagship' ? 'q' : s.mine ? 'y' : 'f') as 'q' | 'y' | 'f', on: s.kind === 'flagship' ? alertState[s.id] !== false : true, owner: s.mine ? null : s.owner }));
+    return { signed_in: true, items };
+  },
+  async matches() {
+    await sleep(200);
+    const on = (await demoApi.alerts()).items.filter(i => i.on);
+    const rows = on.flatMap(i => (tradeStore[i.id] ?? []).filter(t => t.is_open).map(t => ({ symbol: t.symbol, sid: i.id, strategy: i.name, cat: i.cat, date: t.entry_date, price: t.entry_price, now: t.exit_price, chg: t.ret_pct, age_days: t.age_days ?? null, latest: (t.age_days ?? 9) <= 4 })));
+    rows.sort((a, b) => ((b.date ?? '') > (a.date ?? '') ? 1 : -1));
+    const latest = rows.filter(r => r.latest).length;
+    return { signed_in: true, latest_days: 4, rows, counts: { latest, older: rows.length - latest } };
+  },
   async enhance(id) { return startJob('enhance', id, 6500); },
-  async enhancement(id) { return enh[id] ?? (strategies.find(s => s.id === id)?.enhanced ? { status: 'done', result: { status: 'done', edge_found: true, plain: stat(131, 52.1, 0.9), gates: gates(), drivers: ['RSI (14) higher than usual helped', 'Volume vs 20-bar avg higher than usual helped'], leak: { passed: true } }, exit: null } : { status: 'none', result: null, exit: null }); },
+  async enhancement(id) { return enh[id] ?? (strategies.find(s => s.id === id)?.enhanced ? { status: 'done', result: { status: 'done', edge_found: true, plain: stat(131, 52.1, 0.9), plain_by_year: { '2023': stat(41, 51, 0.7), '2024': stat(44, 52.5, 1.0), '2025': stat(36, 50, 0.6), '2026': stat(10, 50, 0.5) }, gates: gates(), drivers: ['RSI (14) higher than usual helped', 'Volume vs 20-bar avg higher than usual helped'], leak: { passed: true } }, exit: null } : { status: 'none', result: null, exit: null }); },
   async setGate(id, gate) { const s = strategies.find(x => x.id === id)!; s.ai_gate = gate; s.enhanced = !!gate; s.version += 1; s.stats = { ...s.stats, trades: 0, wins: 0, losses: 0, win_rate: null, shown: false }; },
   async enhanceExit(id, gate) { return startJob('enhance_exit', id, 4500, gate); },
   async setExitChoice(id, choice) { strategies.find(x => x.id === id)!.exit_choice = choice; },

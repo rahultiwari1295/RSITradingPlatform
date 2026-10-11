@@ -101,6 +101,15 @@ def gate_stats(ds: pd.DataFrame, scores: pd.Series, gate: int | None) -> dict:
     return {"trades": n, "wins": w, "losses": n - w, "win_rate": round(w / n * 100, 1), "avg_ret": round(float(m.ret_pct.mean()), 2)}
 
 
+def plain_stats(m: pd.DataFrame) -> dict:
+    """Every result of the plain strategy in a window (no score filter)."""
+    n = len(m)
+    if n == 0:
+        return {"trades": 0, "win_rate": None, "avg_ret": None, "wins": 0, "losses": 0}
+    w = int((m.ret_pct > 0).sum())
+    return {"trades": n, "wins": w, "losses": n - w, "win_rate": round(w / n * 100, 1), "avg_ret": round(float(m.ret_pct.mean()), 2)}
+
+
 def lift(ds: pd.DataFrame, scores: pd.Series, gate: int, min_kept: int = 15) -> float | None:
     base, kept = gate_stats(ds, scores, None), gate_stats(ds, scores, gate)
     if kept["trades"] < min_kept or base["win_rate"] is None:
@@ -172,6 +181,7 @@ def enhance_entry(ds: pd.DataFrame, report_years: list[int], extra: pd.DataFrame
     rep = ds.entry_date.dt.year.isin(report_years)
     plain_all = {"trades": int(rep.sum()), "win_rate": round(float((ds[rep].ret_pct > 0).mean() * 100), 1) if rep.any() else None,
                  "avg_ret": round(float(ds[rep].ret_pct.mean()), 2) if rep.any() else None}
+    plain_by_year = {str(y): plain_stats(ds[ds.entry_date.dt.year == y]) for y in report_years}
     gates = {}
     for g in GATES:
         per = {"All": gate_stats(ds[rep], sc[rep], g)}
@@ -188,7 +198,7 @@ def enhance_entry(ds: pd.DataFrame, report_years: list[int], extra: pd.DataFrame
     sel_lift = tour.get(cand)
     final = fit_scorer(ds.sort_values("entry_date"), ds.sort_values("entry_date")["y"].to_numpy())
     kept = ds[sc >= 60]
-    return {"status": "done", "candidate": cand, "tournament": tour, "plain": plain_all, "gates": gates, "leak": leak,
+    return {"status": "done", "candidate": cand, "tournament": tour, "plain": plain_all, "plain_by_year": plain_by_year, "gates": gates, "leak": leak,
             "edge_found": bool(best_z is not None and best_z >= 2.5 and sel_lift is not None and sel_lift > 0 and leak["passed"]),
             "drivers": drivers(final, kept if len(kept) >= 10 else ds) if final else [],
             "_scores": sc, "_scorer": final}
