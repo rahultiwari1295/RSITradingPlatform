@@ -32,29 +32,62 @@ def read_candles(path: Path) -> pd.DataFrame:
     return df[~bad & (df.close > 0)].reset_index(drop=True)
 
 
+def _clean(df: pd.DataFrame) -> pd.DataFrame:
+    df = df[REQUIRED].copy()
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.dropna(subset=["close"]).drop_duplicates("date").sort_values("date")
+    bad = (df.high < df[["open", "close", "low"]].max(axis=1) - 1e-6) | (df.low > df[["open", "close", "high"]].min(axis=1) + 1e-6)
+    return df[~bad & (df.close > 0)].reset_index(drop=True)
+
+
+def iter_candles(cfg: Config, symbols: list[str] | None = None):
+    """Yield (symbol, candles). Source: live engine's StockHistory SQLite (rawCandles JSON, opened read-only)
+    when `candles_db` is set, otherwise one parquet/csv file per symbol in `candles_dir`."""
+    if cfg.candles_db:
+        import sqlite3
+        con = sqlite3.connect(f"file:{cfg.candles_db}?mode=ro", uri=True, timeout=30)
+        try:
+            for sym, raw in con.execute("SELECT symbol, rawCandles FROM StockHistory WHERE rawCandles IS NOT NULL ORDER BY symbol"):
+                if symbols and sym not in symbols:
+                    continue
+                try:
+                    rows = json.loads(raw)
+                    df = pd.DataFrame(rows).rename(columns={"t": "date", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"})
+                    yield sym, _clean(df)
+                except Exception as e:  # noqa: BLE001
+                    yield sym, e
+        finally:
+            con.close()
+        return
+    for p in sorted(cfg.candles_dir.glob("*")):
+        if p.suffix in (".parquet", ".csv") and (not symbols or p.stem in symbols):
+            try:
+                yield p.stem, read_candles(p)
+            except Exception as e:  # noqa: BLE001
+                yield p.stem, e
+
+
 def cook(cfg: Config, tf: str = "1D", symbols: list[str] | None = None) -> dict:
     """Rebuild a timeframe into a temp dir, validate, then swap atomically. Returns a summary."""
     t0, target = time.time(), cfg.tf_dir(tf)
     tmp = target.with_name(target.name + ".new")
     shutil.rmtree(tmp, ignore_errors=True)
     tmp.mkdir(parents=True)
-    files = sorted(p for p in cfg.candles_dir.glob("*") if p.suffix in (".parquet", ".csv"))
-    if symbols:
-        files = [p for p in files if p.stem in symbols]
     done, skipped, rows, last = 0, [], 0, None
-    for p in files:
+    for sym, d in iter_candles(cfg, symbols):
         try:
-            d = read_candles(p)
+            if isinstance(d, Exception):
+                raise d
             if len(d) < 30:
-                skipped.append(p.stem)
+                skipped.append(sym)
                 continue
             f = compute(to_weekly(d) if tf == "1W" else d, tf)
-            f.insert(0, "symbol", p.stem)
-            pq.write_table(pa.Table.from_pandas(f, preserve_index=False), tmp / f"{p.stem}.parquet", compression="zstd")
+            f.insert(0, "symbol", sym)
+            pq.write_table(pa.Table.from_pandas(f, preserve_index=False), tmp / f"{sym}.parquet", compression="zstd")
             rows += len(f); done += 1
             last = max(last, f["date"].max()) if last is not None else f["date"].max()
-        except Exception as e:  # one bad file must never block the cook
-            skipped.append(f"{p.stem}:{type(e).__name__}")
+        except Exception as e:  # one bad symbol must never block the cook
+            skipped.append(f"{sym}:{type(e).__name__}")
     if done == 0:
         shutil.rmtree(tmp, ignore_errors=True)
         raise RuntimeError("cook produced no symbols; keeping previous data")

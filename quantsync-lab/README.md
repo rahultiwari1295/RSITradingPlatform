@@ -14,7 +14,7 @@ lab/api.py        FastAPI /lab/v1                 lab/worker.py     queue worker
 `pip install -r requirements-dev.txt && pytest -q`   (uses synthetic candles; 20 tests incl. no-lookahead, parity, leak, rule fuzz, golden trades)
 
 ## Install on the VPS (Phases 0-9 of the plan)
-1. Confirm `candles_dir`: one `<SYMBOL>.parquet|csv` per stock with `date,open,high,low,close,volume`, split-adjusted. If the live files differ, add a small adapter in `store.read_candles`.
+1. Candles: set `candles_db` in config.yaml to the live `Data/stock_history.db` (read-only, `StockHistory.rawCandles`), or put one `<SYMBOL>.parquet` per stock in `candles_dir`.
 2. `useradd -r -m qslab`; `mkdir -p /opt/quantsync-lab/{app,data,db,models,runs,logs,backups,run}`; copy this folder to `app/`; `python3 -m venv ../venv && ../venv/bin/pip install -r requirements.txt`.
 3. `cp config.example.yaml /opt/quantsync-lab/config.yaml` and set `firebase_project_id`; add a 2 GB swapfile if none.
 4. `sudo -u qslab ../venv/bin/python -m lab.cli cook`, check the printed counts, then copy `deploy/*.service|timer` to `/etc/systemd/system/`, `systemctl enable --now qslab-api qslab-worker-fast qslab-worker-ai qslab-cook.timer`.

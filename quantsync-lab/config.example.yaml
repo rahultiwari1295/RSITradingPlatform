@@ -3,6 +3,7 @@ data_dir: /opt/quantsync-lab/data
 db_path: /opt/quantsync-lab/db/lab.db
 models_dir: /opt/quantsync-lab/models
 candles_dir: /opt/quantsync-lab/data/candles   # one <SYMBOL>.parquet|csv per stock: date,open,high,low,close,volume (adjusted)
+candles_db: /root/quantsync/Data/stock_history.db   # live engine StockHistory table, opened read-only; if set it is used instead of candles_dir
 run_dir: /opt/quantsync-lab/run                # cook.lock, live-busy marker
 auth_mode: firebase        # firebase | dev (dev trusts X-Dev-Uid; never on the VPS)
 firebase_project_id: ""

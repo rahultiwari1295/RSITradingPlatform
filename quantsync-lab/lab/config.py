@@ -13,6 +13,7 @@ class Config:
     db_path: Path = Path("/opt/quantsync-lab/db/lab.db")
     models_dir: Path = Path("/opt/quantsync-lab/models")
     candles_dir: Path = Path("/opt/quantsync-lab/data/candles")
+    candles_db: Path | None = None  # live engine StockHistory SQLite (read-only); takes priority over candles_dir
     run_dir: Path = Path("/opt/quantsync-lab/run")
     auth_mode: str = "firebase"
     firebase_project_id: str = ""
@@ -36,7 +37,7 @@ class Config:
         return self.features_dir / f"tf={tf}"
 
 
-_PATH_KEYS = {"data_dir", "db_path", "models_dir", "candles_dir", "run_dir"}
+_PATH_KEYS = {"data_dir", "db_path", "models_dir", "candles_dir", "candles_db", "run_dir"}
 
 
 def load_config(path: str | os.PathLike | None = None) -> Config:

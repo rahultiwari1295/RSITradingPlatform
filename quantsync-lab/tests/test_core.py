@@ -139,3 +139,19 @@ def test_metrics(cfg):
     m = metrics.by_year(t, [2023, 2024])
     assert m["2024"]["trades"] == 2 and m["All"]["win_rate"] == pytest.approx(66.7)
     assert m["2023"]["profit_factor"] is None
+
+
+def test_cook_from_live_stockhistory_db(tmp_path):
+    import json, sqlite3
+    from lab.config import Config
+    db = tmp_path / "stock_history.db"
+    c = sqlite3.connect(db)
+    c.execute("CREATE TABLE StockHistory (token TEXT, symbol TEXT PRIMARY KEY, rawCandles TEXT, candleCount INTEGER)")
+    d = make_candles(4, start="2024-01-01")
+    raw = [{"t": str(r.date.date()), "o": r.open, "h": r.high, "l": r.low, "c": r.close, "v": r.volume} for r in d.itertuples()]
+    c.execute("INSERT INTO StockHistory VALUES('1','ABC',?,?)", (json.dumps(raw), len(raw)))
+    c.execute("INSERT INTO StockHistory VALUES('2','BAD','not json',0)")
+    c.commit(); c.close()
+    cfg = Config(data_dir=tmp_path / "data", candles_db=db)
+    m = store.cook(cfg, "1D")
+    assert m["symbols"] == 1 and any(s.startswith("BAD") for s in m["skipped"])
