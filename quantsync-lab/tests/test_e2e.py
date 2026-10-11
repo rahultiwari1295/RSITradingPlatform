@@ -167,3 +167,62 @@ def test_unverifiable_token_does_not_break_public_pages(cfg):
         assert cl.post("/lab/v1/scan", json=RULE, headers=bad).status_code == 200
         assert cl.post("/lab/v1/backtest", json=RULE, headers=bad).status_code == 401   # needs a real user
         assert cl.get("/lab/v1/health").json()["auth"]["mode"] == "firebase"
+
+
+def test_gated_past_test(client, cfg):
+    """With an AI score set, the past test shows only the results that score would have let through."""
+    rule = {**RULE, "entry": {"v": 1, "all": [{"l": {"f": "rsi_14"}, "op": ">", "r": {"c": 52}}]}}
+    h = {"X-Dev-Uid": "g1"}
+    sid = client.post("/lab/v1/strategies", json={**rule, "name": "Gated"}, headers=h).json()["id"]
+    drain(cfg, "fast")
+    plain = client.get(f"/lab/v1/strategies/{sid}/backtest", headers=h).json()["result"]
+    client.post(f"/lab/v1/strategies/{sid}/enhance", headers=h)
+    drain(cfg, "ai")
+    assert client.post(f"/lab/v1/strategies/{sid}/ai-gate", json={"gate": 70}, headers=h).status_code == 200
+    assert client.get(f"/lab/v1/strategies/{sid}/backtest", headers=h).json()["status"] == "running"
+    drain(cfg, "ai")
+    gated = client.get(f"/lab/v1/strategies/{sid}/backtest", headers=h).json()
+    assert gated["status"] == "done" and gated["result"]["ai_gate"] == 70
+    assert gated["result"]["summary"]["All"]["trades"] < plain["summary"]["All"]["trades"]
+    en = client.get(f"/lab/v1/strategies/{sid}/enhancement", headers=h).json()
+    assert gated["result"]["summary"]["All"]["trades"] == en["result"]["gates"]["70"]["All"]["trades"]  # same numbers as the table
+
+
+ENGINE = {"fetched_at": 0, "live_since": "2026-09-08",
+          "closed": [{"engine": "v2", "symbol": f"S{i}", "strategy": "Leader", "entry_date": f"2025-0{1 + i % 9}-10",
+                      "exit_date": f"2025-0{1 + i % 9}-20", "entry_price": 100, "exit_price": 100 + (5 if i % 3 else -4),
+                      "ret_pct": 5.0 if i % 3 else -4.0, "exit_reason": "target" if i % 3 else "stop", "bars": 10,
+                      "origin": "tested"} for i in range(40)]
+                    + [{"engine": "v2", "symbol": "LIVE1", "strategy": "Breakout", "entry_date": "2026-09-10", "exit_date": "2026-10-01",
+                        "entry_price": 50, "exit_price": 56, "ret_pct": 12.0, "exit_reason": "target", "bars": 15, "origin": "live"},
+                       {"engine": "v3", "symbol": "PAT1", "strategy": "HTF", "entry_date": "2026-09-01", "exit_date": "2026-09-05",
+                        "entry_price": 10, "exit_price": 9.2, "ret_pct": -8.0, "exit_reason": "stop", "bars": 4, "origin": "live"}],
+          "active": [{"engine": "v2", "symbol": "ACT1", "strategy": "Leader", "entry_date": "2026-10-01", "entry_price": 20, "price": 21, "ret_pct": 5.0}]}
+
+
+def test_flagships_use_engine_record(client, cfg, monkeypatch):
+    from lab import engine_feed
+    monkeypatch.setattr(engine_feed, "_fetch", lambda c: ENGINE)
+    engine_feed._cache.update(t=0, data=None)
+    con = db.connect(cfg)
+    for name in ("AI Alpha", "AI Pattern"):
+        if not con.execute("SELECT 1 FROM strategies WHERE kind='flagship' AND name=?", (name,)).fetchone():
+            service.create_strategy(con, cfg, None, name, "1D", RULE["entry"], RULE["exit"], kind="flagship", visibility="public")
+    cards = {c["name"]: c for c in client.get("/lab/v1/strategies?scope=flagship").json()}
+    a = cards["AI Alpha"]
+    assert a["source"] == "engine" and a["stats"]["open"] == 1 and a["stats"]["trades"] == 1 and a["stats"]["wins"] == 1
+    assert cards["AI Pattern"]["stats"]["losses"] == 1 and cards["AI Pattern"]["stats"]["open"] == 0
+    act = client.get(f"/lab/v1/strategies/{a['id']}/trades?status=active").json()
+    assert [t["symbol"] for t in act] == ["ACT1"] and act[0]["is_open"] == 1
+    closed = client.get(f"/lab/v1/strategies/{a['id']}/trades?status=closed").json()
+    assert len(closed) == 41 and closed[0]["symbol"] == "LIVE1" and closed[0]["origin"] == "live"
+    bt = client.get(f"/lab/v1/strategies/{a['id']}/backtest").json()["result"]
+    assert bt["source"] == "engine" and bt["summary"]["All"]["trades"] == 41 and bt["summary"]["Live"]["trades"] == 1
+    assert bt["years"] == [2025, 2026] and len(bt["trades"]) == 41
+    today = client.get("/lab/v1/today").json()
+    assert any(f["symbol"] == "ACT1" for f in today["fresh"])
+    # engine down: the saved copy keeps the pages working
+    engine_feed._cache.update(t=0, data=None)
+    monkeypatch.setattr(engine_feed, "_fetch", lambda c: (_ for _ in ()).throw(OSError("down")))
+    assert client.get(f"/lab/v1/strategies/{a['id']}/backtest").json()["result"]["summary"]["All"]["trades"] == 41
+    engine_feed._cache.update(t=0, data=None)

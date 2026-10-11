@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
-from . import __version__, db, jobs, pipeline, service, store
+from . import __version__, db, engine_feed, jobs, pipeline, service, store
 from .auth import mirror_strategy_ids, optional_uid, require_uid
 from .catalog import catalog
 from .config import Config, load_config
@@ -152,22 +152,33 @@ def _kick_backtest(con, sid: str) -> None:
         log.exception("could not queue past test for %s", sid)
 
 
-def _card(con, s, uid=None) -> dict:
+def _engine(request_or_cfg, s) -> str | None:
+    cfg = request_or_cfg if isinstance(request_or_cfg, Config) else cfg_of(request_or_cfg)
+    eng = engine_feed.engine_of(s)
+    return eng if eng and cfg.engine_api and engine_feed.feed(cfg) is not None else None
+
+
+def _card(con, s, uid=None, cfg: Config | None = None) -> dict:
     v = con.execute("SELECT * FROM strategy_versions WHERE id=?", (s["current_version"],)).fetchone()
     owner = con.execute("SELECT handle FROM users WHERE uid=?", (s["owner_uid"],)).fetchone() if s["owner_uid"] else None
     followers = con.execute("SELECT count(*) FROM follows WHERE strategy_id=?", (s["id"],)).fetchone()[0]
     enh = con.execute("SELECT id,status FROM ai_enhancements WHERE version_id=? OR id=? ORDER BY created_at DESC LIMIT 1",
                       (v["id"], v["ai_enhancement_id"])).fetchone()
-    return {"id": s["id"], "name": s["name"], "tf": s["tf"], "kind": s["kind"], "visibility": s["visibility"],
+    card = {"id": s["id"], "name": s["name"], "tf": s["tf"], "kind": s["kind"], "visibility": s["visibility"],
             "owner": owner[0] if owner and owner[0] else ("QuantSync" if s["kind"] == "flagship" else None), "mine": bool(uid and uid == s["owner_uid"]),
             "followers": followers, "version": v["n"], "live_from": v["live_from"], "ai_gate": v["ai_gate"],
             "enhanced": bool(v["ai_gate"]), "exit_choice": v["exit_choice"],
             "enhancement": {"id": enh["id"], "status": enh["status"]} if enh else None,
-            "stats": service.live_stats(con, v["id"])}
+            "stats": service.live_stats(con, v["id"]), "source": "lab"}
+    eng = _engine(cfg, s) if cfg else None
+    if eng:  # flagships show the live engine's own record
+        card.update(stats=engine_feed.stats(cfg, eng), source="engine", ai_gate=None, enhanced=False, enhancement=None,
+                    live_from=(engine_feed.feed(cfg) or {}).get("live_since"))
+    return card
 
 
 @router.get("/strategies")
-def list_strategies(scope: str = "mine", uid: str | None = Depends(optional_uid), con=Depends(get_con)):
+def list_strategies(request: Request, scope: str = "mine", uid: str | None = Depends(optional_uid), con=Depends(get_con)):
     if scope == "mine":
         if not uid:
             raise HTTPException(401, "Sign in to continue.")
@@ -180,7 +191,7 @@ def list_strategies(scope: str = "mine", uid: str | None = Depends(optional_uid)
     out = []
     for s in con.execute(q, a).fetchall():
         try:
-            out.append(_card(con, s, uid))
+            out.append(_card(con, s, uid, cfg_of(request)))
         except Exception:  # noqa: BLE001 - one bad record must not hide the whole list
             log.exception("card failed for %s", s["id"])
             out.append({"id": s["id"], "name": s["name"], "tf": s["tf"], "kind": s["kind"], "visibility": s["visibility"], "owner": None,
@@ -191,17 +202,22 @@ def list_strategies(scope: str = "mine", uid: str | None = Depends(optional_uid)
 
 
 @router.get("/strategies/{sid}")
-def get_strategy(sid: str, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
+def get_strategy(sid: str, request: Request, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
     s = _visible(con, sid, uid)
     v = con.execute("SELECT * FROM strategy_versions WHERE id=?", (s["current_version"],)).fetchone()
-    out = _card(con, s, uid)
+    out = _card(con, s, uid, cfg_of(request))
     out["info"] = {"entry": json.loads(v["entry_json"]), "exit": json.loads(v["exit_json"])}
     return out
 
 
 @router.get("/strategies/{sid}/backtest")
-def strategy_backtest(sid: str, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
+def strategy_backtest(sid: str, request: Request, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
     s = _visible(con, sid, uid)
+    eng = _engine(request, s)
+    if eng:
+        res = engine_feed.backtest(cfg_of(request), eng)
+        if res:
+            return {"status": "done", "result": res}
     v = con.execute("SELECT * FROM strategy_versions WHERE id=?", (s["current_version"],)).fetchone()
     try:
         return service.ensure_backtest(con, s, v)
@@ -222,8 +238,11 @@ def strategy_backtest_run(sid: str, request: Request, uid: str = Depends(require
 
 
 @router.get("/strategies/{sid}/trades")
-def trades(sid: str, status: str = "active", limit: int = 100, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
+def trades(sid: str, request: Request, status: str = "active", limit: int = 200, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
     s = _visible(con, sid, uid)
+    eng = _engine(request, s)
+    if eng:
+        return engine_feed.trades(cfg_of(request), eng, status, min(limit, 1000))
     open_ = 1 if status == "active" else 0
     rows = con.execute("SELECT * FROM live_trades WHERE version_id=? AND is_open=? ORDER BY signal_date DESC, symbol LIMIT ?",
                        (s["current_version"], open_, min(limit, 500))).fetchall()
@@ -414,11 +433,18 @@ def chart(symbol: str, request: Request, tf: str = "1D", n: int = 180):
 @router.get("/today")
 def today(request: Request, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
     cfg = cfg_of(request)
-    flag = [_card(con, s, uid) for s in con.execute("SELECT * FROM strategies WHERE kind='flagship' AND archived=0")]
-    fresh = con.execute("""SELECT l.symbol, l.signal_date, s.id sid, s.name FROM live_trades l
-        JOIN strategies s ON s.current_version=l.version_id WHERE s.kind='flagship' AND l.is_open=1
-        ORDER BY l.signal_date DESC LIMIT 20""").fetchall()
-    return {"data": {tf: store.meta(cfg, tf) for tf in ("1D", "1W")}, "flagship": flag, "fresh": [dict(r) for r in fresh]}
+    rows = con.execute("SELECT * FROM strategies WHERE kind='flagship' AND archived=0").fetchall()
+    flag = [_card(con, s, uid, cfg) for s in rows]
+    fresh = []
+    for s in rows:
+        eng = _engine(cfg, s)
+        if eng:
+            fresh += [{"symbol": a["symbol"], "signal_date": a["entry_date"], "sid": s["id"], "name": s["name"]} for a in engine_feed.active(cfg, eng)]
+        else:
+            fresh += [dict(r) for r in con.execute("""SELECT l.symbol, l.signal_date, ? sid, ? name FROM live_trades l
+                WHERE l.version_id=? AND l.is_open=1""", (s["id"], s["name"], s["current_version"]))]
+    fresh.sort(key=lambda r: r["signal_date"] or "", reverse=True)
+    return {"data": {tf: store.meta(cfg, tf) for tf in ("1D", "1W")}, "flagship": flag, "fresh": fresh[:20]}
 
 
 @asynccontextmanager

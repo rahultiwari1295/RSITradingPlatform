@@ -50,7 +50,8 @@ export function StatStrip({ s }: { s: Stats }) {
   return (
     <div className="strip num" aria-label="Track record">
       <div><b>{shown ? plainPct(s.win_rate, 0) : '—'}</b><small>Win rate</small></div>
-      <div><b>{s.trades}</b><small>Scanned</small></div>
+      <div><b>{s.open}</b><small>Active</small></div>
+      <div><b>{s.trades}</b><small>Closed (live)</small></div>
       <div><b className="up">{s.wins}</b><small>Wins</small></div>
       <div><b className="down">{s.losses}</b><small>Losses</small></div>
       <div><b className={tone(s.avg_ret)}>{pct(s.avg_ret)}</b><small>Avg</small></div>
@@ -77,5 +78,5 @@ export function freshness(age?: number) {
   if (age == null) return null;
   if (age <= 0) return { label: 'New today', cls: 'gold' };
   if (age <= 3) return { label: `Day ${age + 1}`, cls: '' };
-  return { label: 'Older result', cls: 'old' };
+  return { label: `Day ${age + 1}`, cls: '' };
 }

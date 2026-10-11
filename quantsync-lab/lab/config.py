@@ -27,6 +27,7 @@ class Config:
     free_ai_jobs_per_day: int = 5
     free_backtests_per_hour: int = 10
     queue_cap: int = 50
+    engine_api: str = "http://127.0.0.1:8000"  # live QuantSync engine (flagship trades); "" disables
     extra: dict = field(default_factory=dict)
 
     @property

@@ -112,12 +112,12 @@ a.tile:active, button.tile:active { transform: scale(.985); }
 .kv > div { min-width: 0; }
 .kv span.mute { font-size: 12px; color: var(--ink2) !important; }
 .kv b { display: block; font-size: 20px; font-weight: 600; margin-top: 1px; letter-spacing: -.025em; }
-.strip { display: grid; grid-template-columns: repeat(5, 1fr); border-radius: var(--r); background: var(--bg2); padding: 14px 4px; }
+.strip { display: grid; grid-template-columns: repeat(6, 1fr); border-radius: var(--r); background: var(--bg2); padding: 14px 4px; }
 .strip > div { padding: 0 4px; text-align: center; min-width: 0; position: relative; }
 .strip > div + div::before { content: ''; position: absolute; left: 0; top: 8%; height: 84%; width: .5px; background: var(--line); }
 .strip b { display: block; font-size: 19px; font-weight: 600; letter-spacing: -.03em; }
 .strip small { font-size: 11px; color: var(--ink2); font-weight: 400; }
-@media (max-width: 420px) { .strip b { font-size: 16px; } }
+@media (max-width: 420px) { .strip { grid-template-columns: repeat(3, 1fr); row-gap: 12px; } .strip b { font-size: 16px; } }
 
 /* grouped lists */
 .rows { border-radius: var(--r); background: var(--bg2); overflow: hidden; }

@@ -36,7 +36,7 @@ export function TradeRow({ t, showStrategy }: { t: Trade; showStrategy?: boolean
   return (
     <a className={`row ${old ? 'old' : ''}`} href={`#c-${t.symbol}`}>
       <div style={{ minWidth: 0 }}>
-        <div className="t">{t.symbol}{f && <span className={`pill ${f.cls}`}>{f.label}</span>}{showStrategy && t.enhanced ? <span className="pill gold">AI</span> : null}</div>
+        <div className="t">{t.symbol}{f && <span className={`pill ${f.cls}`}>{f.label}</span>}{!t.is_open && t.origin && <span className={`pill ${t.origin === 'live' ? 'up' : ''}`}>{t.origin === 'live' ? 'Live' : 'Tested'}</span>}{t.group && <span className="pill">{t.group}</span>}{showStrategy && t.enhanced ? <span className="pill gold">AI</span> : null}</div>
         <div className="s num">
           {t.is_open ? `Entered ${shortDate(t.entry_date)} · ${inr(t.entry_price)}` : `${shortDate(t.entry_date)} → ${shortDate(t.exit_date)} · ${inr(t.entry_price)}`}
           {showStrategy && t.strategy_name ? <span> · {t.strategy_name}</span> : null}

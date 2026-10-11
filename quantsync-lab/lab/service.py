@@ -70,26 +70,55 @@ def run_backtest(cfg, con, e, x, tf, version_id="", prog=lambda pct, st: None) -
     return res
 
 
-def cached_backtest(con, tf, e, x) -> dict | None:
+def _gate_key(x, gate, enh_id) -> str:
+    return pipeline.exit_hash(x) + (f"|g{gate}|{enh_id}" if gate and enh_id else "")
+
+
+def cached_backtest(con, tf, e, x, gate=None, enh_id=None) -> dict | None:
     """Newest past test computed with the current metric definitions (older ones are recomputed, never shown)."""
     r = con.execute("SELECT summary_json FROM backtest_runs WHERE rule_hash=? AND exit_hash=? AND as_of LIKE ? ORDER BY created_at DESC LIMIT 1",
-                    (rule_hash(e, tf), pipeline.exit_hash(x), f"%|m{metrics.METRICS_V}")).fetchone()
+                    (rule_hash(e, tf), _gate_key(x, gate, enh_id), f"%|m{metrics.METRICS_V}")).fetchone()
     return json.loads(r[0]) if r else None
+
+
+def run_gated_backtest(cfg, con, e, x, tf, gate: int, enh_id: str, version_id="", prog=lambda pct, st: None) -> dict:
+    """Past test of only the results the AI score would have let through. Scores are walk-forward (each year scored by a
+    model trained on earlier years), the same ones the 'Pick a score' table uses, so nothing here sees the future."""
+    key = (rule_hash(e, tf), _gate_key(x, gate, enh_id), f'{(store.meta(cfg, tf) or {}).get("as_of", "")}|m{metrics.METRICS_V}')
+    hit = con.execute("SELECT summary_json FROM backtest_runs WHERE rule_hash=? AND exit_hash=? AND as_of=?", key).fetchone()
+    if hit:
+        return json.loads(hit[0])
+    res = pipeline.enhance(cfg, e, x, tf, prog)
+    if res["status"] != "done":
+        raise ValueError(res.get("reason") or "Not enough past results to score.")
+    ds, sc = res["_ds"], res["_scores"]
+    keep = ds[(sc >= gate).to_numpy()].copy()
+    keep["is_open"] = False
+    out = pipeline.summarise_trades(cfg, keep, tf)
+    out.update(ai_gate=gate, note=f"Only results with AI score {gate} or higher (walk-forward scores).")
+    con.execute("INSERT INTO backtest_runs(id,version_id,rule_hash,exit_hash,as_of,summary_json,created_at) VALUES(?,?,?,?,?,?,?)",
+                (new_id("bt"), version_id, *key, jdump(out), time.time()))
+    return out
 
 
 def ensure_backtest(con, s, v) -> dict:
     """Cached past test, or a queued system job computing it (one per version). Never needs a signed-in user."""
     e, x = json.loads(v["entry_json"]), json.loads(v["exit_json"])
-    res = cached_backtest(con, s["tf"], e, x)
+    gate, enh = (v["ai_gate"], v["ai_enhancement_id"]) if v["ai_gate"] and v["ai_enhancement_id"] else (None, None)
+    res = cached_backtest(con, s["tf"], e, x, gate, enh)
     if res:
         return {"status": "done", "result": res}
-    j = con.execute("""SELECT id, status, error, finished_at FROM jobs WHERE kind='backtest' AND json_extract(payload_json,'$.version_id')=?
-                       ORDER BY created_at DESC LIMIT 1""", (v["id"],)).fetchone()
+    kind = "gated_backtest" if gate else "backtest"
+    j = con.execute("""SELECT id, status, error, finished_at FROM jobs WHERE kind=? AND json_extract(payload_json,'$.version_id')=?
+                       ORDER BY created_at DESC LIMIT 1""", (kind, v["id"])).fetchone()
     if j and j["status"] in ("queued", "running"):
         return {"status": "running", "job_id": j["id"]}
     if j and j["status"] == "failed" and time.time() - (j["finished_at"] or 0) < 600:  # don't hammer a failing rule
         return {"status": "failed", "error": j["error"]}
-    jid = jobs.enqueue(con, "backtest", None, {"tf": s["tf"], "entry": e, "exit": x, "version_id": v["id"]}, queue_cap=10_000)
+    p = {"tf": s["tf"], "entry": e, "exit": x, "version_id": v["id"]}
+    if gate:
+        p.update(gate=gate, enhancement_id=enh)
+    jid = jobs.enqueue(con, kind, None, p, queue_cap=10_000)
     return {"status": "running", "job_id": jid}
 
 
@@ -99,6 +128,9 @@ def handle(cfg: Config, con: sqlite3.Connection, job: sqlite3.Row) -> dict:
     prog = lambda pct, st: jobs.progress(con, job["id"], pct, st)
     if job["kind"] == "backtest":
         return run_backtest(cfg, con, normalise(p["entry"]), normalise_exit(p.get("exit")), p["tf"], p.get("version_id") or "", prog)
+    if job["kind"] == "gated_backtest":
+        return run_gated_backtest(cfg, con, normalise(p["entry"]), normalise_exit(p.get("exit")), p["tf"], int(p["gate"]), p["enhancement_id"],
+                                  p.get("version_id") or "", prog)
     if job["kind"] == "enhance":
         return _enhance(cfg, con, p, prog)
     if job["kind"] == "enhance_exit":

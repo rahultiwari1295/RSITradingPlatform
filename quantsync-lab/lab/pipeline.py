@@ -61,9 +61,13 @@ def run_trades(cfg: Config, entry: dict, exit_: dict, tf: str, sg: pd.DataFrame 
 
 def backtest(cfg: Config, entry: dict, exit_: dict, tf: str, progress: Progress = _noop) -> dict:
     trades, _ = run_trades(cfg, entry, exit_, tf, progress=progress)
+    progress(90, "Summarising")
+    return summarise_trades(cfg, trades, tf)
+
+
+def summarise_trades(cfg: Config, trades: pd.DataFrame, tf: str) -> dict:
     yrs = report_years(cfg)
     rep = trades[trades["entry_date"] >= pd.Timestamp(cfg.report_start)] if len(trades) else trades
-    progress(90, "Summarising")
     return {"tf": tf, "as_of": (store.meta(cfg, tf) or {}).get("as_of"), "years": yrs,
             "summary": metrics.by_year(trades, yrs), "months": metrics.monthly_counts(rep),
             "open_trades": int(trades["is_open"].sum()) if len(trades) else 0,

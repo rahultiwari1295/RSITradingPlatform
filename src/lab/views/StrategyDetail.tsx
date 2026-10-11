@@ -32,7 +32,7 @@ export default function StrategyDetail({ id, uid }: { id: string; uid: string | 
         <button className="btn sm" onClick={() => setInfo(true)}><Info /> Show info</button>
       </div>
       <StatStrip s={d.stats} />
-      <p className="mute" style={{ fontSize: 12, margin: '10px 2px 0' }}>Live since {shortDate(d.live_from)} (v{d.version}). Results are recorded after each market close; entries happen at the next open after a scan result. The past test below shows history.</p>
+      <p className="mute" style={{ fontSize: 12, margin: '10px 2px 0' }}>{d.source === 'engine' ? <>Live results recorded by the QuantSync engine since {shortDate(d.live_from)}. Closed shows every result, live and tested; the full record is below.</> : <>Live since {shortDate(d.live_from)} (v{d.version}). Results are recorded after each market close; entries happen at the next open after a scan result. The past test below shows history.</>}</p>
       <section className="sec">
         <Seg label="Trades" value={tab} onChange={v => setTab(v)} options={[{ v: 'active', label: `Active${d.stats.open ? ` · ${d.stats.open}` : ''}` }, { v: 'closed', label: 'Closed' }]} />
         <div style={{ marginTop: 12 }}>
@@ -40,7 +40,7 @@ export default function StrategyDetail({ id, uid }: { id: string; uid: string | 
         </div>
       </section>
       <section className="sec"><BacktestPanel id={id} /></section>
-      {(d.mine || d.enhanced) && <section className="sec"><EnhancePanel s={d} cat={cat.data} onChanged={() => { s.reload(); trades.reload(); }} /></section>}
+      {d.source !== 'engine' && (d.mine || d.enhanced) && <section className="sec"><EnhancePanel s={d} cat={cat.data} onChanged={() => { s.reload(); trades.reload(); }} /></section>}
       {info && (
         <Sheet title="Strategy rules" onClose={() => setInfo(false)}>
           <div className="eyebrow">Entry</div>

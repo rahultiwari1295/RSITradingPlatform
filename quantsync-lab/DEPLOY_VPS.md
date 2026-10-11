@@ -181,3 +181,19 @@ journalctl -u qslab-api --since "10 min ago" | grep -i "unhandled\|card failed" 
 
 Daily: the live record only updates when `python -m lab.cli cook` runs after the close (it calls `update_live`). Confirm the
 cron entry exists: `crontab -l | grep "lab.cli cook"`.
+
+## Update 2026-10-11 (b): flagships show the engine's real trades; AI-gated past tests
+
+- AI Alpha and AI Pattern now read the live QuantSync engine on the same VPS (`engine_api`, default `http://127.0.0.1:8000`):
+  `/api/track-record` (closed, live + walk-forward test), `/api/active-trades` and `/api/v3/active-trades` (open).
+  AI Alpha = engine v2, AI Pattern = engine v3. Refreshed every 2 minutes; the last good copy is saved to
+  `<data_dir>/engine_feed.json` and used if the engine API is down. No config change needed unless the engine runs elsewhere.
+- A strategy with an AI score set now shows its past test filtered by that score (walk-forward scores; job kind
+  `gated_backtest`, AI lane). Counts match the "Pick a score" table.
+- Tests: 32.
+
+Check after deploy:
+```bash
+curl -s http://127.0.0.1:8100/lab/v1/strategies?scope=flagship | python3 -c 'import sys,json;[print(s["name"],s["source"],s["stats"]["open"],s["stats"]["trades"]) for s in json.load(sys.stdin)]'
+# expect: AI Alpha engine 3 8 / AI Pattern engine 0 9 (live closed counts grow over time)
+```

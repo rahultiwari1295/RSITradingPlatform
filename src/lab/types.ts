@@ -14,18 +14,18 @@ export interface Stats { trades: number; wins: number; losses: number; win_rate:
 export interface StrategyCard {
   id: string; name: string; tf: TF; kind: 'user' | 'flagship'; visibility: 'private' | 'public'; owner: string | null; mine: boolean;
   followers: number; version: number; live_from: string | null; ai_gate: number | null; enhanced: boolean; exit_choice: 'user' | 'ai';
-  enhancement: { id: string; status: string } | null; stats: Stats; broken?: boolean; info?: { entry: RuleJson; exit: ExitJson };
+  enhancement: { id: string; status: string } | null; stats: Stats; broken?: boolean; source?: 'engine' | 'lab'; info?: { entry: RuleJson; exit: ExitJson };
 }
 export interface Trade {
   id: number; symbol: string; signal_date: string; entry_date: string | null; entry_price: number | null; exit_date: string | null;
   exit_price: number | null; exit_reason: string | null; ret_pct: number | null; is_open: number; age_days?: number;
-  strategy_id?: string; strategy_name?: string; enhanced?: number;
+  strategy_id?: string; strategy_name?: string; enhanced?: number; origin?: 'live' | 'tested'; group?: string;
 }
 export interface ScanRow { symbol: string; date: string; close: number; rsi_14: number | null; ret_1: number | null; vol_ratio: number | null }
 export interface ScanResult { as_of: string | null; count: number; rows: ScanRow[] }
 export interface YearStat { trades: number; wins: number; losses: number; win_rate: number | null; avg_ret: number | null }
-export interface BacktestTrade { symbol: string; signal_date: string; entry_date: string; entry_price: number | null; exit_date: string | null; exit_price: number | null; exit_reason: string | null; ret_pct: number | null; bars: number | null; is_open: boolean }
-export interface BacktestResult { trades?: BacktestTrade[]; years: number[]; summary: Record<string, YearStat & { profit_factor: number | null; max_dd: number | null }>; months: { month: string; trades: number; win_rate: number }[] }
+export interface BacktestTrade { symbol: string; signal_date: string; entry_date: string; entry_price: number | null; exit_date: string | null; exit_price: number | null; exit_reason: string | null; ret_pct: number | null; bars: number | null; is_open: boolean; origin?: 'live' | 'tested'; group?: string }
+export interface BacktestResult { trades?: BacktestTrade[]; source?: 'engine' | 'lab'; note?: string; live_since?: string; ai_gate?: number; years: number[]; summary: Record<string, YearStat & { profit_factor: number | null; max_dd: number | null }>; months: { month: string; trades: number; win_rate: number }[] }
 export interface GateStat { All: YearStat; months: { month: string; trades: number }[]; lift: number | null; z: number | null; [year: string]: unknown }
 export interface Enhancement {
   id?: string; status: 'none' | 'queued' | 'running' | 'done' | 'failed' | 'insufficient'; reason?: string | null;
