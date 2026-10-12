@@ -71,7 +71,7 @@ def summarise_trades(cfg: Config, trades: pd.DataFrame, tf: str) -> dict:
     return {"tf": tf, "as_of": (store.meta(cfg, tf) or {}).get("as_of"), "years": yrs,
             "summary": metrics.by_year(trades, yrs), "months": metrics.monthly_counts(rep),
             "open_trades": int(trades["is_open"].sum()) if len(trades) else 0,
-            "trades": recent_trades(rep), "metrics_v": metrics.METRICS_V}
+            "trades": recent_trades(rep), "analytics": metrics.analytics(rep), "metrics_v": metrics.METRICS_V}
 
 
 TRADE_COLS = ["symbol", "signal_date", "entry_date", "entry_price", "exit_date", "exit_price", "exit_reason", "ret_pct", "bars", "is_open"]

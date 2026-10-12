@@ -151,5 +151,5 @@ def backtest(cfg: Config, engine: str) -> dict | None:
                 "exit_date": t["exit_date"], "exit_price": t["exit_price"], "exit_reason": t["exit_reason"], "ret_pct": t["ret_pct"],
                 "bars": t["bars"], "is_open": False, "origin": t["origin"], "group": t["strategy"]} for t in rows]
     return {"source": "engine", "live_since": d.get("live_since"), "years": years, "summary": summary, "months": metrics.monthly_counts(c),
-            "open_trades": len(active(cfg, engine)), "trades": trades_, "metrics_v": metrics.METRICS_V,
+            "open_trades": len(active(cfg, engine)), "trades": trades_, "analytics": metrics.analytics(c), "metrics_v": metrics.METRICS_V,
             "note": f"QuantSync engine record. Before {d.get('live_since')}: walk-forward test of the same rules. From then on: recorded live."}

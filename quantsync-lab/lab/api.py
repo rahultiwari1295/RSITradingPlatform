@@ -177,10 +177,12 @@ def _card(con, s, uid=None, cfg: Config | None = None) -> dict:
                     live_from=(engine_feed.feed(cfg) or {}).get("live_since"))
         bt = engine_feed.backtest(cfg, eng)
         card["record"] = _record(bt, "Full record") if bt else None
+        card["spark"] = ((bt or {}).get("analytics") or {}).get("spark") or []
     else:
         bt = service.cached_backtest(con, s["tf"], json.loads(v["entry_json"]), json.loads(v["exit_json"]),
                                      v["ai_gate"] if v["ai_enhancement_id"] else None, v["ai_enhancement_id"] if v["ai_gate"] else None)
         card["record"] = _record(bt, "Past test 2023–26") if bt else None
+        card["spark"] = ((bt or {}).get("analytics") or {}).get("spark") or []
     return card
 
 
@@ -524,6 +526,106 @@ def today(request: Request, uid: str | None = Depends(optional_uid), con=Depends
                 WHERE l.version_id=? AND l.is_open=1""", (s["id"], s["name"], s["current_version"]))]
     fresh.sort(key=lambda r: r["signal_date"] or "", reverse=True)
     return {"data": {tf: store.meta(cfg, tf) for tf in ("1D", "1W")}, "flagship": flag, "fresh": fresh[:20]}
+
+
+# ---- data for the redesigned app (charts, X-Ray links, holdings) ------------------------------------------------
+SYM = re.compile(r"^[A-Za-z0-9&-]{1,20}$")
+CHART_COLS = ["open", "high", "low", "close", "volume", "sma_50", "sma_200", "rsi_14"]
+
+
+def _syms(symbols: str, cap: int) -> list[str]:
+    out = []
+    for s in (symbols or "").split(","):
+        s = s.strip().upper()
+        if s and SYM.match(s) and s not in out:
+            out.append(s)
+    if not out:
+        raise HTTPException(400, "Pass at least one symbol.")
+    return out[:cap]
+
+
+def _bars_json(df: pd.DataFrame, n: int) -> list[dict]:
+    df = df.tail(n).copy()
+    df["date"] = df["date"].dt.strftime("%Y-%m-%d")
+    return json.loads(df.to_json(orient="records"))
+
+
+@router.get("/chart-batch")
+def chart_batch(request: Request, symbols: str, tf: str = "1D", n: int = 60):
+    """Small candle series for many symbols in one call (pattern cards, match previews, sparklines)."""
+    if tf not in ("1D", "1W"):
+        raise HTTPException(400, "Bad timeframe.")
+    want = _syms(symbols, 40)
+    b = store.bars(cfg_of(request), tf, want, columns=CHART_COLS)
+    return {"tf": tf, "bars": {s: _bars_json(b[s], min(max(n, 10), 260)) for s in want if s in b}}
+
+
+BENCH = ("NIFTY 50", "NIFTY50", "NIFTY", "^NSEI", "NIFTYBEES")
+
+
+@router.get("/benchmark")
+def benchmark(request: Request, tf: str = "1D", start: str | None = None):
+    """Nifty 50 closes for drawing a benchmark line under an equity curve. Uses the first index-like symbol in the data."""
+    if tf not in ("1D", "1W"):
+        raise HTTPException(400, "Bad timeframe.")
+    cfg = cfg_of(request)
+    for s in BENCH:
+        b = store.bars(cfg, tf, [s], start=start, columns=["close"])
+        if s in b and len(b[s]):
+            df = b[s].copy()
+            df["date"] = df["date"].dt.strftime("%Y-%m-%d")
+            return {"symbol": s, "tf": tf, "points": [{"d": d, "v": round(float(v), 2)} for d, v in zip(df["date"], df["close"])]}
+    return {"symbol": None, "tf": tf, "points": []}
+
+
+@router.get("/symbol/{symbol}/strategies")
+def symbol_strategies(symbol: str, request: Request, uid: str | None = Depends(optional_uid), con=Depends(get_con)):
+    """Open matches of one stock across QuantSync, your own and public strategies (for the X-Ray page)."""
+    sym = symbol.strip().upper()
+    if not SYM.match(sym):
+        raise HTTPException(400, "Bad symbol.")
+    cfg = cfg_of(request)
+    out = []
+    for s in con.execute("SELECT * FROM strategies WHERE kind='flagship' AND archived=0").fetchall():
+        eng = _engine(cfg, s)
+        if eng:
+            out += [{"sid": s["id"], "strategy": s["name"], "cat": "q", "date": a["entry_date"], "price": a["entry_price"], "now": a["price"],
+                     "chg": a["ret_pct"]} for a in engine_feed.active(cfg, eng) if str(a["symbol"]).upper() == sym]
+    rows = con.execute("""SELECT s.id, s.name, s.owner_uid, l.signal_date, l.entry_price, l.exit_price, l.ret_pct FROM live_trades l
+        JOIN strategies s ON s.current_version=l.version_id
+        WHERE l.symbol=? AND l.is_open=1 AND s.archived=0 AND s.kind='user' AND (s.visibility='public' OR s.owner_uid=?)
+        ORDER BY l.signal_date DESC LIMIT 20""", (sym, uid or "")).fetchall()
+    out += [{"sid": r["id"], "strategy": r["name"], "cat": "y" if uid and r["owner_uid"] == uid else "f", "date": r["signal_date"],
+             "price": r["entry_price"], "now": r["exit_price"], "chg": r["ret_pct"]} for r in rows]
+    return {"symbol": sym, "rows": out}
+
+
+class Holding(BaseModel):
+    symbol: str = Field(pattern=r"^[A-Za-z0-9&-]{1,20}$")
+    qty: float = Field(gt=0, le=1e9)
+    avg_price: float = Field(gt=0, le=1e9)
+
+
+class HoldingsBody(BaseModel):
+    items: list[Holding] = Field(max_length=300)
+
+
+@router.get("/me/holdings")
+def get_holdings(uid: str = Depends(require_uid), con=Depends(get_con)):
+    rows = con.execute("SELECT symbol, qty, avg_price, updated_at FROM holdings WHERE uid=? ORDER BY symbol", (uid,)).fetchall()
+    return {"items": [dict(r) for r in rows]}
+
+
+@router.put("/me/holdings")
+def put_holdings(body: HoldingsBody, uid: str = Depends(require_uid), con=Depends(get_con)):
+    """Replaces the whole list (the page always sends everything it shows)."""
+    _ensure_user(con, uid)
+    now = time.time()
+    with tx(con):
+        con.execute("DELETE FROM holdings WHERE uid=?", (uid,))
+        for h in body.items:
+            con.execute("INSERT OR REPLACE INTO holdings VALUES(?,?,?,?,?)", (uid, h.symbol.upper(), h.qty, h.avg_price, now))
+    return {"ok": True, "count": len(body.items)}
 
 
 @asynccontextmanager

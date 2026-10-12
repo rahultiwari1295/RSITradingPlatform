@@ -58,6 +58,8 @@ CREATE TABLE IF NOT EXISTS plans(id TEXT PRIMARY KEY, name TEXT, monthly_ai_jobs
 CREATE TABLE IF NOT EXISTS reports(id INTEGER PRIMARY KEY AUTOINCREMENT, strategy_id TEXT NOT NULL,
   uid TEXT, reason TEXT, created_at REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS app_config(k TEXT PRIMARY KEY, v TEXT);
+CREATE TABLE IF NOT EXISTS holdings(uid TEXT NOT NULL, symbol TEXT NOT NULL, qty REAL NOT NULL, avg_price REAL NOT NULL,
+  updated_at REAL NOT NULL, PRIMARY KEY(uid, symbol));
 INSERT OR IGNORE INTO app_config VALUES('pricing_enabled','false');
 INSERT OR IGNORE INTO plans VALUES('free','Free',5,0),('pro','Pro',100,0);
 """
