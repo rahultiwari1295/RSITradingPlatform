@@ -256,13 +256,13 @@ export function dial(pillars, total, size = 148) {
 }
 
 /** The trade ruler: stop on the left, target on the right, entry marked, a needle for today's price. */
-export function ruler({ stop, entry, target, now }, { labels = ['Stop', 'Entry', 'Target'] } = {}) {
+export function ruler({ stop, entry, target, now }, { labels = ['Stop', 'Entry', 'Target'], bare = false } = {}) {
   if (![stop, entry, target].every(isFinite)) return '';
   const lo = Math.min(stop, isFinite(now) ? now : stop), hi = Math.max(target, isFinite(now) ? now : target), sp = hi - lo || 1;
   const P = v => ((v - lo) / sp) * 100;
   const pe = P(entry), ps = P(stop), pt = P(target), pn = isFinite(now) ? P(now) : NaN;
   const ch = isFinite(now) ? (now / entry - 1) * 100 : NaN;
-  return `<div class="ruler" role="img" aria-label="${labels[0]} ${fmt.px(stop)}, ${labels[1]} ${fmt.px(entry)}, ${labels[2]} ${fmt.px(target)}${isFinite(now) ? `, now ${fmt.px(now)}` : ''}">
+  return `<div class="ruler${bare ? ' bare' : ''}" role="img" aria-label="${labels[0]} ${fmt.px(stop)}, ${labels[1]} ${fmt.px(entry)}, ${labels[2]} ${fmt.px(target)}${isFinite(now) ? `, now ${fmt.px(now)}` : ''}">
     <div class="rt"><div class="zl" style="left:${ps}%;width:${pe - ps}%"></div><div class="zw" style="left:${pe}%;width:${pt - pe}%"></div><div class="entry" style="left:${pe}%"></div>
     ${isFinite(pn) ? `<div class="needle" style="left:${RM ? pn : pe}%" data-to="${pn}"><b style="transform:translateX(${pn < 16 ? 38 : pn > 84 ? -38 : 0}%)">${Math.abs(ch) < .05 ? 'Now ' + fmt.px(now) : fmt.px(now) + ' ' + fmt.sp(ch)}</b><i></i></div>` : ''}</div>
     <div class="lb"><div class="dn">${labels[0]}<b>${fmt.px(stop)}</b></div><div>${labels[1]}<b>${fmt.px(entry)}</b></div><div class="up">${labels[2]}<b>${fmt.px(target)}</b></div></div></div>`;

@@ -1,12 +1,13 @@
-import { api, chrome, fmt, esc, icon, n, ok, link, mono, delta, tone, holdings, auth, sheet, toast, go, scoreTone, scoreColor, clean, loadTerminal, loadPatterns, empty, errBox, skel, hue } from '../core.js';
+import { paper, reveal, api, chrome, fmt, esc, icon, n, ok, link, mono, delta, tone, holdings, auth, sheet, toast, go, scoreTone, scoreColor, clean, loadTerminal, loadPatterns, empty, errBox, skel, hue } from '../core.js';
 import { sec, footNote } from './parts.js';
 import { addSheet } from './report.js';
 
 export default async function portfolio(el) {
   const body = chrome(el, { title: 'Portfolio', sub: 'Your stocks, checked against our engines every evening.', actions: `<button class="ib" data-add aria-label="Add a stock">${icon('plus', 22)}</button>` });
-  body.innerHTML = `<div id="pf-acct"></div><div id="pf-main"></div>${footNote('Prices are from the exchange and can be delayed. Your holdings stay private.')}`;
+  body.innerHTML = `<div id="pf-acct"></div><div id="pf-paper"></div><div id="pf-main"></div>${footNote('Prices are from the exchange and can be delayed. Your holdings stay private.')}`;
   el.querySelector('[data-add]').onclick = () => pick(load);
   const off = auth.onChange(() => { acct(); load(); });
+  paperBlock();
   auth.init();
 
   function acct() {
@@ -82,6 +83,33 @@ export default async function portfolio(el) {
     main.querySelectorAll('[data-sym]').forEach(b => b.onclick = () => manage(rows.find(r => r.symbol === b.dataset.sym), items));
     main.querySelector('[data-pick2]').onclick = () => pick(load);
     if (h.error) toast(h.error);
+  }
+
+  /* paper trades from new signals */
+  async function paperBlock() {
+    const slot = body.querySelector('#pf-paper'), list = paper.get();
+    if (!list.length) { slot.innerHTML = sec('Paper trades', `<div class="panel pad" style="display:flex;gap:12px;align-items:center"><span class="scan-mark">${icon('bolt', 16)}</span><div style="flex:1"><div class="h3">Practise on new signals</div><div class="small">Tap Paper trade on any new signal in the QuantSync Scanner. We track it here until it hits its stop or target.</div></div></div>`); reveal(slot); return; }
+    slot.innerHTML = sec('Paper trades', skel(70, list.length));
+    const q = await Promise.all(list.map(p => api(`/stock/quote/${encodeURIComponent(p.sym)}`, 2).catch(() => null)));
+    const rows = list.map((p, i) => { const px = ok(q[i]?.price) ? n(q[i].price) : n(p.entry); const pnl = (px - p.entry) * p.qty; const st = px >= p.target ? 'tgt' : px <= p.stop ? 'stop' : 'open'; return { ...p, px, pnl, pct: (px / p.entry - 1) * 100, st }; });
+    const tot = rows.reduce((a, r) => a + r.pnl, 0), inv = rows.reduce((a, r) => a + r.entry * r.qty, 0);
+    slot.innerHTML = sec('Paper trades', `<div class="group">
+      <div class="paper-sum"><div><div class="small">Practice result</div><div class="v ${tone(tot)}">${fmt.sinr(tot)}</div></div><div style="text-align:right"><div class="small">${rows.length} trade${rows.length > 1 ? 's' : ''}, ${fmt.lakh(inv)} in</div><div style="font-weight:650" class="${tone(tot)}">${inv ? fmt.sp(tot / inv * 100) : ''}</div></div></div>
+      ${rows.map(r => { const lo = Math.min(r.stop, r.px), hi = Math.max(r.target, r.px), P = v => ((v - lo) / (hi - lo || 1)) * 100;
+        return `<button class="row" data-pp="${esc(r.sym)}" style="display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px">${mono(r.sym)}
+        <div class="main"><div class="t">${esc(r.sym)} ${r.st === 'tgt' ? '<span class="tag new" style="height:20px;font-size:11px">Target hit</span>' : r.st === 'stop' ? '<span class="tag skip" style="height:20px;font-size:11px">Stop hit</span>' : ''}</div><div class="s tnum">${fmt.int(r.qty)} at ${fmt.px(r.entry)}, now ${fmt.px(r.px)}</div></div>
+        <div class="end"><div class="v ${tone(r.pnl)} tnum">${fmt.sinr(r.pnl)}</div><div class="d">${delta(r.pct)}</div></div>
+        <div style="grid-column:2/-1"><div class="prog"><i style="left:${P(r.stop)}%;width:${P(r.entry) - P(r.stop)}%;background:color-mix(in srgb, var(--dn-solid) 45%, transparent)"></i><i style="left:${P(r.entry)}%;width:${P(r.target) - P(r.entry)}%;background:color-mix(in srgb, var(--up-solid) 45%, transparent)"></i><i style="left:calc(${P(r.px)}% - 2px);width:4px;background:var(--ink)"></i></div>
+        <div class="tiny" style="display:flex;justify-content:space-between;margin-top:3px"><span>Stop ${fmt.px(r.stop)}</span><span>Target ${fmt.px(r.target)}</span></div></div></button>`; }).join('')}</div>`, { p: 'Practice positions from new signals. Nothing is bought. Kept on this phone.' });
+    slot.querySelectorAll('[data-pp]').forEach(b => b.onclick = () => {
+      const r = rows.find(x => x.sym === b.dataset.pp);
+      const sh = sheet(`<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">${mono(r.sym, 'lg')}<div><h3 style="margin:0">${esc(r.sym)} paper trade</h3><div class="small">${esc(r.strategy || '')}, started ${fmt.date(r.at)}</div></div></div>
+        <div class="kv" style="margin-bottom:14px"><div><div class="k">Result</div><div class="v ${tone(r.pnl)}">${fmt.sinr(r.pnl)}</div></div><div><div class="k">Change</div><div class="v ${tone(r.pct)}">${fmt.sp(r.pct)}</div></div></div>
+        <div style="display:grid;gap:8px"><button class="btn block" data-s>${icon('ai', 18)}Open the signal</button><button class="btn quiet block" data-x style="color:var(--dn)">${icon('trash', 18)}Close paper trade</button></div>`, { label: 'Paper trade' });
+      sh.el.querySelector('[data-s]').onclick = () => { sh.close(); go(`calls/${encodeURIComponent(r.sym)}`); };
+      sh.el.querySelector('[data-x]').onclick = () => { paper.remove(r.sym); sh.close(); toast(`Closed ${r.sym} paper trade at ${fmt.sp(r.pct)}`); paperBlock(); };
+    });
+    reveal(slot);
   }
 
   function manage(r, items) {

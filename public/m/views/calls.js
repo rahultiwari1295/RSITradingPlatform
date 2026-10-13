@@ -1,36 +1,39 @@
-import { api, chrome, fill, fmt, esc, icon, n, ok, link, loadTerminal, segmented, count, tone, toDate, empty } from '../core.js';
+import { reveal, api, chrome, fill, fmt, esc, icon, n, ok, link, loadTerminal, segmented, count, tone, toDate, empty } from '../core.js';
 import { settle } from '../charts.js';
-import { callCard, closedRow, sec, footNote, statCell } from './parts.js';
+import { closedRow, sec, footNote, statCell, signalList, scanRule, bindSignals, isFreshSignal } from './parts.js';
 
 export default async function calls(el, r) {
-  const body = chrome(el, { title: 'AI Calls', sub: 'Trade ideas from our AI engines. Every call comes with a price to buy at, a stop loss, and a target.' });
+  const body = chrome(el, { title: 'AI Calls', sub: 'Every call from every strategy. Each one has a price to buy at, a stop loss and a target.' });
   body.innerHTML = `<div id="c-sum"></div><div id="c-seg" style="margin-top:18px"></div><div id="c-list" style="margin-top:14px"></div><div id="c-how"></div>${footNote('Calls are generated after the market closes and checked again before the open.')}`;
   const sum = body.querySelector('#c-sum'), list = body.querySelector('#c-list');
   let tab = r.query.get('v') || null;
 
   fill(sum, () => Promise.all([loadTerminal(), api('/track-record', 15).catch(() => ({}))]), ([t, rec]) => {
     const C = rec.combined || {}, openRoi = t.active.length ? t.active.reduce((a, c) => a + (isFinite(c.roi) ? c.roi : 0), 0) / t.active.length : NaN;
-    sum.innerHTML = `<div class="stats four">
-      ${statCell('Buy today', count(t.toBuy.length), t.toBuy.length ? 'new calls' : 'none today')}
-      ${statCell('Open trades', count(t.active.length), isFinite(openRoi) ? `<span class="${tone(openRoi)}">${fmt.sp(openRoi)} on average</span>` : '')}
+    sum.innerHTML = `<div class="stats four mini">
+      ${statCell('New signals', count(all(t).filter(isFreshSignal).length), 'paper trade these')}
+      ${statCell('Open calls', count(all(t).length), isFinite(openRoi) ? `<span class="${tone(openRoi)}">${fmt.sp(openRoi)} on average</span>` : '')}
       ${statCell('Win rate', ok(C.winRate) ? count(C.winRate, 'pct', 0) : '—', ok(C.trades) ? `${fmt.int(C.trades)} closed trades` : '', 'winrate')}
       ${statCell('Profit factor', ok(C.profitFactor) ? count(C.profitFactor, 'x') : '—', link('record', 'See the record', 'link'), 'pf')}
     </div>`;
-    if (!tab) tab = t.toBuy.length ? 'buy' : 'open';
-    segmented(body.querySelector('#c-seg'), [['buy', 'Buy now', t.toBuy.length], ['open', 'Open', t.active.length], ['closed', 'Closed', t.closed.length]], tab, v => { tab = v; draw(t); history.replaceState(history.state, '', location.pathname + '?v=' + v); });
+    if (!tab || tab === 'buy' || tab === 'open') tab = tab === 'closed' ? 'closed' : 'signals';
+    segmented(body.querySelector('#c-seg'), [['signals', 'Signals', all(t).length], ['closed', 'Closed', t.closed.length]], tab, v => { tab = v; draw(t); history.replaceState(history.state, '', location.pathname + '?v=' + v); });
     draw(t);
   }, '<div class="sk" style="height:150px;border-radius:16px"></div>');
 
+  const all = t => [...t.toBuy, ...t.active.filter(c => !t.toBuy.some(x => x.sym === c.sym))];
+  let strat = 'all';
   function draw(t) {
-    if (tab === 'buy') {
-      list.innerHTML = t.toBuy.length ? `<div class="stack">${t.toBuy.map(c => callCard(c)).join('')}</div>`
-        : empty('ai', 'No buy calls today', 'Nothing passed every check after the last close. On weak days the engines stay out on purpose. Open trades are still being managed.', `<button class="btn ghost sm" data-go="open">See open trades</button>`);
-    } else if (tab === 'open') {
-      const a = [...t.active].sort((x, y) => (x.days || 0) - (y.days || 0));
-      list.innerHTML = a.length ? `<div class="stack">${a.map(c => callCard(c, { compact: true })).join('')}</div>` : empty('clock', 'No open trades', 'When the engines buy, the trade shows here until it reaches its target or stop.');
-    } else closed(t);
-    const g = list.querySelector('[data-go]'); if (g) g.onclick = () => body.querySelector(`#c-seg [data-v="${g.dataset.go}"]`).click();
-    settle(list);
+    if (tab === 'closed') { closed(t); reveal(list); return; }
+    const sigs = all(t);
+    const names = [...new Set(sigs.map(c => c.strategy))];
+    const pick = sigs.filter(c => strat === 'all' || c.strategy === strat);
+    list.innerHTML = `${scanRule()}
+      ${names.length > 1 ? `<div class="hs" style="margin-top:12px" role="group" aria-label="Filter by strategy"><button class="chip" data-st="all" aria-pressed="${strat === 'all'}">All strategies <span class="n">${sigs.length}</span></button>${names.map(nm => `<button class="chip" data-st="${esc(nm)}" aria-pressed="${strat === nm}">${esc(nm)} <span class="n">${sigs.filter(c => c.strategy === nm).length}</span></button>`).join('')}</div>` : ''}
+      <div style="margin-top:12px">${signalList(pick, { oldLabel: 'Older signals, still open. Skip as new buys' })}</div>`;
+    list.querySelectorAll('[data-st]').forEach(b => b.onclick = () => { strat = b.dataset.st; draw(t); });
+    bindSignals(list, pick, () => draw(t));
+    settle(list); reveal(list);
   }
 
   function closed(t) {

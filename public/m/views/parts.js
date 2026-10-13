@@ -1,5 +1,5 @@
 /* Building blocks shared by several screens. */
-import { fmt, esc, mono, link, icon, delta, tone, scoreTone, n, q, CFG } from '../core.js';
+import { fmt, esc, mono, link, icon, delta, tone, scoreTone, n, q, CFG, paper, sheet, toast, go, toDate } from '../core.js';
 import { ruler, spark } from '../charts.js';
 
 export function callCard(c, { compact = false } = {}) {
@@ -17,6 +17,64 @@ export function closedRow(c) {
   return link(`calls/closed/${encodeURIComponent(c.id)}`, `${mono(c.sym)}
     <div class="main"><div class="t">${esc(c.sym)}</div><div class="s">${esc(c.reason)}, ${fmt.days(c.days)}</div></div>
     <div class="end"><div class="v ${tone(c.roi)} tnum">${fmt.sp(c.roi)}</div><div class="d faint">${fmt.date(c.exitDate)}</div></div>`, 'row');
+}
+
+/* ---------------------------------------------------------------- QuantSync Scanner signals */
+/** New: from the latest scan or entered within the last session. Old: two or more sessions ago, so the entry has passed. */
+export const isFreshSignal = c => !!(c.isNew || c.days <= 1);
+const dayWord = s => {
+  const d = toDate(s); if (!d) return '';
+  const t = new Date(), y = new Date(t.getTime() - 864e5);
+  const same = (a, b) => a.toDateString() === b.toDateString();
+  return same(d, t) ? 'today' : same(d, y) ? 'yesterday' : 'on ' + fmt.date(s, { weekday: 'short', day: 'numeric', month: 'short' });
+};
+export function signalCard(c) {
+  const fresh = isFreshSignal(c), traded = paper.has(c.sym);
+  const run = (c.now / c.entry - 1) * 100, gain = (c.target / c.entry - 1) * 100;
+  if (!fresh) {
+    return link(`calls/${encodeURIComponent(c.sym)}`, `<div class="meta"><span style="display:flex;gap:6px"><span class="tag old"><i></i>Old signal</span><span class="tag skip">Skip</span></span><span class="when">Called ${dayWord(c.entryDate)}</span></div>
+      <div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}</div><div class="s">${esc(c.strategy)}</div></div><div class="px"><div class="v">${fmt.px(c.now)}</div>${delta(c.roi)}</div></div>
+      <p class="note">${isFinite(run) && run > 1 ? `Already <b>${fmt.sp(run)}</b> from the ${fmt.px(c.entry)} entry. ` : ''}The planned entry was ${fmt.int(c.days)} sessions ago, so a new buy here carries more risk than the signal was built for.</p>`, 'sig old compact', `aria-label="${esc(c.sym)}, old signal, skip"`);
+  }
+  const moved = isFinite(run) && run > 3;
+  return `<div class="sig new" data-sig="${esc(c.sym)}">
+    <div class="meta"><span style="display:flex;gap:6px"><span class="tag new"><i></i>New signal</span>${traded ? '<span class="tag paper">Paper traded</span>' : ''}</span><span class="when">Called ${dayWord(c.entryDate)}</span></div>
+    ${link(`calls/${encodeURIComponent(c.sym)}`, `<div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}</div><div class="s">${esc(c.strategy)}${isFinite(c.score) && c.score > 0 ? `, AI confidence ${fmt.int(c.score)}` : ''}</div></div>
+      <div class="px"><div class="v">${fmt.px(c.now)}</div>${Math.abs(c.roi) < .05 ? '<span class="small">at entry</span>' : delta(c.roi)}</div></div>
+      ${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: c.now }, { bare: true })}`, '', `style="display:block" aria-label="${esc(c.sym)} signal details"`)}
+    <div class="plan"><div class="buy"><div class="k">Buy near</div><div class="v">${fmt.px(c.entry)}</div></div><div class="stop"><div class="k">Stop loss</div><div class="v">${fmt.px(c.stop)}</div></div><div class="tgt"><div class="k">Target ${isFinite(gain) ? fmt.sp(gain, 0) : ''}</div><div class="v">${fmt.px(c.target)}</div></div></div>
+    ${moved ? `<p class="note">Price is already <b>${fmt.sp(run)}</b> above the entry. Paper trade it only on a dip towards ${fmt.px(c.entry)}.</p>` : ''}
+    <div class="acts">${traded ? `<button class="btn quiet" data-open-paper>${icon('pf', 18)}See paper trade</button>` : `<button class="btn" data-paper="${esc(c.sym)}">${icon('bolt', 18)}Paper trade</button>`}${link(`calls/${encodeURIComponent(c.sym)}`, icon('chev', 20), 'btn quiet', 'aria-label="Signal details" style="width:48px;padding:0"')}</div>
+  </div>`;
+}
+/** Wire paper-trade buttons inside root. list: the calls shown. */
+export function bindSignals(root, list, onChange) {
+  root.querySelectorAll('[data-paper]').forEach(b => b.onclick = e => { e.preventDefault(); const c = list.find(x => x.sym === b.dataset.paper); if (c) paperSheet(c, onChange); });
+  root.querySelectorAll('[data-open-paper]').forEach(b => b.onclick = e => { e.preventDefault(); go('portfolio'); });
+}
+/** New signals first as full cards, then old ones as compact cards under a "skip" divider. */
+export function signalList(list, { oldLabel = 'Older signals. Skip these' } = {}) {
+  const fresh = list.filter(isFreshSignal).sort((a, b) => (b.score || 0) - (a.score || 0));
+  const old = list.filter(c => !isFreshSignal(c)).sort((a, b) => (a.days || 0) - (b.days || 0));
+  return `${fresh.length ? fresh.map(signalCard).join('') : `<div class="empty"><div class="ic">${icon('clock', 24)}</div><h3>No new signal in the last scan</h3><p>The scanner runs after every close. When a strategy finds a fresh setup it appears here first.</p></div>`}
+    ${old.length ? `<div class="sig-group-h"><span>${esc(oldLabel)}</span><span class="line"></span><span class="tnum">${old.length}</span></div>${old.map(signalCard).join('')}` : ''}`;
+}
+export const scanRule = (extra = '') => `<div class="scan-rule">${icon('info', 18)}When the scanner finds a <b>fresh signal</b> for a strategy, you can <b>paper trade</b> it. <b>Skip old signals</b>: their best entry has already passed.${extra ? ' ' + extra : ''}</div>`;
+export const scanLogo = () => `<span class="scan-mark" aria-hidden="true">${icon('target', 17)}</span>`;
+export function paperSheet(c, done) {
+  const s = sheet(`<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">${mono(c.sym, 'lg')}<div><h3 style="margin:0">Paper trade ${esc(c.sym)}</h3><div class="small">${esc(c.strategy)}. Practice money, nothing is bought.</div></div></div>
+    <div class="field"><label for="pp-a">How much to put in (₹)</label><input id="pp-a" inputmode="numeric" value="10000"></div>
+    <div class="kv" style="margin:4px 0 14px"><div><div class="k">Shares at ${fmt.px(c.now)}</div><div class="v" id="pp-q">—</div></div><div><div class="k">Most you can lose</div><div class="v dn" id="pp-r">—</div></div><div><div class="k">Stop loss</div><div class="v">${fmt.px(c.stop)}</div></div><div><div class="k">Target</div><div class="v up">${fmt.px(c.target)}</div></div></div>
+    <button class="btn block" data-go>${icon('bolt', 18)}Start paper trade</button>
+    <p class="tiny" style="margin:10px 0 0;text-align:center">We track it in your portfolio until it reaches the stop or the target.</p>`, { label: 'Paper trade' });
+  const a = s.el.querySelector('#pp-a'), qEl = s.el.querySelector('#pp-q'), rEl = s.el.querySelector('#pp-r');
+  const calc = () => { const amt = n(a.value), qty = Math.floor(amt / c.now); qEl.textContent = qty > 0 ? fmt.int(qty) : '—'; rEl.textContent = qty > 0 && c.stop < c.now ? fmt.inr(qty * (c.now - c.stop)) : '—'; return qty; };
+  a.oninput = calc; calc();
+  s.el.querySelector('[data-go]').onclick = () => {
+    const qty = calc(); if (!(qty > 0)) { a.focus(); return; }
+    paper.add({ sym: c.sym, name: c.name, strategy: c.strategy, qty, entry: c.now, stop: c.stop, target: c.target, signalEntry: c.entry, signalDate: c.entryDate });
+    s.close(); toast(`Paper trade started: ${qty} ${c.sym}`); done && done();
+  };
 }
 
 export const STAGE = {

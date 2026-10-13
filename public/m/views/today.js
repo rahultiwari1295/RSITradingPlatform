@@ -1,12 +1,12 @@
-import { api, chrome, fill, fmt, esc, icon, n, ok, clean, sentence, link, mono, delta, tone, marketStatus, loadTerminal, loadPatterns, sheet, q, count, toDate, auth, logo } from '../core.js';
+import { reveal, api, chrome, fill, fmt, esc, icon, n, ok, clean, sentence, link, mono, delta, tone, marketStatus, loadTerminal, loadPatterns, sheet, q, count, toDate, auth, logo } from '../core.js';
 import { spark, settle, areaChart } from '../charts.js';
-import { callCard, patternCard, sparks, sec, labLink, footNote, statCell } from './parts.js';
+import { patternCard, sparks, sec, labLink, footNote, statCell, signalList, scanRule, scanLogo, bindSignals, isFreshSignal } from './parts.js';
 
 export default async function today(el) {
   const ms = marketStatus();
   const body = chrome(el, {
     title: 'Today',
-    sub: 'What the market did, what our engines found, and what it means for you.',
+    sub: 'Fresh QuantSync signals first, then what the market did and what it means for you.',
     when: `<span class="live-dot ${ms.open ? 'on' : ''}"></span><span id="t-when">${ms.text}</span>`,
     actions: `<a class="ib" href="/m/xray" data-nav aria-label="Search stocks">${icon('search', 21)}</a>`,
   });
@@ -14,9 +14,9 @@ export default async function today(el) {
   el.querySelector('.bar .sp')?.remove();
 
   body.innerHTML = `
-    <div id="t-brief"></div>
-    <div id="t-idx" class="tickers two" style="margin-top:10px"></div>
     <div id="t-calls"></div>
+    <section class="sec"><div class="sec-h"><h2>The market today</h2></div><div id="t-brief"></div></section>
+    <div id="t-idx" class="tickers two" style="margin-top:10px"></div>
     <div id="t-record"></div>
     <div id="t-pat"></div>
     <div id="t-map"></div>
@@ -68,16 +68,22 @@ export default async function today(el) {
     if (when) document.getElementById('t-when').textContent = `${ms.text}. Data from ${fmt.date(when, { day: 'numeric', month: 'short' })}${String(when).length > 10 ? ', ' + toDate(when).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : ''}`;
   }, `<div class="sk" style="height:96px"></div><div class="sk" style="height:96px"></div>`);
 
-  /* AI calls */
+  /* QuantSync Scanner: only the last three days of signals */
   const term = loadTerminal();
-  fill(body.querySelector('#t-calls'), () => term, (t, slot) => {
-    const list = t.toBuy.length ? t.toBuy : t.active.slice(0, 4);
-    const headline = t.toBuy.length ? `${t.toBuy.length === 1 ? 'One new buy call' : t.toBuy.length + ' new buy calls'}` : 'Open AI calls';
-    slot.innerHTML = sec(`<span class="ai" style="display:inline-flex;vertical-align:-3px;margin-right:6px">${icon('ai', 20)}</span>${headline}`,
-      list.length ? `<div class="callrail">${list.map(c => callCard(c)).join('')}</div>` : `<div class="empty"><h3>No buy calls today</h3><p>The engines found nothing that passed every check. That happens on weak days, and staying out is part of the plan.</p></div>`,
-      { more: link('calls', `${t.active.length} open`, 'more'), p: t.toBuy.length ? 'Each call shows where to buy, where to get out if it goes wrong, and where to take profit.' : 'No new calls today. These are the trades the engines are holding.' });
-    settle(slot);
-  }, sec('AI calls', '<div class="sk" style="height:220px;border-radius:22px"></div>'));
+  const drawScan = (t, slot) => {
+    const recent = [...t.toBuy, ...t.active.filter(c => !t.toBuy.some(x => x.sym === c.sym))].filter(c => c.isNew || (isFinite(c.days) && c.days <= 3));
+    const fresh = recent.filter(isFreshSignal).length, old = recent.length - fresh;
+    slot.innerHTML = `<section class="sec" style="margin-top:4px">
+      <div class="scan-head"><h2>${scanLogo()}QuantSync Scanner</h2><span class="scan-live"><span class="live-dot on"></span>${t.at ? 'Scanned ' + fmt.date(String(t.at).slice(0, 10)) : 'Live'}</span></div>
+      ${scanRule('Here you see the last 3 days only.')}
+      <div class="scan-legend"><span class="tag new"><i></i>${fresh} new</span><span class="tag old"><i></i>${old} old, skip</span></div>
+      ${signalList(recent)}
+      <div style="margin-top:14px">${link('calls', `${icon('ai', 18)}All calls from every strategy`, 'btn quiet block')}</div>
+    </section>`;
+    bindSignals(slot, recent, () => drawScan(t, slot));
+    settle(slot); reveal(slot);
+  };
+  fill(body.querySelector('#t-calls'), () => term, drawScan, `<section class="sec" style="margin-top:4px"><div class="scan-head"><h2>${scanLogo()}QuantSync Scanner</h2></div><div class="sk" style="height:300px;border-radius:22px"></div></section>`);
 
   /* honest record */
   fill(body.querySelector('#t-record'), () => api('/track-record', 15), (r, slot) => {

@@ -2,6 +2,7 @@
    Every number shown anywhere in the app comes through api() from the live VPS endpoints. */
 
 const W = window;
+const RM = W.matchMedia && W.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const onVercel = !/duckdns\.org$/.test(location.hostname) && location.port !== '8443' && !['localhost', '127.0.0.1'].includes(location.hostname);
 export const CFG = Object.assign({
   base: '/m',
@@ -201,6 +202,20 @@ export const errBox = (msg, retry = true) => `<div class="err" role="alert"><spa
 export const empty = (ic, h, p, cta = '') => `<div class="empty"><div class="ic">${icon(ic, 24)}</div><h3>${esc(h)}</h3><p>${esc(p)}</p>${cta}</div>`;
 export const delta = (v, d = 1) => `<span class="delta ${tone(v)}">${fmt.sp(v, d)}</span>`;
 export const link = (path, inner, cls = '', attrs = '') => `<a href="${CFG.base}/${path}" data-nav class="${cls}" ${attrs}>${inner}</a>`;
+/* ---------------------------------------------------------------- staged reveal */
+const REVEAL = '.sec, .hero, .xhero, .sig, .callcard, .pcard, .stats, .panel, .group, .tk, .scan-rule, .duo .side, .verdict, .lab-promo, .empty, .flowline, .pfhero, .kv, .story';
+const rio = 'IntersectionObserver' in W ? new IntersectionObserver(es => {
+  let i = 0;
+  es.forEach(e => { if (!e.isIntersecting) return; rio.unobserve(e.target); e.target.style.setProperty('--d', Math.min(i++ * 70, 420) + 'ms'); requestAnimationFrame(() => e.target.classList.add('in')); });
+}, { rootMargin: '0px 0px -4% 0px', threshold: .01 }) : null;
+/** Let the top-level blocks inside root rise in, in order, the first time they are seen. */
+export function reveal(root) {
+  if (!root || RM || !rio) return;
+  root.querySelectorAll(REVEAL).forEach(el => {
+    if (el.dataset.rv || (el.parentElement && el.parentElement.closest(REVEAL) && root.contains(el.parentElement.closest(REVEAL)))) return;
+    el.dataset.rv = 1; el.classList.add('rv'); rio.observe(el);
+  });
+}
 /** Load into a slot with skeleton, error and retry handled the same way everywhere. */
 export async function fill(el, load, draw, sk = skel(80, 2), { quiet = false } = {}) {
   if (!el) return;
@@ -210,6 +225,7 @@ export async function fill(el, load, draw, sk = skel(80, 2), { quiet = false } =
     if (!el.isConnected) return;
     el.innerHTML = '';
     draw(d, el);
+    reveal(el);
   } catch (e) {
     console.warn(e);
     if (!el.isConnected) return;
@@ -231,7 +247,6 @@ export function segmented(el, options, value, on) {
 }
 /** Count a number up once when it first scrolls into view. */
 const io = 'IntersectionObserver' in W ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { io.unobserve(e.target); runCount(e.target); } }), { threshold: .3 }) : null;
-const RM = W.matchMedia && W.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function runCount(el) {
   const to = +el.dataset.count, f = el.dataset.f || 'int', t0 = performance.now();
   const out = v => (f === 'int' ? fmt.int(v) : f === 'pct' ? fmt.pct(v, +(el.dataset.d || 1)) : f === 'sp' ? fmt.sp(v, +(el.dataset.d || 1)) : f === 'x' ? fmt.x(v, +(el.dataset.d || 2)) : f === 'idx' ? fmt.idx(v) : f === 'px' ? fmt.px(v) : fmt.lakh(v));
@@ -289,6 +304,15 @@ export const holdings = {
     } catch (e) { return { items: local.get(), where: 'device', error: e.message }; }
   },
   async set(items) { if (auth.user) await lab('PUT', '/me/holdings', { items }); else local.set(items); },
+};
+/** Paper trades: practice positions taken from new signals. Kept on this device only. */
+const PK = 'qs-paper';
+export const paper = {
+  get() { try { const v = JSON.parse(localStorage.getItem(PK) || '[]'); return Array.isArray(v) ? v : []; } catch { return []; } },
+  set(v) { try { localStorage.setItem(PK, JSON.stringify(v)); } catch { /* storage blocked */ } },
+  has(sym) { return paper.get().some(p => p.sym === sym); },
+  add(t) { paper.set(paper.get().filter(p => p.sym !== t.sym).concat([{ ...t, at: new Date().toISOString() }])); },
+  remove(sym) { paper.set(paper.get().filter(p => p.sym !== sym)); },
 };
 export const recent = {
   get() { try { return JSON.parse(localStorage.getItem('qs-m-recent') || '[]'); } catch { return []; } },
@@ -442,11 +466,14 @@ async function draw(el, r) {
   const mod = await import(`./views/${r.view}.js`);
   el.innerHTML = '';
   el.dataset.view = r.view;
-  try { return (await mod.default(el, r)) || null; } catch (e) { console.error(e); el.innerHTML = `<div class="wrap" style="padding-top:80px">${errBox('This page failed to load. ' + e.message, false)}</div>`; }
+  try { const cl = (await mod.default(el, r)) || null; reveal(el); return cl; } catch (e) { console.error(e); el.innerHTML = `<div class="wrap" style="padding-top:80px">${errBox('This page failed to load. ' + e.message, false)}</div>`; }
 }
 function setTabs(tab) {
+  if (curTab && curTab !== tab && navigator.vibrate) { try { navigator.vibrate(6); } catch { /* not allowed */ } }
   curTab = tab;
   document.querySelectorAll('[data-tab]').forEach(a => a.setAttribute('aria-current', a.dataset.tab === tab ? 'page' : 'false'));
+  const i = TABS.findIndex(t => t[0] === tab), ind = document.querySelector('#tabs .ind');
+  if (ind && i >= 0) ind.style.transform = `translateX(${i * 100}%)`;
 }
 function title(r) {
   const t = { today: 'Today', calls: 'AI Calls', patterns: 'Pattern Calls', xray: 'Stock X-Ray', portfolio: 'Portfolio', record: 'Track record', market: 'Market map' }[r.view] || r.arg;
@@ -530,7 +557,7 @@ export function back(fallback) { if (stack.length && history.state && history.st
 
 /** Shared chrome for every screen: a compact bar that becomes solid on scroll, plus a large title. */
 export function chrome(el, { title, sub = '', back: backTo, actions = '', when = '' }) {
-  el.innerHTML = `<header class="bar">${backTo != null ? `<button class="ib back" data-back aria-label="Back">${icon('back', 22)}<span>${esc(backTo)}</span></button>` : '<span class="sp"></span>'}<div class="bt">${esc(title)}</div>${actions || '<span class="sp"></span>'}</header>
+  el.innerHTML = `<div class="aurora" aria-hidden="true"></div><header class="bar">${backTo != null ? `<button class="ib back" data-back aria-label="Back">${icon('back', 22)}<span>${esc(backTo)}</span></button>` : '<span class="sp"></span>'}<div class="bt">${esc(title)}</div>${actions || '<span class="sp"></span>'}</header>
   <div class="head"><h1>${esc(title)}</h1>${sub ? `<p>${sub}</p>` : ''}${when ? `<div class="when">${when}</div>` : ''}</div><div class="wrap body"></div>`;
   const bar = el.querySelector('.bar'), head = el.querySelector('.head h1');
   const on = () => bar.classList.toggle('solid', el.scrollTop > (head ? head.offsetTop + head.offsetHeight - 52 : 40));
@@ -548,7 +575,7 @@ export function boot() {
   const theme = (() => { try { return localStorage.getItem('qs-theme'); } catch { return null; } })();
   if (theme) document.documentElement.dataset.theme = theme;
   const tabs = document.getElementById('tabs'), rail = document.getElementById('rail');
-  tabs.innerHTML = TABS.map(([k, p, l, ic]) => `<a class="tab" href="${CFG.base}/${p}" data-nav data-tab="${k}" aria-label="${l}">${tabIcon(ic)}<span>${l}</span></a>`).join('');
+  tabs.innerHTML = '<span class="ind" aria-hidden="true"></span>' + TABS.map(([k, p, l, ic]) => `<a class="tab" href="${CFG.base}/${p}" data-nav data-tab="${k}" aria-label="${l}">${tabIcon(ic)}<span>${l}</span></a>`).join('');
   rail.innerHTML = `<div class="brand">${logo(28)}QuantSync</div>` + TABS.map(([k, p, l, ic]) => `<a href="${CFG.base}/${p}" data-nav data-tab="${k}">${tabIcon(ic)}<span>${l}</span></a>`).join('') +
     `<a href="/app/" style="margin-top:14px">${icon('flask', 22)}<span>Strategy Lab</span></a><div class="rail-foot">Research and education. Not investment advice. Prices can be delayed.</div>`;
   document.addEventListener('click', e => {
