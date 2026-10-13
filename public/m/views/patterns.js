@@ -45,5 +45,5 @@ export default async function patterns(el, r) {
     if (!html) return;
     const yr = (e.date_range || [])[0];
     body.querySelector('#p-edge').innerHTML = sec(`Do breakouts work?${q('odds')}`, `<div class="duo">${html}</div>`, { p: `We tested ${fmt.int(e.events)} breakouts in ${fmt.int(e.symbols)} stocks${yr ? ' since ' + toDate(yr).getFullYear() : ''}, with a stop below the level and a target twice as far away.` });
-  }, '');
+  }, '', { quiet: true });
 }

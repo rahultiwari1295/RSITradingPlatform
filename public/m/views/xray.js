@@ -36,14 +36,14 @@ export default async function xray(el) {
     const L = (m.leaders || []).slice(0, 6);
     if (!L.length) return;
     body.querySelector('#x-lead').innerHTML = sec('Highest scores today', `<div class="group">${L.map(s => stockRow(s)).join('')}</div>`, { p: `Out of ${fmt.int(m.stocks)} stocks checked last night.` });
-  }, '');
+  }, '', { quiet: true });
 
   fill(body.querySelector('#x-disc'), () => api('/dna/discovery', 30), d => {
     body.querySelector('#x-disc').innerHTML = Object.entries(d || {}).filter(([, g]) => g && Array.isArray(g.stocks) && g.stocks.length).map(([k, g]) => {
       const [h, p] = GROUPS[k] || [clean(g.label), clean(g.subtitle)];
       return sec(esc(h), `<div class="group">${g.stocks.slice(0, 4).map(s => stockRow({ symbol: s.symbol, name: clean(s.stanceLabel || s.hook || ''), score: s.score })).join('')}</div>`, { p: esc(p) });
     }).join('');
-  }, sec('Ideas to explore', '<div class="sk" style="height:240px;border-radius:16px"></div>'));
+  }, sec('Ideas to explore', '<div class="sk" style="height:240px;border-radius:16px"></div>'), { quiet: true });
 
   body.querySelector('#x-how').innerHTML = sec(`How the score works${q('xray')}`, `<div class="story">${[
     ['pattern', 'var(--brand)', 'Trend, up to 30', 'Is the price above its 20, 50 and 200-day averages, and are those averages rising?'],

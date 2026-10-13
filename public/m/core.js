@@ -202,7 +202,7 @@ export const empty = (ic, h, p, cta = '') => `<div class="empty"><div class="ic"
 export const delta = (v, d = 1) => `<span class="delta ${tone(v)}">${fmt.sp(v, d)}</span>`;
 export const link = (path, inner, cls = '', attrs = '') => `<a href="${CFG.base}/${path}" data-nav class="${cls}" ${attrs}>${inner}</a>`;
 /** Load into a slot with skeleton, error and retry handled the same way everywhere. */
-export async function fill(el, load, draw, sk = skel(80, 2)) {
+export async function fill(el, load, draw, sk = skel(80, 2), { quiet = false } = {}) {
   if (!el) return;
   el.innerHTML = sk;
   try {
@@ -213,9 +213,10 @@ export async function fill(el, load, draw, sk = skel(80, 2)) {
   } catch (e) {
     console.warn(e);
     if (!el.isConnected) return;
+    if (quiet) { el.innerHTML = ''; return; } // optional sections simply stay out of the way
     el.innerHTML = errBox(e.message);
     const b = el.querySelector('[data-retry]');
-    if (b) b.onclick = () => fill(el, load, draw, sk);
+    if (b) b.onclick = () => fill(el, load, draw, sk, { quiet });
   }
 }
 export function segmented(el, options, value, on) {
@@ -235,6 +236,7 @@ function runCount(el) {
   const to = +el.dataset.count, f = el.dataset.f || 'int', t0 = performance.now();
   const out = v => (f === 'int' ? fmt.int(v) : f === 'pct' ? fmt.pct(v, +(el.dataset.d || 1)) : f === 'sp' ? fmt.sp(v, +(el.dataset.d || 1)) : f === 'x' ? fmt.x(v, +(el.dataset.d || 2)) : f === 'idx' ? fmt.idx(v) : f === 'px' ? fmt.px(v) : fmt.lakh(v));
   if (RM) { el.textContent = out(to); return; }
+  setTimeout(() => { el.textContent = out(to); }, 1400); // the final value even if animation frames are paused (background tab)
   const step = t => { const k = Math.min(1, (t - t0) / 900), e = 1 - Math.pow(1 - k, 3); el.textContent = out(to * e); if (k < 1) requestAnimationFrame(step); };
   requestAnimationFrame(step);
 }

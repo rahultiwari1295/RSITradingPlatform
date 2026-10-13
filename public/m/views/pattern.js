@@ -55,7 +55,7 @@ export default async function pattern(el, r) {
       const x = (d.items || {})[p.sym]; if (!x || !ok(x.score)) return;
       const t = scoreTone(x.score), col = t.k === 'warn' ? 'ai' : t.k;
       body.querySelector('#q-xray').innerHTML = sec('The company behind the chart', link(`xray/${encodeURIComponent(p.sym)}`, `<span class="mono" style="background:color-mix(in srgb, var(--${col}-solid) 16%, transparent);color:var(--${col});box-shadow:none;font-size:15px">${fmt.int(x.score)}</span><div class="main"><div class="t">X-Ray score ${fmt.int(x.score)}, ${t.t.toLowerCase()}</div><div class="s">${esc(clean(x.title || x.archetype || ''))}</div></div>${icon('chev', 18, 'chev')}`, 'row group'));
-    }, '');
+    }, '', { quiet: true });
   }
   return () => stops.forEach(f => f && f());
 }

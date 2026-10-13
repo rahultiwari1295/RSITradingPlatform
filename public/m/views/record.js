@@ -49,6 +49,6 @@ export default async function record(el) {
       if (!p) { v.textContent = fmt.lakh(s[s.length - 1].v); w.textContent = `last ${s.length} sessions`; d.textContent = fmt.sp(ch); d.className = 'd ' + tone(ch); return; }
       const c2 = (p.v / s[0].v - 1) * 100; v.textContent = fmt.lakh(p.v); w.textContent = fmt.date(p.t, { day: 'numeric', month: 'short', year: 'numeric' }); d.textContent = fmt.sp(c2); d.className = 'd ' + tone(c2);
     } }));
-  }, '');
+  }, '', { quiet: true });
   return () => stops.forEach(f => f && f());
 }

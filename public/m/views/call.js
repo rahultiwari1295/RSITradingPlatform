@@ -66,7 +66,7 @@ export default async function call(el, r) {
       body.querySelector('#k-strat').innerHTML = sec(`About the ${esc(c.strategy.toLowerCase())} strategy`, `${what ? `<p class="prose" style="margin:-2px 2px 12px">${esc(what)}</p>` : ''}
         ${s ? `<div class="stats">${statCell('Win rate', fmt.pct(s.winRate, 0), `${fmt.int(s.trades)} trades`, 'winrate')}${statCell('Avg win', `<span class="up">${fmt.sp(s.avgWinPct)}</span>`, `avg loss ${fmt.sp(s.avgLossPct)}`)}${statCell('Typical hold', fmt.days(s.medianHoldDays), `worst run ${fmt.int(s.maxConsecutiveLosses)} losses`)}</div>
         <p class="small" style="margin:10px 2px 0">Profit factor ${fmt.x(s.profitFactor)}${q('pf')}. Includes simulated trades before live tracking began.</p>` : ''}`);
-    }, '');
+    }, '', { quiet: true });
 
     fill(body.querySelector('#k-xray'), () => api(`/app/xray-batch?symbols=${encodeURIComponent(c.sym)}`, 30), d => {
       const x = (d.items || {})[c.sym];
@@ -74,7 +74,7 @@ export default async function call(el, r) {
       const st = scoreTone(x.score);
       body.querySelector('#k-xray').innerHTML = sec('The company behind the trade', link(`xray/${encodeURIComponent(c.sym)}`, `<span class="mono" style="--h:220;background:color-mix(in srgb, var(--${st.k === 'warn' ? 'ai' : st.k}-solid) 16%, transparent);color:var(--${st.k === 'warn' ? 'ai' : st.k});box-shadow:none;font-size:15px">${fmt.int(x.score)}</span>
         <div class="main"><div class="t">X-Ray score ${fmt.int(x.score)}, ${st.t.toLowerCase()}</div><div class="s">${esc(clean(x.title || x.archetype || ''))}</div></div>${icon('chev', 18, 'chev')}`, 'row group'));
-    }, '');
+    }, '', { quiet: true });
 
     const hist = t.closed.filter(x => x.stratId === c.stratId).slice(0, 5);
     if (hist.length) body.querySelector('#k-hist').innerHTML = sec('Recent trades from this strategy', `<div class="group">${hist.map(closedRow).join('')}</div>`);

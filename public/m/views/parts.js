@@ -35,7 +35,7 @@ export function patternCard(p, closes) {
     <div class="in"><div class="top" style="display:flex;align-items:center;gap:12px">${mono(p.sym)}
       <div style="flex:1;min-width:0"><div class="t" style="font-weight:650;font-size:17px;letter-spacing:-.02em">${esc(p.sym)}</div><div class="small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.pattern)}</div></div>
       <div style="text-align:right"><div class="tnum" style="font-weight:650;font-size:17px">${fmt.px(p.price)}</div><div class="small tnum">${dist >= 0 ? fmt.sp(dist) + ' above' : fmt.sp(dist).replace('−', '') + ' below'} level</div></div></div>
-      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap"><span class="pill" style="background:color-mix(in srgb, ${st.c} 14%, transparent);color:${st.c === 'var(--ink-3)' ? 'var(--ink-2)' : st.c}"><i class="stage-ic" style="background:${st.c}"></i>${st.t}</span><span class="pill">${tfWord(p.tf)}</span>${p.grade ? `<span class="pill">Grade ${esc(p.grade)}</span>` : ''}${isFinite(p.xray) ? `<span class="pill ${scoreTone(p.xray).k}">X-Ray ${fmt.int(p.xray)}</span>` : ''}</div>
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap"><span class="pill" style="background:color-mix(in srgb, ${st.c} 14%, transparent);color:${st.c === 'var(--ink-3)' ? 'var(--ink-2)' : st.c}"><i class="stage-ic" style="background:${st.c}"></i>${st.t}</span><span class="pill">${tfWord(p.tf)}</span>${p.grade ? `<span class="pill">Grade ${esc(p.grade)}</span>` : ''}<span class="pill" data-xr="${esc(p.sym)}" hidden></span></div>
     </div>
     <div class="plot" data-spark="${esc(p.sym)}" data-level="${p.level}">${closes ? spark(closes, { w: 360, h: 104, level: p.level, tone: st.c }) : ''}</div>
     <div class="odds">
@@ -58,8 +58,12 @@ export function stockRow(s, right = '') {
     ${right || (isFinite(n(s.score)) ? `<div class="end"><div class="v tnum">${fmt.int(s.score)}</div><div class="d ${scoreTone(s.score).k}" style="font-weight:600">${scoreTone(s.score).t}</div></div>` : '')}`, 'row');
 }
 
-/** Fill mini price lines for pattern cards: one batched request per screen through the chart endpoint. */
+/** Fill mini price lines and X-Ray scores for pattern cards. */
 export async function sparks(root, api) {
+  const xs = [...new Set([...root.querySelectorAll('[data-xr][hidden]')].map(e => e.dataset.xr))].slice(0, 60);
+  if (xs.length) api(`/app/xray-batch?symbols=${xs.map(encodeURIComponent).join(',')}`, 30).then(d => {
+    root.querySelectorAll('[data-xr][hidden]').forEach(e => { const x = (d.items || {})[e.dataset.xr]; if (x && isFinite(n(x.score))) { e.textContent = 'X-Ray ' + fmt.int(x.score); e.className = 'pill ' + scoreTone(x.score).k; e.hidden = false; } });
+  }).catch(() => {});
   const els = [...root.querySelectorAll('[data-spark]')].filter(e => !e.firstElementChild);
   await Promise.all(els.map(async e => {
     try {

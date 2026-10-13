@@ -87,7 +87,7 @@ export default async function today(el) {
       <div class="stats">${statCell('Win rate', count(C.winRate, 'pct', 0), `${fmt.int(C.trades)} trades`, 'winrate')}${statCell('Profit factor', count(C.profitFactor, 'x'), C.profitFactor >= 1 ? 'Made money' : 'Lost money', 'pf')}${statCell('Per trade', `<span class="${tone(C.expectancyPct)}">${fmt.sp(C.expectancyPct, 2)}</span>`, 'average', 'expectancy')}</div>
       ${ok(L.trades) && L.trades > 0 ? `<p class="small" style="margin:10px 2px 0">Live since ${fmt.date(r.liveSince, { day: 'numeric', month: 'long' })}: <b class="${tone(L.expectancyPct)}">${fmt.int(L.trades)} trades, ${fmt.pct(L.winRate, 0)} won</b>, profit factor ${fmt.x(L.profitFactor)}. ${n(L.profitFactor) < 1 ? 'The live period is short and has been weaker than the long-run test.' : 'The live period is tracking the long-run test.'} ${q('live')}</p>` : ''}`,
       { more: link('record', 'Full record', 'more') });
-  }, '');
+  }, '', { quiet: true });
 
   /* patterns */
   fill(body.querySelector('#t-pat'), () => loadPatterns(), (d, slot) => {
@@ -96,7 +96,7 @@ export default async function today(el) {
     slot.innerHTML = sec(`<span style="display:inline-flex;vertical-align:-3px;margin-right:6px;color:var(--up)">${icon('pattern', 20)}</span>Fresh breakouts`, `<div class="stack">${top.map(p => patternCard(p)).join('')}</div>`,
       { more: link('patterns', `${d.counts.Breakout + d.counts.Retest} in total`, 'more'), p: 'Chart patterns that broke out in the last session, with how often the same setup has worked since 2020.' });
     sparks(slot, api);
-  }, '');
+  }, '', { quiet: true });
 
   /* market map */
   fill(body.querySelector('#t-map'), () => api('/app/market', 30), (m, slot) => {
@@ -105,19 +105,20 @@ export default async function today(el) {
     slot.innerHTML = sec('Market health', `
       <div class="stats two" style="margin-bottom:10px">${statCell('Above 200-day average', count(m.above200_pct, 'pct', 0), `of ${fmt.int(m.stocks)} stocks`, 'above200')}${statCell('Average X-Ray score', count(m.avg_score, 'int'), m.avg_score >= 55 ? 'Healthy' : m.avg_score >= 45 ? 'Mixed' : 'Weak', 'xray')}</div>
       <div class="mapgrid">${secs.map(s => tile(s)).join('')}</div>`, { more: link('market', 'All sectors', 'more'), p: 'Sectors ranked by how many of their stocks are in an uptrend.' });
-  }, '');
+  }, '', { quiet: true });
 
   /* movers and news */
   fill(body.querySelector('#t-movers'), () => api('/intel/movers', 10), (d, slot) => {
     const mv = (d.movers || []).slice(0, 6);
     if (!mv.length) { slot.innerHTML = ''; return; }
     slot.innerHTML = sec('Biggest moves', `<div class="group">${mv.map(m => link(`xray/${encodeURIComponent(m.symbol || m.sym)}`, `${mono(m.symbol || m.sym)}<div class="main"><div class="t">${esc(m.symbol || m.sym)}</div><div class="s">${esc(sentence(m.label || m.desc || ''))}</div></div><div class="end"><div class="v tnum">${fmt.px(m.price)}</div><div class="d">${delta(m.pct ?? m.change_pct)}</div></div>`, 'row')).join('')}</div>`);
-  }, '');
+  }, '', { quiet: true });
   fill(body.querySelector('#t-news'), () => api('/intel/news?limit=8', 10), (d, slot) => {
-    const items = (d.news || []).filter(x => x.title).slice(0, 6);
+    const fresh = x => { const ts = n(x.published_ts); return !isFinite(ts) || Date.now() / 1000 - ts < 4 * 86400; };
+    const items = (d.news || []).filter(x => x.title && fresh(x)).slice(0, 6);
     if (!items.length) { slot.innerHTML = ''; return; }
     slot.innerHTML = sec('Market news', `<div class="group">${items.map(x => `<a class="row plain" href="${esc(x.url || '#')}" target="_blank" rel="noopener"><div class="main"><div class="t" style="white-space:normal;font-size:15px;line-height:1.35">${esc(clean(x.title))}</div><div class="s">${esc(x.source || '')}${x.published_ts ? ', ' + fmt.ago(x.published_ts) : x.time ? ', ' + esc(x.time) : ''}</div></div>${x.impact === 'positive' ? '<span class="pill up">Positive</span>' : x.impact === 'negative' ? '<span class="pill dn">Negative</span>' : ''}</a>`).join('')}</div>`);
-  }, '');
+  }, '', { quiet: true });
   return () => stopHero.forEach(f => f && f());
 }
 
