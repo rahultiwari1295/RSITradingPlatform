@@ -344,7 +344,7 @@ export function toClosed(c) {
 export async function loadTerminal() {
   const d = await api('/terminal-data?version=v2', 3);
   const active = (d.active || d.inTradeTrades || []).map(toCall);
-  const toBuy = (d.toBuySignals || []).map(toCall).sort((a, b) => (b.score || 0) - (a.score || 0));
+  const toBuy = (d.toBuySignals || []).map(a => ({ ...toCall(a), isNew: true })).sort((a, b) => (b.score || 0) - (a.score || 0));
   const closed = (d.closedTrades || d.closed || []).map(toClosed).filter(c => isFinite(c.roi));
   closed.sort((a, b) => (b.exitDate || '').localeCompare(a.exitDate || ''));
   return { active, toBuy, closed, kpis: d.kpis || {}, at: d.generatedAt || '' };

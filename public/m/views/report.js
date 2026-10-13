@@ -99,6 +99,8 @@ export default async function report(el, r) {
       if (rows.length && body.isConnected) body.querySelector('#x-engines').innerHTML = sec('Our engines on this stock', `<div class="group">${rows.join('')}</div>`);
     });
 
+    const peerEls = [...body.querySelectorAll('[data-peer]')].filter(e => !e.textContent);
+    if (peerEls.length) api(`/app/xray-batch?symbols=${peerEls.map(e => encodeURIComponent(e.dataset.peer)).join(',')}`, 30).then(d => peerEls.forEach(e => { const x = (d.items || {})[e.dataset.peer]; if (x && ok(x.score)) { e.textContent = fmt.int(x.score); e.style.color = scoreColor(x.score); } else e.textContent = '—'; })).catch(() => peerEls.forEach(e => { e.textContent = '—'; }));
     body.querySelector('[data-add]').onclick = () => addSheet(sym, n(m.price));
   }
   return () => stops.forEach(f => f && f());
@@ -126,7 +128,7 @@ function baseRate(m) {
   const b = m.base_rate; if (!b || !ok(b.p_positive_20d)) return '';
   const up = n(b.p_positive_20d) * 100;
   return sec(`The odds from history${q('baserate')}`, `<div class="panel pad"><div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:34px;font-weight:700;letter-spacing:-.04em" class="tnum ${up >= 55 ? 'up' : up < 45 ? 'dn' : ''}">${fmt.pct(up, 0)}</span><span class="small">rose over the next 20 sessions</span></div>
-    <p class="prose" style="margin:6px 0 0">We found <b>${fmt.int(b.samples)}</b> past moments when a stock was ${esc(clean(b.state_text || 'in the same position'))}. In ${fmt.pct(up, 0)} of them the price was higher four weeks later${ok(b.median_ret_20d) ? `, with a typical move of ${fmt.sp(n(b.median_ret_20d) * (Math.abs(n(b.median_ret_20d)) < 1 ? 100 : 1))}` : ''}.</p></div>`);
+    <p class="prose" style="margin:6px 0 0">We found <b>${fmt.int(b.samples)}</b> past moments when a stock was ${esc(clean(b.state_text || 'in the same position'))}. In ${fmt.pct(up, 0)} of them the price was higher four weeks later${ok(b.median_ret_20d) ? `, and the typical move was ${fmt.sp(n(b.median_ret_20d))}` : ''}.</p></div>`);
 }
 function timeframes(mt) {
   if (!Array.isArray(mt) || !mt.length) return '';
@@ -164,7 +166,7 @@ function solvency(s) {
 }
 function peers(p) {
   if (!Array.isArray(p) || p.length < 2) return '';
-  return sec('Compared with peers', `<div class="group">${p.slice(0, 6).map(x => link(`xray/${encodeURIComponent(x.symbol)}`, `${mono(x.symbol)}<div class="main"><div class="t">${esc(x.symbol)}${x.isCurrent ? ' <span class="pill" style="height:20px;font-size:11px;vertical-align:2px">This stock</span>' : ''}</div><div class="s">P/E ${esc(x.pe || '—')}, return on capital ${esc(x.roce || '—')}</div></div><div class="end"><div class="v tnum" style="color:${scoreColor(x.score)}">${fmt.int(x.score)}</div><div class="d faint">X-Ray</div></div>`, 'row')).join('')}</div>`);
+  return sec('Compared with peers', `<div class="group">${p.slice(0, 6).map(x => link(`xray/${encodeURIComponent(x.symbol)}`, `${mono(x.symbol)}<div class="main"><div class="t">${esc(x.symbol)}${x.isCurrent ? ' <span class="pill" style="height:20px;font-size:11px;vertical-align:2px">This stock</span>' : ''}</div><div class="s">P/E ${esc(x.pe || '—')}, return on capital ${esc(x.roce || '—')}</div></div><div class="end"><div class="v tnum" data-peer="${esc(x.symbol)}" style="color:${scoreColor(x.score)}">${x.isCurrent ? fmt.int(x.score) : ''}</div><div class="d faint">X-Ray</div></div>`, 'row')).join('')}</div>`);
 }
 function catalysts(c) {
   if (!c) return '';

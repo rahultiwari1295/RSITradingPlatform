@@ -3,14 +3,14 @@ import { fmt, esc, mono, link, icon, delta, tone, scoreTone, n, q, CFG } from '.
 import { ruler, spark } from '../charts.js';
 
 export function callCard(c, { compact = false } = {}) {
-  const fresh = c.days === 0;
+  const fresh = c.isNew || c.days === 0;
   const pill = c.action.includes('EXIT') || c.action.includes('SELL') ? '<span class="pill dn">Sell</span>' : fresh ? '<span class="pill ai">New buy</span>' : `<span class="pill">Day ${fmt.int(c.days)}</span>`;
   return link(`calls/${encodeURIComponent(c.sym)}`, `
     <div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}</div><div class="s">${esc(c.strategy)}</div></div>
       <div class="px"><div class="v tnum">${fmt.px(c.now)}</div>${fresh && Math.abs(c.roi) < .05 ? '<span class="small">at entry</span>' : delta(c.roi)}</div></div>
     ${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: c.now })}
     ${!compact && c.why ? `<p class="why">${esc(c.why)}</p>` : ''}
-    <div class="foot">${pill}<span>${fresh ? 'Called today' : 'Since ' + fmt.date(c.entryDate)}</span><span class="tnum">${isFinite(c.target / c.entry) ? 'Target ' + fmt.sp((c.target / c.entry - 1) * 100, 0) : ''}</span></div>`, 'callcard', `aria-label="${esc(c.sym)} AI call, ${fmt.px(c.now)}"`);
+    <div class="foot">${pill}<span>${c.days === 0 ? 'Called today' : fresh ? 'Called ' + fmt.date(c.entryDate) : 'Since ' + fmt.date(c.entryDate)}</span><span class="tnum">${isFinite(c.target / c.entry) ? 'Target ' + fmt.sp((c.target / c.entry - 1) * 100, 0) : ''}</span></div>`, 'callcard', `aria-label="${esc(c.sym)} AI call, ${fmt.px(c.now)}"`);
 }
 
 export function closedRow(c) {

@@ -84,7 +84,7 @@ input { font: inherit; color: inherit; }
 svg { display: block; }
 :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 6px; }
 .num, .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum", "ss01"; }
-.up { color: var(--up); } .dn { color: var(--dn); } .ai { color: var(--ai); } .mute { color: var(--ink-2); } .faint { color: var(--ink-3); }
+.up { color: var(--up); } .dn { color: var(--dn); } .warn { color: var(--warn); } .ai { color: var(--ai); } .mute { color: var(--ink-2); } .faint { color: var(--ink-3); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---------------------------------------------------------------- app frame */

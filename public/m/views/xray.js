@@ -1,14 +1,13 @@
-import { api, chrome, fill, fmt, esc, icon, n, ok, link, mono, recent, scoreTone, clean, go, q } from '../core.js';
+import { api, chrome, fill, fmt, esc, icon, n, ok, link, mono, recent, scoreTone, clean, go, q, loadTerminal, loadPatterns } from '../core.js';
 import { stockRow, sec, footNote } from './parts.js';
 
-const GROUPS = { trending: ['Most researched today', 'Stocks people are looking up the most.'], velocity: ['Strong momentum', 'Riding above a rising 20-day average.'], whales: ['Funds are buying', 'Mutual funds and foreign investors raised their stakes.'], solvency: ['Almost no debt', 'Large reserves and very low borrowing.'] };
 
 export default async function xray(el) {
   const body = chrome(el, { title: 'Stock X-Ray', sub: 'Any NSE stock, checked in seconds. One score, the reasons behind it, and the price levels that matter.' });
   body.innerHTML = `
     <form class="search" role="search" autocomplete="off">${icon('search', 20)}<input type="search" placeholder="Company or symbol, e.g. Trent" aria-label="Search stocks" enterkeyhint="search"><button type="button" class="clr" aria-label="Clear">${icon('x', 18)}</button></form>
     <div class="results" aria-live="polite"></div>
-    <div id="x-recent"></div><div id="x-lead"></div><div id="x-disc"></div><div id="x-how"></div>${footNote('X-Ray reports refresh every evening after the close.')}`;
+    <div id="x-recent"></div><div id="x-disc"></div><div id="x-lead"></div><div id="x-how"></div>${footNote('X-Ray reports refresh every evening after the close.')}`;
   const form = body.querySelector('form'), inp = form.querySelector('input'), res = body.querySelector('.results');
   let t = 0, seq = 0, first = null;
   const run = async v => {
@@ -38,12 +37,20 @@ export default async function xray(el) {
     body.querySelector('#x-lead').innerHTML = sec('Highest scores today', `<div class="group">${L.map(s => stockRow(s)).join('')}</div>`, { p: `Out of ${fmt.int(m.stocks)} stocks checked last night.` });
   }, '', { quiet: true });
 
-  fill(body.querySelector('#x-disc'), () => api('/dna/discovery', 30), d => {
-    body.querySelector('#x-disc').innerHTML = Object.entries(d || {}).filter(([, g]) => g && Array.isArray(g.stocks) && g.stocks.length).map(([k, g]) => {
-      const [h, p] = GROUPS[k] || [clean(g.label), clean(g.subtitle)];
-      return sec(esc(h), `<div class="group">${g.stocks.slice(0, 4).map(s => stockRow({ symbol: s.symbol, name: clean(s.stanceLabel || s.hook || ''), score: s.score })).join('')}</div>`, { p: esc(p) });
-    }).join('');
-  }, sec('Ideas to explore', '<div class="sk" style="height:240px;border-radius:16px"></div>'), { quiet: true });
+  /* stocks the engines are acting on, with their real X-Ray scores */
+  fill(body.querySelector('#x-disc'), async () => {
+    const [t, p] = await Promise.all([loadTerminal().catch(() => null), loadPatterns().catch(() => null)]);
+    const why = new Map();
+    (t ? [...t.toBuy, ...t.active] : []).forEach(c => why.set(c.sym, c.isNew ? 'New AI buy call' : 'Open AI call'));
+    (p ? p.rows.filter(r => r.stage === 'Breakout' || r.stage === 'Retest') : []).forEach(r => { if (!why.has(r.sym)) why.set(r.sym, `${r.stage === 'Breakout' ? 'Breakout' : 'Retest'}: ${r.pattern}`); });
+    const syms = [...why.keys()].slice(0, 40);
+    if (!syms.length) return [];
+    const d = await api(`/app/xray-batch?symbols=${syms.map(encodeURIComponent).join(',')}`, 30);
+    return syms.map(s => ({ ...(d.items || {})[s], symbol: s, why: why.get(s) })).filter(x => ok(x.score)).sort((a, b) => b.score - a.score);
+  }, list => {
+    if (!list.length) return;
+    body.querySelector('#x-disc').innerHTML = sec('On our engines\u2019 radar', `<div class="group">${list.slice(0, 8).map(s => stockRow({ symbol: s.symbol, name: s.why, score: s.score })).join('')}</div>`, { p: 'Stocks with an AI call or a fresh breakout, ranked by their X-Ray score.' });
+  }, sec('On our engines\u2019 radar', '<div class="sk" style="height:240px;border-radius:16px"></div>'), { quiet: true });
 
   body.querySelector('#x-how').innerHTML = sec(`How the score works${q('xray')}`, `<div class="story">${[
     ['pattern', 'var(--brand)', 'Trend, up to 30', 'Is the price above its 20, 50 and 200-day averages, and are those averages rising?'],

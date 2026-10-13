@@ -18,7 +18,7 @@ export default async function call(el, r) {
   }, `<div class="sk" style="height:260px;border-radius:22px;margin-top:8px"></div><div class="sk" style="height:300px;border-radius:16px;margin-top:12px"></div>`);
 
   function draw(c, t) {
-    const fresh = c.days === 0, riskPct = (1 - c.stop / c.entry) * 100, gainPct = (c.target / c.entry - 1) * 100, rr = gainPct / riskPct;
+    const fresh = c.isNew || c.days === 0, riskPct = (1 - c.stop / c.entry) * 100, gainPct = (c.target / c.entry - 1) * 100, rr = gainPct / riskPct;
     const chase = c.entry * 1.03;
     const above = c.now > c.entry * 1.03, belowEntry = c.now < c.entry;
     const todo = fresh
@@ -30,7 +30,7 @@ export default async function call(el, r) {
       <div class="xhero" style="margin-top:6px">
         <div class="id">${mono(c.sym, 'lg')}<div style="min-width:0"><div class="t">${esc(c.sym)}</div><div class="s">${esc(c.name)}${c.sector ? ', ' + esc(c.sector) : ''}</div></div></div>
         <div class="pr"><span class="v tnum">${fmt.px(c.now)}</span>${delta(c.roi, 2)}<span class="small">since entry</span></div>
-        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">${fresh ? '<span class="pill ai">New buy call today</span>' : `<span class="pill">Day ${fmt.int(c.days)} of the trade</span>`}<span class="pill brand">${esc(c.strategy)}</span>${ok(c.score) ? `<span class="pill">AI confidence ${fmt.int(c.score)}</span>` : ''}</div>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">${fresh ? `<span class="pill ai">New buy call${c.days === 0 ? ' today' : ''}</span>` : `<span class="pill">Day ${fmt.int(c.days)} of the trade</span>`}<span class="pill brand">${esc(c.strategy)}</span>${ok(c.score) ? `<span class="pill">AI confidence ${fmt.int(c.score)}</span>` : ''}</div>
         <div style="margin-top:6px">${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: c.now })}</div>
       </div>
       <div class="verdict" style="background:var(--ai-soft);margin-top:12px"><div class="h" style="display:flex;gap:8px;align-items:center"><span class="ai">${icon('ai', 18)}</span>What to do</div><p style="color:var(--ink)">${todo}</p></div>
