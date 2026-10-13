@@ -1,0 +1,54 @@
+import { api, chrome, fill, fmt, esc, icon, n, ok, link, mono, recent, scoreTone, clean, go, q } from '../core.js';
+import { stockRow, sec, footNote } from './parts.js';
+
+const GROUPS = { trending: ['Most researched today', 'Stocks people are looking up the most.'], velocity: ['Strong momentum', 'Riding above a rising 20-day average.'], whales: ['Funds are buying', 'Mutual funds and foreign investors raised their stakes.'], solvency: ['Almost no debt', 'Large reserves and very low borrowing.'] };
+
+export default async function xray(el) {
+  const body = chrome(el, { title: 'Stock X-Ray', sub: 'Any NSE stock, checked in seconds. One score, the reasons behind it, and the price levels that matter.' });
+  body.innerHTML = `
+    <form class="search" role="search" autocomplete="off">${icon('search', 20)}<input type="search" placeholder="Company or symbol, e.g. Trent" aria-label="Search stocks" enterkeyhint="search"><button type="button" class="clr" aria-label="Clear">${icon('x', 18)}</button></form>
+    <div class="results" aria-live="polite"></div>
+    <div id="x-recent"></div><div id="x-lead"></div><div id="x-disc"></div><div id="x-how"></div>${footNote('X-Ray reports refresh every evening after the close.')}`;
+  const form = body.querySelector('form'), inp = form.querySelector('input'), res = body.querySelector('.results');
+  let t = 0, seq = 0, first = null;
+  const run = async v => {
+    const my = ++seq;
+    form.classList.toggle('has', !!v);
+    if (v.length < 2) { res.innerHTML = ''; first = null; return; }
+    try {
+      const l = await api(`/dna/search?q=${encodeURIComponent(v)}`, 10);
+      if (my !== seq) return;
+      const list = (Array.isArray(l) ? l : l.results || []).slice(0, 8);
+      first = list[0]?.symbol || null;
+      res.innerHTML = list.length ? `<div class="group">${list.map(s => link(`xray/${encodeURIComponent(s.symbol)}`, `${mono(s.symbol)}<div class="main"><div class="t">${esc(s.symbol)}</div><div class="s">${esc(clean(s.name || ''))}</div></div>${icon('chev', 18, 'chev')}`, 'row', `data-n="${esc(clean(s.name || ''))}" data-s="${esc(s.symbol)}"`)).join('')}</div>`
+        : `<p class="small" style="padding:8px 4px">No NSE stock matches "${esc(v)}". Try the symbol, like TRENT or HDFCBANK.</p>`;
+    } catch { if (my === seq) res.innerHTML = `<p class="small" style="padding:8px 4px">Search is unavailable right now.</p>`; }
+  };
+  inp.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => run(inp.value.trim()), 180); });
+  form.onsubmit = e => { e.preventDefault(); const v = inp.value.trim().toUpperCase(); if (first) go(`xray/${encodeURIComponent(first)}`); else if (v) go(`xray/${encodeURIComponent(v.replace(/\s+/g, ''))}`); };
+  form.querySelector('.clr').onclick = () => { inp.value = ''; run(''); inp.focus(); };
+  res.addEventListener('click', e => { const a = e.target.closest('[data-s]'); if (a) recent.add(a.dataset.s, a.dataset.n); });
+
+  const rc = recent.get();
+  if (rc.length) body.querySelector('#x-recent').innerHTML = sec('Recently viewed', `<div class="hs">${rc.map(r => link(`xray/${encodeURIComponent(r.s)}`, `${mono(r.s, 'xs')}${esc(r.s)}`, 'chip', 'style="padding-left:6px"')).join('')}</div>`);
+
+  fill(body.querySelector('#x-lead'), () => api('/app/market', 30), m => {
+    const L = (m.leaders || []).slice(0, 6);
+    if (!L.length) return;
+    body.querySelector('#x-lead').innerHTML = sec('Highest scores today', `<div class="group">${L.map(s => stockRow(s)).join('')}</div>`, { p: `Out of ${fmt.int(m.stocks)} stocks checked last night.` });
+  }, '');
+
+  fill(body.querySelector('#x-disc'), () => api('/dna/discovery', 30), d => {
+    body.querySelector('#x-disc').innerHTML = Object.entries(d || {}).filter(([, g]) => g && Array.isArray(g.stocks) && g.stocks.length).map(([k, g]) => {
+      const [h, p] = GROUPS[k] || [clean(g.label), clean(g.subtitle)];
+      return sec(esc(h), `<div class="group">${g.stocks.slice(0, 4).map(s => stockRow({ symbol: s.symbol, name: clean(s.stanceLabel || s.hook || ''), score: s.score })).join('')}</div>`, { p: esc(p) });
+    }).join('');
+  }, sec('Ideas to explore', '<div class="sk" style="height:240px;border-radius:16px"></div>'));
+
+  body.querySelector('#x-how').innerHTML = sec(`How the score works${q('xray')}`, `<div class="story">${[
+    ['pattern', 'var(--brand)', 'Trend, up to 30', 'Is the price above its 20, 50 and 200-day averages, and are those averages rising?'],
+    ['bolt', 'var(--ai)', 'Momentum, up to 25', 'How strongly the price is moving, and how it compares with the Nifty over three months.'],
+    ['layers', 'var(--up)', 'Volume, up to 25', 'Are large investors buying? Measured from heavy up-days, delivery share and selling days.'],
+    ['shield', 'var(--ink-2)', 'Quality, up to 20', 'Is the business sound? Debt, return on capital and profit growth.'],
+  ].map(([ic, c, h, p]) => `<div><span class="ic" style="background:color-mix(in srgb, ${c} 14%, transparent);color:${c}">${icon(ic, 17)}</span><div><div class="h" style="color:var(--ink);font-size:15px">${h}</div><p style="font-size:14px;color:var(--ink-2)">${p}</p></div></div>`).join('')}</div>`);
+}

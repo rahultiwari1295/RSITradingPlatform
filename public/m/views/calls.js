@@ -1,0 +1,58 @@
+import { api, chrome, fill, fmt, esc, icon, n, ok, link, loadTerminal, segmented, count, tone, toDate, empty } from '../core.js';
+import { settle } from '../charts.js';
+import { callCard, closedRow, sec, footNote, statCell } from './parts.js';
+
+export default async function calls(el, r) {
+  const body = chrome(el, { title: 'AI Calls', sub: 'Trade ideas from our AI engines. Every call comes with a price to buy at, a stop loss, and a target.' });
+  body.innerHTML = `<div id="c-sum"></div><div id="c-seg" style="margin-top:18px"></div><div id="c-list" style="margin-top:14px"></div><div id="c-how"></div>${footNote('Calls are generated after the market closes and checked again before the open.')}`;
+  const sum = body.querySelector('#c-sum'), list = body.querySelector('#c-list');
+  let tab = r.query.get('v') || null;
+
+  fill(sum, () => Promise.all([loadTerminal(), api('/track-record', 15).catch(() => ({}))]), ([t, rec]) => {
+    const C = rec.combined || {}, openRoi = t.active.length ? t.active.reduce((a, c) => a + (isFinite(c.roi) ? c.roi : 0), 0) / t.active.length : NaN;
+    sum.innerHTML = `<div class="stats four">
+      ${statCell('Buy today', count(t.toBuy.length), t.toBuy.length ? 'new calls' : 'none today')}
+      ${statCell('Open trades', count(t.active.length), isFinite(openRoi) ? `<span class="${tone(openRoi)}">${fmt.sp(openRoi)} on average</span>` : '')}
+      ${statCell('Win rate', ok(C.winRate) ? count(C.winRate, 'pct', 0) : '—', ok(C.trades) ? `${fmt.int(C.trades)} closed trades` : '', 'winrate')}
+      ${statCell('Profit factor', ok(C.profitFactor) ? count(C.profitFactor, 'x') : '—', link('record', 'See the record', 'link'), 'pf')}
+    </div>`;
+    if (!tab) tab = t.toBuy.length ? 'buy' : 'open';
+    segmented(body.querySelector('#c-seg'), [['buy', 'Buy now', t.toBuy.length], ['open', 'Open', t.active.length], ['closed', 'Closed', t.closed.length]], tab, v => { tab = v; draw(t); history.replaceState(history.state, '', location.pathname + '?v=' + v); });
+    draw(t);
+  }, '<div class="sk" style="height:150px;border-radius:16px"></div>');
+
+  function draw(t) {
+    if (tab === 'buy') {
+      list.innerHTML = t.toBuy.length ? `<div class="stack">${t.toBuy.map(c => callCard(c)).join('')}</div>`
+        : empty('ai', 'No buy calls today', 'Nothing passed every check after the last close. On weak days the engines stay out on purpose. Open trades are still being managed.', `<button class="btn ghost sm" data-go="open">See open trades</button>`);
+    } else if (tab === 'open') {
+      const a = [...t.active].sort((x, y) => (x.days || 0) - (y.days || 0));
+      list.innerHTML = a.length ? `<div class="stack">${a.map(c => callCard(c, { compact: true })).join('')}</div>` : empty('clock', 'No open trades', 'When the engines buy, the trade shows here until it reaches its target or stop.');
+    } else closed(t);
+    const g = list.querySelector('[data-go]'); if (g) g.onclick = () => body.querySelector(`#c-seg [data-v="${g.dataset.go}"]`).click();
+    settle(list);
+  }
+
+  function closed(t) {
+    let filt = 'all', shown = 40;
+    const render = () => {
+      const pick = t.closed.filter(c => filt === 'all' || (filt === 'win' && c.win) || (filt === 'loss' && !c.win) || (filt === 'live' && String(c.origin).toUpperCase() === 'LIVE'));
+      const months = new Map();
+      pick.slice(0, shown).forEach(c => { const k = (c.exitDate || '').slice(0, 7); if (!months.has(k)) months.set(k, []); months.get(k).push(c); });
+      const wins = pick.filter(c => c.win).length, avg = pick.length ? pick.reduce((a, c) => a + c.roi, 0) / pick.length : NaN;
+      list.innerHTML = `<div class="hs" role="group" aria-label="Filter closed trades">${[['all', 'All', t.closed.length], ['win', 'Wins', t.closed.filter(c => c.win).length], ['loss', 'Losses', t.closed.filter(c => !c.win).length], ['live', 'Live only', t.closed.filter(c => String(c.origin).toUpperCase() === 'LIVE').length]].map(([k, l, c]) => `<button class="chip" data-f="${k}" aria-pressed="${k === filt}">${l} <span class="n">${c}</span></button>`).join('')}</div>
+        <p class="small" style="margin:8px 2px 12px">${pick.length ? `${fmt.int(pick.length)} trades, ${fmt.pct(wins / pick.length * 100, 0)} won, <b class="${tone(avg)}">${fmt.sp(avg)}</b> average result.` : 'No trades match this filter.'}</p>
+        ${[...months].map(([m, l]) => `<div class="tiny" style="margin:16px 4px 8px;font-weight:600;color:var(--ink-2)">${m ? toDate(m + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) : 'Earlier'}</div><div class="group">${l.map(closedRow).join('')}</div>`).join('')}
+        ${pick.length > shown ? `<button class="btn quiet block" data-more style="margin-top:14px">Show more</button>` : ''}`;
+      list.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { filt = b.dataset.f; shown = 40; render(); });
+      const m = list.querySelector('[data-more]'); if (m) m.onclick = () => { shown += 60; render(); };
+    };
+    render();
+  }
+
+  body.querySelector('#c-how').innerHTML = sec('How a call works', `<div class="story">
+    ${[['target', 'var(--brand)', 'Found after the close', 'Every evening the engines scan about 2,400 NSE stocks for setups their strategies have traded well in the past.'],
+      ['shield', 'var(--ai)', 'Checked by AI', 'A machine-learning model scores each setup against similar past trades. Only the ones that scored well become calls.'],
+      ['clock', 'var(--up)', 'Managed until it closes', 'Each call has a stop loss and a target. As the price rises the stop can move up to lock in profit. You see every exit here.']]
+      .map(([ic, c, h, p]) => `<div><span class="ic" style="background:color-mix(in srgb, ${c} 14%, transparent);color:${c}">${icon(ic, 17)}</span><div><div class="h" style="color:var(--ink);font-size:15px">${h}</div><p style="font-size:14px;color:var(--ink-2)">${p}</p></div></div>`).join('')}</div>`);
+}

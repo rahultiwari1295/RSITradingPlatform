@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>QuantSync</title>
+<meta name="description" content="AI trade calls, pattern breakouts with measured odds, and a plain-English X-Ray of every NSE stock.">
+<meta name="theme-color" content="#F2F4F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#070B13" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%232346E8'/%3E%3Cpath d='M7 21.5 12.5 15l4 3.5L25 9.5' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='25' cy='9.5' r='2.6' fill='%23F2B02E'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/m/m.css?v=1">
+<link rel="modulepreload" href="/m/core.js">
+</head>
+<body>
+<div id="app">
+  <nav id="rail" aria-label="Main"></nav>
+  <main id="stage"></main>
+</div>
+<nav id="tabs" aria-label="Main"></nav>
+<noscript><p style="padding:24px">QuantSync needs JavaScript to load live market data.</p></noscript>
+<script type="module">
+  import { boot } from '/m/core.js';
+  boot();
+</script>
+</body>
+</html>

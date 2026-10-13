@@ -14,6 +14,14 @@
       "destination": "/app/index.html"
     },
     {
+      "source": "/m",
+      "destination": "/m/index.html"
+    },
+    {
+      "source": "/m/:path*",
+      "destination": "/m/index.html"
+    },
+    {
       "source": "/lab/api/:path*",
       "destination": "https://quantsync-api.duckdns.org:8443/lab/:path*"
     },
