@@ -3,7 +3,7 @@ import { settle } from '../charts.js';
 import { closedRow, sec, footNote, statCell, signalList, scanRule, bindSignals, isFreshSignal } from './parts.js';
 
 export default async function calls(el, r) {
-  const body = chrome(el, { title: 'AI Calls', sub: 'Every call from every strategy. Each one has a price to buy at, a stop loss and a target.' });
+  const body = chrome(el, { title: 'AI Calls', hero: { art: 'calls', icon: icon('target', 16), ey: 'QuantSync Scanner', h: 'Know when to buy, and when to sell.', hl: ['buy,', 'sell.'], lede: 'Every call from every strategy, each with a price to buy at, a stop loss and a target.' } });
   body.innerHTML = `<div id="c-sum"></div><div id="c-seg" style="margin-top:18px"></div><div id="c-list" style="margin-top:14px"></div><div id="c-how"></div>${footNote('Calls are generated after the market closes and checked again before the open.')}`;
   const sum = body.querySelector('#c-sum'), list = body.querySelector('#c-list');
   let tab = r.query.get('v') || null;

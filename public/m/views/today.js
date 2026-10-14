@@ -6,8 +6,7 @@ export default async function today(el) {
   const ms = marketStatus();
   const body = chrome(el, {
     title: 'Today',
-    sub: 'Fresh QuantSync signals first, then what the market did and what it means for you.',
-    when: `<span class="live-dot ${ms.open ? 'on' : ''}"></span><span id="t-when">${ms.text}</span>`,
+    hero: { art: 'home', icon: icon('target', 16), ey: 'Today', h: 'Fresh signals first. Then the market.', hl: ['Fresh', 'signals'], lede: 'What QuantSync found tonight, what the market did, and what it means for you.', extra: `<div class="when" style="margin-top:14px;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2)"><span class="live-dot ${ms.open ? 'on' : ''}"></span><span id="t-when">${ms.text}</span></div>` },
     actions: `<a class="ib" href="/m/xray" data-nav aria-label="Search stocks">${icon('search', 21)}</a>`,
   });
   el.querySelector('.bar').insertAdjacentHTML('afterbegin', `<span class="bar-logo" style="padding-left:8px;display:flex">${logo(26)}</span>`);

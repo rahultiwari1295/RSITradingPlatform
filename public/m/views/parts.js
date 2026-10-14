@@ -32,14 +32,12 @@ export function signalCard(c) {
   const fresh = isFreshSignal(c), traded = paper.has(c.sym);
   const run = (c.now / c.entry - 1) * 100, gain = (c.target / c.entry - 1) * 100;
   if (!fresh) {
-    return link(`calls/${encodeURIComponent(c.sym)}`, `<div class="meta"><span style="display:flex;gap:6px"><span class="tag old"><i></i>Old signal</span><span class="tag skip">Skip</span></span><span class="when">Called ${dayWord(c.entryDate)}</span></div>
-      <div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}</div><div class="s">${esc(c.strategy)}</div></div><div class="px"><div class="v">${fmt.px(c.now)}</div>${delta(c.roi)}</div></div>
+    return link(`calls/${encodeURIComponent(c.sym)}`, `<div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}</div><div class="s tags"><span class="tag old"><i></i>Old signal</span><span class="tag skip">Skip</span><em>${esc(c.strategy)}</em></div></div><div class="px"><div class="v">${fmt.px(c.now)}</div>${delta(c.roi)}</div></div>
       <p class="note">Entry has passed${isFinite(run) && run > 1 ? `, already <b>${fmt.sp(run)}</b> up` : ''}. Skip as a new buy.</p>`, 'sig old compact', `aria-label="${esc(c.sym)}, old signal, skip"`);
   }
   const moved = isFinite(run) && run > 3;
   return `<div class="sig new" data-sig="${esc(c.sym)}">
-    <div class="meta"><span style="display:flex;gap:6px"><span class="tag new"><i></i>New signal</span>${traded ? '<span class="tag paper">Paper traded</span>' : ''}</span><span class="when">Called ${dayWord(c.entryDate)}</span></div>
-    ${link(`calls/${encodeURIComponent(c.sym)}`, `<div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}</div><div class="s">${esc(c.strategy)}</div></div>
+    ${link(`calls/${encodeURIComponent(c.sym)}`, `<div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}</div><div class="s tags"><span class="tag new"><i></i>New signal</span>${traded ? '<span class="tag paper">Paper traded</span>' : ''}<em>${esc(c.strategy)}</em></div></div>
       <div class="px"><div class="v">${fmt.px(c.now)}</div>${Math.abs(c.roi) < .05 ? '<span class="small">at entry</span>' : delta(c.roi)}</div></div>
       ${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: c.now })}`, '', `style="display:block" aria-label="${esc(c.sym)} signal details"`)}
     ${moved ? `<p class="note">Price is already <b>${fmt.sp(run)}</b> above the entry. Paper trade it only on a dip towards ${fmt.px(c.entry)}.</p>` : ''}

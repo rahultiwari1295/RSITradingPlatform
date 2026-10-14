@@ -1,3 +1,4 @@
+import { heroHTML } from './hero.js';
 /* QuantSync mobile: core. Data access, formatting, icons, router, screens, sheets, account.
    Every number shown anywhere in the app comes through api() from the live VPS endpoints. */
 
@@ -559,12 +560,22 @@ export function go(path, { replace = false } = {}) {
 export function back(fallback) { if (stack.length && history.state && history.state.d > 0) history.back(); else go(fallback || '', { replace: true }); }
 
 /** Shared chrome for every screen: a compact bar that becomes solid on scroll, plus a large title. */
-export function chrome(el, { title, sub = '', back: backTo, actions = '', when = '' }) {
+export function chrome(el, { title, sub = '', back: backTo, actions = '', when = '', hero = null }) {
   el.innerHTML = `<div class="aurora" aria-hidden="true"><i></i></div><header class="bar">${backTo != null ? `<button class="ib back" data-back aria-label="Back">${icon('back', 22)}<span>${esc(backTo)}</span></button>` : '<span class="sp"></span>'}<div class="bt">${esc(title)}</div>${actions || '<span class="sp"></span>'}</header>
-  <div class="head"><h1>${esc(title)}</h1>${sub ? `<p>${sub}</p>` : ''}${when ? `<div class="when">${when}</div>` : ''}</div><div class="wrap body"></div>`;
-  const bar = el.querySelector('.bar'), head = el.querySelector('.head h1');
-  const on = () => bar.classList.toggle('solid', el.scrollTop > (head ? head.offsetTop + head.offsetHeight - 52 : 40));
-  el.addEventListener('scroll', on, { passive: true });
+  ${hero ? `<div class="wrap herowrap">${heroHTML(hero)}</div>` : `<div class="head"><h1>${esc(title)}</h1>${sub ? `<p>${sub}</p>` : ''}${when ? `<div class="when">${when}</div>` : ''}</div>`}<div class="wrap body"></div>`;
+  const bar = el.querySelector('.bar'), head = el.querySelector('.head h1'), art = el.querySelector('.q-art'), hc = el.querySelector('.q-hcopy');
+  let tick = 0;
+  const on = () => {
+    tick = 0; const st = el.scrollTop;
+    bar.classList.toggle('solid', st > (hero ? 240 : head ? head.offsetTop + head.offsetHeight - 52 : 40));
+    if (art && !RM && st < 900) {
+      art.style.transform = st > 0 ? `translate3d(0,${(st * .3).toFixed(1)}px,0) scale(${(1 + st / 2400).toFixed(4)})` : '';
+      art.style.opacity = (1 - Math.min(1, Math.max(0, st / 420))).toFixed(3);
+      hc.style.transform = st > 0 ? `translate3d(0,${(st * .1).toFixed(1)}px,0)` : '';
+      hc.style.opacity = (1 - Math.min(1, Math.max(0, (st - 120) / 380))).toFixed(3);
+    }
+  };
+  el.addEventListener('scroll', () => { if (!tick) tick = requestAnimationFrame(on); }, { passive: true });
   const b = el.querySelector('[data-back]'); if (b) b.onclick = () => back(TABS.find(t => t[0] === parse().tab)?.[1]);
   return el.querySelector('.body');
 }

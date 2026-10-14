@@ -1,8 +1,8 @@
-import { api, chrome, fill, fmt, esc, n, ok, loadPatterns, q, empty, toDate } from '../core.js';
+import { icon, api, chrome, fill, fmt, esc, n, ok, loadPatterns, q, empty, toDate } from '../core.js';
 import { patternCard, patternRow, sparks, sec, STAGE, footNote } from './parts.js';
 
 export default async function patterns(el, r) {
-  const body = chrome(el, { title: 'Pattern Calls', sub: 'Classic chart patterns found across every NSE stock, with the odds measured on each similar setup since 2020.' });
+  const body = chrome(el, { title: 'Pattern Calls', hero: { art: 'patterns', icon: icon('target', 16), ey: 'Pattern Calls', h: 'Love charts? Catch breakouts early.', hl: ['breakouts'], lede: 'Classic chart patterns across every NSE stock, with the odds measured on each similar setup since 2020.' } });
   body.innerHTML = `<div id="p-flow"></div><div id="p-list"></div><div id="p-edge"></div>${footNote('Patterns are scanned after each close on daily and weekly charts.')}`;
   let stage = r.query.get('stage') || 'Breakout', tf = 'all', shown = 20;
 
@@ -17,7 +17,7 @@ export default async function patterns(el, r) {
       flow.querySelectorAll('[data-tf]').forEach(b => b.onclick = () => { tf = b.dataset.tf; shown = 20; paint(); list(d); });
     };
     paint(); list(d);
-    if (d.scanDate) el.querySelector('.head').insertAdjacentHTML('beforeend', `<div class="when"><span class="live-dot"></span>Scanned ${fmt.date(d.scanDate, { weekday: 'short', day: 'numeric', month: 'short' })}</div>`);
+    if (d.scanDate) el.querySelector('.q-hcopy').insertAdjacentHTML('beforeend', `<div class="when" style="margin-top:14px;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2)"><span class="live-dot"></span>Scanned ${fmt.date(d.scanDate, { weekday: 'short', day: 'numeric', month: 'short' })}</div>`);
   }, '<div class="sk" style="height:80px;border-radius:14px"></div>');
 
   function list(d) {

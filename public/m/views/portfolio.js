@@ -3,7 +3,7 @@ import { sec, footNote } from './parts.js';
 import { addSheet } from './report.js';
 
 export default async function portfolio(el) {
-  const body = chrome(el, { title: 'Portfolio', sub: 'Your stocks, checked against our engines every evening.', actions: `<button class="ib" data-add aria-label="Add a stock">${icon('plus', 22)}</button>` });
+  const body = chrome(el, { title: 'Portfolio', hero: { art: 'portfolio', icon: icon('target', 16), ey: 'Portfolio', h: 'Your stocks, checked every evening.', hl: ['checked'], lede: 'We compare every stock you hold with our engines after the close and flag what needs attention.' }, actions: `<button class="ib" data-add aria-label="Add a stock">${icon('plus', 22)}</button>` });
   body.innerHTML = `<div id="pf-acct"></div><div id="pf-paper"></div><div id="pf-main"></div>${footNote('Prices are from the exchange and can be delayed. Your holdings stay private.')}`;
   el.querySelector('[data-add]').onclick = () => pick(load);
   const off = auth.onChange(() => { acct(); load(); });

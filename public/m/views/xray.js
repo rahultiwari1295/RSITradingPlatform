@@ -3,12 +3,23 @@ import { stockRow, sec, footNote } from './parts.js';
 
 
 export default async function xray(el) {
-  const body = chrome(el, { title: 'Stock X-Ray', sub: 'Any NSE stock, checked in seconds. One score, the reasons behind it, and the price levels that matter.' });
+  const body = chrome(el, { title: 'Stock X-Ray', hero: { art: 'xray', icon: icon('search', 16), ey: 'Stock X-Ray', h: 'Is it a good company? Find out in seconds.', hl: ['good', 'company?'], lede: 'Search any NSE stock. X-Ray checks its trend, momentum, buying activity and business quality, then gives one health score from 0 to 100.', extra: `<form class="search" role="search" autocomplete="off">${icon('search', 20)}<input type="search" placeholder="Company or symbol, e.g. Trent" aria-label="Search stocks" enterkeyhint="search"><button type="button" class="clr" aria-label="Clear">${icon('x', 18)}</button></form>` } });
   body.innerHTML = `
-    <form class="search" role="search" autocomplete="off">${icon('search', 20)}<input type="search" placeholder="Company or symbol, e.g. Trent" aria-label="Search stocks" enterkeyhint="search"><button type="button" class="clr" aria-label="Clear">${icon('x', 18)}</button></form>
     <div class="results" aria-live="polite"></div>
     <div id="x-recent"></div><div id="x-disc"></div><div id="x-lead"></div><div id="x-how"></div>${footNote('X-Ray reports refresh every evening after the close.')}`;
-  const form = body.querySelector('form'), inp = form.querySelector('input'), res = body.querySelector('.results');
+  const form = el.querySelector('form'), inp = form.querySelector('input'), res = body.querySelector('.results');
+  { /* typing hints in the search box */
+    const hints = ['Search a company', 'Try TRENT', 'Try Reliance', 'Try “bank”', 'Try Infosys']; let hi = 0, ci = 0, del = false, tm;
+    const tick = () => {
+      if (!inp.isConnected) return;
+      if (document.activeElement === inp || inp.value) { inp.placeholder = 'Search a company'; tm = setTimeout(tick, 900); return; }
+      const w = hints[hi];
+      if (!del) { ci++; if (ci >= w.length) { del = true; inp.placeholder = w; tm = setTimeout(tick, 1600); return; } }
+      else { ci--; if (ci <= 0) { del = false; hi = (hi + 1) % hints.length; } }
+      inp.placeholder = w.slice(0, ci) + (ci < w.length ? '▏' : ''); tm = setTimeout(tick, del ? 28 : 62);
+    };
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) tm = setTimeout(tick, 1600);
+  }
   let t = 0, seq = 0, first = null;
   const run = async v => {
     const my = ++seq;
