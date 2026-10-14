@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Strategies · QuantSync Lab</title>
+<title>Strategies · QuantSync AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&family=IBM+Plex+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="app.css"><script src="data.js"></script><script src="app.js"></script>
@@ -10,6 +10,8 @@
 .sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
 .scard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:18px;display:grid;gap:12px;transition:transform .25s var(--ease),box-shadow .25s,border-color .25s;animation:pop .4s var(--ease) both}
 .scard.q{background:linear-gradient(180deg,color-mix(in srgb,var(--cat-q) 11%,var(--surface)) 0%,var(--surface) 55%);box-shadow:0 0 0 1.5px color-mix(in srgb,var(--cat-q) 35%,transparent),var(--lift-2)}
+.qban{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;padding:26px 28px;margin-bottom:22px;border-radius:26px}
+.qb-h{font-size:clamp(22px,2.4vw,30px);font-weight:800;letter-spacing:-.035em;margin-top:12px}
 .scard:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--line2)}
 @keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .scard .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
@@ -32,7 +34,7 @@
   <div class="acts"><a class="btn primary" href="scanner.html" data-i="plus">New from a scan</a></div></div>
 
 <div class="bar2">
-  <div class="seg" id="f"><button data-v="all" aria-pressed="true">All</button><button data-v="q" aria-pressed="false">QuantSync</button><button data-v="y" aria-pressed="false">Yours</button><button data-v="f" aria-pressed="false">Following</button><button data-v="p" aria-pressed="false">Community</button></div>
+  <div class="seg" id="f"><button data-v="all" aria-pressed="true">All</button><button data-v="y" aria-pressed="false">Yours</button><button data-v="f" aria-pressed="false">Following</button><button data-v="p" aria-pressed="false">Community</button></div>
   <label style="display:flex;gap:8px;align-items:center;font-size:13.5px;color:var(--ink2);font-weight:600">Sort by <select class="inp" id="sort"><option value="win">Most trades that made money</option><option value="avg">Best average per trade</option><option value="n">Most trades</option><option value="live">Most live trades</option></select></label>
 </div>
 <div class="sgrid" id="grid"></div>
@@ -54,7 +56,8 @@ const user=await auth.whenReady();
 const [fl,mine,ppl,al]=await Promise.all([lab.strategies('flagship').catch(()=>[]),user?lab.strategies('mine').catch(()=>[]):[],lab.strategies('people').catch(()=>[]),user?lab.alerts().catch(()=>({items:[]})):{items:[]}]);
 const followed=new Set((al.items||[]).filter(i=>i.cat==='f').map(i=>i.id));
 const seen=new Set();const add=(l,c)=>l.forEach(s=>{if(seen.has(s.id))return;seen.add(s.id);ALL.push({...s,_c:s.kind==='flagship'?'q':s.mine?'y':followed.has(s.id)?'f':'p'})});
-add(fl);add(mine);add(ppl);
+add(mine);add(ppl);
+$('grid').insertAdjacentHTML('beforebegin',`<a class="lux-hero qban" href="ai.html"><div><span class="lux-ey"><i class="live"></i>QuantSync AI</span><div class="qb-h">Our own strategy, tracked in public</div><p class="lux-p" style="margin-top:6px">See today’s list and every closed result.</p></div><span class="lux-btn">Open QuantSync AI →</span></a>`);
 const CAT={q:'QuantSync',y:'Yours',f:'Following',p:'Community'};
 const key={win:s=>(s.record||{}).win_rate??-1,avg:s=>(s.record||{}).avg_ret??-99,n:s=>(s.record||{}).trades??0,live:s=>(s.stats||{}).trades??0};
 function draw(){

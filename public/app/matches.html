@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Watchlist · QuantSync Lab</title>
+<title>My watchlist · QuantSync AI</title>
 <meta name="description" content="Stocks that currently fit the rules of the strategies you follow, and what joined or left each list.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&family=IBM+Plex+Mono:wght@500&display=swap">
@@ -101,9 +101,9 @@
 </head>
 <body data-page="matches"><main class="main">
 
-<div class="phead"><div class="txt"><span class="kicker" data-i="matches">Watchlist</span>
+<div class="phead"><div class="txt"><span class="kicker" data-i="matches">My watchlist</span>
   <h1 class="t-1">What is on the list, <br>and what <em>changed.</em></h1>
-  <p class="lede">Stocks that fit the rules of the strategies you follow right now. QuantSync strategies come first. Fresh matches are in colour; the ones that have already moved are greyed out.</p></div></div>
+  <p class="lede">Stocks that fit the rules of the strategies you follow right now. QuantSync AI comes first. Fresh matches are in colour; the ones that have already moved are greyed out.</p></div></div>
 
 <div class="sumbar" id="sum"></div>
 <div class="bar2">
@@ -170,8 +170,8 @@ function drawList(){
   $('list').innerHTML=groups(data.rows).map(g=>{
     const fr=g.rows.filter(isFresh).sort((a,b)=>(a.age_days??99)-(b.age_days??99)),old=g.rows.filter(r=>!isFresh(r)).sort((a,b)=>(a.age_days??99)-(b.age_days??99));
     return `<section class="sg cat-${g.cat}"><div class="sg-h"><span class="ic">${icon(g.cat==='q'?'spark':g.cat==='y'?'user':'strategies',18)}</span>
-      <div style="min-width:0"><b>${esc(g.name)}</b><span class="s">${g.cat==='q'?'QuantSync strategy':CAT[g.cat]} · ${g.rows.length} on the list · ${fr.length} fresh</span></div>
-      <a href="strategy.html?id=${encodeURIComponent(g.sid)}"><span>Open strategy</span>${icon('chev',15)}</a></div>
+      <div style="min-width:0"><b>${esc(g.name)}</b><span class="s">${g.cat==='q'?'Our own strategy':CAT[g.cat]} · ${g.rows.length} on the list · ${fr.length} fresh</span></div>
+      <a href="${g.cat==='q'?'ai.html':'strategy.html?id='+encodeURIComponent(g.sid)}"><span>${g.cat==='q'?'Open QuantSync AI':'Open strategy'}</span>${icon('chev',15)}</a></div>
       ${fr.length?fr.map(row).join(''):'<div class="empty-g">No fresh matches. The ones below have already moved.</div>'}
       ${old.length?`<button class="fold" aria-expanded="false" data-fold>${icon('chev',15)}Show ${old.length} that moved on</button><div hidden>${old.map(row).join('')}</div>`:''}</section>`}).join('');
   const g0=groups(data.rows)[0],first=g0.rows.filter(isFresh).sort((a,b)=>(a.age_days??99)-(b.age_days??99))[0]||g0.rows[0];
@@ -218,11 +218,11 @@ async function changes(){if(!events){state($('feed'),'loading',{n:6});await load
 async function alerts(){
   state($('groups'),'loading',{n:3});
   let a;try{a=await lab.alerts()}catch(e){state($('groups'),'error',{body:e.message});return}
-  const G=[['q','QuantSync','Our own research strategies. Always listed here.',''],['y','Yours','Strategies you made.','Save a scan as a strategy, then tap “Get alerts” on its page.'],['f','Following','Public strategies you chose to follow.','Open any community strategy and tap “Get alerts” to add it here.']];
-  $('groups').innerHTML=G.map(([c,h,why,empty])=>{const L=(a.items||[]).filter(i=>i.cat===c);return `<section class="swg cat-${c}"><header><span class="src cat-${c}"></span><h2>${h}</h2></header><p class="why">${why}</p><div class="rows">${L.length?L.map(i=>`<label class="swrow"><span class="av cat cat-${c}">${ini(i.name)}</span><span style="flex:1;min-width:0"><b>${esc(i.name)}</b><span class="s">${i.owner&&c==='f'?'by @'+esc(i.owner)+' · ':''}${i.tf==='1W'?'Weekly':'Daily'}</span></span><span class="sw"><input type="checkbox" ${i.on?'checked':''} data-id="${i.id}" data-c="${c}" aria-label="Alerts for ${esc(i.name)}"><i></i></span></label>`).join(''):`<div class="small" style="padding:18px">${!user&&c!=='q'?'Sign in to add your own strategies.':empty}</div>`}</div></section>`}).join('');
+  const G=[['q','QuantSync AI','Our own strategy. Always on, so its list shows here.',''],['y','Yours','Strategies you made.','Save a scan as a strategy, then tap “Get alerts” on its page.'],['f','Following','Public strategies you chose to follow.','Open any community strategy and tap “Get alerts” to add it here.']];
+  $('groups').innerHTML=G.map(([c,h,why,empty])=>{let L=(a.items||[]).filter(i=>i.cat===c);if(c==='q'&&L.length)L=[{...L[0],name:'QuantSync AI',ids:L.map(i=>i.id).join(','),on:L.some(i=>i.on)}];return `<section class="swg cat-${c}"><header><span class="src cat-${c}"></span><h2>${h}</h2></header><p class="why">${why}</p><div class="rows">${L.length?L.map(i=>`<label class="swrow"><span class="av cat cat-${c}">${ini(i.name)}</span><span style="flex:1;min-width:0"><b>${esc(i.name)}</b><span class="s">${i.owner&&c==='f'?'by @'+esc(i.owner)+' · ':''}${i.tf==='1W'?'Weekly':'Daily'}</span></span><span class="sw"><input type="checkbox" ${i.on?'checked':''} data-id="${i.ids||i.id}" data-c="${c}" aria-label="Alerts for ${esc(i.name)}"><i></i></span></label>`).join(''):`<div class="small" style="padding:18px">${!user&&c!=='q'?'Sign in to add your own strategies.':empty}</div>`}</div></section>`}).join('');
 }
 $('groups').addEventListener('change',async e=>{const t=e.target;if(!t.dataset.id)return;if(!auth.user){t.checked=!t.checked;await auth.signIn().catch(x=>toast(x.message));return}
-  try{await lab.follow(t.dataset.id,t.dataset.c==='q'?true:t.checked,t.checked);toast(t.checked?'Alerts on. Its matches show here.':'Alerts off.');QD.bust('lab:matches');data=await lab.matches();events=null;summary()}catch(x){t.checked=!t.checked;toast(x.message)}});
+  try{await Promise.all(t.dataset.id.split(',').map(id=>lab.follow(id,t.dataset.c==='q'?true:t.checked,t.checked)));toast(t.checked?'Alerts on. Its matches show here.':'Alerts off.');QD.bust('lab:matches');data=await lab.matches();events=null;summary()}catch(x){t.checked=!t.checked;toast(x.message)}});
 
 function setTab(t){tab=t;$('v-alerts').hidden=t!=='alerts';$('v-list').hidden=t!=='list';$('v-changes').hidden=t!=='changes';[...$('tab').children].forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===t));
   history.replaceState(null,'',t==='list'?location.pathname+location.search:'#'+t);

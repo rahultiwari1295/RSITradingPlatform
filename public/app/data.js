@@ -89,7 +89,7 @@ const lab = {
   health: () => cached('lab:health', 5 * MIN, () => L('GET', '/health', undefined, { authed: false })),
   catalog: () => cached('lab:catalog', 60 * MIN, () => L('GET', '/catalog', undefined, { authed: false })),
   today: () => cached('lab:today:' + uidKey(), 2 * MIN, () => L('GET', '/today')),
-  matches: () => cached('lab:matches:' + uidKey(), MIN, () => L('GET', '/matches')),
+  matches: () => cached('lab:matches:' + uidKey(), MIN, () => L('GET', '/matches').then(m => { const rows = mergeQ(m.rows || []), nl = rows.filter(r => r.latest).length; return { ...m, rows, counts: { latest: nl, older: rows.length - nl } }; })),
   alerts: () => cached('lab:alerts:' + uidKey(), MIN, () => L('GET', '/alerts')),
   scan: (tf, entry) => L('POST', '/scan', { tf, entry }, { authed: false }),
   backtest: (tf, entry, exit) => L('POST', '/backtest', { tf, entry, exit }),
@@ -115,10 +115,20 @@ const lab = {
     return cached(`lab:cb:${tf}:${n}:${list.join(',')}`, 10 * MIN, () => L('GET', '/chart-batch' + q({ symbols: list.join(','), n, tf }), undefined, { authed: false }));
   },
   benchmark: (start, tf = '1D') => cached(`lab:bench:${tf}:${start || ''}`, 30 * MIN, () => L('GET', '/benchmark' + q({ tf, start }), undefined, { authed: false }).catch(() => ({ points: [] }))),
-  symbolStrategies: sym => cached('lab:symstrat:' + sym + uidKey(), 2 * MIN, () => L('GET', `/symbol/${encodeURIComponent(sym)}/strategies`)),
+  symbolStrategies: sym => cached('lab:symstrat:' + sym + uidKey(), 2 * MIN, () => L('GET', `/symbol/${encodeURIComponent(sym)}/strategies`).then(r => ({ ...r, rows: mergeQ(r.rows || []) }))),
   holdings: () => L('GET', '/me/holdings'),
   saveHoldings: items => L('PUT', '/me/holdings', { items }),
 };
+/** QuantSync's house strategies are shown as one: QuantSync AI. Same stock found by both counts once, from its first match. */
+function mergeQ(rows) {
+  const out = [], seen = new Map();
+  rows.forEach(r => {
+    if (r.cat !== 'q') { out.push(r); return; }
+    const x = { ...r, strategy: 'QuantSync AI', sid: 'qsai' }, p = seen.get(r.symbol);
+    if (!p) { seen.set(r.symbol, x); out.push(x); } else if (String(x.date || '') < String(p.date || '')) Object.assign(p, x);
+  });
+  return out;
+}
 function uidKey() { return auth.user ? auth.user.uid : 'anon'; }
 async function waitJob(id, onTick, signal) {
   for (;;) {
@@ -178,8 +188,8 @@ const param = k => new URLSearchParams(location.search).get(k);
 /* ---------------- rules: presets and plain-English ---------------- */
 const c = (l, op, r) => ({ l: { f: l }, op, ...(r === undefined ? {} : { r: typeof r === 'string' ? { f: r } : Array.isArray(r) ? { list: r } : { c: r } }) });
 const PRESETS = [
-  ['sig-alpha', 'AI Alpha signals', 'Any of our three momentum breakouts: RS leader, Stage-2 base breakout, or power gap.', 'QuantSync', '1D', 'any', [c('sig_rs_leader', 'is_true'), c('sig_stage2_base', 'is_true'), c('sig_power_gap', 'is_true')]],
-  ['sig-pattern', 'AI Pattern signals', 'An apex base breakout or a high tight flag, our two chart-structure setups.', 'QuantSync', '1D', 'any', [c('sig_apex_base', 'is_true'), c('sig_high_tight_flag', 'is_true')]],
+  ['sig-alpha', 'QuantSync momentum signals', 'Any of our three momentum breakouts: RS leader, Stage-2 base breakout, or power gap.', 'QuantSync', '1D', 'any', [c('sig_rs_leader', 'is_true'), c('sig_stage2_base', 'is_true'), c('sig_power_gap', 'is_true')]],
+  ['sig-pattern', 'QuantSync chart-pattern signals', 'An apex base breakout or a high tight flag, our two chart-structure setups.', 'QuantSync', '1D', 'any', [c('sig_apex_base', 'is_true'), c('sig_high_tight_flag', 'is_true')]],
   ['sig-rs', 'RS leader breakout', 'A strong stock breaks its 20-bar high on 2× volume with a firm close.', 'QuantSync', '1D', 'all', [c('sig_rs_leader', 'is_true')]],
   ['sig-s2', 'Stage-2 base breakout', 'A 3-month base breaks out while the 30-week average turns up.', 'QuantSync', '1D', 'all', [c('sig_stage2_base', 'is_true')]],
   ['ema-cross', 'EMA crossover', 'The fast average (EMA 9) moves above the slower one (EMA 21) today.', 'Trend', '1D', 'all', [c('ema_9', 'crosses_above', 'ema_21')]],
@@ -317,14 +327,77 @@ async function changes(rows, days = 30) {
   const age = d => Math.round((today - new Date(String(d).slice(0, 10) + 'T00:00:00')) / 864e5);
   const ev = (rows || []).map(r => ({ kind: 'add', sym: r.symbol, sid: r.sid, name: r.strategy, cat: r.cat, date: r.date, age: age(r.date), price: r.price, chg: r.chg }));
   let subs = []; try { subs = ((await lab.alerts()).items || []).filter(i => i.on); } catch { /* signed out */ }
-  const closed = await Promise.all(subs.map(s => cached(`lab:closed:${s.id}`, 5 * MIN, () => lab.trades(s.id, 'closed')).then(l => l.map(t => ({ ...t, sid: s.id, name: s.name, cat: s.cat }))).catch(() => [])));
+  const closed = await Promise.all(subs.map(s => cached(`lab:closed:${s.id}`, 5 * MIN, () => lab.trades(s.id, 'closed')).then(l => l.map(t => ({ ...t, sid: s.cat === 'q' ? 'qsai' : s.id, name: s.cat === 'q' ? 'QuantSync AI' : s.name, cat: s.cat }))).catch(() => [])));
   closed.flat().forEach(t => {
     if (!t.exit_date) return; const a = age(t.exit_date); if (a > days) return;
     const held = ok(t.bars) ? n(t.bars) : Math.max(1, Math.round((new Date(t.exit_date) - new Date(t.entry_date)) / 864e5));
     ev.push({ kind: 'out', sym: t.symbol, sid: t.sid, name: t.name, cat: t.cat, date: t.exit_date, age: a, ret: t.ret_pct, held, why: EXIT_WHY[t.exit_reason] || 'its exit rule' });
   });
-  return ev.filter(e => e.age <= days).sort((a, b) => String(b.date).slice(0, 10).localeCompare(String(a.date).slice(0, 10)) || CAT_ORDER[a.cat] - CAT_ORDER[b.cat] || (a.kind === 'add' ? 0 : 1) - (b.kind === 'add' ? 0 : 1));
+  const seen = new Set();
+  return ev.filter(e => { const k = `${e.kind}|${e.sym}|${String(e.date).slice(0, 10)}|${e.sid}`; if (e.age > days || seen.has(k)) return false; seen.add(k); return true; })
+    .sort((a, b) => String(b.date).slice(0, 10).localeCompare(String(a.date).slice(0, 10)) || CAT_ORDER[a.cat] - CAT_ORDER[b.cat] || (a.kind === 'add' ? 0 : 1) - (b.kind === 'add' ? 0 : 1));
 }
 
-W.QD = { isFresh, changes, CAT_ORDER, FRESH_DAYS, FRESH_MOVE,  CFG, auth, http, lab, api, waitJob, fmt, n, ok, scoreTone, marketStatus, param, PRESETS, toRule, fromRule, describeRule, describeCond, describeExit, buildExit, validCond, label, pickOptions, gateStat, plainStat, exitGate, loadPatterns, holdings, bust, ApiError };
+/* ---------------- QuantSync AI: the two house engines shown as one list, one feed and one record ---------------- */
+const QS_NAME = 'QuantSync AI';
+const dkey = s => String(s || '').slice(0, 10);
+const qsai = {
+  name: QS_NAME,
+  /** The flagship strategy ids (AI Alpha, AI Pattern, ...) and the data date. */
+  base: () => cached('qs:base', 5 * MIN, async () => {
+    const t = await L('GET', '/today', undefined, { authed: false });
+    const ids = (t.flagship || []).map(s => s.id);
+    return { ids, flags: t.flagship || [], asof: dkey(t.data && t.data['1D'] && t.data['1D'].as_of), liveFrom: (t.flagship || []).map(s => s.live_from).filter(Boolean).sort()[0] || null };
+  }),
+  /** Stocks on the list now. A stock found by both engines appears once, from the day it first matched. */
+  list: () => cached('qs:list', 3 * MIN, async () => {
+    const b = await qsai.base();
+    const all = (await Promise.all(b.ids.map(id => L('GET', `/strategies/${id}/trades?status=active`, undefined, { authed: false }).catch(() => [])))).flat();
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const m = new Map();
+    all.forEach(r => {
+      const sym = String(r.symbol || '').toUpperCase(); if (!sym) return;
+      const date = dkey(r.entry_date || r.signal_date), x = { symbol: sym, date, price: n(r.entry_price), now: n(r.exit_price), chg: n(r.ret_pct) };
+      x.age_days = date ? Math.max(0, Math.round((today - new Date(date + 'T00:00:00')) / 864e5)) : null;
+      const prev = m.get(sym); if (!prev || (date && date < prev.date)) m.set(sym, x);
+    });
+    const rows = [...m.values()].sort((a, b) => b.date.localeCompare(a.date) || a.symbol.localeCompare(b.symbol));
+    const last = rows.length ? rows[0].date : '';
+    rows.forEach(r => { r.fresh = isFresh(r); r.isNew = !!last && r.date === last && (!b.asof || r.date >= b.asof || r.age_days <= 1); });
+    return { rows, asof: b.asof, latest: last };
+  }),
+  /** Every closed trade from both engines, once each (same stock and entry day counted once). */
+  closed: () => cached('qs:closed', 10 * MIN, async () => {
+    const b = await qsai.base();
+    const res = await Promise.all(b.ids.map(id => L('GET', `/strategies/${id}/backtest`, undefined, { authed: false }).then(x => (x && x.result && x.result.trades) || []).catch(() => [])));
+    const m = new Map();
+    res.flat().forEach(t => { if (!t.exit_date || !ok(t.ret_pct)) return; const k = `${t.symbol}|${dkey(t.entry_date || t.signal_date)}`; if (!m.has(k)) m.set(k, { symbol: t.symbol, entry: dkey(t.entry_date || t.signal_date), exit: dkey(t.exit_date), ret: n(t.ret_pct), days: ok(t.bars) ? n(t.bars) : null, why: t.exit_reason, live: String(t.origin || '').toLowerCase() === 'live', price: n(t.entry_price), out: n(t.exit_price) }); });
+    return [...m.values()].sort((a, b) => b.exit.localeCompare(a.exit));
+  }),
+  /** Headline numbers plus an equal-weight growth curve (trades closing the same day averaged, then compounded). */
+  record(closed) {
+    const c = closed.filter(t => Number.isFinite(t.ret)), N = c.length;
+    if (!N) return { trades: 0 };
+    const w = c.filter(t => t.ret > 0), l = c.filter(t => t.ret <= 0), sum = a => a.reduce((s, t) => s + t.ret, 0);
+    const byDay = new Map(); c.forEach(t => { const a = byDay.get(t.exit) || []; a.push(t.ret); byDay.set(t.exit, a); });
+    /* ₹1 lakh account, ₹10,000 into every call: a plain, believable way to add results up (no compounding) */
+    let v = 100000, peak = 100000, dd = 0; const eq = [{ d: c.reduce((m, t) => (t.entry < m ? t.entry : m), c[0].entry), v }];
+    [...byDay.keys()].sort().forEach(d => { byDay.get(d).forEach(r => { v += 10000 * r / 100; }); peak = Math.max(peak, v); dd = Math.min(dd, (v / peak - 1) * 100); eq.push({ d, v: Math.round(v) }); });
+    const months = new Map(); c.forEach(t => { const k = t.exit.slice(0, 7); const x = months.get(k) || { k, n: 0, w: 0, s: 0 }; x.n++; if (t.ret > 0) x.w++; x.s += t.ret; months.set(k, x); });
+    const years = new Map(); c.forEach(t => { const k = t.exit.slice(0, 4); const x = years.get(k) || { k, n: 0, w: 0, s: 0 }; x.n++; if (t.ret > 0) x.w++; x.s += t.ret; years.set(k, x); });
+    return { trades: N, wins: w.length, losses: l.length, win_rate: w.length / N * 100, avg_ret: sum(c) / N, avg_win: w.length ? sum(w) / w.length : null, avg_loss: l.length ? sum(l) / l.length : null,
+      profit_factor: sum(l) < 0 ? sum(w) / -sum(l) : null, growth: (v / 100000 - 1) * 100, final: v, max_dd: dd, equity: eq, first: eq[0].d,
+      months: [...months.values()].sort((a, b) => a.k.localeCompare(b.k)), years: [...years.values()].sort((a, b) => a.k.localeCompare(b.k)), live: c.filter(t => t.live).length };
+  },
+  /** Joined (from the list) and left (from closed trades) in the last `days` days, newest first. */
+  async changes(days = 30) {
+    const [lst, closed] = await Promise.all([qsai.list(), qsai.closed()]);
+    const today = new Date(); today.setHours(0, 0, 0, 0); const age = d => Math.round((today - new Date(d + 'T00:00:00')) / 864e5);
+    const ev = lst.rows.map(r => ({ kind: 'add', sym: r.symbol, date: r.date, age: age(r.date), price: r.price, chg: r.chg }));
+    closed.forEach(t => { const a = age(t.exit); if (a <= days) ev.push({ kind: 'out', sym: t.symbol, date: t.exit, age: a, ret: t.ret, held: t.days || Math.max(1, Math.round((new Date(t.exit) - new Date(t.entry)) / 864e5)), why: EXIT_WHY[t.why] || 'its exit rule' }); });
+    return ev.filter(e => e.age <= days).sort((a, b) => b.date.localeCompare(a.date) || (a.kind === 'add' ? 0 : 1) - (b.kind === 'add' ? 0 : 1) || a.sym.localeCompare(b.sym));
+  },
+};
+
+W.QD = { qsai, QS_NAME,  isFresh, changes, CAT_ORDER, FRESH_DAYS, FRESH_MOVE,  CFG, auth, http, lab, api, waitJob, fmt, n, ok, scoreTone, marketStatus, param, PRESETS, toRule, fromRule, describeRule, describeCond, describeExit, buildExit, validCond, label, pickOptions, gateStat, plainStat, exitGate, loadPatterns, holdings, bust, ApiError };
 })();

@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Strategy · QuantSync Lab</title>
+<title>Strategy · QuantSync AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&family=IBM+Plex+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="app.css"><script src="data.js"></script><script src="app.js"></script>
@@ -109,6 +109,8 @@
 document.addEventListener('DOMContentLoaded',async()=>{
 const {lab,fmt,auth}=QD;const {icon,state,toast,equity,vbars,sheet,line}=QS;const $=id=>document.getElementById(id);const esc=fmt.esc;
 const id=QD.param('id');
+if(id==='qsai'){location.replace('ai.html#record');return}
+try{const b=await QD.qsai.base();if(b.ids.includes(id)){location.replace('ai.html#record');return}}catch{}
 if(!id){state($('res-state'),'empty',{title:'No strategy chosen',body:'Open a strategy from the Strategies page.',action:'See strategies',href:'strategies.html',primary:true});$('name').textContent='Strategy';return}
 await auth.whenReady();
 let s,cat,bt=null,year='All',enh=null,tt='closed',tw='all',openT=[],closedT=[],shown=40;

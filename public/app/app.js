@@ -50,51 +50,52 @@ function isDark(){return root.dataset.theme?root.dataset.theme==='dark':matchMed
 function toggleTheme(){const n=isDark()?'light':'dark'; root.dataset.theme=n; try{localStorage.setItem('qs-theme',n)}catch(e){} d.querySelectorAll('[data-theme-btn]').forEach(b=>b.setAttribute('aria-checked',isDark()));
   d.dispatchEvent(new Event('qs-theme'));}
 
-/* ---------- shell ---------- */
-const NAV=[
- ['today','Today','today.html'],['matches','Watchlist','matches.html'],['strategies','Strategies','strategies.html'],['scanner','Scanner','scanner.html'],
- ['patterns','Patterns','patterns.html'],['xray','X-Ray','xray.html'],['portfolio','Portfolio','portfolio.html']];
+/* ---------- shell: a website, not a dashboard ----------
+   Four places: Home · QuantSync AI · X-Ray · Build. Everything else lives in the footer and the account sheet. */
+const NAV=[['home','Home','index.html','today'],['ai','QuantSync AI','ai.html','spark'],['xray','X-Ray','xray.html','xray'],['build','Build','scanner.html','scanner']];
+const GROUP={index:'home',today:'home',ai:'ai',xray:'xray',scanner:'build',strategies:'build',strategy:'build',matches:'build'};
+const BUILD=[['scanner','New scan','scanner.html'],['strategies','Strategies','strategies.html'],['matches','My watchlist','matches.html']];
+const SW=()=>`<button class="tsw" type="button" role="switch" data-theme-btn aria-checked="${isDark()}" aria-label="Night mode"><span class="k">${icon('sun',14)}${icon('moon',14)}</span></button>`;
 function shell(){
   const page=d.body.dataset.page; if(!page) return;
-  const cur=page==='strategy'?'strategies':page;
-  const link=([id,l,h,ct])=>`<a class="nav" href="${h}" ${cur===id?'aria-current="page"':''}>${icon(id)}<span>${l}</span>${ct?`<span class="ct">${ct}</span>`:''}</a>`;
-  const rail=d.createElement('nav'); rail.className='rail'; rail.setAttribute('aria-label','Main');
-  rail.innerHTML=`<a class="logo" href="index.html">${LOGO}QuantSync <small>Lab</small></a>
-   <div class="grp">Build and test</div>${NAV.slice(0,4).map(link).join('')}
-   <div class="grp">Research</div>${NAV.slice(4).map(link).join('')}
-   <div class="foot"><div class="trow"><span>Night mode</span><button class="tsw" type="button" role="switch" data-theme-btn aria-checked="${isDark()}" aria-label="Night mode"><span class="k">${icon('sun',14)}${icon('moon',14)}</span></button></div>
-   <div class="user" id="qs-user"><span class="av">··</span><div><b>Loading</b><span>&nbsp;</span></div></div></div>`;
-  const top=d.createElement('header'); top.className='topbar';
-  top.innerHTML=`<a class="logo" href="index.html">${LOGO}QuantSync <small>Lab</small></a><div style="display:flex;gap:8px;align-items:center"><button class="tsw" type="button" role="switch" data-theme-btn aria-checked="${isDark()}" aria-label="Night mode"><span class="k">${icon('sun',14)}${icon('moon',14)}</span></button><a class="btn sm ghost" href="matches.html#alerts" aria-label="Alerts">${icon('bell',18)}</a><button class="btn sm" id="qs-top-auth" hidden>Sign in</button></div>`;
+  const cur=GROUP[page]||'';
+  d.body.classList.add('site');
+  const top=d.createElement('header'); top.className='nav';
+  top.innerHTML=`<div class="nav-in"><a class="brand" href="index.html" aria-label="QuantSync AI home">${LOGO}<span>QuantSync</span><em>AI</em></a>
+    <nav class="links" aria-label="Main">${NAV.slice(1).map(([id,l,h])=>`<a href="${h}" ${cur===id?'aria-current="page"':''}>${l}</a>`).join('')}</nav>
+    <span class="sp"></span>${SW()}<span class="acct" id="qs-acct"></span></div>`;
   const tb=d.createElement('nav'); tb.className='tabbar'; tb.setAttribute('aria-label','Main');
-  const mob=['today','matches','strategies','scanner'];
-  tb.innerHTML=NAV.filter(n=>mob.includes(n[0])).sort((a,b)=>mob.indexOf(a[0])-mob.indexOf(b[0])).map(([id,l,h])=>`<a href="${h}" ${cur===id?'aria-current="page"':''}>${icon(id,21)}<span>${l}</span></a>`).join('')
-   +`<button data-more ${['xray','patterns','portfolio'].includes(cur)?'aria-current="page"':''}>${icon('more',21)}<span>More</span></button>`;
-  d.body.prepend(top); d.body.prepend(rail); d.body.append(tb);
-  // more sheet
+  tb.innerHTML=NAV.map(([id,l,h,ic])=>`<a href="${h}" ${cur===id?'aria-current="page"':''}>${icon(ic,21)}<span>${id==='ai'?'AI list':l}</span></a>`).join('')+`<button data-more ${!cur?'aria-current="page"':''}>${icon('user',21)}<span>Me</span></button>`;
+  d.body.prepend(top); d.body.append(tb);
+  const main=d.querySelector('.main');
+  if(main&&cur==='build'){const sub=d.createElement('div');sub.className='bnav';sub.innerHTML=`<span>${icon('flask',15)}Build your own</span>`+BUILD.map(([id,l,h])=>`<a href="${h}" ${page===id||(page==='strategy'&&id==='strategies')?'aria-current="page"':''}>${l}</a>`).join('');main.prepend(sub)}
+  if(main){const f=d.createElement('footer');f.className='sfoot';f.innerHTML=`<div class="sf-in"><a class="brand" href="index.html">${LOGO}<span>QuantSync</span><em>AI</em></a>
+    <div class="sf-links"><a href="ai.html">QuantSync AI</a><a href="ai.html#record">Track record</a><a href="xray.html">Stock X-Ray</a><a href="patterns.html">Chart patterns</a><a href="portfolio.html">Portfolio</a><a href="strategies.html">Community strategies</a><a href="scanner.html">Build a scanner</a></div>
+    <p>QuantSync is a research platform for Indian equities. Lists show stocks that met a strategy’s rules after the market closed. Nothing here is investment advice or a recommendation to buy or sell, and QuantSync is not a SEBI-registered investment adviser. Past results do not predict future results.</p></div>`;main.after(f)}
+  // account sheet (phone "Me", and the avatar on desktop)
   const scr=d.createElement('div'); scr.className='scrim';
-  const sh=d.createElement('div'); sh.className='sheet'; sh.setAttribute('role','dialog'); sh.setAttribute('aria-label','More pages');
-  sh.innerHTML=`<div class="grab"></div><h3>More</h3><div class="list">${NAV.filter(n=>!mob.includes(n[0])).map(([id,l,h])=>`<a href="${h}">${icon(id)}${l}</a>`).join('')}<a href="index.html">${icon('info')}About QuantSync Lab</a></div>`;
+  const sh=d.createElement('div'); sh.className='sheet'; sh.setAttribute('role','dialog'); sh.setAttribute('aria-label','Account and more');
+  sh.innerHTML=`<div class="grab"></div><div id="qs-user" class="user"></div><div class="list" style="margin-top:12px"><a href="matches.html">${icon('matches')}My watchlist</a><a href="strategies.html">${icon('strategies')}Strategies</a><a href="patterns.html">${icon('patterns')}Chart patterns</a><a href="portfolio.html">${icon('portfolio')}Portfolio</a></div>
+    <div class="trow" style="display:flex;justify-content:space-between;align-items:center;padding:16px 4px 0;font-weight:600">Night mode ${SW()}</div>`;
   d.body.append(scr,sh);
-  const close=()=>{scr.classList.remove('on');sh.classList.remove('on')};
-  tb.querySelector('[data-more]').onclick=()=>{scr.classList.add('on');sh.classList.add('on')};
-  scr.onclick=close; d.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+  const open=()=>{scr.classList.add('on');sh.classList.add('on')},close=()=>{scr.classList.remove('on');sh.classList.remove('on')};
+  tb.querySelector('[data-more]').onclick=open; scr.onclick=close; d.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+  top.addEventListener('click',e=>{if(e.target.closest('[data-acct]'))open()});
   addEventListener('scroll',()=>top.classList.toggle('on',scrollY>8),{passive:true});
   userWidget();
 }
 function userWidget(){
   const QD=window.QD;if(!QD)return;
-  const box=d.getElementById('qs-user'),tbtn=d.getElementById('qs-top-auth');
+  const box=d.getElementById('qs-user'),acct=d.getElementById('qs-acct');
   const render=u=>{
-    if(!box)return;
-    if(!u){box.innerHTML=`<span class="av" style="background:var(--sunk);color:var(--ink2)">${icon('user',16)}</span><div style="flex:1;min-width:0"><b>Not signed in</b><span>Save strategies and alerts</span></div>`;
-      const b=d.createElement('button');b.className='btn sm primary';b.style.cssText='width:100%;margin-top:8px';b.textContent='Sign in with Google';b.onclick=()=>QD.auth.signIn().catch(e=>toast(e.message));box.append(b);box.style.flexWrap='wrap';
-      if(tbtn){tbtn.hidden=false;tbtn.onclick=()=>QD.auth.signIn().catch(e=>toast(e.message))}return}
+    if(!u){
+      if(acct){acct.innerHTML=`<button class="btn sm primary">Sign in</button>`;acct.firstChild.onclick=()=>QD.auth.signIn().catch(e=>toast(e.message))}
+      if(box){box.innerHTML=`<span class="av" style="background:var(--sunk);color:var(--ink2)">${icon('user',16)}</span><div style="flex:1;min-width:0"><b>Not signed in</b><span>Save strategies and get alerts</span></div><button class="btn sm primary" id="qs-in">Sign in</button>`;d.getElementById('qs-in').onclick=()=>QD.auth.signIn().catch(e=>toast(e.message))}
+      return}
     const nm=u.displayName||u.email||'You',ini=nm.split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();
-    box.style.flexWrap='';box.innerHTML=`<span class="av">${u.photoURL?`<img src="${u.photoURL}" alt="" style="width:100%;height:100%;border-radius:50%" referrerpolicy="no-referrer">`:ini}</span><div style="flex:1;min-width:0"><b style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${QD.fmt.esc(nm)}</b><span id="qs-user-sub">Signed in</span></div><button class="btn sm ghost" title="Sign out" aria-label="Sign out" id="qs-out">${icon('x',15)}</button>`;
-    d.getElementById('qs-out').onclick=()=>QD.auth.signOut().then(()=>location.reload());
-    if(tbtn)tbtn.hidden=true;
-    QD.lab.matches().then(m=>{const k=m&&m.counts&&m.counts.latest;const a=d.querySelector('.rail a[href="matches.html"]');if(k&&a&&!a.querySelector('.ct'))a.insertAdjacentHTML('beforeend',`<span class="ct">${k}</span>`)}).catch(()=>{});
+    const av=`<span class="av">${u.photoURL?`<img src="${u.photoURL}" alt="" style="width:100%;height:100%;border-radius:50%" referrerpolicy="no-referrer">`:QD.fmt.esc(ini)}</span>`;
+    if(acct)acct.innerHTML=`<button class="avbtn" data-acct aria-label="Account">${av}</button>`;
+    if(box){box.innerHTML=`${av}<div style="flex:1;min-width:0"><b style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${QD.fmt.esc(nm)}</b><span>Signed in</span></div><button class="btn sm" id="qs-out">Sign out</button>`;d.getElementById('qs-out').onclick=()=>QD.auth.signOut().then(()=>location.reload())}
   };
   QD.auth.onChange(render);QD.auth.init();
 }

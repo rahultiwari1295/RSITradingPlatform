@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>QuantSync AI · Today’s list and track record</title>
+<meta name="description" content="Stocks that match QuantSync AI's rules after the latest close, what joined or left the list, and every closed result.">
+<meta name="theme-color" content="#ECEFF5" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#05080F" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="app.css"><script src="data.js"></script><script src="app.js"></script>
+<style>
+.ah{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:end}
+.ah .lux-h{font-size:clamp(34px,4.6vw,56px)}
+.kp{display:flex;flex-wrap:wrap;gap:10px}
+.kp div{min-width:104px;padding:12px 16px;border-radius:18px;background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.kp small{display:block;font-size:12px;font-weight:600;color:var(--hero-fg3)}
+.kp b{display:block;font-size:26px;font-weight:800;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.tabs{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:30px 0 16px}
+.tabs .seg button{height:38px;padding:0 18px;font-size:14.5px}
+.note{font-size:13.5px;color:var(--ink2);max-width:70ch;margin:0 4px 14px}
+.note b{color:var(--ink)}
+.pane[hidden]{display:none}
+.panel2{border-radius:24px;background:var(--card);box-shadow:0 0 0 1px var(--edge),var(--lift-1);padding:22px}
+.chead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.chead .v{font-size:32px;font-weight:800;letter-spacing:-.04em;font-variant-numeric:tabular-nums;line-height:1.1}
+.chead .w{font-size:13px;color:var(--ink3)}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.yt{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px}
+.yt th{font-size:12px;font-weight:650;color:var(--ink3);text-align:right;padding:10px 12px;border-bottom:1px solid var(--line)}
+.yt th:first-child,.yt td:first-child{text-align:left}
+.yt td{padding:12px;border-bottom:1px solid var(--line);text-align:right;font-weight:600}
+.yt tr:last-child td{border-bottom:0}
+.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.how div{padding:20px;border-radius:20px;background:var(--card);box-shadow:0 0 0 1px var(--edge),var(--lift-1)}
+.how b{display:block;font-size:16px;font-weight:750;margin-bottom:6px}
+.how p{font-size:14px;color:var(--ink2);line-height:1.55}
+@media (max-width:860px){.ah{grid-template-columns:minmax(0,1fr)}.grid2,.how{grid-template-columns:minmax(0,1fr)}.kp div{min-width:0;flex:1 1 40%}}
+</style></head>
+<body data-page="ai"><main class="main">
+
+<section class="lux-hero">
+  <div class="ah">
+    <div><span class="lux-ey" id="ey"><i class="live"></i>QuantSync AI</span>
+      <h1 class="lux-h" id="hh">Today’s <br>QuantSync AI list.</h1>
+      <p class="lux-p">Stocks that match QuantSync AI’s rules after the latest market close. A stock stays on the list until its exit rule is met, and every result is recorded below.</p></div>
+    <div class="kp" id="kp"></div>
+  </div>
+</section>
+
+<div class="tabs"><div class="seg" id="tab"><button data-v="list" aria-pressed="true">On the list</button><button data-v="changes" aria-pressed="false">Changes</button><button data-v="record" aria-pressed="false">Track record</button></div></div>
+
+<section class="pane" id="p-list">
+  <p class="note"><b>In colour:</b> matched in the last 4 days, or still within 4% of its match price. <b>Greyed out:</b> matched earlier and already moved 4% or more.</p>
+  <div id="list"></div>
+</section>
+<section class="pane" id="p-changes" hidden>
+  <p class="note">Every stock that joined or left the list in the last 30 days, newest first.</p>
+  <div id="feed"></div>
+</section>
+<section class="pane" id="p-record" hidden>
+  <div id="rec"></div>
+</section>
+
+<div class="shd"><div><h2>How QuantSync AI <em>picks stocks</em></h2></div></div>
+<div class="how">
+  <div><b>Rules first</b><p>Momentum and chart-structure rules run on every NSE stock after the close: relative-strength leaders, base breakouts, tight flags.</p></div>
+  <div><b>Then an AI check</b><p>A model trained only on earlier years scores each match. Weak ones are left out before they reach the list.</p></div>
+  <div><b>Every result counted</b><p>Each stock leaves the list when its exit rule is met. Wins and losses are both recorded here, the same way, for every call.</p></div>
+</div>
+
+</main>
+<script>
+document.addEventListener('DOMContentLoaded',async()=>{
+const {qsai,fmt,ok}=QD;const {icon,state,spark,line,vbars,toast}=QS;const $=id=>document.getElementById(id);const esc=fmt.esc;
+const ini=s=>esc(String(s).replace(/[^A-Za-z0-9]/g,'').slice(0,2).toUpperCase());
+const ago=k=>k==null?'':k<=0?'today':k===1?'yesterday':k+' days ago';
+let tab=['changes','record'].includes(location.hash.slice(1))?location.hash.slice(1):'list';
+
+state($('list'),'loading',{n:6});
+let L;try{L=await qsai.list()}catch(e){state($('list'),'error',{body:e.message,action:'Try again',onAction:()=>location.reload()});return}
+const rows=L.rows,fresh=rows.filter(r=>r.fresh),old=rows.filter(r=>!r.fresh),nw=rows.filter(r=>r.isNew);
+$('ey').innerHTML=`<i class="live"></i>QuantSync AI · after the ${fmt.date(L.latest||L.asof)} close`;
+$('hh').innerHTML=`<span class="num">${rows.length}</span> ${rows.length===1?'stock':'stocks'} on <br>the list today.`;
+const wk=await qsai.changes(7).catch(()=>[]);
+$('kp').innerHTML=`<div><small>On the list</small><b>${rows.length}</b></div><div><small>New in latest scan</small><b>${nw.length}</b></div><div><small>Joined this week</small><b style="color:var(--hero-up)">+${wk.filter(e=>e.kind==='add').length}</b></div><div><small>Left this week</small><b style="color:var(--hero-dn)">−${wk.filter(e=>e.kind==='out').length}</b></div>`;
+
+/* ---------- on the list ---------- */
+const li=r=>`<a class="li${r.fresh?'':' old'}" href="xray.html?s=${encodeURIComponent(r.symbol)}"><span class="m">${ini(r.symbol)}</span>
+  <span><span class="t"><span>${esc(r.symbol)}</span>${r.isNew?'<span class="tag-new">NEW</span>':''}</span><span class="s">Matched ${ago(r.age_days)} at ${fmt.inr(r.price)}</span></span>
+  <span class="sp chart" data-sp="${esc(r.symbol)}"></span>
+  <span class="r"><b>${fmt.inr(r.now)}</b><span class="${fmt.tone(r.chg)}">${fmt.pct(r.chg)}</span><small>since</small></span></a>`;
+function drawList(){
+  if(!rows.length){state($('list'),'empty',{title:'The list is empty after the latest close',body:'New matches appear here after the next scan.'});return}
+  $('list').innerHTML=`<div class="lst">${fresh.map(li).join('')||'<div class="small" style="padding:20px">No fresh matches right now. The stocks below have already moved.</div>'}
+    ${old.length?`<button class="fold" aria-expanded="false" data-fold>${icon('chev',15)}<span>Show ${old.length} that moved on</span></button><div hidden>${old.map(li).join('')}</div>`:''}</div>`;
+  const syms=rows.slice(0,40).map(r=>r.symbol);
+  QD.lab.chartBatch(syms,40).then(b=>syms.forEach(s=>{const el=document.querySelector(`[data-sp="${CSS.escape(s)}"]`),c=((b.bars||{})[s]||[]).map(x=>x.close),r=rows.find(x=>x.symbol===s);if(el&&c.length>3)spark(el,c,r.chg>=0?'var(--up)':'var(--dn)')})).catch(()=>{});
+}
+$('list').addEventListener('click',e=>{const b=e.target.closest('[data-fold]');if(!b)return;const on=b.getAttribute('aria-expanded')!=='true';b.setAttribute('aria-expanded',on);b.nextElementSibling.hidden=!on;b.querySelector('span').textContent=on?`Hide ${old.length} that moved on`:`Show ${old.length} that moved on`});
+
+/* ---------- changes ---------- */
+async function drawChanges(){
+  if(drawChanges.done)return;drawChanges.done=1;state($('feed'),'loading',{n:6});
+  const ev=await qsai.changes(30).catch(()=>[]);
+  if(!ev.length){state($('feed'),'empty',{title:'No changes in the last 30 days'});return}
+  const days=new Map();ev.forEach(e=>{if(!days.has(e.date))days.set(e.date,[]);days.get(e.date).push(e)});
+  $('feed').innerHTML=[...days.entries()].map(([d,l])=>{const a=l.filter(e=>e.kind==='add').length,o=l.length-a;
+    return `<div class="dayh">${esc(fmt.rel(d))} <span>${a?`+${a} joined`:''}${a&&o?' · ':''}${o?`−${o} left`:''}</span></div><div class="lst">${l.map(e=>e.kind==='add'
+      ?`<a class="ev2 add" href="xray.html?s=${encodeURIComponent(e.sym)}"><span class="dot">+</span><span><span class="t"><b>${esc(e.sym)}</b> <i>joined the list</i></span><div class="s">Matched at ${fmt.inr(e.price)}</div></span><span class="r"><b class="${fmt.tone(e.chg)}">${fmt.pct(e.chg)}</b><small>since</small></span></a>`
+      :`<a class="ev2 out" href="xray.html?s=${encodeURIComponent(e.sym)}"><span class="dot">−</span><span><span class="t"><b>${esc(e.sym)}</b> <i>left the list</i></span><div class="s">After ${e.held} day${e.held===1?'':'s'} · ${esc(e.why)}</div></span><span class="r"><b class="${fmt.tone(e.ret)}">${fmt.pct(e.ret)}</b><small>while listed</small></span></a>`).join('')}</div>`}).join('');
+}
+
+/* ---------- track record ---------- */
+const WHY={stop:'Loss limit',target:'Gain limit',trail:'Trailing exit',time:'Time limit',rule:'Exit rule'};
+async function drawRecord(){
+  if(drawRecord.done)return;drawRecord.done=1;state($('rec'),'loading',{n:4});
+  const [closed,base]=await Promise.all([qsai.closed().catch(()=>[]),qsai.base().catch(()=>({}))]);
+  const R=qsai.record(closed);
+  if(!R.trades){state($('rec'),'empty',{title:'No closed results yet'});return}
+  $('rec').innerHTML=`
+    <div class="ribbon"><div><small>Closed calls</small><b>${fmt.int(R.trades)}</b><span>${fmt.int(R.wins)} higher · ${fmt.int(R.losses)} lower</span></div>
+      <div><small>Ended higher</small><b>${fmt.plain(R.win_rate)}</b><span>of closed calls</span></div>
+      <div><small>Average result</small><b class="${fmt.tone(R.avg_ret)}">${fmt.pct(R.avg_ret)}</b><span>per call, before costs</span></div>
+      <div><small>Average gain · loss</small><b style="font-size:clamp(19px,1.9vw,23px);white-space:nowrap"><span style="font-size:inherit;color:var(--up)">${fmt.pct(R.avg_win)}</span><span style="font-size:inherit;color:var(--ink3)"> / </span><span style="font-size:inherit;color:var(--dn)">${fmt.pct(R.avg_loss)}</span></b><span>profit factor ${ok(R.profit_factor)?R.profit_factor.toFixed(2):'—'}</span></div>
+      <div><small>₹1 lakh, ₹10,000 in every call</small><b class="${fmt.tone(R.growth)}">${fmt.inr(R.final)}</b><span>${fmt.pct(R.growth)} since ${fmt.dateY(R.first)}</span></div></div>
+    <p class="note" style="margin-top:12px">${base.liveFrom?`Before ${fmt.dateY(base.liveFrom)}: the same rules tested on past prices, without seeing the future. Since then: every call recorded live (${fmt.int(R.live)} so far). `:''}A stock found by both QuantSync engines on the same day is counted once.</p>
+    <div class="shd" style="margin-top:34px"><div><h2>Growth of <em>₹1 lakh</em></h2><p>₹10,000 put into every call, added up in the order the calls closed. The dashed line is the Nifty 50.</p></div></div>
+    <div class="panel2"><div class="chead"><div><div class="v" id="ev"></div><div class="w" id="ew"></div></div></div><div class="chart" id="eqc"></div></div>
+    <div class="grid2" style="margin-top:16px">
+      <div class="panel2"><div class="chead"><div><b style="font-size:17px">Month by month</b><div class="w">Profit or loss each month on the ₹1 lakh account</div></div></div><div class="chart" id="mb"></div></div>
+      <div class="panel2"><div class="chead"><div><b style="font-size:17px">Year by year</b></div></div>
+        <table class="yt"><thead><tr><th>Year</th><th>Calls</th><th>Ended higher</th><th>Average</th></tr></thead><tbody>${R.years.slice().reverse().map(y=>`<tr><td>${y.k}</td><td>${fmt.int(y.n)}</td><td>${fmt.plain(y.w/y.n*100)}</td><td class="${fmt.tone(y.s/y.n)}">${fmt.pct(y.s/y.n)}</td></tr>`).join('')}</tbody></table></div>
+    </div>
+    <div class="shd"><div><h2>Latest closed <em>calls</em></h2><p>The 30 most recent. Good and bad, all of them.</p></div></div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Stock</th><th>Matched</th><th>Left the list</th><th class="rt">Days</th><th>Why it left</th><th class="rt">Result</th></tr></thead>
+      <tbody>${closed.slice(0,30).map(t=>`<tr><td><a href="xray.html?s=${encodeURIComponent(t.symbol)}"><b>${esc(t.symbol)}</b></a>${t.live?' <span class="pill up" style="height:20px;font-size:11px">Live</span>':''}</td><td>${fmt.date(t.entry)}</td><td>${fmt.date(t.exit)}</td><td class="rt">${t.days??'—'}</td><td>${esc(WHY[t.why]||'Exit rule')}</td><td class="rt ${fmt.tone(t.ret)}"><b>${fmt.pct(t.ret)}</b></td></tr>`).join('')}</tbody></table></div>`;
+  const eq=R.equity,dates=eq.map(p=>p.d),vals=eq.map(p=>p.v);
+  $('ev').textContent=fmt.inr(R.final);$('ew').textContent=`from ₹1,00,000 on ${fmt.dateY(R.first)}`;
+  let bench=null;
+  try{const b=await QD.lab.benchmark(R.first);const bd=b.points||[];if(bd.length>5){let j=0,b0=null;bench=dates.map(dt=>{while(j<bd.length-1&&bd[j+1].d<=dt)j++;const v=bd[j].d<=dt?bd[j].v:NaN;if(b0==null&&Number.isFinite(v))b0=v;return b0?100000*v/b0:NaN})}}catch{}
+  const S=[];if(bench)S.push({data:bench,color:'var(--ink3)',dash:true,w:1.5});S.push({data:vals,color:'var(--brand)',area:true});
+  line($('eqc'),S,{h:280,dates,yfmt:v=>'₹'+(v/100000).toFixed(2)+'L',label:'Growth of one lakh',tip:i=>`${fmt.date(dates[i])} · ${fmt.inr(vals[i])}${bench&&Number.isFinite(bench[i])?' · Nifty '+fmt.inr(bench[i]):''}`});
+  if(base.liveFrom){const svg=$('eqc').querySelector('svg');const i0=dates.findIndex(d=>d>=base.liveFrom);if(svg&&i0>0){const vb=svg.viewBox.baseVal,x0=44+(vb.width-58)*i0/Math.max(1,dates.length-1);svg.insertAdjacentHTML('afterbegin',`<rect x="${x0}" y="14" width="${Math.max(2,vb.width-14-x0)}" height="${vb.height-40}" fill="var(--up)" opacity=".08" rx="4"/><text x="${x0+6}" y="28" font-size="11" font-weight="700" fill="var(--up)">Live</text>`)}}
+  const M=R.months.slice(-18);vbars($('mb'),M.map(m=>({v:m.s*100,c:m.s>=0?'var(--up)':'var(--dn)',l:new Date(m.k+'-01T00:00:00').toLocaleDateString('en-IN',{month:'short'})})),{h:200,neg:true,yfmt:v=>(v>=0?'+':'−')+'₹'+Math.abs(Math.round(v/1000))+'k',every:M.length>12?2:1,label:'Monthly result'});
+}
+
+function setTab(t){tab=t;['list','changes','record'].forEach(k=>$('p-'+k).hidden=k!==t);[...$('tab').children].forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===t));
+  history.replaceState(null,'',t==='list'?location.pathname:'#'+t);if(t==='changes')drawChanges();if(t==='record')drawRecord()}
+$('tab').addEventListener('change',e=>setTab(e.detail));
+addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(['changes','record'].includes(h))setTab(h)});
+drawList();setTab(tab);
+});
+</script>
+</body></html>
