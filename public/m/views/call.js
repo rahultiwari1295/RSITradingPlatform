@@ -1,6 +1,7 @@
 import { api, chrome, fill, fmt, esc, icon, n, ok, link, mono, delta, tone, loadTerminal, share, scoreTone, sentence, clean, STRAT_WHAT, q, empty } from '../core.js';
 import { priceChart, toCandles, withEmas, ruler, settle } from '../charts.js';
-import { sec, statCell, closedRow, footNote } from './parts.js';
+import { sec, statCell, closedRow, footNote, paperSheet } from './parts.js';
+import { paper, go } from '../core.js';
 
 export default async function call(el, r) {
   const sym = r.arg.toUpperCase();
@@ -33,6 +34,7 @@ export default async function call(el, r) {
         <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">${fresh ? `<span class="pill ai">New buy call${c.days === 0 ? ' today' : ''}</span>` : `<span class="pill">Day ${fmt.int(c.days)} of the trade</span>`}<span class="pill brand">${esc(c.strategy)}</span>${ok(c.score) ? `<span class="pill">AI confidence ${fmt.int(c.score)}</span>` : ''}</div>
         <div style="margin-top:6px">${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: c.now })}</div>
       </div>
+      ${fresh ? `<button class="btn block" data-paper style="margin-top:12px">${icon('bolt', 18)}${paper.has(c.sym) ? 'Paper trade started' : 'Paper trade this signal'}</button>` : ''}
       <div class="verdict" style="background:var(--ai-soft);margin-top:12px"><div class="h" style="display:flex;gap:8px;align-items:center"><span class="ai">${icon('ai', 18)}</span>What to do</div><p style="color:var(--ink)">${todo}</p></div>
       ${sec('The plan', `<div class="stats four">
         ${statCell('Entry', fmt.px(c.entry), fresh ? 'buy price' : 'bought ' + fmt.date(c.entryDate), 'entry')}
@@ -48,6 +50,7 @@ export default async function call(el, r) {
       <div id="k-hist"></div>
       ${footNote()}`;
     settle(body);
+    const pb = body.querySelector('[data-paper]'); if (pb) pb.onclick = () => (paper.has(c.sym) ? go('portfolio') : paperSheet(c, () => { pb.lastChild.textContent = 'Paper trade started'; }));
 
     const chartEl = body.querySelector('#k-chart');
     fill(chartEl, () => api(`/chart/${encodeURIComponent(c.sym)}?limit=260`, 15), d => {

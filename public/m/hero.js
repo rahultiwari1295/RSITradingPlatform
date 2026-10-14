@@ -54,5 +54,5 @@ export const words = (text, hl = []) => text.split(' ').map((w, i) => `<span cla
 /** The hero block: moving art card, eyebrow, word-by-word headline, lede, and an optional slot (search). */
 export function heroHTML({ art, artOpts, ey, h, hl = [], lede, extra = '', icon = '' }) {
   const n = h.split(' ').length;
-  return `<div class="q-hero q-play"><div class="q-art">${ART[art](artOpts)}</div><div class="q-hcopy"><p class="q-ey">${icon}${E(ey)}</p><h1 class="q-ht">${words(h, hl)}</h1><p class="q-lede" style="--i:${n}">${E(lede)}</p>${extra}</div></div>`;
+  return `<div class="q-hero q-play"><div class="q-hcopy"><p class="q-ey">${icon}${E(ey)}</p><h1 class="q-ht">${words(h, hl)}</h1><p class="q-lede" style="--i:${n}">${E(lede)}</p>${extra}</div></div>`;
 }

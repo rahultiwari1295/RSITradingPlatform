@@ -6,7 +6,7 @@ export default async function today(el) {
   const ms = marketStatus();
   const body = chrome(el, {
     title: 'Today',
-    hero: { art: 'home', icon: icon('target', 16), ey: 'Today', h: 'Fresh signals first. Then the market.', hl: ['Fresh', 'signals'], lede: 'What QuantSync found tonight, what the market did, and what it means for you.', extra: `<div class="when" style="margin-top:14px;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2)"><span class="live-dot ${ms.open ? 'on' : ''}"></span><span id="t-when">${ms.text}</span></div>` },
+    hero: { art: 'home', icon: icon('target', 16), ey: 'Today', h: 'QuantSync Scanner', hl: ['Scanner'], lede: 'What QuantSync found tonight, what the market did, and what it means for you.', extra: `<div class="when" style="margin-top:14px;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2)"><span class="live-dot ${ms.open ? 'on' : ''}"></span><span id="t-when">${ms.text}</span></div>` },
     actions: `<a class="ib" href="/m/xray" data-nav aria-label="Search stocks">${icon('search', 21)}</a>`,
   });
   el.querySelector('.bar').insertAdjacentHTML('afterbegin', `<span class="bar-logo" style="padding-left:8px;display:flex">${logo(26)}</span>`);
@@ -73,16 +73,14 @@ export default async function today(el) {
     const recent = [...t.toBuy, ...t.active.filter(c => !t.toBuy.some(x => x.sym === c.sym))].filter(c => c.isNew || (isFinite(c.days) && c.days <= 3));
     const fresh = recent.filter(isFreshSignal).length, old = recent.length - fresh;
     slot.innerHTML = `<section class="sec" style="margin-top:4px">
-      <div class="scan-head"><h2>${scanLogo()}QuantSync Scanner</h2><span class="scan-live"><span class="live-dot on"></span>${t.at ? 'Scanned ' + fmt.date(String(t.at).slice(0, 10)) : 'Live'}</span></div>
-      ${scanRule('Here you see the last 3 days only.')}
-      <div class="scan-legend"><span class="tag new"><i></i>${fresh} new</span><span class="tag old"><i></i>${old} old, skip</span></div>
+      <p class="scan-sub"><span class="live-dot on"></span>${t.at ? 'Scanned ' + fmt.date(String(t.at).slice(0, 10)) + '. ' : ''}Last 3 days only: ${fresh} fresh, ${old} old.</p>
       ${signalList(recent)}
       <div style="margin-top:14px">${link('calls', `${icon('ai', 18)}All calls from every strategy`, 'btn quiet block')}</div>
     </section>`;
     bindSignals(slot, recent, () => drawScan(t, slot));
     settle(slot); reveal(slot);
   };
-  fill(body.querySelector('#t-calls'), () => term, drawScan, `<section class="sec" style="margin-top:4px"><div class="scan-head"><h2>${scanLogo()}QuantSync Scanner</h2></div><div class="sk" style="height:300px;border-radius:22px"></div></section>`);
+  fill(body.querySelector('#t-calls'), () => term, drawScan, `<section class="sec" style="margin-top:4px"><div class="sk" style="height:300px;border-radius:22px"></div></section>`);
 
   /* honest record */
   fill(body.querySelector('#t-record'), () => api('/track-record', 15), (r, slot) => {

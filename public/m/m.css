@@ -841,3 +841,65 @@ a.row:active, button.row:active { transform: scale(.985); transition-duration: .
 [data-view="today"] .q-chipf:nth-of-type(n+6) { display: none; }
 [data-view="today"] .q-lede { display: none; }
 [data-view="today"] .q-hero { gap: 14px; }
+
+/* ================================================================ heading-only hero, pills, sections, slim cards */
+.q-hero { gap: 0; padding: 14px 0 2px; }
+[data-view="today"] .q-lede, .q-lede { display: block; }
+.q-ey { display: inline-flex; align-self: flex-start; align-items: center; gap: 7px; height: 28px; padding: 0 12px 0 10px; margin: 0 0 14px; border-radius: 99px; font: 650 12.5px/1 var(--font); letter-spacing: .01em; color: var(--brand); background: color-mix(in srgb, var(--brand) 10%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 18%, transparent); }
+.q-ht { font-size: clamp(34px, 9.2vw, 54px); line-height: 1.04; letter-spacing: -.035em; }
+.q-lede { margin-top: 12px; font-size: 16px; max-width: 36ch; }
+.herowrap + .body { margin-top: 20px; }
+.herowrap { position: relative; }
+.herowrap::after { content: ""; position: absolute; left: 0; bottom: -10px; width: 56px; height: 4px; border-radius: 2px; background: var(--brand-grad); opacity: .0; }
+.aurora { height: 380px; }
+
+/* one slim row of pills instead of a stats block */
+.pills { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--pad)); padding: 2px var(--pad) 4px; }
+.pills::-webkit-scrollbar { display: none; }
+.pl { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 17px; background: var(--card); box-shadow: var(--hi), 0 0 0 1px var(--edge), var(--shadow-1); font-size: 13.5px; color: var(--ink-2); white-space: nowrap; }
+.pl b { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+.pl svg { color: var(--ink-3); }
+.pl.hot { background: var(--up-solid); color: #fff; box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--up-solid) 80%, transparent); }
+.pl.hot b { color: #fff; }
+.pl.hot i { width: 7px; height: 7px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 0 rgba(255,255,255,.7); animation: ping2 2s infinite; }
+@keyframes ping2 { to { box-shadow: 0 0 0 8px rgba(255,255,255,0); } }
+
+/* Fresh / Old signal sections */
+.sig-sec { margin: 22px 2px 12px; }
+.sig-sec:first-child { margin-top: 6px; }
+.sig-sec .h { display: flex; align-items: center; gap: 8px; }
+.sig-sec h3 { margin: 0; font-size: 21px; font-weight: 750; letter-spacing: -.025em; }
+.sig-sec .n { min-width: 24px; height: 24px; padding: 0 8px; border-radius: 12px; display: grid; place-items: center; font-size: 13px; font-weight: 700; background: var(--up-soft); color: var(--up); }
+.sig-sec.old .n { background: var(--sunk); color: var(--ink-2); }
+.sig-sec p { margin: 3px 0 0; font-size: 14px; color: var(--ink-2); }
+.sig-stack { display: grid; gap: 12px; }
+.sig + .sig { margin-top: 0; }
+.scan-sub { margin: 2px 2px 10px; font-size: 13.5px; color: var(--ink-3); }
+
+/* slim card: header row, ruler, nothing else */
+.sig { padding: 14px 16px 14px; display: block; }
+.sig .top { gap: 12px; }
+.sig .nm .t { font-size: 18px; display: flex; align-items: center; gap: 8px; }
+.sig .nm .s { font-size: 13px; margin-top: 1px; display: block; }
+.sig .nm .s b { font-weight: 600; color: var(--ink); }
+.sig .px .v { font-size: 18px; }
+.sig .px .delta, .sig .px .d0 { font-size: 13.5px; font-weight: 650; display: block; margin-top: 1px; }
+.sig .px .d0 { color: var(--ink-3); }
+.sig .ruler { margin-top: 12px; padding-top: 38px; }
+.sig.compact { padding: 12px 14px; }
+.sig .note { margin: 8px 0 0; font-size: 13px; color: var(--ink-2); }
+.sig-sec + .sig-stack .sig.old, .sig.old { opacity: 1; }
+
+/* price marker: a black bar on the line, a quiet outlined label the same distance above as the prices are below */
+.ruler .needle { top: -5px; height: 21px; width: 4px; margin-left: -2px; transform: none; display: block; background: var(--ink); border-radius: 2px; box-shadow: 0 0 0 2px var(--surface), 0 3px 8px rgba(11,21,38,.3); }
+.ruler .needle::after, .ruler .needle i { display: none; }
+.ruler .needle b { position: absolute; left: 50%; bottom: calc(100% + 5px); transform: translateX(calc(-50% + var(--sx, 0%))); background: transparent; color: var(--ink); box-shadow: none; border: 1.5px solid color-mix(in srgb, var(--ink) 55%, transparent); border-radius: 9px; padding: 3px 9px; font-size: 12.5px; font-weight: 700; }
+.ruler .entry { background: var(--ink-3); width: 2px; margin-left: -1px; box-shadow: none; }
+.ruler { padding-top: 38px; }
+.sig .nm .s { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.sig .nm .s .st { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.sig .nm .s b { flex: none; white-space: nowrap; }
+.q-hero { padding-top: 2px; }
+[data-view="today"] .q-ey, [data-view="today"] .q-lede { display: none; }
+[data-view="today"] .q-hero { padding-top: 12px; }
+.scan-sub { display: flex; align-items: center; gap: 8px; }
