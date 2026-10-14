@@ -7,7 +7,12 @@
   "headers": [
     {
       "source": "/m/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, must-revalidate"
+        }
+      ]
     }
   ],
   "rewrites": [
@@ -129,6 +134,51 @@
     }
   ],
   "redirects": [
+    {
+      "source": "/",
+      "destination": "/m/",
+      "permanent": false
+    },
+    {
+      "source": "/home",
+      "destination": "/m/",
+      "permanent": false
+    },
+    {
+      "source": "/xray",
+      "destination": "/m/xray",
+      "permanent": false
+    },
+    {
+      "source": "/xray/:sym",
+      "destination": "/m/xray/:sym",
+      "permanent": false
+    },
+    {
+      "source": "/calls",
+      "destination": "/m/calls",
+      "permanent": false
+    },
+    {
+      "source": "/calls/:path*",
+      "destination": "/m/calls/:path*",
+      "permanent": false
+    },
+    {
+      "source": "/patterns",
+      "destination": "/m/patterns",
+      "permanent": false
+    },
+    {
+      "source": "/patterns/:sym",
+      "destination": "/m/patterns/:sym",
+      "permanent": false
+    },
+    {
+      "source": "/portfolio",
+      "destination": "/m/portfolio",
+      "permanent": false
+    },
     {
       "source": "/app",
       "destination": "/app/",
