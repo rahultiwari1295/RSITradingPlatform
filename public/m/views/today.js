@@ -1,4 +1,4 @@
-import { reveal, api, bust, chrome, fill, fmt, esc, icon, n, ok, link, mono, delta, tone, marketStatus, loadTerminal, loadPatterns, allSignals, sheet, q, count, toDate, logo, live, todayLine, engineOf } from '../core.js';
+import { reveal, api, bust, chrome, fill, fmt, esc, icon, n, ok, link, mono, delta, tone, marketStatus, loadTerminal, loadPatterns, allSignals, sheet, q, count, toDate, logo, live, todayLine, engineOf, tradeStats, yearTrades } from '../core.js';
 import { isFreshSignal } from './parts.js';
 
 /* Home: the market in one live card, then three doors: fresh AI signals, confirmed breakouts, near breakout. */
@@ -8,19 +8,18 @@ export default async function today(el) {
   const part = hr < 12 ? 'morning' : hr < 17 ? 'afternoon' : 'evening';
   const body = chrome(el, {
     title: 'Today',
-    top: { meta: `<span>${todayLine()}</span><i class="sep"></i><span class="live-dot ${ms.open ? 'on' : ''}"></span><span id="t-st">${ms.text}</span>`, h: `Good ${part}`, hl: [part] },
-    actions: `<a class="ib" href="/m/xray" data-nav aria-label="Search stocks">${icon('search', 21)}</a>`,
+    top: { ey: `<span class="live-dot ${ms.open ? 'on' : ''}"></span><span>${todayLine()}</span><i class="sep"></i><span id="t-st">${ms.text}</span>`, h: `Good ${part}.`, hl: [part], lede: 'The market right now, and what our AI found after the last close.' },
   });
-  el.querySelector('.bar').insertAdjacentHTML('afterbegin', `<span class="bar-logo">${logo(26)}</span>`);
-  el.querySelector('.bar .sp')?.remove();
 
   body.innerHTML = `
     <div id="t-mk"></div>
-    <div class="bento" id="t-bento">
-      <a class="door dr-ai" href="/m/calls" data-nav aria-label="Fresh AI signals">
-        <div class="dr-h"><span class="dr-ic">${icon('ai', 18)}</span><span class="dr-k">AI signals</span><span class="go">${icon('arrowUR', 18)}</span></div>
-        <div class="dr-n" id="t-ai-n"><span class="sk sk-n"></span></div><div class="dr-l" id="t-ai-l">fresh from the last scan</div><div class="dr-syms" id="t-ai-s"></div>
-      </a>
+    <a class="door dr-ai" href="/m/calls" data-nav aria-label="AI buy and sell calls">
+      <div class="dr-h"><span class="dr-ic">${icon('ai', 20)}</span><span class="dr-k">AI Buy &amp; Sell Calls</span><span class="go">${icon('arrowUR', 18)}</span></div>
+      <div class="dr-n" id="t-ai-n"><span class="sk sk-n"></span></div><div class="dr-l" id="t-ai-l">fresh from the last scan</div><div class="dr-syms" id="t-ai-s"></div>
+    </a>
+    ${link('record', `<span class="ri">${icon('chart', 18)}</span><span class="rb-t"><b>Backtest report</b><span id="t-rec">Every closed call, wins and losses</span></span>${icon('chev', 18, 'chev')}`, 'rbtn')}
+    <section class="sec"><div class="sec-h"><h2>Chart Patterns</h2>${link('patterns', 'See all', 'more')}</div>
+    <div class="bento">
       <a class="door dr-up" href="/m/patterns?stage=Breakout" data-nav aria-label="Confirmed breakouts">
         <div class="dr-h"><span class="dr-ic">${icon('pattern', 18)}</span><span class="go">${icon('arrowUR', 16)}</span></div>
         <div class="dr-n" id="t-br-n"><span class="sk sk-n"></span></div><div class="dr-l">Breakouts confirmed</div>
@@ -31,12 +30,14 @@ export default async function today(el) {
         <div class="dr-n" id="t-nr-n"><span class="sk sk-n"></span></div><div class="dr-l">Near breakout</div>
         <svg class="dr-art" viewBox="0 0 120 44" aria-hidden="true"><path d="M2 14h116" stroke-dasharray="3 4"/><path class="ln" d="M2 38 16 32l14 4 14-10 14 4 14-8 12 3 14-6 12-2 8-1"/></svg>
       </a>
-    </div>
-    <section class="sec more-sec"><div class="group" id="t-more">
-      ${link('record', `<span class="ri" style="--c:var(--brand)">${icon('chart', 18)}</span><div class="main"><div class="t">Track record</div><div class="s" id="t-rec">Every closed AI call, wins and losses</div></div>${icon('chev', 18, 'chev')}`, 'row')}
-      ${link('market', `<span class="ri" style="--c:var(--up-solid)">${icon('grid', 18)}</span><div class="main"><div class="t">Market map</div><div class="s">Sectors ranked by how many stocks are rising</div></div>${icon('chev', 18, 'chev')}`, 'row')}
-      <a class="row" href="/app/scanner.html"><span class="ri" style="--c:var(--ai-solid)">${icon('flask', 18)}</span><div class="main"><div class="t">Strategy Lab</div><div class="s">Build and test your own scanner</div></div>${icon('chev', 18, 'chev')}</a>
     </div></section>
+    <a class="labx" href="/app/scanner.html">
+      <svg class="labx-art" viewBox="0 0 160 120" aria-hidden="true"><g class="nd"><circle cx="30" cy="28" r="5"/><circle cx="82" cy="18" r="5"/><circle cx="130" cy="40" r="5"/><circle cx="58" cy="74" r="5"/><circle cx="112" cy="88" r="5"/><circle cx="150" cy="104" r="4"/></g><path class="ed" d="M30 28 82 18 130 40M30 28l28 46 54 14 38 16M82 18l-24 56M130 40l-18 48"/></svg>
+      <div class="labx-ey">${icon('flask', 15)}Strategy Lab</div>
+      <div class="labx-h">Create your own AI-powered strategies</div>
+      <p>Pick the rules, test them on years of NSE prices, and let AI filter out the weak trades.</p>
+      <span class="labx-cta">Create a scanner ${icon('chev', 16)}</span>
+    </a>
     <p class="foot-note">Research and education, not investment advice. Prices can be delayed.</p>`;
 
   /* ---------- live Nifty card ---------- */
@@ -66,12 +67,12 @@ export default async function today(el) {
     const W = 340, H = 112, lo0 = Math.min(...vals), hi0 = Math.max(...vals), pad = (hi0 - lo0) * .12 || 1, lo = lo0 - pad, hi = hi0 + pad;
     const X = i => (i / (vals.length - 1)) * (W - 10) + 2, Y = v => (1 - (v - lo) / (hi - lo)) * (H - 8) + 4;
     const d = vals.map((v, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).join(' ');
-    const up = isFinite(S.ch) ? S.ch >= 0 : vals[vals.length - 1] >= vals[0], col = up ? '#3BE0A0' : '#FF7A7E';
+    const up = isFinite(S.ch) ? S.ch >= 0 : vals[vals.length - 1] >= vals[0], col = up ? 'var(--mk-up)' : 'var(--mk-dn)';
     const e20 = ok(S.prof.ema20) && n(S.prof.ema20) > lo && n(S.prof.ema20) < hi ? Y(n(S.prof.ema20)) : null;
     const lx = X(vals.length - 1), ly = Y(vals[vals.length - 1]);
-    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="mkg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".32"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
-      ${e20 != null ? `<line x1="0" x2="${W}" y1="${e20.toFixed(1)}" y2="${e20.toFixed(1)}" stroke="rgba(255,255,255,.28)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/>` : ''}
-      <path d="${d} L${lx} ${H} L2 ${H}Z" fill="url(#mkg)"/><path class="mk-line${lastChart ? '' : ' draw'}" d="${d}" fill="none" stroke="${col}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" pathLength="1"/></svg>
+    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="mkg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:${col};stop-opacity:.3"/><stop offset="1" style="stop-color:${col};stop-opacity:0"/></linearGradient></defs>
+      ${e20 != null ? `<line x1="0" x2="${W}" y1="${e20.toFixed(1)}" y2="${e20.toFixed(1)}" style="stroke:var(--mk-grid)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/>` : ''}
+      <path d="${d} L${lx} ${H} L2 ${H}Z" fill="url(#mkg)"/><path class="mk-line${lastChart ? '' : ' draw'}" d="${d}" fill="none" style="stroke:${col}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" pathLength="1"/></svg>
       <i class="mk-dot" style="left:${(lx / W * 100).toFixed(2)}%;top:${(ly / H * 100).toFixed(2)}%;--c:${col}"></i>`;
   };
   const idxCell = x => `<div class="mk-i" data-n="${esc(x.n)}"><div class="k">${esc(x.n)}</div><div class="v tnum">${fmt.idx(x.v)}</div><div class="d ${tone(x.p)}">${fmt.sp(x.p, 2)}</div></div>`;
@@ -132,6 +133,7 @@ export default async function today(el) {
 
   /* ---------- the three doors ---------- */
   loadTerminal().then(t => {
+    { const y = yearTrades(t.closed), st = tradeStats(y.list); if (st.n) body.querySelector('#t-rec').textContent = `${y.label}: ${fmt.int(st.n)} calls, ${fmt.pct(st.winRate, 0)} won`; }
     const sigs = allSignals(t), fresh = sigs.filter(isFreshSignal).sort((a, b) => (b.score || 0) - (a.score || 0));
     const nPro = fresh.filter(c => engineOf(c) === 'v2').length, nChart = fresh.length - nPro;
     body.querySelector('#t-ai-n').innerHTML = count(fresh.length);
@@ -143,7 +145,7 @@ export default async function today(el) {
     body.querySelector('#t-br-n').innerHTML = count(d.counts.Breakout || 0);
     body.querySelector('#t-nr-n').innerHTML = count(d.counts.Near || 0);
   }).catch(() => { body.querySelector('#t-br-n').textContent = '—'; body.querySelector('#t-nr-n').textContent = '—'; });
-  api('/track-record', 15).then(r => { const C = r.combined || {}; if (ok(C.winRate)) body.querySelector('#t-rec').textContent = `${fmt.pct(C.winRate, 0)} won · profit factor ${fmt.x(C.profitFactor)}`; }).catch(() => {});
+  
 
   return () => { offLive(); clearInterval(poll); };
 }
@@ -154,7 +156,7 @@ function indexSheet(x, p) {
     <div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:30px;font-weight:700;letter-spacing:-.035em" class="tnum">${fmt.idx(x.v)}</span>${delta(x.p, 2)}</div>
     ${p ? `<div class="kv" style="margin:14px 0">${[['20-day average', p.ema20], ['50-day average', p.ema50], ['200-day average', p.ema200], ['RSI', p.rsi], ['52-week high', p.w52_high], ['52-week low', p.w52_low]].map(([k, v]) => `<div><div class="k">${k}</div><div class="v">${k === 'RSI' ? fmt.x(v, 1) : fmt.idx(v)}</div></div>`).join('')}</div>
     ${lv.length ? `<div class="group" style="box-shadow:none;background:var(--surface-2)">${lv.map(([k, v]) => `<div class="row plain" style="min-height:44px"><div class="main"><div class="t" style="font-weight:500;font-size:14.5px">${k}</div></div><div class="end tnum" style="font-weight:600">${fmt.idx(v)}</div></div>`).join('')}</div><p class="tiny" style="margin-top:8px">Levels for the next session, from the last day's high, low and close.</p>` : ''}` : ''}
-    <button class="btn quiet block" data-close style="margin-top:12px">Close</button>`, { label: x.n });
+    <a class="btn ghost block" href="/m/market" data-nav data-close style="margin-top:12px">${icon('grid', 18)}Market map: every sector</a><button class="btn quiet block" data-close style="margin-top:8px">Close</button>`, { label: x.n });
 }
 
 export function tile(s) {

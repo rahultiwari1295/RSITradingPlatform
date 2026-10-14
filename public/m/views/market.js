@@ -1,9 +1,9 @@
-import { api, chrome, fill, fmt, esc, n, link, mono, q, count, scoreColor, toDate } from '../core.js';
+import { icon, api, chrome, fill, fmt, esc, n, link, mono, q, count, scoreColor, toDate } from '../core.js';
 import { sec, footNote, statCell } from './parts.js';
 
 export default async function market(el, r) {
   const want = r.query.get('s') || '';
-  const body = chrome(el, { title: 'Market map', back: 'Today', sub: 'Every sector, ranked by how many of its stocks are in a long-term uptrend.' });
+  const body = chrome(el, { title: 'Market map', back: 'Today', sub: 'Every sector, ranked by how many of its stocks are in a long-term uptrend.', top: { ey: `${icon('grid', 16)}Market map`, h: 'Where the market | is strong.', hl: ['strong'], lede: 'Every sector, ranked by how many of its stocks are in a long-term uptrend.' } });
   fill(body, () => api('/app/market', 30), m => {
     const secs = [...(m.sectors || [])].sort((a, b) => n(b.above200_pct) - n(a.above200_pct));
     const st = m.stances || {}, tot = (n(st.BULLISH) || 0) + (n(st.NEUTRAL) || 0) + (n(st.BEARISH) || 0);

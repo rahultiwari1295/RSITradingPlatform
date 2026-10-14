@@ -417,27 +417,48 @@ export const engineBadge = (c, cls = '') => { const e = engineOf(c); return `<sp
 /** Link path for a call; Chart AI Pro calls carry ?e=v3 so the same stock in both engines stays distinct. */
 export const callPath = c => `calls/${encodeURIComponent(c.sym)}${engineOf(c) === 'v3' ? '?e=v3' : ''}`;
 
+const callKey = c => `${c.sym}|${String(c.entryDate || '').slice(0, 10)}`;
+const closedKey = c => `${c.sym}|${String(c.entryDate || '').slice(0, 10)}|${String(c.exitDate || '').slice(0, 10)}`;
+const rawEngine = (x, v) => { const e = String(x?.engine || '').toLowerCase(); return e === 'v3' || e === 'v2' ? e : v; };
+/** One de-duplicated list: the same stock and entry date is one trade, whichever feed it came from. */
+const uniq = (list, key) => { const m = new Map(); list.forEach(x => { const k = key(x); if (!m.has(k)) m.set(k, x); }); return [...m.values()]; };
 async function oneEngine(v) {
   const d = await api('/terminal-data?version=' + v, 3);
-  const tag = x => ({ ...x, engine: v });
-  const active = (d.active || d.inTradeTrades || []).map(a => tag(toCall(a)));
-  const toBuy = (d.toBuySignals || []).map(a => ({ ...tag(toCall(a)), isNew: true }));
-  const closed = (d.closedTrades || d.closed || []).map(c => tag(toClosed(c))).filter(c => isFinite(c.roi));
+  if (v === 'v3' && d.version && d.version !== 'v3') return null; // the server fell back to the main feed
+  const active = uniq((d.active || d.inTradeTrades || []).map(a => ({ ...toCall(a), engine: rawEngine(a, v) })), callKey);
+  const held = new Set(active.map(callKey));
+  // the proxy copies open trades into toBuySignals when the engine sends none: only genuinely new ones count as new
+  const toBuy = uniq((d.toBuySignals || []).map(a => ({ ...toCall(a), engine: rawEngine(a, v), isNew: true })), callKey).filter(c => !held.has(callKey(c)));
+  const closed = uniq((d.closedTrades || d.closed || []).map(c => ({ ...toClosed(c), engine: rawEngine(c, v) })).filter(c => isFinite(c.roi)), closedKey);
   return { active, toBuy, closed, kpis: d.kpis || {}, at: d.generatedAt || '' };
 }
-/** Both engines, merged. AI Pro is required; Chart AI Pro is added when it answers. */
+/** Both engines, merged without repeats. AI Pro is required; Chart AI Pro is added when it answers. */
 export async function loadTerminal() {
   const [a, b] = await Promise.all([oneEngine('v2'), oneEngine('v3').catch(() => null)]);
-  const out = { active: a.active, toBuy: a.toBuy, closed: a.closed, kpis: a.kpis, at: a.at };
+  const out = { ...a };
   if (b) {
-    const seen = new Set(out.closed.map(c => c.id));
-    out.active = out.active.concat(b.active); out.toBuy = out.toBuy.concat(b.toBuy);
-    out.closed = out.closed.concat(b.closed.filter(c => !seen.has(c.id)));
+    out.active = uniq(a.active.concat(b.active), callKey);
+    out.toBuy = uniq(a.toBuy.concat(b.toBuy), callKey);
+    out.closed = uniq(a.closed.concat(b.closed), closedKey);
     if (b.at > out.at) out.at = b.at;
   }
+  const held = new Set(out.active.map(callKey));
+  out.toBuy = out.toBuy.filter(c => !held.has(callKey(c)));
   out.toBuy.sort((x, y) => (y.score || 0) - (x.score || 0));
   out.closed.sort((x, y) => (y.exitDate || '').localeCompare(x.exitDate || ''));
   return out;
+}
+/** Win/loss numbers worked out from the closed trades themselves, so they move as trades open and close. */
+export function tradeStats(list) {
+  const w = list.filter(c => c.win), l = list.filter(c => !c.win), sum = a => a.reduce((s, c) => s + c.roi, 0);
+  const gw = sum(w), gl = -sum(l), days = list.map(c => c.days).filter(isFinite).sort((x, y) => x - y);
+  return { n: list.length, wins: w.length, losses: l.length, winRate: list.length ? w.length / list.length * 100 : NaN, avgWin: w.length ? gw / w.length : NaN, avgLoss: l.length ? -gl / l.length : NaN,
+    avg: list.length ? sum(list) / list.length : NaN, pf: gl > 0 ? gw / gl : NaN, hold: days.length ? days[Math.floor(days.length / 2)] : NaN, best: list.length ? Math.max(...list.map(c => c.roi)) : NaN, worst: list.length ? Math.min(...list.map(c => c.roi)) : NaN };
+}
+/** This year's closed trades, or all of them when the year has barely started. */
+export function yearTrades(closed) {
+  const y = String(new Date().getFullYear()), t = closed.filter(c => String(c.exitDate).startsWith(y));
+  return t.length >= 5 ? { label: y, list: t } : { label: 'All time', list: closed };
 }
 /** Open signals: new ones first, then held ones, one entry per stock and engine. */
 export const allSignals = t => { const key = c => c.sym + '|' + engineOf(c); const s = new Set(t.toBuy.map(key)); return [...t.toBuy, ...t.active.filter(c => !s.has(key(c)))]; };
@@ -624,11 +645,25 @@ export function go(path, { replace = false } = {}) {
 }
 export function back(fallback) { if (stack.length && history.state && history.state.d > 0) history.back(); else go(fallback || '', { replace: true }); }
 
-/** Shared chrome for every screen: a compact bar that turns solid on scroll, then the page title block.
-    top: { meta, h, hl, sub, extra } for tab pages. Detail pages pass only title and sub. */
-export function chrome(el, { title, sub = '', back: backTo, actions = '', top = null }) {
-  const t = top || { h: title, sub };
-  el.innerHTML = `<div class="aurora" aria-hidden="true"></div><header class="bar">${backTo != null ? `<button class="ib back" data-back aria-label="Back">${icon('back', 22)}<span>${esc(backTo)}</span></button>` : '<span class="sp"></span>'}<div class="bt">${esc(title)}</div>${actions || '<span class="sp"></span>'}</header>
+/* ---------------------------------------------------------------- day and night */
+export const isDark = () => (document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : W.matchMedia('(prefers-color-scheme: dark)').matches);
+export function setTheme(t) {
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem('qs-theme', t); } catch { /* storage blocked */ }
+  document.querySelectorAll('[data-theme-switch]').forEach(b => b.setAttribute('aria-checked', t === 'dark'));
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', t === 'dark' ? '#070B13' : '#F2F4F7'));
+}
+const themeSwitch = () => `<button class="tsw" type="button" role="switch" data-theme-switch aria-checked="${isDark()}" aria-label="Night mode"><span class="tsw-k">${icon('sun', 14, 'i-sun')}${icon('moon', 14, 'i-moon')}</span></button>`;
+
+/** Shared chrome. Tab pages: QuantSync and the page name on the left, the day and night switch on the right.
+    Detail pages: a back button and the title, which appears once the big title scrolls away.
+    top: { ey, h, hl, lede, extra } is the title block. */
+export function chrome(el, { title, sub = '', back: backTo, actions = '', top = null, page = '' }) {
+  const t = top || { h: title, lede: sub };
+  const left = backTo != null
+    ? `<button class="ib back" data-back aria-label="Back">${icon('back', 22)}<span>${esc(backTo)}</span></button><div class="bt">${esc(title)}</div>`
+    : `<a class="brand" href="${CFG.base}/" data-nav aria-label="QuantSync home">${logo(26)}<span class="bn">QuantSync</span>${page ? `<span class="bp"><i></i>${esc(page)}</span>` : ''}</a><span class="grow"></span>`;
+  el.innerHTML = `<div class="aurora" aria-hidden="true"></div><header class="bar${backTo != null ? '' : ' tabbar'}">${left}${actions}${backTo != null ? (actions ? '' : '<span class="sp"></span>') : themeSwitch()}</header>
   <div class="wrap head">${titleHTML(t)}</div><div class="wrap body"></div>`;
   const bar = el.querySelector('.bar'), h1 = el.querySelector('.tb-h');
   let tick = 0, solid = false;
@@ -676,6 +711,7 @@ export function boot() {
     e.preventDefault();
     go(a.getAttribute('href').slice(CFG.base.length + 1));
   });
+  document.addEventListener('click', e => { if (e.target.closest('[data-theme-switch]')) setTheme(isDark() ? 'light' : 'dark'); });
   W.addEventListener('popstate', () => render(parse(), 'pop'));
   history.replaceState({ d: parse().root ? 0 : 1 }, '', location.href);
   render(parse(), 'load');
