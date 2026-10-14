@@ -34,16 +34,14 @@ export function signalCard(c) {
   if (!fresh) {
     return link(`calls/${encodeURIComponent(c.sym)}`, `<div class="meta"><span style="display:flex;gap:6px"><span class="tag old"><i></i>Old signal</span><span class="tag skip">Skip</span></span><span class="when">Called ${dayWord(c.entryDate)}</span></div>
       <div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}</div><div class="s">${esc(c.strategy)}</div></div><div class="px"><div class="v">${fmt.px(c.now)}</div>${delta(c.roi)}</div></div>
-      <p class="note">${isFinite(run) && run > 1 ? `Already <b>${fmt.sp(run)}</b> from the ${fmt.px(c.entry)} entry. ` : ''}The planned entry was ${fmt.int(c.days)} sessions ago, so a new buy here carries more risk than the signal was built for.</p>`, 'sig old compact', `aria-label="${esc(c.sym)}, old signal, skip"`);
+      <p class="note">Entry has passed${isFinite(run) && run > 1 ? `, already <b>${fmt.sp(run)}</b> up` : ''}. Skip as a new buy.</p>`, 'sig old compact', `aria-label="${esc(c.sym)}, old signal, skip"`);
   }
   const moved = isFinite(run) && run > 3;
   return `<div class="sig new" data-sig="${esc(c.sym)}">
     <div class="meta"><span style="display:flex;gap:6px"><span class="tag new"><i></i>New signal</span>${traded ? '<span class="tag paper">Paper traded</span>' : ''}</span><span class="when">Called ${dayWord(c.entryDate)}</span></div>
-    ${link(`calls/${encodeURIComponent(c.sym)}`, `<div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}</div><div class="s">${esc(c.strategy)}${isFinite(c.score) && c.score > 0 ? `, AI confidence ${fmt.int(c.score)}` : ''}</div></div>
+    ${link(`calls/${encodeURIComponent(c.sym)}`, `<div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}</div><div class="s">${esc(c.strategy)}</div></div>
       <div class="px"><div class="v">${fmt.px(c.now)}</div>${Math.abs(c.roi) < .05 ? '<span class="small">at entry</span>' : delta(c.roi)}</div></div>
-      ${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: c.now })}
-      ${c.why ? `<p class="why">${esc(c.why)}</p>` : ''}
-      <div class="foot"><span class="tnum">Buy near <b>${fmt.px(c.entry)}</b></span><span class="tnum">${isFinite(gain) ? 'Target <b class="up">' + fmt.sp(gain, 0) + '</b>' : ''}</span></div>`, '', `style="display:block" aria-label="${esc(c.sym)} signal details"`)}
+      ${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: c.now })}`, '', `style="display:block" aria-label="${esc(c.sym)} signal details"`)}
     ${moved ? `<p class="note">Price is already <b>${fmt.sp(run)}</b> above the entry. Paper trade it only on a dip towards ${fmt.px(c.entry)}.</p>` : ''}
     <div class="acts">${traded ? `<button class="btn quiet" data-open-paper>${icon('pf', 18)}See paper trade</button>` : `<button class="btn" data-paper="${esc(c.sym)}">${icon('bolt', 18)}Paper trade</button>`}${link(`calls/${encodeURIComponent(c.sym)}`, icon('chev', 20), 'btn quiet', 'aria-label="Signal details" style="width:48px;padding:0"')}</div>
   </div>`;
@@ -60,7 +58,7 @@ export function signalList(list, { oldLabel = 'Older signals. Skip these' } = {}
   return `${fresh.length ? fresh.map(signalCard).join('') : `<div class="empty"><div class="ic">${icon('clock', 24)}</div><h3>No new signal in the last scan</h3><p>The scanner runs after every close. When a strategy finds a fresh setup it appears here first.</p></div>`}
     ${old.length ? `<div class="sig-group-h"><span>${esc(oldLabel)}</span><span class="line"></span><span class="tnum">${old.length}</span></div>${old.map(signalCard).join('')}` : ''}`;
 }
-export const scanRule = (extra = '') => `<div class="scan-rule">${icon('info', 18)}When the scanner finds a <b>fresh signal</b> for a strategy, you can <b>paper trade</b> it. <b>Skip old signals</b>: their best entry has already passed.${extra ? ' ' + extra : ''}</div>`;
+export const scanRule = (extra = '') => `<div class="scan-rule">${icon('info', 18)}<span><b>New signals</b> can be paper traded. <b>Skip the old ones.</b>${extra ? ' ' + extra : ''}</span></div>`;
 export const scanLogo = () => `<span class="scan-mark" aria-hidden="true">${icon('target', 17)}</span>`;
 export function paperSheet(c, done) {
   const s = sheet(`<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">${mono(c.sym, 'lg')}<div><h3 style="margin:0">Paper trade ${esc(c.sym)}</h3><div class="small">${esc(c.strategy)}. Practice money, nothing is bought.</div></div></div>

@@ -53,9 +53,4 @@ export default async function calls(el, r) {
     render();
   }
 
-  body.querySelector('#c-how').innerHTML = sec('How a call works', `<div class="story">
-    ${[['target', 'var(--brand)', 'Found after the close', 'Every evening the engines scan about 2,400 NSE stocks for setups their strategies have traded well in the past.'],
-      ['shield', 'var(--ai)', 'Checked by AI', 'A machine-learning model scores each setup against similar past trades. Only the ones that scored well become calls.'],
-      ['clock', 'var(--up)', 'Managed until it closes', 'Each call has a stop loss and a target. As the price rises the stop can move up to lock in profit. You see every exit here.']]
-      .map(([ic, c, h, p]) => `<div><span class="ic" style="background:color-mix(in srgb, ${c} 14%, transparent);color:${c}">${icon(ic, 17)}</span><div><div class="h" style="color:var(--ink);font-size:15px">${h}</div><p style="font-size:14px;color:var(--ink-2)">${p}</p></div></div>`).join('')}</div>`);
 }

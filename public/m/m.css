@@ -725,3 +725,48 @@ a.row:active, button.row:active { transform: scale(.985); transition-duration: .
   .sig.new:hover { box-shadow: 0 0 0 1px color-mix(in srgb, var(--up-solid) 45%, transparent), 0 22px 40px -14px color-mix(in srgb, var(--up-solid) 55%, transparent), var(--lift-2); }
 }
 @media (prefers-reduced-motion: reduce) { .sig.new::after, .ruler .needle::after { animation: none; } }
+
+/* ================================================================ future pass: living light, depth and motion */
+/* drifting aurora and a faint dot grid behind every title */
+.aurora { overflow: hidden; height: 460px; background: none; }
+.aurora::before, .aurora::after { content: ""; position: absolute; border-radius: 50%; filter: blur(46px); opacity: .55; will-change: transform; }
+.aurora::before { width: 340px; height: 300px; left: -80px; top: -90px; background: radial-gradient(closest-side, color-mix(in srgb, var(--brand) 55%, transparent), transparent); animation: drift1 14s ease-in-out infinite alternate; }
+.aurora::after { width: 300px; height: 260px; right: -90px; top: -40px; background: radial-gradient(closest-side, color-mix(in srgb, var(--ai-solid) 50%, transparent), transparent); animation: drift2 17s ease-in-out infinite alternate; }
+@keyframes drift1 { to { transform: translate(90px, 60px) scale(1.2); } }
+@keyframes drift2 { to { transform: translate(-80px, 70px) scale(1.15); } }
+.aurora i { position: absolute; inset: 0; background-image: radial-gradient(color-mix(in srgb, var(--ink) 16%, transparent) 1px, transparent 1.2px); background-size: 22px 22px; -webkit-mask-image: linear-gradient(180deg, #000, transparent 75%); mask-image: linear-gradient(180deg, #000, transparent 75%); opacity: .5; }
+.head h1 { background: linear-gradient(100deg, var(--ink) 40%, color-mix(in srgb, var(--brand) 80%, var(--ink)) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+/* entrance: blocks rise out of a soft blur, springy */
+.rv { filter: blur(7px); transform: translateY(22px) scale(.97); }
+.rv.in { filter: none; transition: opacity .55s var(--ease), transform .9s var(--spring), filter .6s var(--ease); transition-delay: var(--d, 0ms); }
+/* the stop / target line draws itself, then the price pin lands */
+.rv:not(.in) .ruler .zl { transform: scaleX(0); transform-origin: 100% 50%; }
+.rv:not(.in) .ruler .zw { transform: scaleX(0); transform-origin: 0 50%; }
+.rv:not(.in) .ruler .entry { transform: scaleY(0); }
+.rv:not(.in) .ruler .lb > div { opacity: 0; transform: translateY(6px); }
+.ruler .zl, .ruler .zw { transition: transform .9s var(--ease) .25s; }
+.ruler .entry { transition: transform .5s var(--spring) .15s; }
+.ruler .lb > div { transition: opacity .5s .6s, transform .6s var(--spring) .6s; }
+
+/* pointer tilt with a light that follows the finger or cursor */
+.sig, .pcard, .callcard, .xhero { --rx: 0deg; --ry: 0deg; transform-style: preserve-3d; }
+@media (hover: hover) {
+  .sig:hover, .pcard:hover, .callcard:hover { transform: perspective(1000px) rotateX(var(--rx)) rotateY(var(--ry)) translateY(-4px); transition: transform .12s linear, box-shadow .3s; }
+  .sig .glare, .pcard .glare, .callcard .glare { position: absolute; inset: 0; pointer-events: none; z-index: 3; opacity: 0; transition: opacity .3s; background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), rgba(255,255,255,.28), transparent 60%); mix-blend-mode: soft-light; }
+  .sig:hover .glare, .pcard:hover .glare, .callcard:hover .glare { opacity: 1; }
+}
+
+/* tab bar: glowing pill, icon hops when chosen */
+#tabs .ind { box-shadow: var(--hi), 0 0 0 1px var(--edge), 0 8px 18px -8px color-mix(in srgb, var(--brand) 55%, transparent); }
+.tab[aria-current="page"] svg { animation: hop .5s var(--spring); filter: drop-shadow(0 4px 8px color-mix(in srgb, var(--brand) 45%, transparent)); }
+@keyframes hop { 0% { transform: translateY(5px) scale(.85); } 100% { transform: translateY(-1px) scale(1.06); } }
+
+/* simpler cards: more air, one strong number */
+.sig { padding: 18px; }
+.sig .px .v { font-size: 20px; }
+.sig .nm .t { font-size: 19px; }
+.sig .acts { margin-top: 16px; }
+.scan-rule { padding: 11px 14px; font-size: 14px; display: flex; align-items: center; gap: 10px; }
+.scan-rule > svg { position: static; flex: none; }
+@media (prefers-reduced-motion: reduce) { .aurora::before, .aurora::after, .tab[aria-current="page"] svg { animation: none; } .rv { filter: none; } }

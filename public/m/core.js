@@ -502,7 +502,7 @@ async function render(r, how) {
     clearStack();
     const el = await showRoot(r.tab, r);
     if (how === 'tab' && prevTab === r.tab) el.scrollTo({ top: 0, behavior: RM ? 'auto' : 'smooth' });
-    else if (how === 'tab') anim(el, [{ opacity: .4 }, { opacity: 1 }], { duration: 180 });
+    else if (how === 'tab') anim(el, [{ opacity: 0, filter: 'blur(8px)', transform: 'translateY(12px)' }, { opacity: 1, filter: 'blur(0)', transform: 'none' }], { duration: 420 });
     return;
   }
   const key = keyOf(r);
@@ -560,7 +560,7 @@ export function back(fallback) { if (stack.length && history.state && history.st
 
 /** Shared chrome for every screen: a compact bar that becomes solid on scroll, plus a large title. */
 export function chrome(el, { title, sub = '', back: backTo, actions = '', when = '' }) {
-  el.innerHTML = `<div class="aurora" aria-hidden="true"></div><header class="bar">${backTo != null ? `<button class="ib back" data-back aria-label="Back">${icon('back', 22)}<span>${esc(backTo)}</span></button>` : '<span class="sp"></span>'}<div class="bt">${esc(title)}</div>${actions || '<span class="sp"></span>'}</header>
+  el.innerHTML = `<div class="aurora" aria-hidden="true"><i></i></div><header class="bar">${backTo != null ? `<button class="ib back" data-back aria-label="Back">${icon('back', 22)}<span>${esc(backTo)}</span></button>` : '<span class="sp"></span>'}<div class="bt">${esc(title)}</div>${actions || '<span class="sp"></span>'}</header>
   <div class="head"><h1>${esc(title)}</h1>${sub ? `<p>${sub}</p>` : ''}${when ? `<div class="when">${when}</div>` : ''}</div><div class="wrap body"></div>`;
   const bar = el.querySelector('.bar'), head = el.querySelector('.head h1');
   const on = () => bar.classList.toggle('solid', el.scrollTop > (head ? head.offsetTop + head.offsetHeight - 52 : 40));
@@ -587,6 +587,17 @@ export function boot() {
     e.preventDefault();
     go(a.getAttribute('href').slice(CFG.base.length + 1));
   });
+  if (matchMedia('(hover: hover)').matches && !RM) {
+    const T = '.sig, .pcard, .callcard';
+    document.addEventListener('pointermove', e => {
+      const c = e.target.closest && e.target.closest(T); if (!c) return;
+      if (!c.querySelector(':scope > .glare')) { const g = document.createElement('span'); g.className = 'glare'; c.appendChild(g); }
+      const b = c.getBoundingClientRect(), x = (e.clientX - b.left) / b.width, y = (e.clientY - b.top) / b.height;
+      c.style.setProperty('--ry', ((x - .5) * 7).toFixed(2) + 'deg'); c.style.setProperty('--rx', ((.5 - y) * 5).toFixed(2) + 'deg');
+      c.style.setProperty('--mx', (x * 100).toFixed(1) + '%'); c.style.setProperty('--my', (y * 100).toFixed(1) + '%');
+    }, { passive: true });
+    document.addEventListener('pointerout', e => { const c = e.target.closest && e.target.closest(T); if (c && !c.contains(e.relatedTarget)) { c.style.setProperty('--rx', '0deg'); c.style.setProperty('--ry', '0deg'); } });
+  }
   W.addEventListener('popstate', () => render(parse(), 'pop'));
   history.replaceState({ d: parse().root ? 0 : 1 }, '', location.href);
   render(parse(), 'load');
