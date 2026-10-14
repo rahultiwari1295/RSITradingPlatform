@@ -1,4 +1,4 @@
-import { api, chrome, fill, fmt, esc, icon, ok, link, mono, tone, loadTerminal, share, STRAT_WHAT, empty } from '../core.js';
+import { api, chrome, fill, fmt, esc, icon, ok, link, mono, tone, loadTerminal, share, empty, engineOf, engineBadge, ENGINES } from '../core.js';
 import { priceChart, toCandles, withEmas } from '../charts.js';
 import { sec, statCell, closedRow, footNote } from './parts.js';
 
@@ -15,7 +15,7 @@ export default async function closed(el, r) {
     const win = c.win;
     body.innerHTML = `
       <div class="xhero" style="margin-top:6px">
-        <div class="id">${mono(c.sym, 'lg')}<div style="min-width:0"><div class="t">${esc(c.sym)}</div><div class="s">${esc(c.strategy)}${c.origin ? `, ${String(c.origin).toUpperCase() === 'LIVE' ? 'live call' : 'simulated on past prices'}` : ''}</div></div></div>
+        <div class="id">${mono(c.sym, 'lg')}<div style="min-width:0"><div class="t">${esc(c.sym)}</div><div class="s idline">${engineBadge(c)}${c.origin ? `<span>${String(c.origin).toUpperCase() === 'LIVE' ? 'Live call' : 'Simulated on past prices'}</span>` : ''}</div></div></div>
         <div class="pr"><span class="v tnum ${tone(c.roi)}">${fmt.sp(c.roi, 2)}</span><span class="pill ${win ? 'up' : 'dn'}">${win ? 'Profit' : 'Loss'}</span></div>
         <p class="small" style="margin:6px 0 0">${esc(c.reason)} after ${fmt.days(c.days)}.</p>
         <div class="flows" style="margin-top:16px">
@@ -24,8 +24,7 @@ export default async function closed(el, r) {
         </div>
       </div>
       ${sec('Chart', `<div class="panel pad"><div class="chart-head"><div><div class="v" id="z-v"></div><div class="w" id="z-w"></div></div><div class="d" id="z-d"></div></div><div id="z-chart"></div></div>`, { p: 'The dashed lines are the buy and sell prices. The marker shows the day of entry.' })}
-      ${STRAT_WHAT[c.stratId] ? sec('The strategy', `<div class="panel pad"><div class="h3">${esc(c.strategy)}</div><p class="prose" style="margin:4px 0 0">${esc(STRAT_WHAT[c.stratId])}</p></div>`) : ''}
-      ${sec('More from this strategy', `<div class="group">${t.closed.filter(x => x.stratId === c.stratId && x.id !== c.id).slice(0, 6).map(closedRow).join('')}</div>`)}
+      ${sec(`More ${ENGINES[engineOf(c)].name} trades`, `<div class="group">${t.closed.filter(x => engineOf(x) === engineOf(c) && x.id !== c.id).slice(0, 6).map(closedRow).join('')}</div>`)}
       <section class="sec">${link(`xray/${encodeURIComponent(c.sym)}`, `${icon('xray', 20)}Open the ${esc(c.sym)} X-Ray`, 'btn ghost block')}</section>
       ${footNote()}`;
     const ch = body.querySelector('#z-chart');

@@ -1,9 +1,9 @@
-import { api, chrome, fill, fmt, esc, ok, n, tone, q, count, stratName, sentence, toDate } from '../core.js';
+import { api, chrome, fill, fmt, esc, ok, n, tone, q, count, sentence, toDate } from '../core.js';
 import { areaChart, barChart } from '../charts.js';
 import { sec, footNote, statCell } from './parts.js';
 
 export default async function record(el) {
-  const body = chrome(el, { title: 'Track record', back: 'AI Calls', sub: 'Every AI call the engines have closed, wins and losses, and how the paper account has moved.' });
+  const body = chrome(el, { title: 'Track record', back: 'AI Calls', sub: 'Every closed AI call, wins and losses.' });
   body.innerHTML = `<div id="r-duo"></div><div id="r-eq"></div><div id="r-mon"></div><div id="r-str"></div>${footNote()}`;
   const stops = [];
 
@@ -23,15 +23,7 @@ export default async function record(el) {
       body.querySelector('#r-mon').innerHTML = sec('Profit and loss by month', `<div class="panel pad"><div id="r-bars"></div><p class="tiny" style="margin:8px 0 0">Rupees made or lost each month on the paper account. Hold and drag to read a month.</p></div>`);
       stops.push(barChart(body.querySelector('#r-bars'), months, { fmt: v => fmt.lakh(v).replace(/^₹/, '+₹'), height: 170, label: 'Monthly profit and loss' }));
     }
-    const strat = Object.entries(rec.byStrategy || {}).map(([k, s]) => ({ k, ...s })).sort((a, b) => n(b.expectancyPct) - n(a.expectancyPct));
-    if (strat.length) {
-      const mx = Math.max(...strat.map(s => Math.abs(n(s.expectancyPct)) || 0), 1);
-      body.querySelector('#r-str').innerHTML = sec('By strategy', `<div class="group">${strat.map(s => `<div class="row plain" style="display:grid;grid-template-columns:1fr auto;gap:4px 12px">
-        <div class="main"><div class="t">${esc(stratName(s.k))}</div><div class="s">${fmt.int(s.trades)} trades, ${fmt.pct(s.winRate, 0)} won, profit factor ${fmt.x(s.profitFactor)}</div></div>
-        <div class="end"><div class="v ${tone(s.expectancyPct)} tnum">${fmt.sp(s.expectancyPct, 2)}</div><div class="d faint">per trade</div></div>
-        <div style="grid-column:1/-1;height:4px;border-radius:2px;background:var(--sunk);overflow:hidden"><i style="display:block;height:100%;width:${Math.abs(n(s.expectancyPct)) / mx * 100}%;background:${n(s.expectancyPct) >= 0 ? 'var(--up-solid)' : 'var(--dn-solid)'};border-radius:2px;animation:grow 1s cubic-bezier(.2,.8,.2,1) both"></i></div></div>`).join('')}</div>
-        ${rec.note ? `<p class="tiny" style="margin:10px 2px 0">${esc(sentence(rec.note))}</p>` : ''}`);
-    }
+    if (rec.note) body.querySelector('#r-str').innerHTML = `<p class="tiny" style="margin:14px 2px 0">${esc(sentence(rec.note))}</p>`;
   }, '<div class="sk" style="height:380px;border-radius:16px"></div>');
 
   fill(body.querySelector('#r-eq'), () => api('/equity-curve', 15), eq => {

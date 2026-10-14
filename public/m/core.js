@@ -1,4 +1,4 @@
-import { heroHTML } from './hero.js';
+import { titleHTML } from './hero.js';
 /* QuantSync mobile: core. Data access, formatting, icons, router, screens, sheets, account.
    Every number shown anywhere in the app comes through api() from the live VPS endpoints. */
 
@@ -12,6 +12,8 @@ export const CFG = Object.assign({
   lab: onVercel ? '/lab/api/v1' : '/lab/v1',
   firebase: { apiKey: 'AIzaSyDE7DrgzliyLF6SFbJi7lKqOsAvK3rtrIU', authDomain: 'scantoknow-a1593.firebaseapp.com', projectId: 'scantoknow-a1593', appId: '1:220667916508:web:f105873ba57909e18f0419' },
   firebaseVersion: '10.12.2',
+  firestoreDb: 'ai-studio-angelonetradingt-56679b74-b747-4c8d-b456-56830ab0579c', // the same named database the main app uses
+  ws: 'wss://quantsync-api.duckdns.org:8443/ws/live-market',
 }, W.QS_CONFIG || {});
 
 /* ---------------------------------------------------------------- http */
@@ -136,6 +138,10 @@ const P = {
   grid: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
   arrowUp: '<path d="M12 19V5M6 11l6-6 6 6"/>',
   arrowDn: '<path d="M12 5v14M6 13l6 6 6-6"/>',
+  chip: '<rect x="6" y="6" width="12" height="12" rx="2.5"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M9.5 2.8V6M14.5 2.8V6M9.5 18v3.2M14.5 18v3.2M2.8 9.5H6M2.8 14.5H6M18 9.5h3.2M18 14.5h3.2"/>',
+  arrowUR: '<path d="M7 17 17 7M8.5 7H17v8.5"/>',
+  chart: '<path d="M4 19.5h16"/><path d="M6.5 16V11M11 16V7M15.5 16v-4M20 16V9" />',
+  wave: '<path d="M3 15c2.5 0 3-6 5.5-6s3 8 5.5 8 3-11 7-11"/>',
 };
 export const icon = (k, s = 20, cls = '') => `<svg class="${cls}" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[k] || ''}</svg>`;
 export const tabIcon = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[k + 'F'] || ''}${P[k]}</svg>`;
@@ -204,10 +210,10 @@ export const empty = (ic, h, p, cta = '') => `<div class="empty"><div class="ic"
 export const delta = (v, d = 1) => `<span class="delta ${tone(v)}">${fmt.sp(v, d)}</span>`;
 export const link = (path, inner, cls = '', attrs = '') => `<a href="${CFG.base}/${path}" data-nav class="${cls}" ${attrs}>${inner}</a>`;
 /* ---------------------------------------------------------------- staged reveal */
-const REVEAL = '.sec, .hero, .xhero, .sig, .callcard, .pcard, .stats, .panel, .group, .tk, .scan-rule, .duo .side, .verdict, .lab-promo, .empty, .flowline, .pfhero, .kv, .story';
+const REVEAL = '.sec, .mk, .bento > *, .xhero, .sig, .callcard, .pcard, .stats, .panel, .group, .tk, .duo .side, .verdict, .empty, .flowline, .pfhero, .kv, .story, .sig-sec';
 const rio = 'IntersectionObserver' in W ? new IntersectionObserver(es => {
   let i = 0;
-  es.forEach(e => { if (!e.isIntersecting) return; rio.unobserve(e.target); e.target.style.setProperty('--d', Math.min(i++ * 70, 420) + 'ms'); requestAnimationFrame(() => e.target.classList.add('in')); });
+  es.forEach(e => { if (!e.isIntersecting) return; rio.unobserve(e.target); e.target.style.setProperty('--d', Math.min(i++ * 45, 270) + 'ms'); requestAnimationFrame(() => e.target.classList.add('in')); });
 }, { rootMargin: '0px 0px -4% 0px', threshold: .01 }) : null;
 /** Let blocks rise in once, in order. Fail-safe: anything still hidden after a moment is shown anyway. */
 export function reveal(root) {
@@ -218,7 +224,7 @@ export function reveal(root) {
     el.dataset.rv = 1; el.classList.add('rv'); mine.push(el);
     requestAnimationFrame(() => rio.observe(el));
   });
-  if (mine.length) setTimeout(() => mine.forEach(el => { el.classList.add('in'); }), 1400);
+  if (mine.length) setTimeout(() => mine.forEach(el => { el.classList.add('in'); }), 1200);
 }
 /** Load into a slot with skeleton, error and retry handled the same way everywhere. */
 export async function fill(el, load, draw, sk = skel(80, 2), { quiet = false } = {}) {
@@ -263,51 +269,81 @@ export const count = (v, f = 'int', d) => { const x = n(v); if (!isFinite(x)) re
 
 /* ---------------------------------------------------------------- account: Google sign-in (Firebase), holdings */
 export const auth = { user: null, ready: false, subs: new Set() };
-const loadScript = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+/* Same Firebase project, auth session and Firestore document (users/{uid}.portfolio) as the main app, so a signed-in
+   user sees the same manual portfolio here. Loaded as ES modules from gstatic only when an account screen needs them. */
 let fbP = null;
+const FB = {};
 function fb() {
   if (fbP) return fbP;
-  const giveUp = setTimeout(() => { if (!auth.ready) { auth.ready = true; auth.subs.forEach(f => f(null)); } }, 6000); // never leave the portfolio waiting on a slow sign-in script
+  const giveUp = setTimeout(() => { if (!auth.ready) { auth.ready = true; auth.subs.forEach(f => f(null)); } }, 7000); // never leave the portfolio waiting on a slow sign-in script
   fbP = (async () => {
-    const v = CFG.firebaseVersion;
-    await loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-app-compat.js`);
-    await loadScript(`https://www.gstatic.com/firebasejs/${v}/firebase-auth-compat.js`);
-    if (!W.firebase.apps.length) W.firebase.initializeApp(CFG.firebase);
-    const a = W.firebase.auth();
-    await new Promise(res => a.onAuthStateChanged(u => { const was = auth.ready && auth.user === u; auth.user = u; auth.ready = true; clearTimeout(giveUp); if (!was) auth.subs.forEach(f => f(u)); res(); }));
-    return a;
+    const v = CFG.firebaseVersion, base = `https://www.gstatic.com/firebasejs/${v}/`;
+    const [A, U, S] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-firestore.js')]);
+    const app = A.getApps().length ? A.getApp() : A.initializeApp(CFG.firebase);
+    Object.assign(FB, { U, S, auth: U.getAuth(app), db: S.getFirestore(app, CFG.firestoreDb) });
+    await new Promise(res => U.onAuthStateChanged(FB.auth, u => { const was = auth.ready && auth.user === u; auth.user = u; auth.ready = true; clearTimeout(giveUp); if (!was) auth.subs.forEach(f => f(u)); res(); }));
+    return FB.auth;
   })().catch(e => { console.warn('[auth]', e); auth.ready = true; auth.subs.forEach(f => f(null)); return null; });
   return fbP;
 }
 auth.init = fb;
 auth.onChange = f => { auth.subs.add(f); if (auth.ready) f(auth.user); return () => auth.subs.delete(f); };
-auth.whenReady = () => (auth.ready ? Promise.resolve(auth.user) : Promise.race([fb(), new Promise(r => setTimeout(r, 6000))]).then(() => auth.user));
-auth.signIn = async () => { const a = await fb(); if (!a) throw new Error('Sign-in is unavailable right now.'); const p = new W.firebase.auth.GoogleAuthProvider(); try { await a.signInWithPopup(p); } catch (e) { if (/popup/i.test(e.code || '')) await a.signInWithRedirect(p); else throw e; } };
-auth.signOut = async () => { const a = await fb(); if (a) await a.signOut(); };
+auth.whenReady = () => (auth.ready ? Promise.resolve(auth.user) : Promise.race([fb(), new Promise(r => setTimeout(r, 7000))]).then(() => auth.user));
+auth.signIn = async () => {
+  const a = await fb(); if (!a) throw new Error('Sign-in is unavailable right now.');
+  const p = new FB.U.GoogleAuthProvider();
+  try { await FB.U.signInWithPopup(a, p); } catch (e) { if (/popup/i.test(e.code || '')) await FB.U.signInWithRedirect(a, p); else throw e; }
+};
+auth.signOut = async () => { const a = await fb(); if (a) await FB.U.signOut(a); };
 auth.token = async () => { if (!auth.user) return null; try { return await auth.user.getIdToken(); } catch { return null; } };
-async function lab(method, path, body) {
-  const h = { Accept: 'application/json' };
-  if (body) h['Content-Type'] = 'application/json';
-  const t = await auth.token(); if (t) h.Authorization = 'Bearer ' + t;
-  const r = await fetch(CFG.lab + path, { method, headers: h, body: body ? JSON.stringify(body) : undefined });
-  if (!r.ok) throw new Error(r.status === 401 ? 'Sign in again to sync your portfolio.' : 'Could not reach your account right now.');
-  return r.json();
-}
+
 const HK = 'qs-holdings'; // shared with the scanner app at /app, so both show the same portfolio
 const local = { get() { try { const v = JSON.parse(localStorage.getItem(HK) || '[]'); return Array.isArray(v) ? v : []; } catch { return []; } }, set(v) { try { localStorage.setItem(HK, JSON.stringify(v)); } catch { /* storage blocked */ } } };
+const symOf = p => String(p?.symbol || p?.sym || '').toUpperCase().trim();
+/** One holding per stock from the main app's trade entries: shares added up, buy price weighted by shares. */
+function fromCloud(list) {
+  const by = new Map();
+  (Array.isArray(list) ? list : []).forEach(p => {
+    const sym = symOf(p), avg = n(p.buyPrice ?? p.avg_price ?? p.entryPrice);
+    let qty = n(p.quantity ?? p.qty ?? p.shares);
+    if (!(qty > 0) && n(p.totalInvested) > 0 && avg > 0) qty = Math.round(n(p.totalInvested) / avg);
+    if (!(qty > 0) && avg > 0) qty = 1; // older entries saved without a share count still show up; the person can edit it
+    if (!sym || !(qty > 0)) return;
+    const h = by.get(sym) || { symbol: sym, qty: 0, cost: 0, priced: 0 };
+    h.qty += qty; if (avg > 0) { h.cost += avg * qty; h.priced += qty; }
+    by.set(sym, h);
+  });
+  return [...by.values()].map(h => ({ symbol: h.symbol, qty: h.qty, avg_price: h.priced ? +(h.cost / h.priced).toFixed(2) : null }));
+}
+const userRef = () => FB.S.doc(FB.db, 'users', auth.user.uid);
+async function readCloud() { const s = await FB.S.getDoc(userRef()); return s.exists() && Array.isArray(s.data().portfolio) ? s.data().portfolio : []; }
+/** Write back to users/{uid}.portfolio. Stocks the person did not change keep their original entries untouched. */
+async function writeCloud(items) {
+  const old = await readCloud(), before = fromCloud(old), next = [];
+  const today = new Date().toISOString().slice(0, 10);
+  items.forEach(h => {
+    const sym = symOf(h), qty = n(h.qty), avg = n(h.avg_price), was = before.find(b => b.symbol === sym), entries = old.filter(o => symOf(o) === sym);
+    if (was && was.qty === qty && (was.avg_price === avg || (!isFinite(avg) && was.avg_price == null))) { next.push(...entries); return; }
+    const base = entries[0] || { tradeId: 'm_' + sym + '_' + Date.now().toString(36), symbol: sym, buyDate: today, date: today };
+    next.push({ ...base, symbol: sym, quantity: qty, buyPrice: isFinite(avg) ? avg : (base.buyPrice ?? null), totalInvested: isFinite(avg) ? +(avg * qty).toFixed(2) : (base.totalInvested ?? null) });
+  });
+  await FB.S.setDoc(userRef(), { portfolio: next, email: auth.user.email || null }, { merge: true });
+}
 export const holdings = {
   async get() {
     await auth.whenReady();
-    if (!auth.user) return { items: local.get(), where: 'device' };
+    if (!auth.user || !FB.db) return { items: local.get(), where: 'device' };
     try {
-      const r = await lab('GET', '/me/holdings');
-      let items = (r.items || []).map(h => ({ symbol: h.symbol, qty: h.qty, avg_price: h.avg_price }));
-      const lc = local.get();
-      if (!items.length && lc.length) { await lab('PUT', '/me/holdings', { items: lc }); items = lc; local.set([]); }
+      let items = fromCloud(await readCloud());
+      const lc = local.get().filter(l => !items.some(i => i.symbol === symOf(l)));
+      if (lc.length) { items = items.concat(lc); await writeCloud(items); local.set([]); } // keep anything typed before signing in
       return { items, where: 'account' };
-    } catch (e) { return { items: local.get(), where: 'device', error: e.message }; }
+    } catch (e) { console.warn('[portfolio]', e); return { items: local.get(), where: 'device', error: 'Could not reach your account. Showing stocks saved on this phone.' }; }
   },
-  async set(items) { if (auth.user) await lab('PUT', '/me/holdings', { items }); else local.set(items); },
+  async set(items) {
+    if (auth.user && FB.db) { try { await writeCloud(items); } catch (e) { console.warn('[portfolio]', e); throw new Error('Could not save to your account. Check your connection.'); } }
+    else local.set(items);
+  },
 };
 /** Paper trades: practice positions taken from new signals. Kept on this device only. */
 const PK = 'qs-paper';
@@ -369,14 +405,42 @@ export function toClosed(c) {
     spark: (c.sparkline || c.miniChart?.sparkline || []).map(n).filter(isFinite), r: n(c.r),
   };
 }
-export async function loadTerminal() {
-  const d = await api('/terminal-data?version=v2', 3);
-  const active = (d.active || d.inTradeTrades || []).map(toCall);
-  const toBuy = (d.toBuySignals || []).map(a => ({ ...toCall(a), isNew: true })).sort((a, b) => (b.score || 0) - (a.score || 0));
-  const closed = (d.closedTrades || d.closed || []).map(toClosed).filter(c => isFinite(c.roi));
-  closed.sort((a, b) => (b.exitDate || '').localeCompare(a.exitDate || ''));
+/* Two engines make the AI calls. People see them by name only, never by internal strategy. */
+export const ENGINES = {
+  v2: { k: 'v2', name: 'AI Pro', what: 'Our main engine. It finds stocks in strong uptrends that break out on heavy volume, and an AI model ranks each one before it becomes a call.' },
+  v3: { k: 'v3', name: 'Chart AI Pro', what: 'Reads the chart itself: bases, flags and support zones. An AI model checks each setup before it becomes a call.' },
+};
+export const engineOf = c => (String(c?.engine || '').toLowerCase() === 'v3' ? 'v3' : 'v2');
+export const engineName = c => ENGINES[engineOf(c)].name;
+/** Small badge with a chip icon: AI Pro or Chart AI Pro. */
+export const engineBadge = (c, cls = '') => { const e = engineOf(c); return `<span class="eng e-${e} ${cls}">${icon('chip', 13)}${ENGINES[e].name}</span>`; };
+/** Link path for a call; Chart AI Pro calls carry ?e=v3 so the same stock in both engines stays distinct. */
+export const callPath = c => `calls/${encodeURIComponent(c.sym)}${engineOf(c) === 'v3' ? '?e=v3' : ''}`;
+
+async function oneEngine(v) {
+  const d = await api('/terminal-data?version=' + v, 3);
+  const tag = x => ({ ...x, engine: v });
+  const active = (d.active || d.inTradeTrades || []).map(a => tag(toCall(a)));
+  const toBuy = (d.toBuySignals || []).map(a => ({ ...tag(toCall(a)), isNew: true }));
+  const closed = (d.closedTrades || d.closed || []).map(c => tag(toClosed(c))).filter(c => isFinite(c.roi));
   return { active, toBuy, closed, kpis: d.kpis || {}, at: d.generatedAt || '' };
 }
+/** Both engines, merged. AI Pro is required; Chart AI Pro is added when it answers. */
+export async function loadTerminal() {
+  const [a, b] = await Promise.all([oneEngine('v2'), oneEngine('v3').catch(() => null)]);
+  const out = { active: a.active, toBuy: a.toBuy, closed: a.closed, kpis: a.kpis, at: a.at };
+  if (b) {
+    const seen = new Set(out.closed.map(c => c.id));
+    out.active = out.active.concat(b.active); out.toBuy = out.toBuy.concat(b.toBuy);
+    out.closed = out.closed.concat(b.closed.filter(c => !seen.has(c.id)));
+    if (b.at > out.at) out.at = b.at;
+  }
+  out.toBuy.sort((x, y) => (y.score || 0) - (x.score || 0));
+  out.closed.sort((x, y) => (y.exitDate || '').localeCompare(x.exitDate || ''));
+  return out;
+}
+/** Open signals: new ones first, then held ones, one entry per stock and engine. */
+export const allSignals = t => { const key = c => c.sym + '|' + engineOf(c); const s = new Set(t.toBuy.map(key)); return [...t.toBuy, ...t.active.filter(c => !s.has(key(c)))]; };
 
 /* pattern calls (Radar engine) */
 export function stageOf(r, origin = '') {
@@ -483,12 +547,13 @@ function title(r) {
   const t = { today: 'Today', calls: 'AI Calls', patterns: 'Pattern Calls', xray: 'Stock X-Ray', portfolio: 'Portfolio', record: 'Track record', market: 'Market map' }[r.view] || r.arg;
   document.title = (t ? t + ' · ' : '') + 'QuantSync';
 }
-const anim = (el, kf, o) => (RM || !el.animate ? Promise.resolve() : el.animate(kf, { duration: 380, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'both', ...o }).finished.catch(() => {}));
+const anim = (el, kf, o) => (RM || !el.animate ? Promise.resolve() : el.animate(kf, { duration: 340, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'both', ...o }).finished.catch(() => {}));
 
 async function showRoot(tab, r, fresh) {
   let el = roots[tab];
-  if (!el) { el = roots[tab] = newScreen('root'); el._cleanup = await draw(el, r); el._t = Date.now(); }
-  else if (fresh || Date.now() - (el._t || 0) > 5 * MIN) { const st = el.scrollTop; el._cleanup && el._cleanup(); el._cleanup = await draw(el, r); el._t = Date.now(); el.scrollTop = st; }
+  const qs = r.query.toString();
+  if (!el) { el = roots[tab] = newScreen('root'); el._cleanup = await draw(el, r); el._t = Date.now(); el._qs = qs; }
+  else if (fresh || (qs && qs !== el._qs) || Date.now() - (el._t || 0) > 5 * MIN) { el._qs = qs; const st = el.scrollTop; el._cleanup && el._cleanup(); el._cleanup = await draw(el, r); el._t = Date.now(); el.scrollTop = st; }
   Object.entries(roots).forEach(([k, s]) => { s.hidden = k !== tab; });
   return el;
 }
@@ -503,7 +568,7 @@ async function render(r, how) {
     clearStack();
     const el = await showRoot(r.tab, r);
     if (how === 'tab' && prevTab === r.tab) el.scrollTo({ top: 0, behavior: RM ? 'auto' : 'smooth' });
-    else if (how === 'tab') anim(el, [{ opacity: 0, filter: 'blur(8px)', transform: 'translateY(12px)' }, { opacity: 1, filter: 'blur(0)', transform: 'none' }], { duration: 420 });
+    else if (how === 'tab') anim(el, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 240 });
     return;
   }
   const key = keyOf(r);
@@ -520,7 +585,7 @@ async function render(r, how) {
   const p = draw(el, r).then(c => { entry.cleanup = c; });
   if (how === 'push') {
     anim(el, [{ transform: 'translateX(100%)' }, { transform: 'none' }]);
-    if (below) anim(below, [{ transform: 'none', filter: 'brightness(1)' }, { transform: 'translateX(-24%)', filter: 'brightness(.94)' }]).then(() => { if (below.isConnected) { below.hidden = true; below.getAnimations().forEach(a => a.cancel()); } });
+    if (below) anim(below, [{ transform: 'none', opacity: 1 }, { transform: 'translateX(-24%)', opacity: .6 }]).then(() => { if (below.isConnected) { below.hidden = true; below.getAnimations().forEach(a => a.cancel()); } });
   } else if (below) below.hidden = true;
   edgeSwipe(el);
   await p;
@@ -528,8 +593,8 @@ async function render(r, how) {
 async function popTop() {
   const top = stack.pop(); if (!top) return;
   const below = stack.length ? stack[stack.length - 1].el : roots[curTab];
-  if (below) { below.hidden = false; anim(below, [{ transform: 'translateX(-24%)', filter: 'brightness(.94)' }, { transform: 'none', filter: 'brightness(1)' }], { duration: 320 }).then(() => below.getAnimations().forEach(a => a.cancel())); }
-  await anim(top.el, [{ transform: top.el.style.transform || 'none' }, { transform: 'translateX(100%)' }], { duration: 320 });
+  if (below) { below.hidden = false; anim(below, [{ transform: 'translateX(-24%)', opacity: .6 }, { transform: 'none', opacity: 1 }], { duration: 300 }).then(() => below.getAnimations().forEach(a => a.cancel())); }
+  await anim(top.el, [{ transform: top.el.style.transform || 'none' }, { transform: 'translateX(100%)' }], { duration: 300 });
   top.cleanup && top.cleanup(); top.el.remove();
 }
 function edgeSwipe(el) {
@@ -559,26 +624,39 @@ export function go(path, { replace = false } = {}) {
 }
 export function back(fallback) { if (stack.length && history.state && history.state.d > 0) history.back(); else go(fallback || '', { replace: true }); }
 
-/** Shared chrome for every screen: a compact bar that becomes solid on scroll, plus a large title. */
-export function chrome(el, { title, sub = '', back: backTo, actions = '', when = '', hero = null }) {
-  el.innerHTML = `<div class="aurora" aria-hidden="true"><i></i></div><header class="bar">${backTo != null ? `<button class="ib back" data-back aria-label="Back">${icon('back', 22)}<span>${esc(backTo)}</span></button>` : '<span class="sp"></span>'}<div class="bt">${esc(title)}</div>${actions || '<span class="sp"></span>'}</header>
-  ${hero ? `<div class="wrap herowrap">${heroHTML(hero)}</div>` : `<div class="head"><h1>${esc(title)}</h1>${sub ? `<p>${sub}</p>` : ''}${when ? `<div class="when">${when}</div>` : ''}</div>`}<div class="wrap body"></div>`;
-  const bar = el.querySelector('.bar'), head = el.querySelector('.head h1'), art = el.querySelector('.q-art'), hc = el.querySelector('.q-hcopy');
-  let tick = 0;
-  const on = () => {
-    tick = 0; const st = el.scrollTop;
-    bar.classList.toggle('solid', st > (hero ? 240 : head ? head.offsetTop + head.offsetHeight - 52 : 40));
-    if (art && !RM && st < 900) {
-      art.style.transform = st > 0 ? `translate3d(0,${(st * .3).toFixed(1)}px,0) scale(${(1 + st / 2400).toFixed(4)})` : '';
-      art.style.opacity = (1 - Math.min(1, Math.max(0, st / 420))).toFixed(3);
-      hc.style.transform = st > 0 ? `translate3d(0,${(st * .1).toFixed(1)}px,0)` : '';
-      hc.style.opacity = (1 - Math.min(1, Math.max(0, (st - 120) / 380))).toFixed(3);
-    }
-  };
+/** Shared chrome for every screen: a compact bar that turns solid on scroll, then the page title block.
+    top: { meta, h, hl, sub, extra } for tab pages. Detail pages pass only title and sub. */
+export function chrome(el, { title, sub = '', back: backTo, actions = '', top = null }) {
+  const t = top || { h: title, sub };
+  el.innerHTML = `<div class="aurora" aria-hidden="true"></div><header class="bar">${backTo != null ? `<button class="ib back" data-back aria-label="Back">${icon('back', 22)}<span>${esc(backTo)}</span></button>` : '<span class="sp"></span>'}<div class="bt">${esc(title)}</div>${actions || '<span class="sp"></span>'}</header>
+  <div class="wrap head">${titleHTML(t)}</div><div class="wrap body"></div>`;
+  const bar = el.querySelector('.bar'), h1 = el.querySelector('.tb-h');
+  let tick = 0, solid = false;
+  const on = () => { tick = 0; const s2 = el.scrollTop > (h1 ? h1.offsetTop + h1.offsetHeight - 40 : 40); if (s2 !== solid) { solid = s2; bar.classList.toggle('solid', s2); } };
   el.addEventListener('scroll', () => { if (!tick) tick = requestAnimationFrame(on); }, { passive: true });
-  const b = el.querySelector('[data-back]'); if (b) b.onclick = () => back(TABS.find(t => t[0] === parse().tab)?.[1]);
+  const b = el.querySelector('[data-back]'); if (b) b.onclick = () => back(TABS.find(t2 => t2[0] === parse().tab)?.[1]);
   return el.querySelector('.body');
 }
+/** Today's date line, e.g. "Wed, 14 Oct". */
+export const todayLine = () => new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' });
+
+/* ---------------------------------------------------------------- live prices (same socket as the main app) */
+export const live = (() => {
+  let ws = null, last = null, retry = 0, timer = 0, ping = 0;
+  const subs = new Set();
+  const open = () => {
+    if (ws || !subs.size || !('WebSocket' in W)) return;
+    try { ws = new WebSocket(CFG.ws); } catch { ws = null; later(); return; }
+    ws.onopen = () => { retry = 0; clearInterval(ping); ping = setInterval(() => { try { ws && ws.readyState === 1 && ws.send('{"type":"ping"}'); } catch { /* closed */ } }, 20000); };
+    ws.onmessage = e => { try { const d = JSON.parse(e.data); if (d && (d.type === 'TICK' || d.type === 'SUBSCRIBE_ACK') && Array.isArray(d.indices)) { last = d; subs.forEach(f => { try { f(d); } catch (x) { console.warn(x); } }); } } catch { /* not JSON */ } };
+    ws.onclose = () => { ws = null; clearInterval(ping); later(); };
+    ws.onerror = () => { try { ws && ws.close(); } catch { /* already closed */ } };
+  };
+  const later = () => { if (!subs.size) return; clearTimeout(timer); timer = setTimeout(open, Math.min(30000, 1500 * Math.pow(1.6, retry++))); };
+  const stop = () => { clearTimeout(timer); clearInterval(ping); if (ws) { ws.onclose = null; try { ws.close(); } catch { /* closed */ } ws = null; } };
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); else { retry = 0; open(); } });
+  return { on(f) { subs.add(f); if (last) f(last); open(); return () => { subs.delete(f); if (!subs.size) stop(); }; }, last: () => last };
+})();
 export async function share(title, text) {
   const url = location.href;
   try { if (navigator.share) { await navigator.share({ title, text, url }); return; } } catch { return; }
@@ -598,17 +676,6 @@ export function boot() {
     e.preventDefault();
     go(a.getAttribute('href').slice(CFG.base.length + 1));
   });
-  if (matchMedia('(hover: hover)').matches && !RM) {
-    const T = '.sig, .pcard, .callcard';
-    document.addEventListener('pointermove', e => {
-      const c = e.target.closest && e.target.closest(T); if (!c) return;
-      if (!c.querySelector(':scope > .glare')) { const g = document.createElement('span'); g.className = 'glare'; c.appendChild(g); }
-      const b = c.getBoundingClientRect(), x = (e.clientX - b.left) / b.width, y = (e.clientY - b.top) / b.height;
-      c.style.setProperty('--ry', ((x - .5) * 7).toFixed(2) + 'deg'); c.style.setProperty('--rx', ((.5 - y) * 5).toFixed(2) + 'deg');
-      c.style.setProperty('--mx', (x * 100).toFixed(1) + '%'); c.style.setProperty('--my', (y * 100).toFixed(1) + '%');
-    }, { passive: true });
-    document.addEventListener('pointerout', e => { const c = e.target.closest && e.target.closest(T); if (c && !c.contains(e.relatedTarget)) { c.style.setProperty('--rx', '0deg'); c.style.setProperty('--ry', '0deg'); } });
-  }
   W.addEventListener('popstate', () => render(parse(), 'pop'));
   history.replaceState({ d: parse().root ? 0 : 1 }, '', location.href);
   render(parse(), 'load');

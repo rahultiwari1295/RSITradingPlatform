@@ -1,12 +1,12 @@
 /* Building blocks shared by several screens. */
-import { fmt, esc, mono, link, icon, delta, tone, scoreTone, n, q, CFG, paper, sheet, toast, go, toDate } from '../core.js';
+import { fmt, esc, mono, link, icon, delta, tone, scoreTone, n, q, CFG, paper, sheet, toast, go, toDate, engineBadge, engineName, callPath } from '../core.js';
 import { ruler, spark } from '../charts.js';
 
 export function callCard(c, { compact = false } = {}) {
   const fresh = c.isNew || c.days === 0;
   const pill = c.action.includes('EXIT') || c.action.includes('SELL') ? '<span class="pill dn">Sell</span>' : fresh ? '<span class="pill ai">New buy</span>' : `<span class="pill">Day ${fmt.int(c.days)}</span>`;
-  return link(`calls/${encodeURIComponent(c.sym)}`, `
-    <div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}</div><div class="s">${esc(c.strategy)}</div></div>
+  return link(callPath(c), `
+    <div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}</div><div class="s">${engineBadge(c)}</div></div>
       <div class="px"><div class="v tnum">${fmt.px(c.now)}</div>${fresh && Math.abs(c.roi) < .05 ? '<span class="small">at entry</span>' : delta(c.roi)}</div></div>
     ${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: c.now })}
     ${!compact && c.why ? `<p class="why">${esc(c.why)}</p>` : ''}
@@ -15,7 +15,7 @@ export function callCard(c, { compact = false } = {}) {
 
 export function closedRow(c) {
   return link(`calls/closed/${encodeURIComponent(c.id)}`, `${mono(c.sym)}
-    <div class="main"><div class="t">${esc(c.sym)}</div><div class="s">${esc(c.reason)}, ${fmt.days(c.days)}</div></div>
+    <div class="main"><div class="t">${esc(c.sym)}</div><div class="s">${engineBadge(c, 'sm')}<span>${esc(c.reason)}, ${fmt.days(c.days)}</span></div></div>
     <div class="end"><div class="v ${tone(c.roi)} tnum">${fmt.sp(c.roi)}</div><div class="d faint">${fmt.date(c.exitDate)}</div></div>`, 'row');
 }
 
@@ -33,11 +33,9 @@ export function signalCard(c) {
   const fresh = isFreshSignal(c), traded = paper.has(c.sym);
   const run = (c.now / c.entry - 1) * 100;
   const pct = Math.abs(c.roi) < .05 ? '<span class="d0">0.0%</span>' : delta(c.roi);
-  const body = `<div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}${traded ? '<span class="tag paper">Paper traded</span>' : ''}</div><div class="s"><span class="st">${esc(c.strategy)}</span><span class="dot">·</span><b>${ago(c)}</b></div></div><div class="px"><div class="v">${fmt.px(c.now)}</div>${pct}</div></div>`;
-  if (!fresh) {
-    return link(`calls/${encodeURIComponent(c.sym)}`, `${body}${isFinite(run) && run > 1 ? `<p class="note">Already <b>${fmt.sp(run)}</b> above the entry. The best entry has passed.</p>` : ''}`, 'sig old compact', `aria-label="${esc(c.sym)}, old signal, skip"`);
-  }
-  return link(`calls/${encodeURIComponent(c.sym)}`, `${body}${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: c.now }, { short: true })}`, 'sig new', `data-sig="${esc(c.sym)}" aria-label="${esc(c.sym)}, new signal"`);
+  const body = `<div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}${traded ? '<span class="tag paper">Paper</span>' : ''}</div><div class="s">${engineBadge(c)}<span class="ago">${ago(c)}</span></div></div><div class="px"><div class="v">${fmt.px(c.now)}</div>${pct}</div></div>`;
+  if (!fresh) return link(callPath(c), `${body}${isFinite(run) && run > 1 ? `<p class="note">Already <b>${fmt.sp(run)}</b> above the entry.</p>` : ''}`, 'sig old compact', `aria-label="${esc(c.sym)}, ${engineName(c)}, old signal"`);
+  return link(callPath(c), `${body}${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: c.now }, { short: true })}`, 'sig new', `aria-label="${esc(c.sym)}, ${engineName(c)}, fresh signal"`);
 }
 /** Kept for callers that still wire paper-trade buttons (the call detail page). */
 export function bindSignals(root, list, onChange) {
@@ -49,14 +47,14 @@ const head = (t, sub, n, cls = '') => `<div class="sig-sec ${cls}"><div class="h
 export function signalList(list) {
   const fresh = list.filter(isFreshSignal).sort((a, b) => (b.score || 0) - (a.score || 0));
   const old = list.filter(c => !isFreshSignal(c)).sort((a, b) => (a.days || 0) - (b.days || 0));
-  return `${head('Fresh signals', 'Paper trade these.', fresh.length, 'fresh')}
+  return `${head('Fresh signals', 'From the last scan. Paper trade these.', fresh.length, 'fresh')}
     <div class="sig-stack">${fresh.length ? fresh.map(signalCard).join('') : `<div class="empty"><div class="ic">${icon('clock', 24)}</div><h3>No fresh signal in the last scan</h3><p>The scanner runs after every close. New setups appear here first.</p></div>`}</div>
     ${old.length ? `${head('Old signals', 'Skip these. The best entry has passed.', old.length, 'old')}<div class="sig-stack">${old.map(signalCard).join('')}</div>` : ''}`;
 }
 export const scanRule = () => '';
 export const scanLogo = () => `<span class="scan-mark" aria-hidden="true">${icon('target', 17)}</span>`;
 export function paperSheet(c, done) {
-  const s = sheet(`<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">${mono(c.sym, 'lg')}<div><h3 style="margin:0">Paper trade ${esc(c.sym)}</h3><div class="small">${esc(c.strategy)}. Practice money, nothing is bought.</div></div></div>
+  const s = sheet(`<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">${mono(c.sym, 'lg')}<div><h3 style="margin:0">Paper trade ${esc(c.sym)}</h3><div class="small">${engineName(c)} signal. Practice money, nothing is bought.</div></div></div>
     <div class="field"><label for="pp-a">How much to put in (₹)</label><input id="pp-a" inputmode="numeric" value="10000"></div>
     <div class="kv" style="margin:4px 0 14px"><div><div class="k">Shares at ${fmt.px(c.now)}</div><div class="v" id="pp-q">—</div></div><div><div class="k">Most you can lose</div><div class="v dn" id="pp-r">—</div></div><div><div class="k">Stop loss</div><div class="v">${fmt.px(c.stop)}</div></div><div><div class="k">Target</div><div class="v up">${fmt.px(c.target)}</div></div></div>
     <button class="btn block" data-go>${icon('bolt', 18)}Start paper trade</button>
@@ -66,7 +64,7 @@ export function paperSheet(c, done) {
   a.oninput = calc; calc();
   s.el.querySelector('[data-go]').onclick = () => {
     const qty = calc(); if (!(qty > 0)) { a.focus(); return; }
-    paper.add({ sym: c.sym, name: c.name, strategy: c.strategy, qty, entry: c.now, stop: c.stop, target: c.target, signalEntry: c.entry, signalDate: c.entryDate });
+    paper.add({ sym: c.sym, name: c.name, strategy: engineName(c), engine: c.engine, qty, entry: c.now, stop: c.stop, target: c.target, signalEntry: c.entry, signalDate: c.entryDate });
     s.close(); toast(`Paper trade started: ${qty} ${c.sym}`); done && done();
   };
 }

@@ -1,144 +1,164 @@
-import { reveal, api, chrome, fill, fmt, esc, icon, n, ok, clean, sentence, link, mono, delta, tone, marketStatus, loadTerminal, loadPatterns, sheet, q, count, toDate, auth, logo } from '../core.js';
-import { spark, settle, areaChart } from '../charts.js';
-import { patternCard, sparks, sec, labLink, footNote, statCell, signalList, scanRule, scanLogo, bindSignals, isFreshSignal } from './parts.js';
+import { reveal, api, bust, chrome, fill, fmt, esc, icon, n, ok, link, mono, delta, tone, marketStatus, loadTerminal, loadPatterns, allSignals, sheet, q, count, toDate, logo, live, todayLine, engineOf } from '../core.js';
+import { isFreshSignal } from './parts.js';
 
+/* Home: the market in one live card, then three doors: fresh AI signals, confirmed breakouts, near breakout. */
 export default async function today(el) {
   const ms = marketStatus();
+  const hr = +new Date().toLocaleString('en-IN', { hour: 'numeric', hour12: false, timeZone: 'Asia/Kolkata' });
+  const part = hr < 12 ? 'morning' : hr < 17 ? 'afternoon' : 'evening';
   const body = chrome(el, {
     title: 'Today',
-    hero: { art: 'home', icon: icon('target', 16), ey: 'Today', h: 'QuantSync Scanner', hl: ['Scanner'], lede: 'What QuantSync found tonight, what the market did, and what it means for you.', extra: `<div class="when" style="margin-top:14px;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2)"><span class="live-dot ${ms.open ? 'on' : ''}"></span><span id="t-when">${ms.text}</span></div>` },
+    top: { meta: `<span>${todayLine()}</span><i class="sep"></i><span class="live-dot ${ms.open ? 'on' : ''}"></span><span id="t-st">${ms.text}</span>`, h: `Good ${part}`, hl: [part] },
     actions: `<a class="ib" href="/m/xray" data-nav aria-label="Search stocks">${icon('search', 21)}</a>`,
   });
-  el.querySelector('.bar').insertAdjacentHTML('afterbegin', `<span class="bar-logo" style="padding-left:8px;display:flex">${logo(26)}</span>`);
+  el.querySelector('.bar').insertAdjacentHTML('afterbegin', `<span class="bar-logo">${logo(26)}</span>`);
   el.querySelector('.bar .sp')?.remove();
 
   body.innerHTML = `
-    <div id="t-calls"></div>
-    <section class="sec"><div class="sec-h"><h2>The market today</h2></div><div id="t-brief"></div></section>
-    <div id="t-idx" class="tickers two" style="margin-top:10px"></div>
-    <div id="t-record"></div>
-    <div id="t-pat"></div>
-    <div id="t-map"></div>
-    <div class="wide-2"><div id="t-movers"></div><div id="t-news"></div></div>
-    <section class="sec">${labLink()}</section>
-    ${footNote('Market data is from the NSE close and the engines’ nightly run.')}`;
+    <div id="t-mk"></div>
+    <div class="bento" id="t-bento">
+      <a class="door dr-ai" href="/m/calls" data-nav aria-label="Fresh AI signals">
+        <div class="dr-h"><span class="dr-ic">${icon('ai', 18)}</span><span class="dr-k">AI signals</span><span class="go">${icon('arrowUR', 18)}</span></div>
+        <div class="dr-n" id="t-ai-n"><span class="sk sk-n"></span></div><div class="dr-l" id="t-ai-l">fresh from the last scan</div><div class="dr-syms" id="t-ai-s"></div>
+      </a>
+      <a class="door dr-up" href="/m/patterns?stage=Breakout" data-nav aria-label="Confirmed breakouts">
+        <div class="dr-h"><span class="dr-ic">${icon('pattern', 18)}</span><span class="go">${icon('arrowUR', 16)}</span></div>
+        <div class="dr-n" id="t-br-n"><span class="sk sk-n"></span></div><div class="dr-l">Breakouts confirmed</div>
+        <svg class="dr-art" viewBox="0 0 120 44" aria-hidden="true"><path d="M2 20h116" stroke-dasharray="3 4"/><path class="ln" d="M2 36 18 30l12 4 14-9 14 5 12-7 10 3 12-14 14-10 12-4"/></svg>
+      </a>
+      <a class="door dr-near" href="/m/patterns?stage=Near" data-nav aria-label="Near breakout">
+        <div class="dr-h"><span class="dr-ic">${icon('target', 18)}</span><span class="go">${icon('arrowUR', 16)}</span></div>
+        <div class="dr-n" id="t-nr-n"><span class="sk sk-n"></span></div><div class="dr-l">Near breakout</div>
+        <svg class="dr-art" viewBox="0 0 120 44" aria-hidden="true"><path d="M2 14h116" stroke-dasharray="3 4"/><path class="ln" d="M2 38 16 32l14 4 14-10 14 4 14-8 12 3 14-6 12-2 8-1"/></svg>
+      </a>
+    </div>
+    <section class="sec more-sec"><div class="group" id="t-more">
+      ${link('record', `<span class="ri" style="--c:var(--brand)">${icon('chart', 18)}</span><div class="main"><div class="t">Track record</div><div class="s" id="t-rec">Every closed AI call, wins and losses</div></div>${icon('chev', 18, 'chev')}`, 'row')}
+      ${link('market', `<span class="ri" style="--c:var(--up-solid)">${icon('grid', 18)}</span><div class="main"><div class="t">Market map</div><div class="s">Sectors ranked by how many stocks are rising</div></div>${icon('chev', 18, 'chev')}`, 'row')}
+      <a class="row" href="/app/scanner.html"><span class="ri" style="--c:var(--ai-solid)">${icon('flask', 18)}</span><div class="main"><div class="t">Strategy Lab</div><div class="s">Build and test your own scanner</div></div>${icon('chev', 18, 'chev')}</a>
+    </div></section>
+    <p class="foot-note">Research and education, not investment advice. Prices can be delayed.</p>`;
 
-  /* the hero: Nifty today, in one card */
-  const pulse = api('/intel/pulse', 5);
-  const stopHero = [];
-  fill(body.querySelector('#t-brief'), () => pulse, (d, slot) => {
-    const p = d.nifty_profile || {};
-    const px = n(p.price ?? d.nifty_price), ch = n(p.change_pct ?? d.nifty_chg_pct);
-    const stance = sentence(clean(p.stance || d.sentiment || '').toLowerCase());
-    const k = /bull/i.test(stance) ? 'up' : /bear/i.test(stance) ? 'dn' : 'warn';
-    const adv = n(d.advances), dec = n(d.declines), tot = adv + dec;
-    const pos = [ok(p.ema20) && (px > n(p.ema20) ? 'above' : 'below'), ok(p.ema200) && (px > n(p.ema200) ? 'above' : 'below')];
-    const verb = !isFinite(ch) ? 'closed' : ch <= -1 ? 'fell' : ch < 0 ? 'slipped' : ch >= 1 ? 'jumped' : ch > 0 ? 'rose' : 'was flat';
-    let where = '';
-    if (pos[0] && pos[1]) where = pos[0] === pos[1] ? ` and is ${pos[0]} both its 20-day and 200-day averages` : ` and is ${pos[0]} its 20-day but ${pos[1]} its 200-day average`;
-    const head = `Nifty ${verb}${isFinite(ch) && ch !== 0 ? ' ' + fmt.pct(Math.abs(ch), 1) : ''}${where}.`;
-    const closes = (p.spark_closes || (d.indices || [])[0]?.spark || []).map(n).filter(isFinite);
-    slot.innerHTML = `<div class="hero" style="--glow:${ch >= 0 ? "rgba(43,191,133,.22)" : "rgba(242,85,90,.2)"}">
-      <div class="hero-top"><div><div class="hk">Nifty 50</div><div class="hv tnum">${count(px, 'idx')}</div><div class="hd ${tone(ch)}">${fmt.sp(ch, 2)} ${ok(p.change) ? `<span>(${n(p.change) > 0 ? '+' : '−'}${fmt.idx(Math.abs(n(p.change)))})</span>` : ''}</div></div>
-        <span class="pill ${k}">${esc(stance || 'Market mood')}</span></div>
-      <div class="hero-chart" id="t-hc"></div>
-      <h2>${esc(head)}</h2>
-      ${p.summary ? `<p>${esc(sentence(p.summary))}</p>` : ''}
-      ${tot > 0 ? `<div class="breadth"><div class="track" role="img" aria-label="${fmt.int(adv)} stocks rose, ${fmt.int(dec)} fell"><i style="width:${adv / tot * 100}%;background:var(--up-solid)"></i><i style="width:${dec / tot * 100}%;background:var(--dn-solid)"></i></div>
-        <div class="lg"><span><b class="up tnum">${fmt.int(adv)}</b> rose</span><span>Breadth${q('breadth')}</span><span><b class="dn tnum">${fmt.int(dec)}</b> fell</span></div></div>` : ''}
-      ${ok(d.fii_net_cr) || ok(d.dii_net_cr) ? `<div class="flows">
-        <div class="flow"><div class="k">Foreign funds${q('fii')}</div><div class="v ${tone(d.fii_net_cr)} tnum">${crore(d.fii_net_cr)}</div></div>
-        <div class="flow"><div class="k">Indian funds</div><div class="v ${tone(d.dii_net_cr)} tnum">${crore(d.dii_net_cr)}</div></div></div>` : ''}
-      <button class="hero-more" data-idx>Levels for the next session ${icon('chev', 16)}</button>
-    </div>`;
-    if (closes.length > 3) {
-      const days = closes.map((v, i) => ({ t: String(i), v }));
-      stopHero.push(areaChart(slot.querySelector('#t-hc'), days, { height: 120, fmt: fmt.idx, axis: v => fmt.idx(v), label: 'Nifty, last ' + closes.length + ' sessions', bench: ok(p.ema20) ? days.map(x => ({ t: x.t, v: n(p.ema20) })) : null, noDates: true, tone: ch >= 0 ? 'var(--up-solid)' : 'var(--dn-solid)' }));
-    }
-    slot.querySelector('[data-idx]').onclick = () => indexSheet({ n: 'Nifty 50', v: px, p: ch }, p);
-  }, '<div class="sk" style="height:420px;border-radius:24px"></div>');
+  /* ---------- live Nifty card ---------- */
+  const mk = body.querySelector('#t-mk');
+  mk.innerHTML = '<div class="sk" style="height:300px;border-radius:26px"></div>';
+  const S = { px: NaN, ch: NaN, chg: NaN, prof: {}, closes: [], dataDay: '', others: [], adv: NaN, dec: NaN, liveAt: 0 };
+  let drawn = false, lastChart = 0;
+  const istDay = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
-  fill(body.querySelector('#t-idx'), () => pulse, (d, slot) => {
-    const prof = { 'Nifty 50': d.nifty_profile, 'Bank Nifty': d.banknifty_profile };
-    const list = (d.indices && d.indices.length ? d.indices : [{ n: 'Sensex', v: d.sensex_price, p: d.sensex_chg_pct }, { n: 'Bank Nifty', v: d.banknifty_price, p: d.banknifty_chg_pct }]).filter(x => !/nifty 50/i.test(x.n));
-    slot.innerHTML = list.map((x, i) => `<button class="tk" data-i="${i}"><div class="n">${esc(x.n)}</div><div class="p tnum">${count(x.v, 'idx')}</div><div class="c">${delta(x.p, 2)}</div>${spark(x.spark || prof[x.n]?.spark_closes || [], { w: 150, h: 30 })}</button>`).join('');
-    slot.querySelectorAll('.tk').forEach(b => b.onclick = () => { const x = list[+b.dataset.i]; indexSheet(x, prof[x.n]); });
-    const when = d.updated_at || d.date;
-    if (when) document.getElementById('t-when').textContent = `${ms.text}. Data from ${fmt.date(when, { day: 'numeric', month: 'short' })}${String(when).length > 10 ? ', ' + toDate(when).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : ''}`;
-  }, `<div class="sk" style="height:96px"></div><div class="sk" style="height:96px"></div>`);
-
-  /* QuantSync Scanner: only the last three days of signals */
-  const term = loadTerminal();
-  const drawScan = (t, slot) => {
-    const recent = [...t.toBuy, ...t.active.filter(c => !t.toBuy.some(x => x.sym === c.sym))].filter(c => c.isNew || (isFinite(c.days) && c.days <= 3));
-    const fresh = recent.filter(isFreshSignal).length, old = recent.length - fresh;
-    slot.innerHTML = `<section class="sec" style="margin-top:4px">
-      <p class="scan-sub"><span class="live-dot on"></span>${t.at ? 'Scanned ' + fmt.date(String(t.at).slice(0, 10)) + '. ' : ''}Last 3 days only: ${fresh} fresh, ${old} old.</p>
-      ${signalList(recent)}
-      <div style="margin-top:14px">${link('calls', `${icon('ai', 18)}All calls from every strategy`, 'btn quiet block')}</div>
-    </section>`;
-    bindSignals(slot, recent, () => drawScan(t, slot));
-    settle(slot); reveal(slot);
+  const say = () => {
+    const { px, ch, prof: p } = S;
+    if (!isFinite(px)) return '';
+    const open = marketStatus().open;
+    const dir = !isFinite(ch) || Math.abs(ch) < .05 ? (open ? 'is flat' : 'closed flat') : `${open ? 'is' : 'closed'} ${ch > 0 ? 'up' : 'down'} ${fmt.pct(Math.abs(ch), 2)}`;
+    const a = ok(p.ema20) ? (px > n(p.ema20) ? 'above' : 'below') : '', b = ok(p.ema200) ? (px > n(p.ema200) ? 'above' : 'below') : '';
+    const where = a && b ? (a === b ? `, ${a} its 20-day and 200-day averages` : `, ${a} its 20-day but ${b} its 200-day average`) : '';
+    return `Nifty ${dir} at ${fmt.idx(px)}${where}.`;
   };
-  fill(body.querySelector('#t-calls'), () => term, drawScan, `<section class="sec" style="margin-top:4px"><div class="sk" style="height:300px;border-radius:22px"></div></section>`);
+  const series = () => {
+    const c = S.closes.slice();
+    if (!c.length || !isFinite(S.px)) return c;
+    if (S.dataDay && S.dataDay < istDay() && S.liveAt) c.push(S.px); else c[c.length - 1] = S.px;
+    return c.slice(-40);
+  };
+  const chartSVG = vals => {
+    if (vals.length < 3) return '';
+    const W = 340, H = 112, lo0 = Math.min(...vals), hi0 = Math.max(...vals), pad = (hi0 - lo0) * .12 || 1, lo = lo0 - pad, hi = hi0 + pad;
+    const X = i => (i / (vals.length - 1)) * (W - 10) + 2, Y = v => (1 - (v - lo) / (hi - lo)) * (H - 8) + 4;
+    const d = vals.map((v, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).join(' ');
+    const up = isFinite(S.ch) ? S.ch >= 0 : vals[vals.length - 1] >= vals[0], col = up ? '#3BE0A0' : '#FF7A7E';
+    const e20 = ok(S.prof.ema20) && n(S.prof.ema20) > lo && n(S.prof.ema20) < hi ? Y(n(S.prof.ema20)) : null;
+    const lx = X(vals.length - 1), ly = Y(vals[vals.length - 1]);
+    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="mkg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".32"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+      ${e20 != null ? `<line x1="0" x2="${W}" y1="${e20.toFixed(1)}" y2="${e20.toFixed(1)}" stroke="rgba(255,255,255,.28)" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/>` : ''}
+      <path d="${d} L${lx} ${H} L2 ${H}Z" fill="url(#mkg)"/><path class="mk-line${lastChart ? '' : ' draw'}" d="${d}" fill="none" stroke="${col}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" pathLength="1"/></svg>
+      <i class="mk-dot" style="left:${(lx / W * 100).toFixed(2)}%;top:${(ly / H * 100).toFixed(2)}%;--c:${col}"></i>`;
+  };
+  const idxCell = x => `<div class="mk-i" data-n="${esc(x.n)}"><div class="k">${esc(x.n)}</div><div class="v tnum">${fmt.idx(x.v)}</div><div class="d ${tone(x.p)}">${fmt.sp(x.p, 2)}</div></div>`;
 
-  /* honest record */
-  fill(body.querySelector('#t-record'), () => api('/track-record', 15), (r, slot) => {
-    const L = r.live || {}, C = r.combined || {};
-    if (!ok(C.trades)) { slot.innerHTML = ''; return; }
-    slot.innerHTML = sec('How the AI calls have done', `
-      <div class="stats">${statCell('Win rate', count(C.winRate, 'pct', 0), `${fmt.int(C.trades)} trades`, 'winrate')}${statCell('Profit factor', count(C.profitFactor, 'x'), C.profitFactor >= 1 ? 'Made money' : 'Lost money', 'pf')}${statCell('Per trade', `<span class="${tone(C.expectancyPct)}">${fmt.sp(C.expectancyPct, 2)}</span>`, 'average', 'expectancy')}</div>
-      ${ok(L.trades) && L.trades > 0 ? `<p class="small" style="margin:10px 2px 0">Live since ${fmt.date(r.liveSince, { day: 'numeric', month: 'long' })}: <b class="${tone(L.expectancyPct)}">${fmt.int(L.trades)} trades, ${fmt.pct(L.winRate, 0)} won</b>, profit factor ${fmt.x(L.profitFactor)}. ${n(L.profitFactor) < 1 ? 'The live period is short and has been weaker than the long-run test.' : 'The live period is tracking the long-run test.'} ${q('live')}</p>` : ''}`,
-      { more: link('record', 'Full record', 'more') });
-  }, '', { quiet: true });
+  function paint() {
+    const up = !(S.ch < 0), open = marketStatus().open, tot = S.adv + S.dec;
+    if (!drawn) {
+      mk.innerHTML = `<div class="mk ${up ? 'is-up' : 'is-dn'}" role="button" tabindex="0" aria-label="Nifty 50 details">
+        <div class="mk-top"><div><div class="mk-k">Nifty 50 <span class="mk-live" id="mk-live"></span></div><div class="mk-v tnum" id="mk-v"></div><div class="mk-d tnum" id="mk-d"></div></div>
+          <span class="mk-chev">${icon('chev', 18)}</span></div>
+        <div class="mk-chart" id="mk-c"></div>
+        <p class="mk-say" id="mk-say"></p>
+        ${tot > 0 ? `<div class="mk-br"><div class="track"><i style="width:${S.adv / tot * 100}%"></i><i style="width:${S.dec / tot * 100}%"></i></div><div class="lg"><span><b>${fmt.int(S.adv)}</b> rising</span><span><b>${fmt.int(S.dec)}</b> falling</span></div></div>` : ''}
+        <div class="mk-row" id="mk-row"></div>
+      </div>`;
+      mk.querySelector('.mk').onclick = () => indexSheet({ n: 'Nifty 50', v: S.px, p: S.ch }, S.prof);
+      drawn = true; reveal(mk);
+    }
+    const card = mk.querySelector('.mk');
+    card.classList.toggle('is-up', up); card.classList.toggle('is-dn', !up);
+    mk.querySelector('#mk-v').textContent = fmt.idx(S.px);
+    const dEl = mk.querySelector('#mk-d');
+    dEl.textContent = `${fmt.sp(S.ch, 2)}${isFinite(S.chg) ? `  ${S.chg >= 0 ? '+' : '−'}${fmt.idx(Math.abs(S.chg))}` : ''}${open ? ' today' : ''}`;
+    dEl.className = 'mk-d tnum ' + tone(S.ch);
+    mk.querySelector('#mk-live').innerHTML = S.liveAt && open ? '<i></i>Live' : open ? 'Delayed' : 'Closed';
+    mk.querySelector('#mk-live').className = 'mk-live' + (S.liveAt && open ? ' on' : '');
+    mk.querySelector('#mk-say').textContent = say();
+    mk.querySelector('#mk-row').innerHTML = S.others.slice(0, 2).map(idxCell).join('');
+    if (Date.now() - lastChart > 2500) { const svg = chartSVG(series()); lastChart = Date.now(); mk.querySelector('#mk-c').innerHTML = svg; }
+  }
 
-  /* patterns */
-  fill(body.querySelector('#t-pat'), () => loadPatterns(), (d, slot) => {
-    const top = d.rows.filter(p => p.stage === 'Breakout' || p.stage === 'Retest').slice(0, 3);
-    if (!top.length) { slot.innerHTML = ''; return; }
-    slot.innerHTML = sec(`<span style="display:inline-flex;vertical-align:-3px;margin-right:6px;color:var(--up)">${icon('pattern', 20)}</span>Fresh breakouts`, `<div class="stack">${top.map(p => patternCard(p)).join('')}</div>`,
-      { more: link('patterns', `${d.counts.Breakout + d.counts.Retest} in total`, 'more'), p: 'Chart patterns that broke out in the last session, with how often the same setup has worked since 2020.' });
-    sparks(slot, api);
-  }, '', { quiet: true });
+  const fromPulse = d => {
+    const p = d.nifty_profile || {};
+    S.prof = p;
+    if (!S.liveAt || Date.now() - S.liveAt > 60e3) { S.px = n(p.price ?? d.nifty_price); S.ch = n(p.change_pct ?? d.nifty_chg_pct); S.chg = n(p.change); }
+    S.closes = (p.spark_closes || (d.indices || [])[0]?.spark || []).map(n).filter(isFinite);
+    S.dataDay = String(d.updated_at || d.date || '').slice(0, 10);
+    S.adv = n(d.advances); S.dec = n(d.declines);
+    const list = d.indices && d.indices.length ? d.indices : [{ n: 'Sensex', v: d.sensex_price, p: d.sensex_chg_pct }, { n: 'Bank Nifty', v: d.banknifty_price, p: d.banknifty_chg_pct }];
+    if (!S.liveAt) S.others = list.filter(x => !/nifty 50/i.test(x.n)).map(x => ({ n: x.n, v: n(x.v), p: n(x.p) }));
+  };
+  const loadPulse = () => api('/intel/pulse', 1).then(d => { fromPulse(d); paint(); }).catch(e => { if (!drawn) mk.innerHTML = `<div class="err">${esc(e.message || 'Could not load the market.')}<button data-r>Try again</button></div>`; const b = mk.querySelector('[data-r]'); if (b) b.onclick = loadPulse; });
+  loadPulse();
 
-  /* market map */
-  fill(body.querySelector('#t-map'), () => api('/app/market', 30), (m, slot) => {
-    if (!m || !m.sectors || !m.sectors.length) { slot.innerHTML = ''; return; }
-    const secs = [...m.sectors].sort((a, b) => n(b.above200_pct) - n(a.above200_pct)).slice(0, 6);
-    slot.innerHTML = sec('Market health', `
-      <div class="stats two" style="margin-bottom:10px">${statCell('Above 200-day average', count(m.above200_pct, 'pct', 0), `of ${fmt.int(m.stocks)} stocks`, 'above200')}${statCell('Average X-Ray score', count(m.avg_score, 'int'), m.avg_score >= 55 ? 'Healthy' : m.avg_score >= 45 ? 'Mixed' : 'Weak', 'xray')}</div>
-      <div class="mapgrid">${secs.map(s => tile(s)).join('')}</div>`, { more: link('market', 'All sectors', 'more'), p: 'Sectors ranked by how many of their stocks are in an uptrend.' });
-  }, '', { quiet: true });
+  /* live ticks: Nifty, Sensex and Bank Nifty move every second while the market is open */
+  const offLive = live.on(t => {
+    const nf = t.indices.find(x => /^nifty( 50)?$/i.test(String(x.n).trim()));
+    if (nf && isFinite(n(nf.v))) {
+      const prev = isFinite(S.px) && isFinite(S.ch) ? S.px / (1 + S.ch / 100) : NaN;
+      S.px = n(nf.v); S.ch = n(nf.p); S.chg = isFinite(prev) ? S.px - prev : S.chg; S.liveAt = Date.now();
+    }
+    const others = t.indices.filter(x => x !== nf && /sensex|bank/i.test(x.n)).map(x => ({ n: /bank/i.test(x.n) ? 'Bank Nifty' : 'Sensex', v: n(x.v), p: n(x.p) })).filter(x => isFinite(x.v));
+    if (others.length) S.others = others;
+    if (drawn) paint();
+  });
+  /* if the socket is quiet, refresh from the server every minute while the market is open */
+  const poll = setInterval(() => { if (document.hidden || !el.isConnected) return; const m = marketStatus(); document.getElementById('t-st') && (document.getElementById('t-st').textContent = m.text); if (m.open && Date.now() - S.liveAt > 45e3) { bust('/intel/pulse'); loadPulse(); } }, 60e3);
 
-  /* movers and news */
-  fill(body.querySelector('#t-movers'), () => api('/intel/movers', 10), (d, slot) => {
-    const mv = (d.movers || []).slice(0, 6);
-    if (!mv.length) { slot.innerHTML = ''; return; }
-    slot.innerHTML = sec('Biggest moves', `<div class="group">${mv.map(m => link(`xray/${encodeURIComponent(m.symbol || m.sym)}`, `${mono(m.symbol || m.sym)}<div class="main"><div class="t">${esc(m.symbol || m.sym)}</div><div class="s">${esc(sentence(m.label || m.desc || ''))}</div></div><div class="end"><div class="v tnum">${fmt.px(m.price)}</div><div class="d">${delta(m.pct ?? m.change_pct)}</div></div>`, 'row')).join('')}</div>`);
-  }, '', { quiet: true });
-  fill(body.querySelector('#t-news'), () => api('/intel/news?limit=8', 10), (d, slot) => {
-    const fresh = x => { const ts = n(x.published_ts); return !isFinite(ts) || Date.now() / 1000 - ts < 4 * 86400; };
-    const items = (d.news || []).filter(x => x.title && fresh(x)).slice(0, 6);
-    if (!items.length) { slot.innerHTML = ''; return; }
-    slot.innerHTML = sec('Market news', `<div class="group">${items.map(x => `<a class="row plain" href="${esc(x.url || '#')}" target="_blank" rel="noopener"><div class="main"><div class="t" style="white-space:normal;font-size:15px;line-height:1.35">${esc(clean(x.title))}</div><div class="s">${esc(x.source || '')}${x.published_ts ? ', ' + fmt.ago(x.published_ts) : x.time ? ', ' + esc(x.time) : ''}</div></div>${x.impact === 'positive' ? '<span class="pill up">Positive</span>' : x.impact === 'negative' ? '<span class="pill dn">Negative</span>' : ''}</a>`).join('')}</div>`);
-  }, '', { quiet: true });
-  return () => stopHero.forEach(f => f && f());
-}
+  /* ---------- the three doors ---------- */
+  loadTerminal().then(t => {
+    const sigs = allSignals(t), fresh = sigs.filter(isFreshSignal).sort((a, b) => (b.score || 0) - (a.score || 0));
+    const nPro = fresh.filter(c => engineOf(c) === 'v2').length, nChart = fresh.length - nPro;
+    body.querySelector('#t-ai-n').innerHTML = count(fresh.length);
+    body.querySelector('#t-ai-l').textContent = fresh.length ? `fresh signal${fresh.length > 1 ? 's' : ''} from the last scan` : `no fresh signal, ${sigs.length} still open`;
+    body.querySelector('#t-ai-s').innerHTML = fresh.slice(0, 3).map(c => `<span class="bs">${esc(c.sym)}</span>`).join('') + (fresh.length > 3 ? `<span class="bs more">+${fresh.length - 3}</span>` : '') +
+      (fresh.length ? `<span class="bs-eng">${[nPro && `${nPro} AI Pro`, nChart && `${nChart} Chart AI Pro`].filter(Boolean).join(' · ')}</span>` : '');
+  }).catch(() => { body.querySelector('#t-ai-n').textContent = '—'; });
+  loadPatterns().then(d => {
+    body.querySelector('#t-br-n').innerHTML = count(d.counts.Breakout || 0);
+    body.querySelector('#t-nr-n').innerHTML = count(d.counts.Near || 0);
+  }).catch(() => { body.querySelector('#t-br-n').textContent = '—'; body.querySelector('#t-nr-n').textContent = '—'; });
+  api('/track-record', 15).then(r => { const C = r.combined || {}; if (ok(C.winRate)) body.querySelector('#t-rec').textContent = `${fmt.pct(C.winRate, 0)} won · profit factor ${fmt.x(C.profitFactor)}`; }).catch(() => {});
 
-const crore = v => (n(v) >= 0 ? '+' : '−') + '₹' + fmt.int(Math.abs(n(v))) + ' Cr';
-
-export function tile(s) {
-  const a = n(s.above200_pct);
-  const col = a >= 55 ? 'var(--up-solid)' : a >= 35 ? 'var(--ai-solid)' : 'var(--dn-solid)';
-  return link(`market?s=${encodeURIComponent(s.name)}`, `<span class="n">${esc(s.name)}</span><span><span class="v">${fmt.pct(a, 0)}</span><span class="s" style="display:block">in uptrends, of ${fmt.int(s.n)} stocks</span></span>`, 'tile', `style="--tint:${col};--a:${Math.min(.32, .08 + Math.abs(a - 45) / 160)}"`);
+  return () => { offLive(); clearInterval(poll); };
 }
 
 function indexSheet(x, p) {
   const lv = p ? [['Resistance 2', p.r2], ['Resistance 1', p.r1], ['Pivot', p.pivot], ['Support 1', p.s1], ['Support 2', p.s2]].filter(r => ok(r[1])) : [];
   sheet(`<h3>${esc(x.n)}</h3>
     <div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:30px;font-weight:700;letter-spacing:-.035em" class="tnum">${fmt.idx(x.v)}</span>${delta(x.p, 2)}</div>
-    ${p ? `<p style="margin-top:10px">${esc(sentence(p.summary))}</p>
-    <div class="kv" style="margin:14px 0">${[['20-day average', p.ema20], ['50-day average', p.ema50], ['200-day average', p.ema200], ['RSI', p.rsi], ['52-week high', p.w52_high], ['52-week low', p.w52_low]].map(([k, v]) => `<div><div class="k">${k}</div><div class="v">${k === 'RSI' ? fmt.x(v, 1) : fmt.idx(v)}</div></div>`).join('')}</div>
+    ${p ? `<div class="kv" style="margin:14px 0">${[['20-day average', p.ema20], ['50-day average', p.ema50], ['200-day average', p.ema200], ['RSI', p.rsi], ['52-week high', p.w52_high], ['52-week low', p.w52_low]].map(([k, v]) => `<div><div class="k">${k}</div><div class="v">${k === 'RSI' ? fmt.x(v, 1) : fmt.idx(v)}</div></div>`).join('')}</div>
     ${lv.length ? `<div class="group" style="box-shadow:none;background:var(--surface-2)">${lv.map(([k, v]) => `<div class="row plain" style="min-height:44px"><div class="main"><div class="t" style="font-weight:500;font-size:14.5px">${k}</div></div><div class="end tnum" style="font-weight:600">${fmt.idx(v)}</div></div>`).join('')}</div><p class="tiny" style="margin-top:8px">Levels for the next session, from the last day's high, low and close.</p>` : ''}` : ''}
     <button class="btn quiet block" data-close style="margin-top:12px">Close</button>`, { label: x.n });
+}
+
+export function tile(s) {
+  const a = n(s.above200_pct);
+  const col = a >= 55 ? 'var(--up-solid)' : a >= 35 ? 'var(--ai-solid)' : 'var(--dn-solid)';
+  return link(`market?s=${encodeURIComponent(s.name)}`, `<span class="n">${esc(s.name)}</span><span><span class="v">${fmt.pct(a, 0)}</span><span class="s" style="display:block">in uptrends, of ${fmt.int(s.n)} stocks</span></span>`, 'tile', `style="--tint:${col};--a:${Math.min(.32, .08 + Math.abs(a - 45) / 160)}"`);
 }

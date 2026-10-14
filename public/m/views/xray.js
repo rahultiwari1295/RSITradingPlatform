@@ -3,7 +3,7 @@ import { stockRow, sec, footNote } from './parts.js';
 
 
 export default async function xray(el) {
-  const body = chrome(el, { title: 'Stock X-Ray', hero: { art: 'xray', icon: icon('search', 16), ey: 'Stock X-Ray', h: 'Is it a good company? Find out in seconds.', hl: ['good', 'company?'], lede: 'Search any NSE stock. X-Ray checks its trend, momentum, buying activity and business quality, then gives one health score from 0 to 100.', extra: `<form class="search" role="search" autocomplete="off">${icon('search', 20)}<input type="search" placeholder="Company or symbol, e.g. Trent" aria-label="Search stocks" enterkeyhint="search"><button type="button" class="clr" aria-label="Clear">${icon('x', 18)}</button></form>` } });
+  const body = chrome(el, { title: 'Stock X-Ray', top: { meta: '<span>Trend · Momentum · Volume · Quality</span>', h: 'Stock X-Ray', hl: ['X-Ray'], sub: 'One health score from 0 to 100 for any NSE stock.', extra: `<form class="search" role="search" autocomplete="off">${icon('search', 20)}<input type="search" placeholder="Company or symbol, e.g. Trent" aria-label="Search stocks" enterkeyhint="search"><button type="button" class="clr" aria-label="Clear">${icon('x', 18)}</button></form>` } });
   body.innerHTML = `
     <div class="results" aria-live="polite"></div>
     <div id="x-recent"></div><div id="x-disc"></div><div id="x-lead"></div><div id="x-how"></div>${footNote('X-Ray reports refresh every evening after the close.')}`;

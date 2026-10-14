@@ -1,9 +1,9 @@
-import { paper, reveal, api, chrome, fmt, esc, icon, n, ok, link, mono, delta, tone, holdings, auth, sheet, toast, go, scoreTone, scoreColor, clean, loadTerminal, loadPatterns, empty, errBox, skel, hue } from '../core.js';
+import { engineName, callPath, paper, reveal, api, chrome, fmt, esc, icon, n, ok, link, mono, delta, tone, holdings, auth, sheet, toast, go, scoreTone, scoreColor, clean, loadTerminal, loadPatterns, empty, errBox, skel, hue } from '../core.js';
 import { sec, footNote } from './parts.js';
 import { addSheet } from './report.js';
 
 export default async function portfolio(el) {
-  const body = chrome(el, { title: 'Portfolio', hero: { art: 'portfolio', icon: icon('target', 16), ey: 'Portfolio', h: 'Your stocks, checked every evening.', hl: ['checked'], lede: 'We compare every stock you hold with our engines after the close and flag what needs attention.' }, actions: `<button class="ib" data-add aria-label="Add a stock">${icon('plus', 22)}</button>` });
+  const body = chrome(el, { title: 'Portfolio', top: { meta: '<span id="pf-where">Checked every evening</span>', h: 'Your Portfolio', hl: ['Portfolio'], sub: 'We check each stock after the close and flag what needs attention.' }, actions: `<button class="ib" data-add aria-label="Add a stock">${icon('plus', 22)}</button>` });
   body.innerHTML = `<div id="pf-acct"></div><div id="pf-paper"></div><div id="pf-main"></div>${footNote('Prices are from the exchange and can be delayed. Your holdings stay private.')}`;
   el.querySelector('[data-add]').onclick = () => pick(load);
   const off = auth.onChange(() => { acct(); load(); });
@@ -54,7 +54,7 @@ export default async function portfolio(el) {
       if (isFinite(s) && s < 45) flags.push(['dn', 'alert', `${r.symbol}: X-Ray score ${fmt.int(s)}`, `Weak on ${s < 30 ? 'most' : 'several'} checks. Read the report before adding more.`, r.symbol]);
       if (isFinite(e200) && r.px < e200) flags.push(['warn', 'arrowDn', `${r.symbol} is below its 200-day average`, `${fmt.pct((1 - r.px / e200) * 100)} under ${fmt.px(e200)}. Long-term trend is down.`, r.symbol]);
       if (isFinite(r.pnlPct) && r.pnlPct <= -12) flags.push(['dn', 'alert', `${r.symbol} is ${fmt.pct(-r.pnlPct, 0)} below your price`, 'Decide where you would sell if it keeps falling.', r.symbol]);
-      if (r.call) flags.push(['ai', 'ai', `The AI is holding ${r.symbol} too`, `${r.call.strategy}, stop at ${fmt.px(r.call.stop)}.`, r.symbol, `calls/${encodeURIComponent(r.symbol)}`]);
+      if (r.call) flags.push(['ai', 'ai', `The AI is holding ${r.symbol} too`, `${engineName(r.call)} call, stop at ${fmt.px(r.call.stop)}.`, r.symbol, callPath(r.call)]);
       if (r.pat && (r.pat.stage === 'Breakout' || r.pat.stage === 'Retest')) flags.push(['up', 'pattern', `${r.symbol}: ${r.pat.stage.toLowerCase()} on the ${r.pat.tf === 'W' ? 'weekly' : 'daily'} chart`, `${r.pat.pattern} above ${fmt.px(r.pat.level)}.`, r.symbol, `patterns/${encodeURIComponent(r.symbol)}?tf=${r.pat.tf}`]);
     });
     const order = { dn: 0, warn: 1, ai: 2, up: 3 };
@@ -88,7 +88,7 @@ export default async function portfolio(el) {
   /* paper trades from new signals */
   async function paperBlock() {
     const slot = body.querySelector('#pf-paper'), list = paper.get();
-    if (!list.length) { slot.innerHTML = sec('Paper trades', `<div class="panel pad" style="display:flex;gap:12px;align-items:center"><span class="scan-mark">${icon('bolt', 16)}</span><div style="flex:1"><div class="h3">Practise on new signals</div><div class="small">Tap Paper trade on any new signal in the QuantSync Scanner. We track it here until it hits its stop or target.</div></div></div>`); reveal(slot); return; }
+    if (!list.length) { slot.innerHTML = sec('Paper trades', `<div class="panel pad" style="display:flex;gap:12px;align-items:center"><span class="scan-mark">${icon('bolt', 16)}</span><div style="flex:1"><div class="h3">Practise on new signals</div><div class="small">Open a fresh AI signal and tap Paper trade. We track it here until it hits its stop or target.</div></div></div>`); reveal(slot); return; }
     slot.innerHTML = sec('Paper trades', skel(70, list.length));
     const q = await Promise.all(list.map(p => api(`/stock/quote/${encodeURIComponent(p.sym)}`, 2).catch(() => null)));
     const rows = list.map((p, i) => { const px = ok(q[i]?.price) ? n(q[i].price) : n(p.entry); const pnl = (px - p.entry) * p.qty; const st = px >= p.target ? 'tgt' : px <= p.stop ? 'stop' : 'open'; return { ...p, px, pnl, pct: (px / p.entry - 1) * 100, st }; });

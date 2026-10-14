@@ -1,4 +1,4 @@
-import { api, chrome, fill, fmt, esc, icon, n, ok, link, mono, delta, tone, share, scoreTone, scoreColor, clean, sentence, recent, q, loadTerminal, loadPatterns, holdings, toast, sheet, empty } from '../core.js';
+import { engineName, callPath, api, chrome, fill, fmt, esc, icon, n, ok, link, mono, delta, tone, share, scoreTone, scoreColor, clean, sentence, recent, q, loadTerminal, loadPatterns, holdings, toast, sheet, empty } from '../core.js';
 import { priceChart, toCandles, withEmas, dial, barChart } from '../charts.js';
 import { sec, statCell, footNote, STAGE } from './parts.js';
 
@@ -94,7 +94,7 @@ export default async function report(el, r) {
       const c = t && (t.toBuy.find(x => x.sym === sym) || t.active.find(x => x.sym === sym));
       const pt = p && p.rows.find(x => x.sym === sym);
       const rows = [];
-      if (c) rows.push(link(`calls/${encodeURIComponent(sym)}`, `<span class="mono" style="background:var(--ai-soft);color:var(--ai);box-shadow:none">${icon('ai', 18)}</span><div class="main"><div class="t">${c.days === 0 ? 'New AI buy call today' : `Open AI call, day ${fmt.int(c.days)}`}</div><div class="s">${esc(c.strategy)}, ${fmt.sp(c.roi)} since entry</div></div>${icon('chev', 18, 'chev')}`, 'row'));
+      if (c) rows.push(link(callPath(c), `<span class="mono" style="background:var(--ai-soft);color:var(--ai);box-shadow:none">${icon('ai', 18)}</span><div class="main"><div class="t">${c.days === 0 ? 'New AI buy call today' : `Open AI call, day ${fmt.int(c.days)}`}</div><div class="s">${engineName(c)}, ${fmt.sp(c.roi)} since entry</div></div>${icon('chev', 18, 'chev')}`, 'row'));
       if (pt) rows.push(link(`patterns/${encodeURIComponent(sym)}?tf=${pt.tf}`, `<span class="mono" style="background:var(--up-soft);color:var(--up);box-shadow:none">${icon('pattern', 18)}</span><div class="main"><div class="t">${STAGE[pt.stage].t}: ${esc(pt.pattern)}</div><div class="s">Level ${fmt.px(pt.level)}${pt.grade ? ', grade ' + esc(pt.grade) : ''}</div></div>${icon('chev', 18, 'chev')}`, 'row'));
       if (rows.length && body.isConnected) body.querySelector('#x-engines').innerHTML = sec('Our engines on this stock', `<div class="group">${rows.join('')}</div>`);
     });
