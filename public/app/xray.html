@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Stock X-Ray · QuantSync Lab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&family=IBM+Plex+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="app.css"><script src="data.js"></script><script src="app.js"></script>
 <style>
 .shero{display:grid;gap:14px;max-width:760px;margin-bottom:30px}
@@ -70,7 +70,7 @@
 
 <div class="shero">
   <span class="kicker">Stock X-Ray</span>
-  <h1 class="t-1">Is it a good company? Find out in seconds.</h1>
+  <h1 class="t-1">Is it a <em>good</em> company? <br>Find out in seconds.</h1>
   <p class="lede">Search any NSE stock. X-Ray checks its trend, momentum, buying activity and business quality, then gives one health score from 0 to 100.</p>
   <div class="sbox"><label for="q"><span data-i="search" data-s="22" class="mute"></span><input id="q" type="search" autocomplete="off" placeholder="Search a company" aria-label="Search a company"><button class="btn primary sm" id="go">X-Ray</button></label><div class="sug" id="sug" hidden></div></div>
   <div class="chips" id="chips"></div>
@@ -84,6 +84,9 @@
 <p class="disclaim">X-Ray is research, not a trade call. It tells you how much to trust the company behind a chart. Not investment advice.</p>
 </main>
 <script>
+/* the Lab never shows a buy or sell instruction: model headlines that read like one become the stock's profile */
+const ADV=/\b(buy|sell|target|stop|accumulate|entry|exit|avoid|dips?)\b/i;
+const neutral=(t,alt)=>!t||ADV.test(String(t))?(alt&&!ADV.test(String(alt))?String(alt):'X-Ray health check'):t;
 document.addEventListener('DOMContentLoaded',async()=>{
 const {lab,api,fmt,n,ok}=QD;const {icon,state,toast,line,dial,bars}=QS;const $=id=>document.getElementById(id);const esc=fmt.esc;
 const PIL=[['trend','Trend','var(--brand)'],['momentum','Momentum','#2C9CB8'],['volume','Buying activity','var(--up)'],['quality','Business quality','var(--ai-fill)']];
@@ -123,14 +126,13 @@ async function render(){
     <div style="display:flex;gap:8px;flex-wrap:wrap;width:100%"><a class="btn sm" href="portfolio.html?add=${encodeURIComponent(sym)}">${icon('plus',15)}Add to portfolio</a><button class="btn sm" id="share">${icon('copy',15)}Copy link</button><a class="btn sm ghost" href="scanner.html">${icon('scanner',15)}Build a scan</a><span class="tiny" style="align-self:center;margin-left:auto">Report from ${esc(d.report_date||fmt.date(d.cache_updated_at))}${d.is_fresh===false?' · refreshing soon':''}</span></div></div>
    <div class="score"><div class="dial" id="dial"></div>
     <div class="pill-g">${PIL.map(([k,l,c])=>{const p=pill[k]||{},mx=n(p.max)||25,sc=n(p.score);return `<div class="p"><div>${l} <span>${ok(sc)?Math.round(sc):'—'} of ${mx}</span></div><div class="bar"><i data-w="${ok(sc)?Math.max(0,Math.min(100,sc/mx*100)):0}" style="--c:${c}"></i></div>${p.summary?`<small>${esc(p.summary)}</small>`:''}</div>`}).join('')}</div>
-    <div class="verdict"><span class="pill ${tone.k==='up'?'up':tone.k==='dn'?'dn':''}" style="justify-self:start;${tone.k==='warn'?'color:var(--warn)':''}"><i class="d"></i>${tone.t}${ok(score)?' · '+Math.round(score)+' of 100':''}</span><b class="v">${esc(u.action_title||d.action_title||'')}</b>
+    <div class="verdict"><span class="pill ${tone.k==='up'?'up':tone.k==='dn'?'dn':''}" style="justify-self:start;${tone.k==='warn'?'color:var(--warn)':''}"><i class="d"></i>${tone.t}${ok(score)?' · '+Math.round(score)+' of 100':''}</span><b class="v">${esc(neutral(u.action_title||d.action_title||'',u.dna_archetype||tone.t))}</b>
      <div class="sum3">${bs.what_is_happening?`<p class="small"><b>What is happening</b>${esc(bs.what_is_happening)}</p>`:''}${bs.the_opportunity?`<p class="small"><b>The opportunity</b>${esc(bs.the_opportunity)}</p>`:''}${bs.the_danger?`<p class="small"><b>The danger</b>${esc(bs.the_danger)}</p>`:''}</div></div></div></article>`);
   if(good.length||bad.length)H.push(`<div class="grid g2 sec">${good.length?`<section class="panel pad"><h2 class="t-3" style="margin-bottom:14px">Good signs</h2><ul class="signs g">${good.slice(0,7).map(x=>`<li>${icon('check',18)}<span>${esc(x)}</span></li>`).join('')}</ul></section>`:''}${bad.length?`<section class="panel pad"><h2 class="t-3" style="margin-bottom:14px">Warning signs</h2><ul class="signs w">${bad.slice(0,7).map(x=>`<li>${icon('warn',18)}<span>${esc(x)}</span></li>`).join('')}</ul></section>`:''}</div>`);
   if(cand.length>10)H.push(`<section class="sec panel pad"><div class="sech" style="margin-bottom:6px"><h2>Price</h2><div class="seg" id="rng"><button data-v="63" aria-pressed="false">3M</button><button data-v="126" aria-pressed="false">6M</button><button data-v="260" aria-pressed="true">1Y</button><button data-v="9999" aria-pressed="false">All</button></div></div>
     <div class="legend" style="margin-bottom:6px"><span><i style="--c:var(--brand)"></i>Price</span><span><i class="dash" style="--c:var(--ai-fill)"></i>50-day average</span>${ok(m.ema200)?'<span><i class="dash" style="--c:var(--ink3)"></i>200-day average</span>':''}</div><div class="chart" id="px"></div>
     <div class="grid g3" style="margin-top:14px;gap:10px">${ok(m.w52_low)&&ok(m.w52_high)?`<div class="well"><div class="tiny">52-week range</div><b>${fmt.inr(m.w52_low)} – ${fmt.inr(m.w52_high)}</b><div class="bar" style="margin-top:8px"><i data-w="${Math.max(0,Math.min(100,(px-m.w52_low)/(m.w52_high-m.w52_low)*100))}"></i></div></div>`:''}
-     ${tc.entry_zone?`<div class="well"><div class="tiny">Model’s buy zone</div><b>${esc(String(tc.entry_zone))}</b>${ok(tc.stop_loss)?`<div class="tiny">Exit below ${fmt.inr(tc.stop_loss)}</div>`:''}</div>`:''}
-     ${ok(tc.target_1)?`<div class="well"><div class="tiny">Model’s targets</div><b>${fmt.inr(tc.target_1)}${ok(tc.target_2)?' · '+fmt.inr(tc.target_2):''}</b><div class="tiny">${fmt.pct((tc.target_1/px-1)*100)} to the first</div></div>`:''}</div></section>`);
+     </div></section>`);
   H.push(`<section class="sec aicard" id="picked" hidden></section>`);
   const facts=[['Market value',fmt.cr(f.market_cap_cr),''],['Price to earnings',ok(kr.stock_pe)?n(kr.stock_pe).toFixed(1)+'×':'—','Years of profit you pay for'],['Return on equity',ok(kr.roe_pct)?n(kr.roe_pct).toFixed(1)+'%':'—','Above 15% is good'],['Return on capital',ok(kr.roce_pct)?n(kr.roce_pct).toFixed(1)+'%':'—','Profit on money put in'],['Debt safety',ok(solv.score)?Math.round(solv.score)+'/100':'—',esc(solv.grade||'Borrowings vs reserves')],['Dividend yield',ok(kr.dividend_yield_pct)?n(kr.dividend_yield_pct).toFixed(2)+'%':'—','Cash paid out each year'],['Promoter holding',own[0]&&own[0].l==='Promoters'?own[0].v.toFixed(1)+'%':'—',(sh.Promoters||{}).quarter||''],['Book value',ok(kr.book_value)?fmt.inr(kr.book_value):'—',ok(kr.book_value)&&px?'Price is '+(px/n(kr.book_value)).toFixed(1)+'× book':'']].filter(x=>x[1]!=='—');
   if(facts.length)H.push(`<section class="sec"><div class="sech"><h2>Key facts</h2></div><div class="facts">${facts.map(([l,v,h])=>`<div><small>${l}</small><b>${v}</b><span>${h}</span></div>`).join('')}</div></section>`);

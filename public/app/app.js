@@ -47,12 +47,12 @@ const LOGO='<svg class="mk" viewBox="0 0 32 32" aria-hidden="true"><rect width="
 const root=d.documentElement;
 try{const t=localStorage.getItem('qs-theme'); if(t) root.dataset.theme=t;}catch(e){}
 function isDark(){return root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches}
-function toggleTheme(){const n=isDark()?'light':'dark'; root.dataset.theme=n; try{localStorage.setItem('qs-theme',n)}catch(e){} d.querySelectorAll('[data-theme-btn]').forEach(b=>b.innerHTML=icon(isDark()?'sun':'moon',18));
+function toggleTheme(){const n=isDark()?'light':'dark'; root.dataset.theme=n; try{localStorage.setItem('qs-theme',n)}catch(e){} d.querySelectorAll('[data-theme-btn]').forEach(b=>b.setAttribute('aria-checked',isDark()));
   d.dispatchEvent(new Event('qs-theme'));}
 
 /* ---------- shell ---------- */
 const NAV=[
- ['today','Today','today.html'],['matches','Matches','matches.html'],['strategies','Strategies','strategies.html'],['scanner','Scanner','scanner.html'],
+ ['today','Today','today.html'],['matches','Watchlist','matches.html'],['strategies','Strategies','strategies.html'],['scanner','Scanner','scanner.html'],
  ['patterns','Patterns','patterns.html'],['xray','X-Ray','xray.html'],['portfolio','Portfolio','portfolio.html']];
 function shell(){
   const page=d.body.dataset.page; if(!page) return;
@@ -62,14 +62,14 @@ function shell(){
   rail.innerHTML=`<a class="logo" href="index.html">${LOGO}QuantSync <small>Lab</small></a>
    <div class="grp">Build and test</div>${NAV.slice(0,4).map(link).join('')}
    <div class="grp">Research</div>${NAV.slice(4).map(link).join('')}
-   <div class="foot"><button class="btn sm ghost" data-theme-btn aria-label="Switch light or dark" style="justify-self:start">${icon(isDark()?'sun':'moon',18)}</button>
+   <div class="foot"><div class="trow"><span>Night mode</span><button class="tsw" type="button" role="switch" data-theme-btn aria-checked="${isDark()}" aria-label="Night mode"><span class="k">${icon('sun',14)}${icon('moon',14)}</span></button></div>
    <div class="user" id="qs-user"><span class="av">··</span><div><b>Loading</b><span>&nbsp;</span></div></div></div>`;
   const top=d.createElement('header'); top.className='topbar';
-  top.innerHTML=`<a class="logo" href="index.html">${LOGO}QuantSync <small>Lab</small></a><div style="display:flex;gap:4px"><button class="btn sm ghost" data-theme-btn aria-label="Switch light or dark">${icon(isDark()?'sun':'moon',18)}</button><a class="btn sm ghost" href="matches.html#alerts" aria-label="Alerts">${icon('bell',18)}</a><button class="btn sm" id="qs-top-auth" hidden>Sign in</button></div>`;
+  top.innerHTML=`<a class="logo" href="index.html">${LOGO}QuantSync <small>Lab</small></a><div style="display:flex;gap:8px;align-items:center"><button class="tsw" type="button" role="switch" data-theme-btn aria-checked="${isDark()}" aria-label="Night mode"><span class="k">${icon('sun',14)}${icon('moon',14)}</span></button><a class="btn sm ghost" href="matches.html#alerts" aria-label="Alerts">${icon('bell',18)}</a><button class="btn sm" id="qs-top-auth" hidden>Sign in</button></div>`;
   const tb=d.createElement('nav'); tb.className='tabbar'; tb.setAttribute('aria-label','Main');
-  const mob=['today','scanner','strategies','xray'];
+  const mob=['today','matches','strategies','scanner'];
   tb.innerHTML=NAV.filter(n=>mob.includes(n[0])).sort((a,b)=>mob.indexOf(a[0])-mob.indexOf(b[0])).map(([id,l,h])=>`<a href="${h}" ${cur===id?'aria-current="page"':''}>${icon(id,21)}<span>${l}</span></a>`).join('')
-   +`<button data-more ${['matches','patterns','portfolio'].includes(cur)?'aria-current="page"':''}>${icon('more',21)}<span>More</span></button>`;
+   +`<button data-more ${['xray','patterns','portfolio'].includes(cur)?'aria-current="page"':''}>${icon('more',21)}<span>More</span></button>`;
   d.body.prepend(top); d.body.prepend(rail); d.body.append(tb);
   // more sheet
   const scr=d.createElement('div'); scr.className='scrim';
@@ -200,12 +200,16 @@ function reveal(){if(RM||!('IntersectionObserver' in window))return;const io=new
 function sheet(id,open=true){const s=d.getElementById(id);let scr=d.querySelector('.scrim.own');if(!scr){scr=d.createElement('div');scr.className='scrim own';d.body.append(scr);scr.onclick=()=>d.querySelectorAll('.sheet.on').forEach(x=>{x.classList.remove('on');scr.classList.remove('on')})}
   s.classList.toggle('on',open);scr.classList.toggle('on',open);s.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>sheet(id,false))}
 
-window.QS={equity,state,timeTicks,icon,LOGO,rng,walk,fmt,toast,count,counters,bars,line,spark,vbars,dial,segs,sheet,isDark,toggleTheme,RM};
+/* headline words rise in one by one; <em> words keep the gradient */
+function splitTitles(scope=d){scope.querySelectorAll('.t-1:not([data-split])').forEach(h=>{h.dataset.split=1;let i=0;
+  const wrap=t=>t.split(/(\s+)/).map(w=>/^\s+$/.test(w)||!w?w:`<span class="w" style="--i:${i++}">${w.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</span>`).join('');
+  h.innerHTML=[...h.childNodes].map(n=>n.nodeType===3?wrap(n.textContent):n.tagName==='BR'?'<br>':`<span class="w" style="--i:${i++}">${n.outerHTML}</span>`).join('')})}
+window.QS={splitTitles,equity,state,timeTicks,icon,LOGO,rng,walk,fmt,toast,count,counters,bars,line,spark,vbars,dial,segs,sheet,isDark,toggleTheme,RM};
 d.addEventListener('DOMContentLoaded',()=>{
   shell();
   d.querySelectorAll('[data-i]').forEach(el=>el.insertAdjacentHTML('afterbegin',icon(el.dataset.i,+(el.dataset.s||17))));
   d.addEventListener('click',e=>{if(e.target.closest('[data-theme-btn]'))toggleTheme()});
-  d.querySelectorAll('[data-theme-btn]').forEach(b=>b.innerHTML=icon(isDark()?'sun':'moon',18));
+  splitTitles();
   segs();counters();bars();reveal();
   d.querySelectorAll('[data-toast]').forEach(b=>b.addEventListener('click',()=>toast(b.dataset.toast)));
 });

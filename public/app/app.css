@@ -261,3 +261,110 @@ table.tbl{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeri
 @media (max-width:1020px){.subnav{top:calc(56px + env(safe-area-inset-top,0px))}}
 .grid>*,.split>*,.kpis>*{min-width:0}
 [style*="display:grid"],.shero,.aicard,.opt,.verdict,.val,.scard,.prev,.aisec,.exitmix,.test,.builder,.addf,.phead .txt,.learn,.pill-g,.pill-g .p{grid-template-columns:minmax(0,1fr)}
+
+/* ================================================================ v2: one design language with the QuantSync phone app
+   Same type (Geist), same depth (top-lit cards, hairline edge, soft shadow), same title style and day/night palette.
+   Research tone: nothing here tells anyone to buy or sell. Colour marks where a match came from and how fresh it is. */
+:root{
+  --f:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --bg:#ECEFF5; --surface:#FFFFFF; --sunk:#E8ECF3; --raise:#FFFFFF;
+  --ink:#0B1526; --ink2:#4A5468; --ink3:#8891A4; --line:#E1E6EE; --line2:#CDD5E1;
+  --brand:#2848EE; --brand-ink:#FFFFFF; --brand-soft:#E9EDFF;
+  --up:#0A8F63; --up-soft:#DFF4EA; --dn:#D3313A; --dn-soft:#FCE9EA;
+  --cat-q:#4F46E5; --cat-y:#0E9F8A; --cat-f:#D9822B;
+  --card:linear-gradient(180deg,#FFFFFF 0%,#FBFCFE 100%);
+  --edge:rgba(11,21,38,.07);
+  --lift-1:0 1px 2px rgba(11,21,38,.05),0 10px 24px -14px rgba(11,21,38,.22);
+  --lift-2:0 2px 4px rgba(11,21,38,.05),0 18px 36px -18px rgba(11,21,38,.32);
+  --shadow:var(--lift-1); --shadow-lg:var(--lift-2);
+  --ttl:linear-gradient(100deg,#2848EE 0%,#6A3FE6 100%);
+  --wash:radial-gradient(60% 70% at 0% 0%,rgba(40,72,238,.10),transparent 70%),radial-gradient(45% 55% at 100% 0%,rgba(139,92,246,.08),transparent 70%);
+  /* QuantSync strategy banner */
+  --qs-bg:radial-gradient(90% 120% at 100% 0%,rgba(255,255,255,.26),transparent 55%),linear-gradient(135deg,#4D6CFF 0%,#4256F5 45%,#7B55F0 100%);
+  --qs-sh:inset 0 1px 0 rgba(255,255,255,.3),0 22px 40px -22px rgba(66,86,245,.7);
+}
+:root[data-theme="dark"]{
+  --bg:#05080F; --surface:#0D1422; --sunk:#0A1019; --raise:#121B2C;
+  --ink:#EDF2FA; --ink2:#A7B1C4; --ink3:#6B778C; --line:#1C2638; --line2:#2A3850;
+  --brand:#7B96FF; --brand-ink:#05080F; --brand-soft:#151F45;
+  --up:#36CC92; --up-soft:#0D2A1F; --dn:#FF6E72; --dn-soft:#2C1316;
+  --cat-q:#9C95FF; --cat-y:#3FD3BC; --cat-f:#FFAE5E;
+  --card:linear-gradient(180deg,#111A2B 0%,#0C1320 100%); --edge:rgba(255,255,255,.07);
+  --lift-1:0 1px 2px rgba(0,0,0,.5),0 12px 26px -14px rgba(0,0,0,.8); --lift-2:0 2px 4px rgba(0,0,0,.5),0 22px 40px -18px rgba(0,0,0,.9);
+  --ttl:linear-gradient(100deg,#8FA7FF 0%,#B79BFF 100%);
+  --wash:radial-gradient(60% 70% at 0% 0%,rgba(77,107,255,.16),transparent 70%),radial-gradient(45% 55% at 100% 0%,rgba(139,92,246,.12),transparent 70%);
+  --qs-bg:radial-gradient(90% 120% at 100% 0%,rgba(140,160,255,.22),transparent 55%),linear-gradient(135deg,#2638B8 0%,#2A2F9E 45%,#4A2A9E 100%);
+  --qs-sh:inset 0 1px 0 rgba(255,255,255,.12),0 0 0 1px rgba(140,160,255,.16),0 24px 44px -22px rgba(0,0,0,.85);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#05080F; --surface:#0D1422; --sunk:#0A1019; --raise:#121B2C;
+  --ink:#EDF2FA; --ink2:#A7B1C4; --ink3:#6B778C; --line:#1C2638; --line2:#2A3850;
+  --brand:#7B96FF; --brand-ink:#05080F; --brand-soft:#151F45;
+  --up:#36CC92; --up-soft:#0D2A1F; --dn:#FF6E72; --dn-soft:#2C1316;
+  --cat-q:#9C95FF; --cat-y:#3FD3BC; --cat-f:#FFAE5E;
+  --card:linear-gradient(180deg,#111A2B 0%,#0C1320 100%); --edge:rgba(255,255,255,.07);
+  --lift-1:0 1px 2px rgba(0,0,0,.5),0 12px 26px -14px rgba(0,0,0,.8); --lift-2:0 2px 4px rgba(0,0,0,.5),0 22px 40px -18px rgba(0,0,0,.9);
+  --ttl:linear-gradient(100deg,#8FA7FF 0%,#B79BFF 100%);
+  --wash:radial-gradient(60% 70% at 0% 0%,rgba(77,107,255,.16),transparent 70%),radial-gradient(45% 55% at 100% 0%,rgba(139,92,246,.12),transparent 70%);
+  --qs-bg:radial-gradient(90% 120% at 100% 0%,rgba(140,160,255,.22),transparent 55%),linear-gradient(135deg,#2638B8 0%,#2A2F9E 45%,#4A2A9E 100%);
+  --qs-sh:inset 0 1px 0 rgba(255,255,255,.12),0 0 0 1px rgba(140,160,255,.16),0 24px 44px -22px rgba(0,0,0,.85);
+}}
+body{background:var(--bg) var(--wash) no-repeat;background-size:100% 520px;transition:background-color .3s,color .3s}
+
+/* raised surfaces share one recipe */
+.panel,.rows,.kpis,.tbl-wrap,.user,.qa details{background:var(--card);border:0;box-shadow:0 0 0 1px var(--edge),var(--lift-1)}
+.row{border-bottom-color:var(--line)}
+.kpi{border-color:var(--line)}
+.btn{border:0;box-shadow:0 0 0 1px var(--edge),var(--lift-1);background:var(--card)}
+.btn.primary{background:linear-gradient(180deg,#4060FF,#2241E3);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 8px 18px -10px rgba(40,72,238,.8)}
+.btn.ghost{box-shadow:none;background:transparent}
+.seg{background:var(--sunk);box-shadow:inset 0 0 0 1px var(--edge)}
+.seg button[aria-pressed="true"]{background:var(--card);box-shadow:0 0 0 1px var(--edge),0 4px 10px -4px rgba(11,21,38,.25)}
+.inp{border-color:var(--line2);background:var(--surface)}
+
+/* rail */
+.rail{background:color-mix(in srgb,var(--surface) 86%,transparent);backdrop-filter:blur(16px) saturate(1.4);-webkit-backdrop-filter:blur(16px) saturate(1.4);border-right:1px solid var(--line)}
+.rail a.nav{font-weight:550}
+.rail a.nav[aria-current="page"]{background:var(--card);color:var(--brand);box-shadow:0 0 0 1px var(--edge),var(--lift-1)}
+.rail a.nav .ct{background:var(--up);color:#fff}
+.logo{font-weight:750}
+
+/* page title, phone-app style: coloured label, big headline, one explaining paragraph */
+.phead{margin-bottom:30px}
+.phead .txt{gap:12px}
+.kicker{font-size:14px;font-weight:650;color:var(--brand)}
+.kicker svg{width:16px;height:16px}
+.t-1{font-size:clamp(32px,4.4vw,52px);line-height:1.05;letter-spacing:-.04em;font-weight:780}
+.t-1 em{font-style:normal;background:var(--ttl);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.t-1 .w{display:inline-block;animation:wIn .55s var(--ease) both;animation-delay:calc(var(--i)*55ms + 40ms)}
+.lede{font-size:clamp(15.5px,1.4vw,17.5px);max-width:62ch}
+@keyframes wIn{from{opacity:0;transform:translate3d(0,10px,0)}}
+.sech h2{font-size:21px;font-weight:720;letter-spacing:-.025em}
+
+/* day / night switch (rail foot and phone top bar) */
+.tsw{position:relative;width:52px;height:30px;border-radius:15px;flex:none;background:var(--sunk);box-shadow:inset 0 0 0 1px var(--edge),inset 0 1px 2px rgba(11,21,38,.12)}
+.tsw .k{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#E09A10;box-shadow:0 2px 6px rgba(11,21,38,.25);transition:transform .3s var(--ease),background-color .3s,color .3s}
+.tsw .k svg{grid-area:1/1;width:14px;height:14px;transition:opacity .2s,transform .3s var(--ease)}
+.tsw .k svg+svg{opacity:0;transform:rotate(-60deg) scale(.6)}
+.tsw[aria-checked="true"]{background:#2A3550}
+.tsw[aria-checked="true"] .k{transform:translateX(22px);background:#0E1729;color:#B8C6FF}
+.tsw[aria-checked="true"] .k svg:first-child{opacity:0;transform:rotate(60deg) scale(.6)}
+.tsw[aria-checked="true"] .k svg+svg{opacity:1;transform:none}
+.rail .foot .trow{display:flex;align-items:center;justify-content:space-between;padding:0 6px;font-size:13px;font-weight:600;color:var(--ink2)}
+
+/* source colours: QuantSync, yours, followed */
+.src::before{border-radius:3px}
+.qsb{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px 0 5px;border-radius:7px;font-size:11.5px;font-weight:700;color:#fff;background:linear-gradient(135deg,#5B6CFF,#4F46E5);box-shadow:inset 0 1px 0 rgba(255,255,255,.28)}
+.qsb svg{width:12px;height:12px}
+
+/* press */
+a.row,button.row,.btn,.card-l{transition:transform .18s var(--ease),background-color .2s,box-shadow .2s}
+.btn:active{transform:scale(.97)}
+
+/* compliance note under every page */
+.disclaim{border-top:1px solid var(--line);color:var(--ink3)}
+@media (max-width:1020px){
+  .topbar{background:color-mix(in srgb,var(--bg) 84%,transparent)}
+  .tabbar{background:color-mix(in srgb,var(--surface) 86%,transparent);box-shadow:0 0 0 1px var(--edge),0 16px 36px -16px rgba(11,21,38,.35);border:0}
+  .tabbar [aria-current="page"]{background:var(--card);box-shadow:0 0 0 1px var(--edge),0 6px 14px -8px rgba(11,21,38,.35)}
+}

@@ -2,13 +2,14 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Strategies · QuantSync Lab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&family=IBM+Plex+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="app.css"><script src="data.js"></script><script src="app.js"></script>
 <style>
 .bar2{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
 .bar2 select{width:auto;height:38px}
 .sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
 .scard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:18px;display:grid;gap:12px;transition:transform .25s var(--ease),box-shadow .25s,border-color .25s;animation:pop .4s var(--ease) both}
+.scard.q{background:linear-gradient(180deg,color-mix(in srgb,var(--cat-q) 11%,var(--surface)) 0%,var(--surface) 55%);box-shadow:0 0 0 1.5px color-mix(in srgb,var(--cat-q) 35%,transparent),var(--lift-2)}
 .scard:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--line2)}
 @keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .scard .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
@@ -26,7 +27,7 @@
 </head>
 <body data-page="strategies"><main class="main">
 
-<div class="phead"><div class="txt"><span class="kicker">Strategies</span><h1 class="t-1">Scans with a track record</h1>
+<div class="phead"><div class="txt"><span class="kicker">Strategies</span><h1 class="t-1">Scans with a <em>track record.</em></h1>
   <p class="lede">A strategy is a saved scan with exit rules. Each one shows its tested results and a live record that builds from the day it was saved.</p></div>
   <div class="acts"><a class="btn primary" href="scanner.html" data-i="plus">New from a scan</a></div></div>
 
@@ -57,9 +58,9 @@ add(fl);add(mine);add(ppl);
 const CAT={q:'QuantSync',y:'Yours',f:'Following',p:'Community'};
 const key={win:s=>(s.record||{}).win_rate??-1,avg:s=>(s.record||{}).avg_ret??-99,n:s=>(s.record||{}).trades??0,live:s=>(s.stats||{}).trades??0};
 function draw(){
-  let L=ALL.filter(s=>f==='all'||s._c===f);L.sort((a,b)=>key[so](b)-key[so](a));
+  let L=ALL.filter(s=>f==='all'||s._c===f);L.sort((a,b)=>((a._c==='q')?0:1)-((b._c==='q')?0:1)||key[so](b)-key[so](a));
   if(!L.length&&!(f==='y'||f==='all')){state($('grid'),'empty',{title:f==='f'?'You are not following any strategy':'Nothing here yet',body:f==='f'?'Open a community strategy and tap “Get alerts” to follow it.':'',icon:'strategies'});return}
-  $('grid').innerHTML=L.map((s,i)=>{const r=s.record||{},st=s.stats||{};return `<a class="scard" href="strategy.html?id=${s.id}" style="animation-delay:${Math.min(i,12)*40}ms"><div class="top"><div><span class="src cat-${s._c==='p'?'f':s._c}">${CAT[s._c]}</span><h3>${esc(s.name)}</h3><div class="by">${s._c==='q'?'by QuantSync':s._c==='y'?'Made by you':s.owner?'by @'+esc(s.owner):'Community'} · ${s.tf==='1W'?'Weekly':'Daily'}${s.followers?` · ${s.followers} following`:''}</div></div>${s.enhanced||s.source==='engine'||s.exit_choice==='ai'?`<span class="pill ai">${icon('spark',13)}AI</span>`:''}</div>
+  $('grid').innerHTML=L.map((s,i)=>{const r=s.record||{},st=s.stats||{};return `<a class="scard${s._c==='q'?' q':''}" href="strategy.html?id=${s.id}" style="animation-delay:${Math.min(i,12)*40}ms"><div class="top"><div><span class="src cat-${s._c==='p'?'f':s._c}">${CAT[s._c]}</span><h3>${esc(s.name)}</h3><div class="by">${s._c==='q'?'by QuantSync':s._c==='y'?'Made by you':s.owner?'by @'+esc(s.owner):'Community'} · ${s.tf==='1W'?'Weekly':'Daily'}${s.followers?` · ${s.followers} following`:''}</div></div>${s.enhanced||s.source==='engine'||s.exit_choice==='ai'?`<span class="pill ai">${icon('spark',13)}AI</span>`:''}</div>
    <div class="chart" data-sp="${i}"></div>
    <div class="st"><div><b class="${(r.win_rate||0)>=50?'up':''}">${r.trades?fmt.plain(r.win_rate):'—'}</b><small>made money</small></div><div><b class="${fmt.tone(r.avg_ret)}">${fmt.pct(r.avg_ret)}</b><small>avg per trade</small></div><div><b>${r.trades?fmt.int(r.trades):'—'}</b><small>${r.label&&r.label.startsWith('Full')?'trades recorded':'trades tested'}</small></div></div>
    <div class="ft"><span>${s.live_from?`Live since ${fmt.date(s.live_from)} ${String(s.live_from).slice(0,4)}`:'Not live yet'}${st.trades?` · <b class="${fmt.tone(st.avg_ret)}">${fmt.pct(st.avg_ret)}</b> live avg`:''}</span><span>${st.open||0} open now</span></div></a>`}).join('')

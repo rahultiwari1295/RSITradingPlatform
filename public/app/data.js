@@ -305,5 +305,26 @@ const holdings = {
   async set(items) { if (auth.user) await lab.saveHoldings(items); else local.set(items); },
 };
 
-W.QD = { CFG, auth, http, lab, api, waitJob, fmt, n, ok, scoreTone, marketStatus, param, PRESETS, toRule, fromRule, describeRule, describeCond, describeExit, buildExit, validCond, label, pickOptions, gateStat, plainStat, exitGate, loadPatterns, holdings, bust, ApiError };
+/* ---------------- watchlist: what is fresh, and what joined or left each list ---------------- */
+const FRESH_DAYS = 4, FRESH_MOVE = 4;
+/** Fresh: matched in the last 4 days, or still less than 4% above the price when it matched. */
+const isFresh = r => (r.age_days != null && r.age_days <= FRESH_DAYS) || !(n(r.chg) >= FRESH_MOVE);
+const CAT_ORDER = { q: 0, y: 1, f: 2 };
+const EXIT_WHY = { stop: 'loss limit in its rules', target: 'gain limit in its rules', trail: 'trailing exit in its rules', time: 'time limit in its rules', rule: 'its exit rule' };
+/** Added events come from open matches, left events from closed trades of every strategy switched on. Newest first. */
+async function changes(rows, days = 30) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const age = d => Math.round((today - new Date(String(d).slice(0, 10) + 'T00:00:00')) / 864e5);
+  const ev = (rows || []).map(r => ({ kind: 'add', sym: r.symbol, sid: r.sid, name: r.strategy, cat: r.cat, date: r.date, age: age(r.date), price: r.price, chg: r.chg }));
+  let subs = []; try { subs = ((await lab.alerts()).items || []).filter(i => i.on); } catch { /* signed out */ }
+  const closed = await Promise.all(subs.map(s => cached(`lab:closed:${s.id}`, 5 * MIN, () => lab.trades(s.id, 'closed')).then(l => l.map(t => ({ ...t, sid: s.id, name: s.name, cat: s.cat }))).catch(() => [])));
+  closed.flat().forEach(t => {
+    if (!t.exit_date) return; const a = age(t.exit_date); if (a > days) return;
+    const held = ok(t.bars) ? n(t.bars) : Math.max(1, Math.round((new Date(t.exit_date) - new Date(t.entry_date)) / 864e5));
+    ev.push({ kind: 'out', sym: t.symbol, sid: t.sid, name: t.name, cat: t.cat, date: t.exit_date, age: a, ret: t.ret_pct, held, why: EXIT_WHY[t.exit_reason] || 'its exit rule' });
+  });
+  return ev.filter(e => e.age <= days).sort((a, b) => String(b.date).slice(0, 10).localeCompare(String(a.date).slice(0, 10)) || CAT_ORDER[a.cat] - CAT_ORDER[b.cat] || (a.kind === 'add' ? 0 : 1) - (b.kind === 'add' ? 0 : 1));
+}
+
+W.QD = { isFresh, changes, CAT_ORDER, FRESH_DAYS, FRESH_MOVE,  CFG, auth, http, lab, api, waitJob, fmt, n, ok, scoreTone, marketStatus, param, PRESETS, toRule, fromRule, describeRule, describeCond, describeExit, buildExit, validCond, label, pickOptions, gateStat, plainStat, exitGate, loadPatterns, holdings, bust, ApiError };
 })();

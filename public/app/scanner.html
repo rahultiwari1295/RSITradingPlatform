@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Scanner · QuantSync Lab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&family=IBM+Plex+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="app.css"><script src="data.js"></script><script src="app.js"></script>
 <style>
 .flow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:26px;padding:0;list-style:none;counter-reset:f}
@@ -63,7 +63,7 @@
 </style></head>
 <body data-page="scanner"><main class="main">
 
-<div class="phead"><div class="txt"><span class="kicker">Scanner</span><h1 class="t-1">Build a scanner</h1>
+<div class="phead"><div class="txt"><span class="kicker">Scanner</span><h1 class="t-1">Build a <em>scanner.</em></h1>
   <p class="lede">Describe the stocks you are looking for. We check every NSE stock against your rules after each close, show you today’s matches, and test how they did since 2023.</p></div></div>
 
 <ol class="flow" id="flow"><li class="on">Choose your rules</li><li>See today’s matches</li><li>Backtest it</li><li class="ai">Save and let AI enhance</li></ol>
@@ -91,11 +91,11 @@
 </div>
 
 <section class="panel test" id="test" hidden>
-  <div><h2 class="t-2">How would this scan have done?</h2><p class="small" style="margin-top:6px">We follow every match since January 2023: buy at the next day’s open, sell when one of these exits happens. Costs of 0.10% per side are included.</p></div>
+  <div><h2 class="t-2">How would this scan have done?</h2><p class="small" style="margin-top:6px">We follow every match since January 2023 as if it were taken at the next day’s open, and close it when one of these exit rules is met. Costs of 0.10% per side are included.</p></div>
   <div class="exits">
-    <label for="ex-stop">Sell if it falls<input class="inp" id="ex-stop" value="5" inputmode="decimal"><span class="tiny">% below entry</span></label>
-    <label for="ex-tgt">Sell if it rises<input class="inp" id="ex-tgt" value="10" inputmode="decimal"><span class="tiny">% above entry</span></label>
-    <label for="ex-time">Or sell after<input class="inp" id="ex-time" value="20" inputmode="numeric"><span class="tiny">bars (days on daily)</span></label>
+    <label for="ex-stop">Leave the test if it falls<input class="inp" id="ex-stop" value="5" inputmode="decimal"><span class="tiny">% below entry</span></label>
+    <label for="ex-tgt">Leave the test if it rises<input class="inp" id="ex-tgt" value="10" inputmode="decimal"><span class="tiny">% above entry</span></label>
+    <label for="ex-time">Or leave after<input class="inp" id="ex-time" value="20" inputmode="numeric"><span class="tiny">bars (days on daily)</span></label>
   </div>
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn primary" id="bt" data-i="flask" data-s="16">Backtest 2023 to today</button><span class="tiny" id="bt-note"></span></div>
   <div class="steps2" id="prog" hidden></div>
