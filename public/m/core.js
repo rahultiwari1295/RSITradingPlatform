@@ -208,13 +208,16 @@ const rio = 'IntersectionObserver' in W ? new IntersectionObserver(es => {
   let i = 0;
   es.forEach(e => { if (!e.isIntersecting) return; rio.unobserve(e.target); e.target.style.setProperty('--d', Math.min(i++ * 70, 420) + 'ms'); requestAnimationFrame(() => e.target.classList.add('in')); });
 }, { rootMargin: '0px 0px -4% 0px', threshold: .01 }) : null;
-/** Let the top-level blocks inside root rise in, in order, the first time they are seen. */
+/** Let blocks rise in once, in order. Fail-safe: anything still hidden after a moment is shown anyway. */
 export function reveal(root) {
   if (!root || RM || !rio) return;
+  const mine = [];
   root.querySelectorAll(REVEAL).forEach(el => {
     if (el.dataset.rv || (el.parentElement && el.parentElement.closest(REVEAL) && root.contains(el.parentElement.closest(REVEAL)))) return;
-    el.dataset.rv = 1; el.classList.add('rv'); rio.observe(el);
+    el.dataset.rv = 1; el.classList.add('rv'); mine.push(el);
+    requestAnimationFrame(() => rio.observe(el));
   });
+  if (mine.length) setTimeout(() => mine.forEach(el => { el.classList.add('in'); }), 1400);
 }
 /** Load into a slot with skeleton, error and retry handled the same way everywhere. */
 export async function fill(el, load, draw, sk = skel(80, 2), { quiet = false } = {}) {

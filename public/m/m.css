@@ -429,6 +429,7 @@ button.row { width: 100%; text-align: left; }
 .pcard:active { transform: scale(.985); }
 .pcard .in { padding: 14px 16px 0; }
 .pcard .plot { height: 104px; margin-top: 8px; }
+.pcard .plot svg { width: 100%; height: 100%; }
 .pcard .odds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: .5px solid var(--line); }
 .pcard .odds > div { padding: 10px 12px; }
 .pcard .odds > div + div { box-shadow: -.5px 0 0 var(--line); }
@@ -541,11 +542,11 @@ a.row:active, button.row:active { transform: scale(.985); transition-duration: .
 
 /* floating tab bar with a sliding indicator */
 #tabs {
-  left: 12px; right: 12px; bottom: calc(10px + var(--safe-b)); height: var(--tab-h); padding: 0 6px; border-radius: 26px;
+  left: 0; right: 0; margin: 0 auto; width: calc(100% - 24px); max-width: 460px; bottom: calc(10px + var(--safe-b)); height: var(--tab-h); padding: 0 6px; border-radius: 26px;
   background: var(--glass); box-shadow: inset 0 0 0 1px var(--glass-edge), 0 0 0 1px var(--edge), 0 18px 40px -16px rgba(11, 21, 38, .35);
 }
 #tabs .ind { position: absolute; top: 6px; bottom: 6px; left: 6px; width: calc((100% - 12px) / 5); border-radius: 20px; background: var(--card); box-shadow: var(--hi), 0 0 0 1px var(--edge), 0 6px 14px -8px rgba(11, 21, 38, .3); transition: transform .55s var(--spring); z-index: 0; }
-.tab { z-index: 1; font-size: 10.5px; }
+.tab { z-index: 1; font-size: 10.5px; min-width: 0; white-space: nowrap; }
 .tab[aria-current="page"] { color: var(--brand); }
 .tab[aria-current="page"] svg { transform: translateY(-1px) scale(1.06); }
 .screen { padding-bottom: calc(var(--tab-h) + var(--safe-b) + 40px); }
@@ -644,7 +645,7 @@ a.row:active, button.row:active { transform: scale(.985); transition-duration: .
   .stats.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .callrail { grid-auto-columns: 340px; }
 }
-@media (min-width: 960px) {
+@media (min-width: 900px) {
   #tabs { display: none; }
   .screen { padding-bottom: 48px; }
   .bar-logo { display: none !important; }

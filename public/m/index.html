@@ -13,8 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/m/m.css?v=1">
-<link rel="modulepreload" href="/m/core.js">
+<link rel="stylesheet" href="/m/m.css?v=3">
 </head>
 <body>
 <div id="app">
@@ -23,6 +22,19 @@
 </div>
 <nav id="tabs" aria-label="Main"></nav>
 <noscript><p style="padding:24px">QuantSync needs JavaScript to load live market data.</p></noscript>
+<script>
+  /* never leave the phone on a blank screen: show what went wrong */
+  (function () {
+    function fail(msg) {
+      var st = document.getElementById('stage');
+      if (!st || st.children.length) return;
+      st.innerHTML = '<div style="padding:90px 24px;font:15px/1.5 system-ui,sans-serif;color:#8a94a6"><b style="color:#d9534f">This page could not start.</b><br>' + String(msg).replace(/</g, '&lt;') + '<br><br><a href="/m/?r=' + Date.now() + '" style="color:#2346E8;font-weight:600">Reload</a></div>';
+    }
+    window.addEventListener('error', function (e) { fail(e.message || 'Script error'); });
+    window.addEventListener('unhandledrejection', function (e) { fail((e.reason && e.reason.message) || e.reason); });
+    setTimeout(function () { fail('It is taking too long. Check your connection and reload.'); }, 9000);
+  })();
+</script>
 <script type="module">
   import { boot } from '/m/core.js';
   boot();
