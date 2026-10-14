@@ -41,8 +41,9 @@ export function signalCard(c) {
     <div class="meta"><span style="display:flex;gap:6px"><span class="tag new"><i></i>New signal</span>${traded ? '<span class="tag paper">Paper traded</span>' : ''}</span><span class="when">Called ${dayWord(c.entryDate)}</span></div>
     ${link(`calls/${encodeURIComponent(c.sym)}`, `<div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}</div><div class="s">${esc(c.strategy)}${isFinite(c.score) && c.score > 0 ? `, AI confidence ${fmt.int(c.score)}` : ''}</div></div>
       <div class="px"><div class="v">${fmt.px(c.now)}</div>${Math.abs(c.roi) < .05 ? '<span class="small">at entry</span>' : delta(c.roi)}</div></div>
-      ${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: c.now }, { bare: true })}`, '', `style="display:block" aria-label="${esc(c.sym)} signal details"`)}
-    <div class="plan"><div class="buy"><div class="k">Buy near</div><div class="v">${fmt.px(c.entry)}</div></div><div class="stop"><div class="k">Stop loss</div><div class="v">${fmt.px(c.stop)}</div></div><div class="tgt"><div class="k">Target ${isFinite(gain) ? fmt.sp(gain, 0) : ''}</div><div class="v">${fmt.px(c.target)}</div></div></div>
+      ${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: c.now })}
+      ${c.why ? `<p class="why">${esc(c.why)}</p>` : ''}
+      <div class="foot"><span class="tnum">Buy near <b>${fmt.px(c.entry)}</b></span><span class="tnum">${isFinite(gain) ? 'Target <b class="up">' + fmt.sp(gain, 0) + '</b>' : ''}</span></div>`, '', `style="display:block" aria-label="${esc(c.sym)} signal details"`)}
     ${moved ? `<p class="note">Price is already <b>${fmt.sp(run)}</b> above the entry. Paper trade it only on a dip towards ${fmt.px(c.entry)}.</p>` : ''}
     <div class="acts">${traded ? `<button class="btn quiet" data-open-paper>${icon('pf', 18)}See paper trade</button>` : `<button class="btn" data-paper="${esc(c.sym)}">${icon('bolt', 18)}Paper trade</button>`}${link(`calls/${encodeURIComponent(c.sym)}`, icon('chev', 20), 'btn quiet', 'aria-label="Signal details" style="width:48px;padding:0"')}</div>
   </div>`;

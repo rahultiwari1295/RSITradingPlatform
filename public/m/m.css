@@ -670,3 +670,58 @@ a.row:active, button.row:active { transform: scale(.985); transition-duration: .
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
 }
+
+/* ================================================================ depth pass: richer shadows, light and life */
+:root {
+  --lift-1: 0 1px 0 rgba(255,255,255,.6) inset, 0 1px 2px rgba(11,21,38,.05), 0 6px 14px -6px rgba(11,21,38,.12), 0 22px 40px -22px rgba(11,21,38,.28);
+  --lift-2: 0 1px 0 rgba(255,255,255,.7) inset, 0 2px 4px rgba(11,21,38,.05), 0 12px 24px -10px rgba(11,21,38,.18), 0 34px 60px -26px rgba(11,21,38,.40);
+}
+:root[data-theme="dark"] { --lift-1: 0 1px 0 rgba(255,255,255,.06) inset, 0 8px 18px -8px rgba(0,0,0,.7), 0 24px 44px -24px rgba(0,0,0,.8); --lift-2: 0 1px 0 rgba(255,255,255,.08) inset, 0 14px 28px -10px rgba(0,0,0,.75), 0 36px 64px -26px rgba(0,0,0,.9); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --lift-1: 0 1px 0 rgba(255,255,255,.06) inset, 0 8px 18px -8px rgba(0,0,0,.7), 0 24px 44px -24px rgba(0,0,0,.8); --lift-2: 0 1px 0 rgba(255,255,255,.08) inset, 0 14px 28px -10px rgba(0,0,0,.75), 0 36px 64px -26px rgba(0,0,0,.9); } }
+
+.panel, .group, .tk, .xhero, .pcard, .callcard, .empty, .tile, .qa details, .duo .side, .brief { box-shadow: 0 0 0 1px var(--edge), var(--lift-1); }
+.xhero, .pcard, .callcard, .sig { box-shadow: 0 0 0 1px var(--edge), var(--lift-2); }
+.stats, .kv, .story { box-shadow: 0 0 0 1px var(--edge), var(--lift-1); }
+
+/* a soft sheen across the top edge of every raised card */
+.pcard, .callcard, .sig, .xhero { overflow: hidden; }
+.pcard::before, .callcard::before, .sig::before, .xhero::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 90px; pointer-events: none; z-index: 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--brand) 7%, transparent), transparent);
+}
+.sig.new::before { background: linear-gradient(180deg, color-mix(in srgb, var(--up-solid) 11%, transparent), transparent); }
+.pcard > *, .callcard > *, .sig > *, .xhero > * { position: relative; z-index: 1; }
+/* sweep of light across new signals */
+.sig.new::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 38%; left: -60%; pointer-events: none; z-index: 2;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent); transform: skewX(-18deg); animation: sheen 6s ease-in-out 1.2s infinite;
+}
+@keyframes sheen { 0%, 55% { left: -60%; } 100% { left: 130%; } }
+/* new signals glow green, like they are lit from within */
+.sig.new { box-shadow: 0 0 0 1px color-mix(in srgb, var(--up-solid) 30%, transparent), 0 14px 30px -12px color-mix(in srgb, var(--up-solid) 45%, transparent), var(--lift-2); }
+.sig.old { box-shadow: 0 0 0 1px var(--edge), var(--lift-1); }
+
+/* the stop / entry / target line: deeper track, glowing zones, living needle */
+.ruler .rt { height: 11px; border-radius: 6px; background: var(--sunk); box-shadow: inset 0 1px 3px rgba(11,21,38,.22), 0 1px 0 rgba(255,255,255,.5); }
+.ruler .zl, .ruler .zw { box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -2px 3px rgba(0,0,0,.12); }
+.ruler .zl { border-radius: 6px 0 0 6px; opacity: 1; filter: drop-shadow(0 4px 6px color-mix(in srgb, var(--dn-solid) 40%, transparent)); }
+.ruler .zw { border-radius: 0 6px 6px 0; opacity: 1; filter: drop-shadow(0 4px 6px color-mix(in srgb, var(--up-solid) 40%, transparent)); }
+.ruler .entry { width: 3px; margin-left: -1.5px; top: -5px; bottom: -5px; border-radius: 2px; box-shadow: 0 0 0 2px var(--card), 0 2px 5px rgba(0,0,0,.3); }
+.ruler .needle b { background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 88%, #fff), var(--ink)); box-shadow: 0 6px 14px -4px rgba(11,21,38,.55), inset 0 1px 0 rgba(255,255,255,.18); border-radius: 9px; padding: 4px 9px; }
+.ruler .needle::after { width: 14px; height: 14px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--ink) 14%, transparent), 0 3px 8px rgba(0,0,0,.35); animation: beat 2.4s ease-in-out infinite; }
+@keyframes beat { 0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 14%, transparent), 0 3px 8px rgba(0,0,0,.35); } 50% { box-shadow: 0 0 0 9px color-mix(in srgb, var(--ink) 0%, transparent), 0 3px 8px rgba(0,0,0,.35); } }
+.ruler .lb b { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+.sig .ruler { margin-top: 14px; padding-top: 34px; }
+.sig .why { margin: 12px 0 0; font-size: 14px; color: var(--ink-2); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.sig .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 11px; border-top: .5px solid var(--line); font-size: 13px; color: var(--ink-2); }
+.sig .foot b { color: var(--ink); font-weight: 700; }
+.sig .foot b.up { color: var(--up); }
+.sig .meta .tag.new { box-shadow: 0 4px 10px -4px color-mix(in srgb, var(--ai-solid) 70%, transparent); }
+
+/* hover lift on pointer devices */
+@media (hover: hover) {
+  .pcard, .callcard, .sig, .tk, .tile, .xhero, a.row { transition: transform .35s var(--spring), box-shadow .3s; }
+  .pcard:hover, .callcard:hover, .sig:hover, .tk:hover, .tile:hover { transform: translateY(-4px); }
+  .sig.new:hover { box-shadow: 0 0 0 1px color-mix(in srgb, var(--up-solid) 45%, transparent), 0 22px 40px -14px color-mix(in srgb, var(--up-solid) 55%, transparent), var(--lift-2); }
+}
+@media (prefers-reduced-motion: reduce) { .sig.new::after, .ruler .needle::after { animation: none; } }
