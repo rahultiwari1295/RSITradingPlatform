@@ -1,149 +1,20 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>QuantSync AI · The stocks our AI found today</title>
-<meta name="description" content="Every evening QuantSync AI scans every NSE stock and lists the few that match its rules. See today's list and its full track record.">
-<meta name="theme-color" content="#ECEFF5" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#05080F" media="(prefers-color-scheme: dark)">
+<title>QuantSync Lab · Build and test your own trading ideas</title>
+<meta name="description" content="Describe a trading idea in plain words, turn it into rules, see which NSE stocks meet them today, test it on years of past prices and let AI coach it. A tool, not tips.">
+<meta name="theme-color" content="#EEF1F7" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#05080F" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%235263FF'/%3E%3Cpath d='M7 21.5 12.5 15l4 3.5L25 9.5' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='25' cy='9.5' r='2.6' fill='%23FFD58A'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&family=IBM+Plex+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="app.css"><script src="data.js"></script><script src="app.js"></script>
-<style>
-.hero-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:28px;align-items:end}
-.hero-side{display:grid;gap:10px;align-content:end}
-.hs-card{border-radius:20px;padding:16px 18px;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
-.hs-card small{display:block;font-size:12px;font-weight:600;color:var(--hero-fg3)}
-.hs-card b{display:block;font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1.15;font-variant-numeric:tabular-nums}
-.hs-card .chart{height:54px;margin-top:6px}
-.hs-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.cap{font-size:12.5px;color:var(--ink3);margin-top:10px}
-.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.step{position:relative;padding:24px;border-radius:24px;background:var(--card);box-shadow:0 0 0 1px var(--edge),var(--lift-1);display:grid;gap:10px;align-content:start}
-.step .n{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;font-weight:800;color:#fff;background:linear-gradient(135deg,#5B6CFF,#7B55F0);box-shadow:0 10px 20px -10px rgba(91,108,255,.9)}
-.step h3{font-size:19px;font-weight:750;letter-spacing:-.02em}
-.step p{font-size:14.5px;color:var(--ink2);line-height:1.55}
-.split2{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:24px;align-items:start}
-.xr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:center;padding:clamp(24px,3.6vw,40px);border-radius:28px;background:var(--card);box-shadow:0 0 0 1px var(--edge),var(--lift-2)}
-.xr h3{font-size:clamp(26px,3vw,38px);font-weight:800;letter-spacing:-.04em;line-height:1.08}
-.xr h3 em{font-style:normal;background:var(--ttl);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
-.xr p{font-size:15px;color:var(--ink2);margin-top:10px;max-width:46ch}
-.xq{display:flex;gap:8px;align-items:center;height:60px;padding:0 8px 0 18px;border-radius:18px;background:var(--surface);box-shadow:0 0 0 1px var(--line2),var(--lift-1)}
-.xq:focus-within{box-shadow:0 0 0 2px var(--brand),var(--lift-1)}
-.xq input{flex:1;border:0;background:transparent;height:100%;font-size:17px;min-width:0}
-.xq input:focus{outline:0}
-.xq svg{color:var(--ink3);flex:none}
-.xq .btn{height:44px;border-radius:13px}
-.xchips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.xchips a{height:32px;padding:0 13px;border-radius:16px;display:inline-flex;align-items:center;font-size:13px;font-weight:650;color:var(--ink2);background:var(--sunk)}
-.xchips a:hover{color:var(--ink)}
-.build{position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:center;padding:clamp(24px,3.6vw,40px);border-radius:28px;color:#1E1606;
-  background:radial-gradient(100% 140% at 100% 0%,rgba(239,170,37,.24),transparent 55%),radial-gradient(90% 100% at 0% 100%,rgba(139,92,246,.14),transparent 60%),linear-gradient(180deg,#FFFDF8,#FFF4E2);box-shadow:0 0 0 1px rgba(201,149,44,.24),0 24px 48px -26px rgba(201,149,44,.55)}
-:root[data-theme="dark"] .build{color:#FBF5EA;background:radial-gradient(100% 140% at 100% 0%,rgba(242,176,46,.2),transparent 55%),radial-gradient(90% 100% at 0% 100%,rgba(139,92,246,.22),transparent 60%),linear-gradient(165deg,#1E1A2E,#0E0E18 80%);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 0 1px rgba(245,190,78,.14)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .build{color:#FBF5EA;background:radial-gradient(100% 140% at 100% 0%,rgba(242,176,46,.2),transparent 55%),radial-gradient(90% 100% at 0% 100%,rgba(139,92,246,.22),transparent 60%),linear-gradient(165deg,#1E1A2E,#0E0E18 80%);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 0 1px rgba(245,190,78,.14)}}
-.build .ey{font-size:13px;font-weight:700;color:var(--gold-ink);display:flex;gap:6px;align-items:center}
-.build h3{font-size:clamp(24px,2.8vw,34px);font-weight:800;letter-spacing:-.035em;margin-top:10px;line-height:1.1}
-.build p{font-size:15px;opacity:.75;margin-top:10px;max-width:56ch}
-.build .cta{height:50px;padding:0 22px;border-radius:15px;display:inline-flex;align-items:center;gap:6px;font-weight:750;color:#241800;background:linear-gradient(180deg,#F7C75A,#E4A22E);box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 10px 22px -10px rgba(201,149,44,.9);white-space:nowrap}
-@media (max-width:960px){.hero-grid,.split2,.xr{grid-template-columns:minmax(0,1fr)}.steps{grid-template-columns:minmax(0,1fr)}}
-@media (max-width:640px){.build{grid-template-columns:minmax(0,1fr)}.lux-chip{height:42px}.hs-card b{font-size:26px}}
-</style></head>
-<body data-page="index"><main class="main">
-
-<section class="lux-hero" aria-live="polite">
-  <div class="hero-grid">
-    <div>
-      <span class="lux-ey" id="ey"><i class="live"></i>QuantSync AI · loading the latest scan</span>
-      <h1 class="lux-h" id="hh">The stocks our AI <br>found today.</h1>
-      <p class="lux-p">Every evening QuantSync AI scans every NSE stock and lists the few that match its rules. Here is the latest list, and its complete track record. Research, not a tip.</p>
-      <div class="lux-chips" id="chips"></div>
-      <div class="lux-cta"><a class="lux-btn" href="ai.html">See today’s list <span data-i="arrow" data-s="17"></span></a><a class="lux-btn ghost" href="ai.html#record">Track record</a></div>
-    </div>
-    <div class="hero-side" id="side">
-      <div class="hs-card"><small>Track record</small><b class="skel" style="height:34px;width:60%;background:rgba(255,255,255,.08)"></b></div>
-    </div>
-  </div>
-</section>
-
-<div class="shd"><div><h2>Today’s <em>list</em></h2><p>Fresh matches are in colour. Stocks that matched a while ago and have already moved are greyed out.</p></div><a href="ai.html">See all <span data-i="chev" data-s="16"></span></a></div>
-<div id="list"></div>
-
-<div class="split2">
-  <section>
-    <div class="shd"><div><h2>What <em>changed</em></h2><p>Stocks that joined or left the list this week.</p></div><a href="ai.html#changes">All changes <span data-i="chev" data-s="16"></span></a></div>
-    <div class="lst" id="feed"></div>
-  </section>
-  <section>
-    <div class="shd"><div><h2>How it <em>works</em></h2><p>The same steps run after every market close.</p></div></div>
-    <div class="steps" style="grid-template-columns:minmax(0,1fr)">
-      <div class="step"><span class="n">1</span><h3>Scans every NSE stock</h3><p>More than 2,300 companies, checked against the strategy’s rules on the latest daily chart.</p></div>
-      <div class="step"><span class="n">2</span><h3>AI checks each match</h3><p>A model trained on years of past matches scores each one and keeps only the strongest.</p></div>
-      <div class="step"><span class="n">3</span><h3>The list, and every result</h3><p>Each stock stays on the list until its exit rule is met. Every result is recorded here, good or bad.</p></div>
-    </div>
-  </section>
-</div>
-
-<div class="shd"><div><h2>Look up any <em>company</em></h2></div></div>
-<section class="xr">
-  <div><h3>Is it a <em>good</em> company? <br>Find out in seconds.</h3><p>Stock X-Ray checks trend, momentum, buying activity and business quality, and gives one health score from 0 to 100.</p></div>
-  <div><form class="xq" id="xq"><span data-i="search" data-s="20"></span><input id="xqi" placeholder="Search a company or symbol" aria-label="Search a company" autocomplete="off"><button class="btn primary">X-Ray</button></form>
-    <div class="xchips" id="xchips"></div></div>
-</section>
-
-<div class="shd"></div>
-<a class="build" href="scanner.html">
-  <div><div class="ey" data-i="flask" data-s="15">Build your own</div><h3>Create your own AI-powered strategy</h3><p>Pick the rules, see how they would have done on years of NSE prices, and let AI filter out the weaker matches. Then follow its list here every day.</p></div>
-  <span class="cta">Build a scanner →</span>
-</a>
-
-</main>
-<script>
-document.addEventListener('DOMContentLoaded',async()=>{
-const {qsai,fmt,ok,n}=QD;const {icon,state,spark}=QS;const $=id=>document.getElementById(id);const esc=fmt.esc;
-const ini=s=>esc(String(s).replace(/[^A-Za-z0-9]/g,'').slice(0,2).toUpperCase());
-const words=(html,start=0)=>{let i=start;return html.replace(/(<[^>]+>)|([^<\s]+)/g,(m,tag,w)=>tag?tag:`<span class="w" style="--i:${i++}">${w}</span>`)};
-
-/* X-Ray search */
-$('xq').onsubmit=e=>{e.preventDefault();const v=$('xqi').value.trim().toUpperCase().replace(/\s+/g,'');if(v)location.href='xray.html?s='+encodeURIComponent(v)};
-
-let L,closed;
-try{[L,closed]=await Promise.all([qsai.list(),qsai.closed().catch(()=>[])])}
-catch(e){$('hh').innerHTML='QuantSync AI is <br>catching its breath.';$('ey').innerHTML='<i class="live" style="background:#FF8A8E;animation:none"></i>The data server did not answer';state($('list'),'error',{body:e.message,action:'Try again',onAction:()=>location.reload()});return}
-const rows=L.rows,nw=rows.filter(r=>r.isNew),fresh=rows.filter(r=>r.fresh);
-const ms=QD.marketStatus();
-$('ey').innerHTML=`<i class="live"></i>QuantSync AI · after the ${L.latest?fmt.date(L.latest):''} close`.replace('the  close','latest close');
-$('hh').innerHTML=words(nw.length
-  ?`QuantSync AI found <br><span class="num">${nw.length}</span> new ${nw.length===1?'stock':'stocks'} <br>in the latest scan.`
-  :`No new stocks today. <br><span class="num">${rows.length}</span> still on the list.`);
-const show=(nw.length?nw:fresh).slice(0,4);
-$('chips').innerHTML=show.map(r=>`<a class="lux-chip" href="xray.html?s=${encodeURIComponent(r.symbol)}"><span class="m">${ini(r.symbol)}</span>${esc(r.symbol)} <small class="${fmt.tone(r.chg)}">${fmt.pct(r.chg)}</small></a>`).join('')+
-  (rows.length>show.length?`<a class="lux-chip" href="ai.html" style="padding-left:16px"><small style="color:var(--hero-fg2)">+${rows.length-show.length} more on the list</small></a>`:'');
-
-/* the record */
-const R=qsai.record(closed);
-if(R.trades){
-  $('side').innerHTML=`<div class="hs-card"><small>₹1 lakh, ₹10,000 in every call since ${fmt.dateY(R.first)}</small><b style="color:${R.growth>=0?'var(--hero-up)':'var(--hero-dn)'}">${fmt.inr(R.final)} <span style="font-size:16px;font-weight:700">${fmt.pct(R.growth,0)}</span></b><div class="chart" id="eq"></div></div>
-    <div class="hs-row"><div class="hs-card"><small>Closed calls</small><b>${fmt.int(R.trades)}</b></div><div class="hs-card"><small>Ended higher</small><b>${fmt.plain(R.win_rate)}</b></div></div>
-    <div class="hs-row"><div class="hs-card"><small>Average result</small><b style="color:${R.avg_ret>=0?'var(--hero-up)':'var(--hero-dn)'}">${fmt.pct(R.avg_ret)}</b></div><div class="hs-card"><small>On the list now</small><b>${rows.length}</b></div></div>`;
-  spark($('eq'),R.equity.map(p=>p.v),'#9DB2FF');const sv=$('eq').querySelector('svg');if(sv){sv.setAttribute('preserveAspectRatio','none');sv.style.height='54px'}
-}else $('side').innerHTML=`<div class="hs-card"><small>On the list now</small><b>${rows.length}</b></div>`;
-
-/* today's list preview */
-const fr=fresh.slice(0,6),moved=rows.length-fresh.length;
-const li=r=>`<a class="li${r.fresh?'':' old'}" href="xray.html?s=${encodeURIComponent(r.symbol)}"><span class="m">${ini(r.symbol)}</span>
-  <span><span class="t"><span>${esc(r.symbol)}</span>${r.isNew?'<span class="tag-new">NEW</span>':''}</span><span class="s">Matched ${r.age_days===0?'today':r.age_days===1?'yesterday':r.age_days+' days ago'} at ${fmt.inr(r.price)}</span></span>
-  <span class="sp chart" data-sp="${esc(r.symbol)}"></span>
-  <span class="r"><b>${fmt.inr(r.now)}</b><span class="${fmt.tone(r.chg)}">${fmt.pct(r.chg)}</span><small>since</small></span></a>`;
-$('list').innerHTML=rows.length?`<div class="lst">${fr.map(li).join('')}${moved||fresh.length>6?`<a class="fold" href="ai.html">${icon('chev',15)}See the full list · ${rows.length} stocks${moved?`, ${moved} moved on`:''}</a>`:''}</div>`
-  :'<div class="lst"><div class="small" style="padding:22px">The list is empty after the latest close. New matches appear here after the next scan.</div></div>';
-QD.lab.chartBatch(fr.map(r=>r.symbol),40).then(b=>fr.forEach(r=>{const el=document.querySelector(`[data-sp="${CSS.escape(r.symbol)}"]`),c=((b.bars||{})[r.symbol]||[]).map(x=>x.close);if(el&&c.length>3)spark(el,c,r.chg>=0?'var(--up)':'var(--dn)')})).catch(()=>{});
-
-/* what changed this week */
-const ev=(await qsai.changes(7).catch(()=>[])).slice(0,6);
-$('feed').innerHTML=ev.length?ev.map(e=>e.kind==='add'
-  ?`<a class="ev2 add" href="xray.html?s=${encodeURIComponent(e.sym)}"><span class="dot">+</span><span><span class="t"><b>${esc(e.sym)}</b> <i>joined the list</i></span><div class="s">${esc(fmt.rel(e.date))} · at ${fmt.inr(e.price)}</div></span><span class="r"><b class="${fmt.tone(e.chg)}">${fmt.pct(e.chg)}</b><small>since</small></span></a>`
-  :`<a class="ev2 out" href="xray.html?s=${encodeURIComponent(e.sym)}"><span class="dot">−</span><span><span class="t"><b>${esc(e.sym)}</b> <i>left the list</i></span><div class="s">${esc(fmt.rel(e.date))} · after ${e.held} days · ${esc(e.why)}</div></span><span class="r"><b class="${fmt.tone(e.ret)}">${fmt.pct(e.ret)}</b><small>while listed</small></span></a>`).join('')
-  :'<div class="small" style="padding:22px">No changes this week.</div>';
-
-/* popular X-Ray picks: the stocks on the list */
-$('xchips').innerHTML=rows.slice(0,5).map(r=>`<a href="xray.html?s=${encodeURIComponent(r.symbol)}">${esc(r.symbol)}</a>`).join('');
-});
-</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..800&display=swap">
+<link rel="stylesheet" href="/app/lab.css?v=2">
+<script>try{var t=localStorage.getItem('qs-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+<script src="/app/data.js?v=2"></script>
+</head>
+<body>
+<header class="top" id="top"></header>
+<main id="view" class="wrap"></main>
+<nav class="tabs" id="tabs" aria-label="Main"></nav>
+<noscript><p style="padding:24px">QuantSync Lab needs JavaScript.</p></noscript>
+<script type="module">import { boot } from '/app/js/app.js'; boot();</script>
 </body></html>

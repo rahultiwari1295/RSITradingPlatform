@@ -13,11 +13,24 @@
           "value": "no-cache, must-revalidate"
         }
       ]
+    },
+    {
+      "source": "/app/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, must-revalidate"
+        }
+      ]
     }
   ],
   "rewrites": [
     {
       "source": "/app/",
+      "destination": "/app/index.html"
+    },
+    {
+      "source": "/app/:path*",
       "destination": "/app/index.html"
     },
     {
