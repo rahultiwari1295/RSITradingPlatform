@@ -16,21 +16,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const timeframe = (req.query.timeframe as "day" | "week") || "day";
   const period = timeframe === "week" ? "week" : "day";
-  const VPS_API_BASE = process.env.VPS_API_URL || "https://quantsync-api.duckdns.org:8443";
+  const VPS_API_BASE = process.env.VPS_API_URL || "https://backing-lapping-denial.ngrok-free.dev";
 
   // 1. Attempt live query from QuantSync VPS SQLite DB
   try {
+    const fetchHeaders = { "Accept": "application/json", "ngrok-skip-browser-warning": "true" };
     const [sectorsRes, industriesRes, newsRes] = await Promise.allSettled([
       fetch(`${VPS_API_BASE}/api/intel/sectors?period=${period}`, {
-        headers: { "Accept": "application/json" },
+        headers: fetchHeaders,
         signal: AbortSignal.timeout(4000)
       }),
       fetch(`${VPS_API_BASE}/api/intel/industries?period=${period}`, {
-        headers: { "Accept": "application/json" },
+        headers: fetchHeaders,
         signal: AbortSignal.timeout(4000)
       }),
       fetch(`${VPS_API_BASE}/api/intel/news?limit=60`, {
-        headers: { "Accept": "application/json" },
+        headers: fetchHeaders,
         signal: AbortSignal.timeout(4000)
       })
     ]);

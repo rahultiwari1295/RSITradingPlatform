@@ -1,10 +1,10 @@
 /**
  * QuantSync Production API & VPS Endpoints
- * All endpoints use the permanent HTTPS domain: https://quantsync-api.duckdns.org:8443
+ * Phone VPS endpoint: https://backing-lapping-denial.ngrok-free.dev
  * Or relative Vercel proxy routes in production.
  */
 
-export const VPS_BASE_URL = "https://quantsync-api.duckdns.org:8443";
+export const VPS_BASE_URL = "https://backing-lapping-denial.ngrok-free.dev";
 
 export const API_ENDPOINTS = {
   // Candlestick Chart API

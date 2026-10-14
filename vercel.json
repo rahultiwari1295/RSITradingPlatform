@@ -15,6 +15,15 @@
       ]
     },
     {
+      "source": "/phone/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, must-revalidate"
+        }
+      ]
+    },
+    {
       "source": "/app/(.*)",
       "headers": [
         {
@@ -34,6 +43,18 @@
       "destination": "/app/index.html"
     },
     {
+      "source": "/phone",
+      "destination": "/phone/index.html"
+    },
+    {
+      "source": "/phone/",
+      "destination": "/phone/index.html"
+    },
+    {
+      "source": "/phone/:path*",
+      "destination": "/phone/index.html"
+    },
+    {
       "source": "/m",
       "destination": "/m/index.html"
     },
@@ -43,7 +64,7 @@
     },
     {
       "source": "/lab/api/:path*",
-      "destination": "https://quantsync-api.duckdns.org:8443/lab/:path*"
+      "destination": "https://backing-lapping-denial.ngrok-free.dev/lab/:path*"
     },
     {
       "source": "/lab",
@@ -87,7 +108,7 @@
     },
     {
       "source": "/api/:match*",
-      "destination": "https://quantsync-api.duckdns.org:8443/api/:match*"
+      "destination": "https://backing-lapping-denial.ngrok-free.dev/api/:match*"
     },
     {
       "source": "/dna-v2",
@@ -139,7 +160,7 @@
     },
     {
       "source": "/uploads/:match*",
-      "destination": "https://quantsync-api.duckdns.org:8443/uploads/:match*"
+      "destination": "https://backing-lapping-denial.ngrok-free.dev/uploads/:match*"
     },
     {
       "source": "/((?!api/).*)",

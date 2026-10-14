@@ -122,12 +122,12 @@ export default function V3View({ onOpenChart, isSyncing, onRequestSync }: V3View
       const urls = [
         "/api/v3/terminalData",
         "/api/terminal-data?version=v3",
-        "https://quantsync-api.duckdns.org:8443/api/v3/terminalData",
+        "https://backing-lapping-denial.ngrok-free.dev/api/v3/terminalData",
       ];
       let data: V3TerminalData | null = null;
       for (const url of urls) {
         try {
-          const res = await fetch(url, { headers: { Accept: "application/json" } });
+          const res = await fetch(url, { headers: { Accept: "application/json", "ngrok-skip-browser-warning": "true" } });
           if (res.ok) { data = await res.json(); break; }
         } catch { /* try next */ }
       }

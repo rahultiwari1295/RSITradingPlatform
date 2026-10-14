@@ -3,7 +3,7 @@
  * Connects the frontend directly to the Python FastAPI VPS engine.
  */
 
-const VPS_DEFAULT_BASE = "https://quantsync-api.duckdns.org:8443";
+const VPS_DEFAULT_BASE = "https://backing-lapping-denial.ngrok-free.dev";
 
 function getBaseUrl(): string {
   if (typeof window !== "undefined") {
@@ -24,6 +24,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
       ...options,
       headers: {
         Accept: "application/json",
+        "ngrok-skip-browser-warning": "true",
         ...(options?.headers || {}),
       },
     });
@@ -32,7 +33,14 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
       // If local proxy failed and base was empty, attempt direct VPS fallback
       if (!base && typeof window !== "undefined") {
         const fallbackUrl = `${VPS_DEFAULT_BASE}${path}`;
-        const fallbackRes = await fetch(fallbackUrl, options);
+        const fallbackRes = await fetch(fallbackUrl, {
+          ...options,
+          headers: {
+            Accept: "application/json",
+            "ngrok-skip-browser-warning": "true",
+            ...(options?.headers || {}),
+          },
+        });
         if (fallbackRes.ok) {
           return await fallbackRes.json();
         }

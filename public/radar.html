@@ -73,13 +73,13 @@ input[type=range]{width:100%;accent-color:var(--bl)}
 if(new URLSearchParams(location.search).get('embed')==='1'){document.documentElement.classList.add('embedded')}
 
 // ===== QuantSync Live Production API Client =====
-const LIVE_API_BASE = 'https://quantsync-api.duckdns.org:8443';
+const LIVE_API_BASE = 'https://backing-lapping-denial.ngrok-free.dev';
 
 async function get(path){
   const cleanPath = path.startsWith('/') ? path : ('/' + path);
   // 1. Try relative route (proxied through Vercel or local server)
   try {
-    const res = await fetch(cleanPath, { headers: { 'Accept': 'application/json' } });
+    const res = await fetch(cleanPath, { headers: { 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' } });
     if (res.ok) {
       const data = await res.json();
       if (data && !data.error) return data;
@@ -88,7 +88,7 @@ async function get(path){
 
   // 2. Direct connection to live production VPS engine
   const directUrl = `${LIVE_API_BASE}${cleanPath}`;
-  const directRes = await fetch(directUrl, { headers: { 'Accept': 'application/json' } });
+  const directRes = await fetch(directUrl, { headers: { 'Accept': 'application/json', 'ngrok-skip-browser-warning': 'true' } });
   if (!directRes.ok) throw new Error('Live API ' + directRes.status + ' from ' + directUrl);
   return directRes.json();
 }

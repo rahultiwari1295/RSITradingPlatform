@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 
-const VPS_HOST = 'https://quantsync-api.duckdns.org:8443';
+const VPS_HOST = 'https://backing-lapping-denial.ngrok-free.dev';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -30,6 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       headers: {
         'Accept': action === 'chart' ? 'image/png,image/*,*/*' : 'application/json',
         'User-Agent': 'QuantSync-Vercel-DNAClient/1.0',
+        'ngrok-skip-browser-warning': 'true',
       },
       signal: AbortSignal.timeout(45000),
     });

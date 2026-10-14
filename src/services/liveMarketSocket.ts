@@ -55,12 +55,7 @@ class LiveMarketSocketService {
 
   private getSocketUrl(): string {
     if (typeof window === "undefined") return "";
-    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-    if (isLocal) {
-      // In local dev, can connect to local port 8000 or DuckDNS
-      return "wss://quantsync-api.duckdns.org:8443/ws/live-market";
-    }
-    return "wss://quantsync-api.duckdns.org:8443/ws/live-market";
+    return "wss://backing-lapping-denial.ngrok-free.dev/ws/live-market";
   }
 
   public connect() {

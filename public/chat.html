@@ -2394,7 +2394,7 @@
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsHost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
         ? window.location.host
-        : 'quantsync-api.duckdns.org:8443';
+        : 'backing-lapping-denial.ngrok-free.dev';
       const wsUrl = `${protocol}//${wsHost}/ws/chat/${channelId}?email=${encodeURIComponent(currentUser ? currentUser.email : 'guest@quantsync.ai')}&name=${encodeURIComponent(currentUser ? currentUser.name : 'Trader')}`;
 
       try {

@@ -17,13 +17,13 @@ export default defineConfig({
     hmr: process.env.DISABLE_HMR !== 'true',
     proxy: {
       '/lab/api': {
-        target: process.env.VITE_VPS_API_URL || 'https://quantsync-api.duckdns.org:8443',
+        target: process.env.VITE_VPS_API_URL || 'https://backing-lapping-denial.ngrok-free.dev',
         changeOrigin: true,
         secure: false,
         rewrite: (p: string) => p.replace(/^\/lab\/api/, '/lab'),
       },
       '/api': {
-        target: process.env.VITE_VPS_API_URL || 'https://quantsync-api.duckdns.org:8443',
+        target: process.env.VITE_VPS_API_URL || 'https://backing-lapping-denial.ngrok-free.dev',
         changeOrigin: true,
         secure: false,
       },

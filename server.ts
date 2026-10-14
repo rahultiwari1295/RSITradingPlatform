@@ -135,7 +135,7 @@ async function startServer() {
   // Express API Proxy — strictly fetching from raw Wix Studio endpoint
   app.get("/api/terminal-data", async (req, res) => {
     try {
-      const vpsEndpoint = "https://quantsync-api.duckdns.org:8443/api/terminalData";
+      const vpsEndpoint = "https://backing-lapping-denial.ngrok-free.dev/api/terminalData";
       const wixEndpoint = "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData";
 
       let response = await fetch(vpsEndpoint, {
@@ -253,7 +253,7 @@ async function startServer() {
   // Proxy route for upcoming/bounce setup stock API
   app.get("/api/upcoming-stocks", async (req, res) => {
     try {
-      const vpsEndpoint = "https://quantsync-api.duckdns.org:8443/api/upcoming-stocks";
+      const vpsEndpoint = "https://backing-lapping-denial.ngrok-free.dev/api/upcoming-stocks";
       const wixEndpoint = "https://rahultiwari1295.wixstudio.com/angelportfolio/_functions/upcomingStock";
 
       let response = await fetch(vpsEndpoint, {
@@ -312,7 +312,7 @@ async function startServer() {
     const limit = parseInt((req.query.limit as string) || '250', 10);
 
     try {
-      const vpsUrl = `https://quantsync-api.duckdns.org:8443/api/chart/${symbol}?limit=${limit}`;
+      const vpsUrl = `https://backing-lapping-denial.ngrok-free.dev/api/chart/${symbol}?limit=${limit}`;
       const response = await fetch(vpsUrl, {
         method: "GET",
         headers: { "Accept": "application/json" },
@@ -354,7 +354,7 @@ async function startServer() {
       }).catch(() => null);
 
       if (!vpsRes || !vpsRes.ok) {
-        vpsUrl = `https://quantsync-api.duckdns.org:8443${reqPath}${queryStr}`;
+        vpsUrl = `https://backing-lapping-denial.ngrok-free.dev${reqPath}${queryStr}`;
         const timeoutMs = reqPath.includes("/dna/") || reqPath.includes("/screener") || reqPath.includes("/chart") ? 15000 : 8000;
         vpsRes = await fetch(vpsUrl, {
           method: req.method,
@@ -446,7 +446,7 @@ async function startServer() {
 
       // 2. Fallback to VPS endpoint if local FastAPI is not active
       if (!responseData) {
-        const vpsUrl = `https://quantsync-api.duckdns.org:8443/api/terminalData${queryStr}`;
+        const vpsUrl = `https://backing-lapping-denial.ngrok-free.dev/api/terminalData${queryStr}`;
         const vpsRes = await fetch(vpsUrl, {
           method: "GET",
           headers: { "Accept": "application/json" },
@@ -1012,7 +1012,7 @@ async function startServer() {
       });
     } else {
       try {
-        const vpsRes = await fetch("https://quantsync-api.duckdns.org:8443/api/dna/search?q=ALL", {
+        const vpsRes = await fetch("https://backing-lapping-denial.ngrok-free.dev/api/dna/search?q=ALL", {
           headers: { "Accept": "application/json" },
           signal: AbortSignal.timeout(8000),
         }).catch(() => null);
@@ -1133,7 +1133,7 @@ async function startServer() {
     // Forward to VPS backend
     try {
       const queryStr = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
-      const vpsUrl = `https://quantsync-api.duckdns.org:8443/api/dna/chart/${symbol}${queryStr}`;
+      const vpsUrl = `https://backing-lapping-denial.ngrok-free.dev/api/dna/chart/${symbol}${queryStr}`;
       const vpsRes = await fetch(vpsUrl, {
         method: "GET",
         headers: { "Accept": "image/png,image/*,*/*" },
@@ -1173,7 +1173,7 @@ async function startServer() {
     }
 
     try {
-      const vpsUrl = `https://quantsync-api.duckdns.org:8443${targetPath}`;
+      const vpsUrl = `https://backing-lapping-denial.ngrok-free.dev${targetPath}`;
       const response = await fetch(vpsUrl, {
         method: "GET",
         headers: { "Accept": "application/json" },
@@ -1218,7 +1218,7 @@ async function startServer() {
       };
 
       // Connect directly to live production VPS engine
-      const vpsUrl = `https://quantsync-api.duckdns.org:8443${targetPath}`;
+      const vpsUrl = `https://backing-lapping-denial.ngrok-free.dev${targetPath}`;
       const vpsRes = await fetch(vpsUrl, {
         method: req.method,
         headers: { Accept: "application/json" },

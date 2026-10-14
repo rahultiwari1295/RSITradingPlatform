@@ -169,7 +169,7 @@ export const BreakoutAnalystView: React.FC<BreakoutAnalystViewProps> = ({
     const ts = Date.now();
     const forceParam = chartReloadKey > 0 ? "&force=true" : "";
     const primaryChartUrl = `/api/dna/chart/${cleanSymbol}?view=${dnaTimeframe}&theme=${theme}${forceParam}&t=${ts}`;
-    const fallbackChartUrl = `https://quantsync-api.duckdns.org:8443/api/dna/chart/${cleanSymbol}?view=${dnaTimeframe}&theme=${theme}${forceParam}&t=${ts}`;
+    const fallbackChartUrl = `https://backing-lapping-denial.ngrok-free.dev/api/dna/chart/${cleanSymbol}?view=${dnaTimeframe}&theme=${theme}${forceParam}&t=${ts}`;
 
     const chartImg = new Image();
     chartImg.src = primaryChartUrl;

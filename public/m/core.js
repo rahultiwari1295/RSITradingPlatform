@@ -8,12 +8,12 @@ const onVercel = !/duckdns\.org$/.test(location.hostname) && location.port !== '
 export const CFG = Object.assign({
   base: '/m',
   api: '/api',
-  direct: 'https://quantsync-api.duckdns.org:8443',
+  direct: 'https://backing-lapping-denial.ngrok-free.dev',
   lab: onVercel ? '/lab/api/v1' : '/lab/v1',
   firebase: { apiKey: 'AIzaSyDE7DrgzliyLF6SFbJi7lKqOsAvK3rtrIU', authDomain: 'scantoknow-a1593.firebaseapp.com', projectId: 'scantoknow-a1593', appId: '1:220667916508:web:f105873ba57909e18f0419' },
   firebaseVersion: '10.12.2',
   firestoreDb: 'ai-studio-angelonetradingt-56679b74-b747-4c8d-b456-56830ab0579c', // the same named database the main app uses
-  ws: 'wss://quantsync-api.duckdns.org:8443/ws/live-market',
+  ws: 'wss://backing-lapping-denial.ngrok-free.dev/ws/live-market',
 }, W.QS_CONFIG || {});
 
 /* ---------------------------------------------------------------- http */
@@ -21,12 +21,17 @@ const MIN = 60e3;
 const cache = new Map();
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function getJSON(url, { headers } = {}) {
-  const go = u => fetch(u, { headers: { Accept: 'application/json', ...(headers || {}) } });
+  const reqHeaders = {
+    Accept: 'application/json',
+    'ngrok-skip-browser-warning': 'true',
+    ...(headers || {})
+  };
+  const go = u => fetch(u, { headers: reqHeaders });
   let r;
   try { r = await go(url); } catch { await sleep(700); r = await go(url); }
   if (r.status >= 502 && r.status <= 504) { await sleep(900); r = await go(url); }
   if (!r.ok && onVercel && url.startsWith('/api/')) { // the Vercel proxy can time out on heavy calls: try the VPS directly
-    const d = await fetch(CFG.direct + url).catch(() => null);
+    const d = await fetch(CFG.direct + url, { headers: reqHeaders }).catch(() => null);
     if (d && d.ok) return d.json();
   }
   if (!r.ok) {

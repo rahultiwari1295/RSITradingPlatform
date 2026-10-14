@@ -53,7 +53,7 @@ auth.whenReady = () => auth.ready ? Promise.resolve(auth.user) : new Promise(res
 /* ---------------- http ---------------- */
 class ApiError extends Error { constructor(status, msg) { super(msg); this.status = status; } }
 async function http(method, url, body, { authed = true } = {}) {
-  const h = { Accept: 'application/json' };
+  const h = { Accept: 'application/json', 'ngrok-skip-browser-warning': 'true' };
   if (body !== undefined) h['Content-Type'] = 'application/json';
   if (authed && CFG.devUid) h['X-Dev-Uid'] = CFG.devUid;
   else if (authed) { const t = await auth.token(); if (t) h.Authorization = 'Bearer ' + t; }

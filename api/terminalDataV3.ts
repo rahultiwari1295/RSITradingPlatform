@@ -55,7 +55,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const requestedVersion = req.query.version === 'v3' ? 'v3' : 'v2';
-  const vpsEndpoint = `https://quantsync-api.duckdns.org:8443/api/terminalData?version=${requestedVersion}`;
+  const vpsEndpoint = `https://backing-lapping-denial.ngrok-free.dev/api/terminalData?version=${requestedVersion}`;
   const wixEndpoint = requestedVersion === 'v3'
     ? "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalDataV3"
     : "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData";
@@ -67,7 +67,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const vpsRes = await fetch(vpsEndpoint, {
         method: "GET",
-        headers: { "Accept": "application/json", "User-Agent": "Mozilla/5.0 (QuantSync-Vercel-Proxy)" },
+        headers: {
+          "Accept": "application/json",
+          "User-Agent": "Mozilla/5.0 (QuantSync-Vercel-Proxy)",
+          "ngrok-skip-browser-warning": "true"
+        },
         signal: AbortSignal.timeout(6000)
       });
       if (vpsRes.ok) {

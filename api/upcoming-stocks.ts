@@ -5,7 +5,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const vpsUrl = "https://quantsync-api.duckdns.org:8443/api/upcoming-stocks";
+  const vpsUrl = "https://backing-lapping-denial.ngrok-free.dev/api/upcoming-stocks";
   const wixUrl = "https://rahultiwari1295.wixstudio.com/angelportfolio/_functions/upcomingStock";
 
   try {
@@ -14,7 +14,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       method: "GET",
       headers: {
         "Accept": "application/json",
-        "User-Agent": "Mozilla/5.0 (QuantSync-Vercel-Proxy)"
+        "User-Agent": "Mozilla/5.0 (QuantSync-Vercel-Proxy)",
+        "ngrok-skip-browser-warning": "true"
       },
       signal: AbortSignal.timeout(6000)
     }).catch(() => null);

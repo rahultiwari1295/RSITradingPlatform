@@ -86,7 +86,7 @@ export default function RadarStockPage({ stock, theme, colors, verdict, why, sta
     setDnaError(false);
     const q = `view=${view}&theme=${theme}${dnaKey > 0 ? "&force=true" : ""}&t=${Date.now()}`;
     const primary = `/api/dna/chart/${sym}?${q}`;
-    const fallback = `https://quantsync-api.duckdns.org:8443/api/dna/chart/${sym}?${q}`;
+    const fallback = `https://backing-lapping-denial.ngrok-free.dev/api/dna/chart/${sym}?${q}`;
     const fail = () => {
       if (!cancelled) {
         setDnaError(true);
