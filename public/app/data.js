@@ -6,12 +6,60 @@
 'use strict';
 const W = window;
 const onVercel = !/duckdns\.org$/.test(location.hostname) && location.port !== '8443' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
+
+/* ---------------- server settings (Settings page, /app/config) ----------------
+   Profiles say where the Lab API lives. "phone" is the default: the phone server's public
+   tunnel URL (Cloudflare Tunnel). Until a phone URL is saved, the phone profile falls back to
+   this site's proxy (/lab/api/v1), which Vercel forwards to the server in vercel.json.
+   Everything is stored in this browser only (localStorage "qs-cfg"). */
+const PHONE_URL = '';  // optional built-in default, e.g. 'https://lab.yourdomain.in'
+const SITE_LAB = onVercel ? '/lab/api/v1' : '/lab/v1';
+const DEFAULTS = { profile: 'phone', phone: PHONE_URL, local: 'http://localhost:8100', custom: '', api: '/api', signin: 'google', devUid: 'local' };
+const PROFILES = {
+  phone: { name: 'Phone server', note: 'Your phone running the Lab, through its tunnel URL. Default.' },
+  local: { name: 'This computer', note: 'A Lab running on your laptop (python -m lab.api style, port 8100).' },
+  site: { name: 'Site proxy', note: 'This website forwards to the server set in vercel.json.' },
+  custom: { name: 'Custom URL', note: 'Any other address that serves /lab/v1.' },
+};
+function readCfg() { try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('qs-cfg') || '{}')); } catch { return { ...DEFAULTS }; } }
+/** Turn what someone typed into the Lab API base: adds https:// and /lab/v1 when missing. */
+function labBase(u) {
+  u = String(u || '').trim().replace(/\/+$/, ''); if (!u) return '';
+  if (u.startsWith('/')) return u;
+  if (!/^https?:\/\//i.test(u)) u = (/^(localhost|127\.|\[::1\]|192\.168\.|10\.)/.test(u) ? 'http://' : 'https://') + u;
+  return /\/lab\/(api\/)?v1$/.test(u) ? u : u + '/lab/v1';
+}
+function resolveLab(s) {
+  const p = s.profile;
+  const raw = p === 'phone' ? s.phone : p === 'local' ? s.local : p === 'custom' ? s.custom : '';
+  return labBase(raw) || SITE_LAB;
+}
+const saved = readCfg();
 const CFG = Object.assign({
-  api: '/api',
-  lab: onVercel ? '/lab/api/v1' : '/lab/v1',
+  api: saved.api || '/api',
+  lab: resolveLab(saved),
   firebase: { apiKey: 'AIzaSyDE7DrgzliyLF6SFbJi7lKqOsAvK3rtrIU', authDomain: 'scantoknow-a1593.firebaseapp.com', projectId: 'scantoknow-a1593', appId: '1:220667916508:web:f105873ba57909e18f0419' },
   firebaseVersion: '10.12.2',
-}, W.QS_CONFIG || {});
+}, saved.signin === 'dev' ? { devUid: saved.devUid || 'local', devName: 'Local user' } : {}, W.QS_CONFIG || {});
+const settings = {
+  get: readCfg, PROFILES, DEFAULTS, labBase, resolveLab, SITE_LAB,
+  active: () => ({ profile: saved.profile, lab: CFG.lab, api: CFG.api, fallback: CFG.lab === SITE_LAB && saved.profile !== 'site' }),
+  save(next) { try { localStorage.setItem('qs-cfg', JSON.stringify(Object.assign(readCfg(), next))); } catch { throw new Error('This browser blocked saving settings.'); } },
+  reset() { try { localStorage.removeItem('qs-cfg'); } catch { /* blocked */ } },
+  /** Check a Lab base URL: reachable, version, data date, sign-in mode, round-trip time. */
+  async probe(base) {
+    const t0 = performance.now(), ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 8000);
+    try {
+      const r = await fetch(base + '/health', { headers: { Accept: 'application/json' }, signal: ctl.signal });
+      const ms = Math.round(performance.now() - t0);
+      if (!r.ok) return { ok: false, ms, error: `Server answered ${r.status}` };
+      const j = await r.json(); const d = (j.data || {})['1D'] || {};
+      return { ok: !!j.ok, ms, version: j.version, asOf: d.as_of, symbols: d.symbols, auth: (j.auth || {}).mode };
+    } catch (e) {
+      return { ok: false, ms: Math.round(performance.now() - t0), error: e.name === 'AbortError' ? 'No answer in 8 seconds' : 'Could not connect (server off, wrong URL, or blocked by CORS)' };
+    } finally { clearTimeout(tm); }
+  },
+};
 
 /* ---------------- auth (Firebase Google sign-in) ---------------- */
 const auth = { user: null, ready: false, _subs: new Set(), _fb: null };
@@ -59,7 +107,8 @@ async function http(method, url, body, { authed = true } = {}) {
   else if (authed) { const t = await auth.token(); if (t) h.Authorization = 'Bearer ' + t; }
   const send = hh => fetch(url, { method, headers: hh, body: body === undefined ? undefined : JSON.stringify(body) });
   let r;
-  try { r = await send(h); } catch { if (method !== 'GET') throw new ApiError(0, 'Network error. Check your connection.'); await sleep(800); r = await send(h); }
+  const down = () => new ApiError(0, `Can't reach the Lab server (${CFG.lab}). Check it is running, or change it in Settings.`);
+  try { r = await send(h); } catch { if (method !== 'GET') throw down(); await sleep(800); try { r = await send(h); } catch { throw down(); } }
   if (method === 'GET' && r.status >= 502 && r.status <= 504) { await sleep(900); r = await send(h); }
   if (r.status === 401 && h.Authorization && method === 'GET') { delete h.Authorization; r = await send(h); }
   if (!r.ok) {
@@ -399,5 +448,5 @@ const qsai = {
   },
 };
 
-W.QD = { qsai, QS_NAME,  isFresh, changes, CAT_ORDER, FRESH_DAYS, FRESH_MOVE,  CFG, auth, http, lab, api, waitJob, fmt, n, ok, scoreTone, marketStatus, param, PRESETS, toRule, fromRule, describeRule, describeCond, describeExit, buildExit, validCond, label, pickOptions, gateStat, plainStat, exitGate, loadPatterns, holdings, bust, ApiError };
+W.QD = { settings, qsai, QS_NAME,  isFresh, changes, CAT_ORDER, FRESH_DAYS, FRESH_MOVE,  CFG, auth, http, lab, api, waitJob, fmt, n, ok, scoreTone, marketStatus, param, PRESETS, toRule, fromRule, describeRule, describeCond, describeExit, buildExit, validCond, label, pickOptions, gateStat, plainStat, exitGate, loadPatterns, holdings, bust, ApiError };
 })();

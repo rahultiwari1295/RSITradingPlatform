@@ -38,6 +38,8 @@ const P = {
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
   moon: '<path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10z"/>',
   flask: '<path d="M9.5 3.5h5M10 3.5v6L4.8 18.2A1.5 1.5 0 0 0 6.1 20.5h11.8a1.5 1.5 0 0 0 1.3-2.3L14 9.5v-6"/><path d="M7.5 14.5h9"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  phone: '<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>',
   trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/>',
 };
 export const icon = (k, s = 20, cls = '') => `<svg class="${cls}" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[k] || ''}</svg>`;
@@ -77,7 +79,7 @@ export async function needUser(why) {
 
 /* ---------------------------------------------------------------- states */
 export const skel = (h = 64, k = 3) => Array.from({ length: k }, () => `<div class="sk" style="height:${h}px;margin-bottom:10px"></div>`).join('');
-export const errBox = (m, retry = true) => `<div class="err" role="alert"><span>${esc(m || 'This did not load.')}</span>${retry ? '<button class="btn sm quiet" data-retry>Try again</button>' : ''}</div>`;
+export const errBox = (m, retry = true) => `<div class="err" role="alert"><span>${esc(m || 'This did not load.')}</span><span style="display:flex;gap:6px;flex:none">${/Settings|busy|reach/.test(m || '') ? `<a class="btn sm quiet" href="${BASE}/config" data-nav>Settings</a>` : ''}${retry ? '<button class="btn sm quiet" data-retry>Try again</button>' : ''}</span></div>`;
 export const empty = (ic, h, p, cta = '') => `<div class="card empty"><span class="ic">${icon(ic, 24)}</span><b class="h3">${esc(h)}</b><p class="small" style="max-width:36ch">${esc(p)}</p>${cta}</div>`;
 const rio = 'IntersectionObserver' in W ? new IntersectionObserver(es => { let i = 0; es.forEach(e => { if (!e.isIntersecting) return; rio.unobserve(e.target); e.target.style.setProperty('--d', Math.min(i++ * 50, 300) + 'ms'); requestAnimationFrame(() => e.target.classList.add('in')); }); }, { rootMargin: '0px 0px -6% 0px' }) : null;
 export function reveal(root) { if (RM || !rio) return; const l = [...root.querySelectorAll('[data-rv]')]; l.forEach(e => { e.classList.add('rv'); rio.observe(e); }); setTimeout(() => l.forEach(e => e.classList.add('in')), 1200); }
@@ -117,7 +119,7 @@ const TABS = [['home', '', 'Home', 'home'], ['ideas', 'ideas', 'Ideas', 'ideas']
 const ROUTES = [
   [/^$/, 'home', 'home'], [/^build$/, 'build', 'build'], [/^ideas$/, 'ideas', 'ideas'], [/^ideas\/([\w-]+)$/, 'idea', 'ideas'],
   [/^learn$/, 'learn', 'learn'], [/^learn\/([\w-]+)$/, 'lesson', 'learn'], [/^xray$/, 'xray', 'xr'], [/^xray\/([^/]+)$/, 'xray', 'xr'],
-  [/^me$/, 'me', 'me'], [/^s\/([\w-]+)$/, 'strategy', 'me'],
+  [/^me$/, 'me', 'me'], [/^(config|settings)$/, 'config', 'cfg'], [/^s\/([\w-]+)$/, 'strategy', 'me'],
 ];
 export function parse(loc = location) {
   let p = loc.pathname.replace(/\/+$/, ''); if (p.startsWith(BASE)) p = p.slice(BASE.length); p = p.replace(/^\/+/, '').replace(/\.html$/, '').replace(/^index$/, '');
@@ -144,7 +146,7 @@ export function go(path, { replace = false } = {}) {
   render(parse());
 }
 export const link = (path, inner, cls = '', attrs = '') => `<a href="${BASE}/${path}" data-nav class="${cls}" ${attrs}>${inner}</a>`;
-const footer = () => `<footer class="foot"><div class="links">${link('', 'Home')}${link('ideas', 'Ideas')}${link('build', 'Build')}${link('learn', 'Learn')}${link('xray', 'Stock X-Ray')}${link('me', 'My strategies')}</div>
+const footer = () => `<footer class="foot"><div class="links">${link('', 'Home')}${link('ideas', 'Ideas')}${link('build', 'Build')}${link('learn', 'Learn')}${link('xray', 'Stock X-Ray')}${link('me', 'My strategies')}${link('config', 'Settings')}</div>
   <p>QuantSync Lab is a tool for building and testing your own rule-based ideas, and for learning how markets work. It does not give investment advice or recommendations, and QuantSync is not a SEBI-registered investment adviser or research analyst. Stocks shown are the ones that meet rules you chose. Test results are hypothetical and based on past prices; they do not predict future results.</p></footer>`;
 
 /* ---------------------------------------------------------------- shell */
@@ -153,7 +155,7 @@ export function boot() {
   const top = d.getElementById('top'), tabs = d.getElementById('tabs');
   top.innerHTML = `<div class="top-in"><a class="brand" href="${BASE}/" data-nav aria-label="QuantSync Lab home">${LOGO}<span>QuantSync <em>Lab</em></span></a>
     <nav class="nav" aria-label="Main">${[['build', 'Build'], ['ideas', 'Ideas'], ['learn', 'Learn'], ['xray', 'X-Ray'], ['me', 'My strategies']].map(([p, l]) => link(p, l, '', `data-tab="${p === 'xray' ? 'xr' : p}"`)).join('')}</nav>
-    <span class="grow"></span>${themeSwitch()}<span id="acct"></span></div>`;
+    <span class="grow"></span>${link('config', `${icon('gear', 19)}<i class="sdot" id="sdot"></i>`, 'gearbtn', 'data-tab="cfg" aria-label="Settings: server"')}${themeSwitch()}<span id="acct"></span></div>`;
   tabs.innerHTML = TABS.map(([k, p, l, ic]) => k === 'build'
     ? link(p, `<span class="c">${icon(ic, 22)}</span><span class="l">${l}</span>`, 'go', `data-tab="${k}" aria-label="Build a strategy"`)
     : link(p, `${icon(ic, 23)}<span>${l}</span>`, '', `data-tab="${k}"`)).join('');
@@ -172,4 +174,7 @@ export function boot() {
   });
   auth.init();
   render(parse());
+  /* server status dot on the gear: green answers, red does not */
+  const sd = d.getElementById('sdot');
+  QD.settings.probe(QD.settings.active().lab).then(r => { sd.className = 'sdot ' + (r.ok ? 'ok' : 'bad'); sd.title = r.ok ? `Lab server OK · ${r.ms} ms` : `Lab server: ${r.error}`; if (!r.ok) toast('Lab server is not answering. Tap the gear to change it.'); });
 }

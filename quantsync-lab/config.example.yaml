@@ -17,3 +17,7 @@ pricing_enabled: false
 free_ai_jobs_per_day: 5
 free_backtests_per_hour: 10
 queue_cap: 50
+
+# Websites allowed to call this API directly (Settings page -> phone / custom URL).
+# *.vercel.app, *.duckdns.org and localhost are always allowed.
+cors_origins: []

@@ -1,5 +1,7 @@
 import { icon, esc, fmt, lab, go, toast, needUser, skel, errBox, words, link } from '../app.js';
 import { catalog, readIdea, say, toRule, EXIT, ideaById, exitSay } from '../rules.js';
+import { parse, format, highlight, vocab, SNIPPETS } from '../query.js';
+import { sheet } from '../app.js';
 import { stockRow, renderTest, runJob } from '../parts.js';
 
 const KEY = 'qs-lab-draft';
@@ -17,24 +19,34 @@ export default async function build(el, r) {
   keep(S);
 
   el.innerHTML = `
-  <div class="head"><span class="ey">${icon('build', 16)}Build</span><h1 class="h1">${words('Your strategy in <em>plain rules.</em>')}</h1>
-    <p class="lede">Every rule is shown in words. Change anything, then see which stocks meet it today and how it did in the past.</p></div>
+  <div class="head"><span class="ey">${icon('search', 16)}Scanner</span><h1 class="h1">${words('Write it. <em>Scan it.</em> Test it.')}</h1>
+    <p class="lede">Type conditions one per line, like a screener query. Every line is checked as you type and shown in plain words below.</p></div>
   <div class="stepper" aria-hidden="true"><span class="on" id="s1"></span><span id="s2"></span><span id="s3"></span></div>
 
-  <section class="rulebox" id="describe">
-    <label class="h3" for="dq">Describe it</label>
-    <div style="display:flex;gap:8px"><input class="inp" id="dq" placeholder="e.g. above 200 DMA and RSI below 40" value="${esc(qtext || '')}" autocomplete="off"><button class="btn sm pri" id="dgo" style="height:46px">Read</button></div>
-    <div id="und"></div>
+  <div id="mine"></div>
+  <section class="rulebox" id="editor">
+    <div class="edh"><b class="h3">Query</b><div class="seg" id="emode" style="width:200px"><button data-v="query">Query</button><button data-v="words">Plain words</button></div></div>
+    <div id="qpane">
+      <div class="qed"><pre class="qhl" id="qhl" aria-hidden="true"></pre><textarea id="qt" rows="5" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" aria-label="Scanner query" placeholder="close > sma(200)&#10;and rsi(14) < 40&#10;and rvol > 2"></textarea></div>
+      <div class="qsug" id="qsug" aria-label="Suggestions"></div>
+      <div id="qdiag" aria-live="polite"></div>
+      <div class="qsnip" id="qsnip"><span class="tiny">Insert</span>${SNIPPETS.map(([l, q]) => `<button type="button" data-snip="${esc(q)}">${esc(l)}</button>`).join('')}</div>
+      <div class="qbar"><button class="btn sm quiet" id="qhelp">${icon('info', 16)}Syntax</button><button class="btn sm quiet" id="qsave">${icon('save', 16)}Save scanner</button><span class="grow"></span><span class="tiny kbd">Ctrl + Enter to scan</span></div>
+    </div>
+    <div id="wpane" hidden>
+      <div style="display:flex;gap:8px"><input class="inp" id="dq" placeholder="e.g. above 200 DMA and RSI below 40" value="${esc(qtext || '')}" autocomplete="off"><button class="btn sm pri" id="dgo" style="height:46px">Read</button></div>
+      <div id="und" style="margin-top:10px"></div>
+    </div>
   </section>
 
   <section class="sec" style="margin-top:18px">
     <div class="rulebox">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><b class="h3">Rules</b>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><b class="h3">Rules in plain words</b>
         <div class="seg" id="tf" style="width:180px"><button data-v="1D">Daily</button><button data-v="1W">Weekly</button></div></div>
       <div class="seg" id="mode"><button data-v="all">Match all rules</button><button data-v="any">Match any rule</button></div>
       <div id="rules" style="display:grid;gap:10px"></div>
       <div id="addwrap"></div>
-      <button class="btn pri block" id="scan">${icon('search', 18)}See which stocks match today</button>
+      <button class="btn pri block" id="scan">${icon('search', 18)}Run scan on today's close</button>
     </div>
   </section>
 
@@ -67,8 +79,10 @@ export default async function build(el, r) {
       ? `<div class="understood">${x.understood.map(u => `<span>${icon('check', 13)}${esc(u)}</span>`).join('')}${x.leftover ? `<span class="no">${esc(x.leftover.slice(0, 40))}</span>` : ''}</div>${x.leftover ? '<p class="tiny" style="margin-top:6px">Crossed-out words were not turned into a rule. Add them below if you need them.</p>' : ''}`
       : `<p class="small">I could not turn that into rules yet. Try words like “52-week high”, “RSI below 30”, “above 200 DMA”, “golden cross” or “2x volume”, or add a rule below.</p>`;
   }
+  let fromEditor = false;
   function draw() {
     keep(S);
+    if (!fromEditor) setText(format(S.mode, S.conds));
     seg($('#tf'), S.tf, v => { S.tf = v; keep(S); hideResults(); });
     seg($('#mode'), S.mode, v => { S.mode = v; draw(); hideResults(); });
     $('#rules').innerHTML = S.conds.length ? S.conds.map((x, i) => `${i ? `<div class="join">${S.mode === 'all' ? 'AND' : 'OR'}</div>` : ''}<div class="rule" style="--i:${i}"><span class="n">${i + 1}</span><span class="t">${say(cat, x)}</span><button data-del="${i}" aria-label="Remove rule">${icon('x', 18)}</button></div>`).join('')
@@ -149,5 +163,82 @@ export default async function build(el, r) {
     finally { $('#run').disabled = false; }
   };
 
+
+  /* ---------------------------------------------------------------- query editor */
+  const qt = $('#qt'), qhl = $('#qhl'), V = vocab(cat);
+  const grow = () => { qt.style.height = 'auto'; qt.style.height = Math.max(132, qt.scrollHeight) + 'px'; };
+  const paintHl = () => { qhl.innerHTML = highlight(qt.value, cat); grow(); };
+  function setText(t) { if (qt.value !== t) { qt.value = t; paintHl(); check(false); } }
+  function check(apply = true) {
+    const v = qt.value.trim(), d = $('#qdiag');
+    if (!v) { d.innerHTML = ''; return null; }
+    const r = parse(qt.value, cat);
+    d.innerHTML = r.errors.length
+      ? `<div class="qerr">${r.errors.map(e => `<div>${icon('warn', 15)}<span>${e.n ? `<b>Line ${e.n}</b> · ` : ''}${esc(e.error)}</span></div>`).join('')}</div>`
+      : `<div class="qok">${icon('check', 15)}<span>${r.conds.length} ${r.conds.length === 1 ? 'condition' : 'conditions'}, ${r.mode === 'any' ? 'any can match' : 'all must match'}</span></div>`;
+    if (apply && !r.errors.length && r.conds.length) { S.conds = r.conds; S.mode = r.mode; fromEditor = true; draw(); fromEditor = false; hideResults(); }
+    return r;
+  }
+  let ct = 0;
+  qt.addEventListener('input', () => { paintHl(); suggest(); clearTimeout(ct); ct = setTimeout(check, 250); });
+  qt.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); const r = check(); if (r && !r.errors.length && r.conds.length) $('#scan').click(); return; }
+    if (e.key === 'Tab' && !e.shiftKey) { const b = $('#qsug button'); if (b) { e.preventDefault(); b.click(); } }
+    if (e.key === 'Escape') $('#qsug').innerHTML = '';
+  });
+  qt.addEventListener('click', suggest); qt.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== qt) $('#qsug').innerHTML = ''; }, 150));
+  function word() { const pre = qt.value.slice(0, qt.selectionStart), m = pre.match(/[A-Za-z_][A-Za-z0-9_(]*$/); return m ? m[0] : ''; }
+  function suggest() {
+    const w = word().toLowerCase(), box = $('#qsug');
+    if (!w) { box.innerHTML = ''; return; }
+    const hits = V.filter(([t]) => t.toLowerCase().startsWith(w) && t.toLowerCase() !== w).slice(0, 8);
+    box.innerHTML = hits.map(([t, h], i) => `<button type="button" data-t="${esc(t)}" ${i ? '' : 'class="on"'}><b>${esc(t)}</b>${h ? `<span>${esc(h)}</span>` : ''}</button>`).join('');
+  }
+  function insert(txt, replaceWord) {
+    const a = qt.selectionStart, b = qt.selectionEnd, w = replaceWord ? word().length : 0;
+    const before = qt.value.slice(0, a - w), after = qt.value.slice(b);
+    const pad = !replaceWord && before && !/\n\s*$/.test(before) ? '\nand ' : '';
+    const ins = pad + txt + (replaceWord && !/^\s/.test(after) ? ' ' : '');
+    qt.value = before + ins + after; const c = (before + ins).length;
+    qt.focus(); qt.setSelectionRange(c, c); paintHl(); $('#qsug').innerHTML = ''; check();
+  }
+  $('#qsug').addEventListener('mousedown', e => e.preventDefault());
+  $('#qsug').onclick = e => { const b = e.target.closest('[data-t]'); if (b) insert(b.dataset.t, true); };
+  $('#qsnip').onclick = e => { const b = e.target.closest('[data-snip]'); if (!b) return; qt.selectionStart = qt.selectionEnd = qt.value.length; insert(b.dataset.snip, false); };
+  $('#emode').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === 'query'));
+  $('#emode').onclick = e => { const b = e.target.closest('button'); if (!b) return; $('#emode').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); $('#qpane').hidden = b.dataset.v !== 'query'; $('#wpane').hidden = b.dataset.v === 'query'; (b.dataset.v === 'query' ? qt : $('#dq')).focus(); };
+  $('#qhelp').onclick = () => sheet(`<h3>Query syntax</h3><p class="small" style="margin-bottom:12px">One condition per line. Start lines with <b>and</b> (all must match) or <b>or</b> (any can match). <b>#</b> starts a comment.</p>
+    <div class="qref">${[
+      ['Compare', 'close > sma(200)', 'rsi(14) <= 30'], ['Cross', 'sma(50) crosses above sma(200)', 'macd crosses below signal'], ['Range', 'rsi(14) between 40 and 60', ''],
+      ['Averages', 'sma(10|20|50|100|150|200)', 'ema(9|10|20|21|50|100|200)'], ['Highs, lows', 'high(20)  high(52w)', 'low(20)  low(52w)'], ['Change %', 'change(1) > 3', 'change(5)  change(20)  gap > 2'],
+      ['Volume', 'rvol > 2  (× 20-day avg)', 'volume > avg_volume'], ['Indicators', 'adx(14)  atr(14)  cci(20)', 'macd  signal  bb_upper  bb_lower'], ['Yes / no', 'green  inside_bar', 'rs_leader  stage2  power_gap  apex_base  high_tight_flag'],
+    ].map(([h, a, b]) => `<div><small>${h}</small><code>${esc(a)}</code>${b ? `<code>${esc(b)}</code>` : ''}</div>`).join('')}</div>
+    <button class="btn quiet block" data-close style="margin-top:16px">Close</button>`);
+
+  /* saved scanners: kept in this browser */
+  const SK = 'qs-scanners';
+  const mine = () => { try { return JSON.parse(localStorage.getItem(SK) || '[]'); } catch { return []; } };
+  const putMine = L => { try { localStorage.setItem(SK, JSON.stringify(L.slice(0, 40))); } catch { toast('This browser blocked saving.'); } };
+  function drawMine() {
+    const L = mine(), box = $('#mine');
+    box.innerHTML = L.length ? `<div class="sech" style="margin:0 2px 10px"><b class="h3">My scanners</b><span class="tiny">${L.length} saved in this browser</span></div>
+      <div class="chips" style="margin-bottom:14px">${L.map((x, i) => `<span class="chip sv"><button type="button" data-load="${i}">${esc(x.name)}<small>${x.tf === '1W' ? 'W' : 'D'}</small></button><button type="button" data-rm="${i}" aria-label="Delete ${esc(x.name)}">${icon('x', 14)}</button></span>`).join('')}</div>` : '';
+  }
+  $('#mine').onclick = e => {
+    const L = mine(), ld = e.target.closest('[data-load]'), rm = e.target.closest('[data-rm]');
+    if (ld) { const x = L[+ld.dataset.load]; S.tf = x.tf || '1D'; S.name = x.name; qt.value = x.q; paintHl(); check(); draw(); toast(`Loaded “${x.name}”`); }
+    if (rm) { const x = L.splice(+rm.dataset.rm, 1)[0]; putMine(L); drawMine(); toast(`Deleted “${x.name}”`); }
+  };
+  $('#qsave').onclick = () => {
+    const r = check(); if (!r || r.errors.length || !r.conds.length) { toast('Fix the query first.'); return; }
+    const sh = sheet(`<h3>Save scanner</h3><p class="small" style="margin-bottom:12px">Kept in this browser. Save it as a strategy after a test to track it on the server.</p>
+      <input class="inp" id="snm" maxlength="40" placeholder="Name" value="${esc(S.name || '')}"><div style="display:flex;gap:8px;margin-top:12px"><button class="btn pri" id="sok" style="flex:1">Save</button><button class="btn quiet" data-close>Cancel</button></div>`);
+    const nm = sh.el.querySelector('#snm'); setTimeout(() => nm.focus(), 350);
+    const doSave = () => { const n = nm.value.trim() || 'Scanner ' + (mine().length + 1); const L = mine().filter(x => x.name !== n); L.unshift({ name: n, q: qt.value.trim(), tf: S.tf, at: Date.now() }); putMine(L); S.name = n; keep(S); drawMine(); sh.close(); toast(`Saved “${n}”`); };
+    sh.el.querySelector('#sok').onclick = doSave; nm.addEventListener('keydown', e => { if (e.key === 'Enter') doSave(); });
+  };
+  drawMine();
+
   draw(); showRead(read);
+  if (read && read.conds.length) { $('#emode [data-v="words"]').click(); }
 }

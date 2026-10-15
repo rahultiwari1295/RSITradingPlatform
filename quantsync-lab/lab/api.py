@@ -1,6 +1,7 @@
 """FastAPI app mounted at /lab/v1 (nginx forwards /lab/ to 127.0.0.1:8100)."""
 from __future__ import annotations
 
+import inspect
 import json
 import logging
 import re
@@ -9,6 +10,7 @@ from contextlib import asynccontextmanager
 
 import pandas as pd
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
@@ -638,6 +640,25 @@ def create_app(cfg: Config | None = None) -> FastAPI:
     app = FastAPI(title="QuantSync Lab", version=__version__, lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url="/lab/openapi.json")
     app.state.cfg = cfg or load_config()
     app.include_router(router)
+
+    # The website (Vercel, localhost) calls this API directly when Settings points at a phone or laptop URL.
+    # Bearer tokens, no cookies, so credentials stay off. Extra origins: cors_origins in config.yaml (extra:).
+    extra = [o for o in (app.state.cfg.extra or {}).get("cors_origins", []) if isinstance(o, str)]
+    origin_re = r"https://([a-z0-9-]+\.)*vercel\.app|https://([a-z0-9-]+\.)*duckdns\.org(:\d+)?|http://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?"
+    cors = dict(allow_origins=extra, allow_origin_regex=origin_re, allow_credentials=False,
+                allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"], allow_headers=["Authorization", "Content-Type", "Accept", "X-Dev-Uid"], max_age=86400)
+    native_pna = "allow_private_network" in inspect.signature(CORSMiddleware.__init__).parameters
+    if native_pna:  # Chrome asks before a public page calls localhost / LAN (Starlette >= 0.38)
+        cors["allow_private_network"] = True
+    app.add_middleware(CORSMiddleware, **cors)
+
+    if not native_pna:
+        @app.middleware("http")
+        async def _private_network(request: Request, call_next):
+            resp = await call_next(request)
+            if request.method == "OPTIONS" and request.headers.get("access-control-request-private-network"):
+                resp.headers["Access-Control-Allow-Private-Network"] = "true"
+            return resp
 
     @app.exception_handler(Exception)
     async def _unhandled(request: Request, exc: Exception):  # JSON, so the UI can show what happened
