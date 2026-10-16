@@ -1,201 +1,23 @@
 {
-  "functions": {
-    "api/*.ts": {
-      "maxDuration": 60
-    }
-  },
+  "framework": null,
+  "buildCommand": "",
+  "installCommand": "npm install --no-audit --no-fund",
+  "outputDirectory": "public",
+  "functions": { "api/*.ts": { "maxDuration": 60 } },
   "headers": [
-    {
-      "source": "/m/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/app/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, must-revalidate"
-        }
-      ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/app/",
-      "destination": "/app/index.html"
-    },
-    {
-      "source": "/app/:path*",
-      "destination": "/app/index.html"
-    },
-    {
-      "source": "/m",
-      "destination": "/m/index.html"
-    },
-    {
-      "source": "/m/:path*",
-      "destination": "/m/index.html"
-    },
-    {
-      "source": "/lab/api/:path*",
-      "destination": "https://quantsync-api.duckdns.org:8443/lab/:path*"
-    },
-    {
-      "source": "/lab",
-      "destination": "/lab.html"
-    },
-    {
-      "source": "/api/dna/chart/:symbol",
-      "destination": "/api/dna-chart?symbol=:symbol"
-    },
-    {
-      "source": "/api/terminal-data",
-      "destination": "/api/terminal-data"
-    },
-    {
-      "source": "/api/terminalData",
-      "destination": "/api/terminalData"
-    },
-    {
-      "source": "/api/terminalDataV3",
-      "destination": "/api/terminalDataV3"
-    },
-    {
-      "source": "/api/chart",
-      "destination": "/api/chart"
-    },
-    {
-      "source": "/api/intel",
-      "destination": "/api/intel"
-    },
-    {
-      "source": "/api/upcoming-stocks",
-      "destination": "/api/upcoming-stocks"
-    },
-    {
-      "source": "/api/feeds/:match*",
-      "destination": "/api/feeds/:match*"
-    },
-    {
-      "source": "/api/push-notification",
-      "destination": "/api/push-notification"
-    },
-    {
-      "source": "/api/:match*",
-      "destination": "https://quantsync-api.duckdns.org:8443/api/:match*"
-    },
-    {
-      "source": "/dna-v2",
-      "destination": "/dna-v2.html"
-    },
-    {
-      "source": "/dna-v2.html",
-      "destination": "/dna-v2.html"
-    },
-    {
-      "source": "/dna-mobile-story.html",
-      "destination": "/dna-mobile-story.html"
-    },
-    {
-      "source": "/dna",
-      "destination": "/dna-mobile-story.html"
-    },
-    {
-      "source": "/dna-story",
-      "destination": "/dna-mobile-story.html"
-    },
-    {
-      "source": "/screener",
-      "destination": "/screener.html"
-    },
-    {
-      "source": "/stock-detail",
-      "destination": "/stock-detail.html"
-    },
-    {
-      "source": "/stock/:symbol",
-      "destination": "/stock-detail.html?symbol=:symbol"
-    },
-    {
-      "source": "/chat",
-      "destination": "/chat.html"
-    },
-    {
-      "source": "/chat.html",
-      "destination": "/chat.html"
-    },
-    {
-      "source": "/bagalur",
-      "destination": "/bagalur_community_3d.html"
-    },
-    {
-      "source": "/bagalur_community_3d.html",
-      "destination": "/bagalur_community_3d.html"
-    },
-    {
-      "source": "/uploads/:match*",
-      "destination": "https://quantsync-api.duckdns.org:8443/uploads/:match*"
-    },
-    {
-      "source": "/((?!api/).*)",
-      "destination": "/index.html"
-    }
+    { "source": "/m/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }] },
+    { "source": "/app/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }] }
   ],
   "redirects": [
-    {
-      "source": "/",
-      "destination": "/app/",
-      "permanent": false
-    },
-    {
-      "source": "/home",
-      "destination": "/app/",
-      "permanent": false
-    },
-    {
-      "source": "/xray",
-      "destination": "/app/",
-      "permanent": false
-    },
-    {
-      "source": "/xray/:sym",
-      "destination": "/app/xray/:sym",
-      "permanent": false
-    },
-    {
-      "source": "/calls",
-      "destination": "/m/calls",
-      "permanent": false
-    },
-    {
-      "source": "/calls/:path*",
-      "destination": "/m/calls/:path*",
-      "permanent": false
-    },
-    {
-      "source": "/patterns",
-      "destination": "/m/patterns",
-      "permanent": false
-    },
-    {
-      "source": "/patterns/:sym",
-      "destination": "/m/patterns/:sym",
-      "permanent": false
-    },
-    {
-      "source": "/portfolio",
-      "destination": "/m/portfolio",
-      "permanent": false
-    },
-    {
-      "source": "/app",
-      "destination": "/app/",
-      "permanent": false
-    }
+    { "source": "/", "destination": "/app/", "permanent": false },
+    { "source": "/app", "destination": "/app/", "permanent": false },
+    { "source": "/m", "destination": "/m/", "permanent": false }
+  ],
+  "rewrites": [
+    { "source": "/config.js", "destination": "/api/config" },
+    { "source": "/lab/api/:path*", "destination": "/api/proxy?p=lab/:path*" },
+    { "source": "/api/:path*", "destination": "/api/proxy?p=api/:path*" },
+    { "source": "/app/:path*", "destination": "/app/index.html" },
+    { "source": "/m/:path*", "destination": "/m/index.html" }
   ]
 }

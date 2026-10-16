@@ -1,4 +1,5 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { SERVER } from './_env';
 
 const SUNFLAG_V3_FALLBACK = {
   sym: "SUNFLAG",
@@ -55,7 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const requestedVersion = req.query.version === 'v3' ? 'v3' : 'v2';
-  const vpsEndpoint = `https://quantsync-api.duckdns.org:8443/api/terminalData?version=${requestedVersion}`;
+  const vpsEndpoint = `${SERVER}/api/terminalData?version=${requestedVersion}`;
   const wixEndpoint = requestedVersion === 'v3'
     ? "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalDataV3"
     : "https://rahultiwari1295.wixstudio.com/angelapi/_functions/terminalData";

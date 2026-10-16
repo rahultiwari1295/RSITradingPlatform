@@ -12,13 +12,14 @@ const onVercel = !/duckdns\.org$/.test(location.hostname) && location.port !== '
    tunnel URL (Cloudflare Tunnel). Until a phone URL is saved, the phone profile falls back to
    this site's proxy (/lab/api/v1), which Vercel forwards to the server in vercel.json.
    Everything is stored in this browser only (localStorage "qs-cfg"). */
-const PHONE_URL = '';  // optional built-in default, e.g. 'https://lab.yourdomain.in'
+const EP = W.QS_ENDPOINTS || {};  /* set once, from /config.js (Vercel variables QS_SERVER / QS_LAB_URL) */
+const PHONE_URL = EP.lab || '';  // blank = this site's proxy, which forwards to QS_SERVER
 const SITE_LAB = onVercel ? '/lab/api/v1' : '/lab/v1';
 const DEFAULTS = { profile: 'phone', phone: PHONE_URL, local: 'http://localhost:8100', custom: '', api: '/api', signin: 'google', devUid: 'local' };
 const PROFILES = {
   phone: { name: 'Phone server', note: 'Your phone running the Lab, through its tunnel URL. Default.' },
   local: { name: 'This computer', note: 'A Lab running on your laptop (python -m lab.api style, port 8100).' },
-  site: { name: 'Site proxy', note: 'This website forwards to the server set in vercel.json.' },
+  site: { name: 'Site proxy', note: 'This website forwards to the server set in Vercel (QS_SERVER).' },
   custom: { name: 'Custom URL', note: 'Any other address that serves /lab/v1.' },
 };
 function readCfg() { try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('qs-cfg') || '{}')); } catch { return { ...DEFAULTS }; } }

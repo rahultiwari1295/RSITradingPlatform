@@ -4,16 +4,18 @@ import { titleHTML } from './hero.js';
 
 const W = window;
 const RM = W.matchMedia && W.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const EP = W.QS_ENDPOINTS || {}; /* set once, from /config.js (Vercel variable QS_SERVER) */
+const SERVER = EP.server || '';
 const onVercel = !/duckdns\.org$/.test(location.hostname) && location.port !== '8443' && !['localhost', '127.0.0.1'].includes(location.hostname);
 export const CFG = Object.assign({
   base: '/m',
   api: '/api',
-  direct: 'https://quantsync-api.duckdns.org:8443',
+  direct: SERVER,
   lab: onVercel ? '/lab/api/v1' : '/lab/v1',
   firebase: { apiKey: 'AIzaSyDE7DrgzliyLF6SFbJi7lKqOsAvK3rtrIU', authDomain: 'scantoknow-a1593.firebaseapp.com', projectId: 'scantoknow-a1593', appId: '1:220667916508:web:f105873ba57909e18f0419' },
   firebaseVersion: '10.12.2',
   firestoreDb: 'ai-studio-angelonetradingt-56679b74-b747-4c8d-b456-56830ab0579c', // the same named database the main app uses
-  ws: 'wss://quantsync-api.duckdns.org:8443/ws/live-market',
+  ws: SERVER ? SERVER.replace(/^http/, 'ws') + '/ws/live-market' : '',
 }, W.QS_CONFIG || {});
 
 /* ---------------------------------------------------------------- http */
@@ -25,7 +27,7 @@ async function getJSON(url, { headers } = {}) {
   let r;
   try { r = await go(url); } catch { await sleep(700); r = await go(url); }
   if (r.status >= 502 && r.status <= 504) { await sleep(900); r = await go(url); }
-  if (!r.ok && onVercel && url.startsWith('/api/')) { // the Vercel proxy can time out on heavy calls: try the VPS directly
+  if (!r.ok && onVercel && CFG.direct && url.startsWith('/api/')) { // the Vercel proxy can time out on heavy calls: try the VPS directly
     const d = await fetch(CFG.direct + url).catch(() => null);
     if (d && d.ok) return d.json();
   }
@@ -681,6 +683,7 @@ export const live = (() => {
   const subs = new Set();
   const open = () => {
     if (ws || !subs.size || !('WebSocket' in W)) return;
+    if (!CFG.ws) { ws = null; return; }
     try { ws = new WebSocket(CFG.ws); } catch { ws = null; later(); return; }
     ws.onopen = () => { retry = 0; clearInterval(ping); ping = setInterval(() => { try { ws && ws.readyState === 1 && ws.send('{"type":"ping"}'); } catch { /* closed */ } }, 20000); };
     ws.onmessage = e => { try { const d = JSON.parse(e.data); if (d && (d.type === 'TICK' || d.type === 'SUBSCRIBE_ACK') && Array.isArray(d.indices)) { last = d; subs.forEach(f => { try { f(d); } catch (x) { console.warn(x); } }); } } catch { /* not JSON */ } };
