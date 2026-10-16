@@ -20,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(req.query)) if (k !== 'p') ([] as string[]).concat(v as any).forEach(x => qs.append(k, x));
   const url = `${base}/${p}${qs.toString() ? '?' + qs : ''}`;
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { 'ngrok-skip-browser-warning': '1' };
   for (const h of PASS) { const v = req.headers[h]; if (v) headers[h] = Array.isArray(v) ? v.join(',') : v; }
   try {
     const r = await fetch(url, { method: req.method, headers, body: await rawBody(req) });
