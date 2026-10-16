@@ -1,5 +1,6 @@
 import { icon, esc, fmt, n, ok, api, go, skel, line, link, mono } from '../app.js';
-import { report as sampleReport, searchSample, NEWS } from '../sample.js';
+import { report as sampleReport, searchSample, NEWS, SCREENS } from '../sample.js';
+const SCREENS_N = SCREENS.length;
 
 /* Stock X-Ray (home).
    Reading order: who it is and the price -> six "at a glance" answers -> tabs with the detail.
@@ -46,8 +47,48 @@ function bars(items, f) {
   return `<div class="bars">${items.map(x => `<div><span class="bv">${f(x.v)}</span><i style="height:${Math.max(3, Math.abs(x.v) / max * 100)}%" class="${x.v < 0 ? 'neg' : x.k || ''}"></i><small>${esc(x.l)}</small></div>`).join('')}</div>`;
 }
 
+/* ---------------------------------------------------------------- landing (home) */
+function landing(el) {
+  el.innerHTML = `
+  <section class="land">
+    <span class="land-badge">${icon('xray', 15)}Stock X-Ray</span>
+    <h1 class="land-h">Understand any stock<br><em>in one minute.</em></h1>
+    <p class="land-p">Type a company name. See its trend, momentum, business numbers and who owns it, each explained in one simple line. Facts, not tips.</p>
+    <form class="search land-s" id="xf">${icon('search', 21)}<input id="xi" placeholder="Search a company, e.g. Tata Motors" aria-label="Search a company" autocomplete="off" enterkeyhint="search"><button class="btn pri">X-Ray</button></form>
+    <div id="sug" class="sugbox land-sug"></div>
+    <div class="land-pop"><span>Popular</span>${POPULAR.slice(0, 8).map(s => link(`xray/${s}`, esc(s), 'chip')).join('')}</div>
+  </section>
+
+  <section class="promo">
+    ${link('build', `<span class="pr-ic">${icon('search', 22)}</span>
+      <span class="pr-t"><small>Step 1</small><b>Build your own scanner</b><span>Write simple rules like <code>close &gt; sma(200)</code>. See which NSE stocks match after every close.</span></span>
+      <span class="pr-demo"><code><i class="q-id">close</i> <i class="q-op">&gt;</i> <i class="q-fn">sma(200)</i><br><i class="q-join">and</i> <i class="q-fn">rsi(14)</i> <i class="q-op">&lt;</i> <i class="q-num">40</i></code><em>${icon('check', 13)}14 stocks match</em></span>
+      <span class="pr-cta">Open Build ${icon('chev', 16)}</span>`, 'pr pr-a')}
+    ${link('strategies', `<span class="pr-ic">${icon('flask', 22)}</span>
+      <span class="pr-t"><small>Step 2</small><b>Make it a strategy and backtest it</b><span>Add exit rules and test them on years of past prices. See the win rate before you trust an idea.</span></span>
+      <span class="pr-demo pr-ring"><span class="wring good" style="--p:63"><b class="tnum">63<small>%</small></b></span><em>win rate · 657 past trades</em></span>
+      <span class="pr-cta">See strategies ${icon('chev', 16)}</span>`, 'pr pr-b')}
+  </section>
+
+  <section class="how3">
+    <div><b>${icon('xray', 18)}</b><span><strong>X-Ray</strong>Every number with a plain meaning</span></div>
+    <div><b>${icon('layers', 18)}</b><span><strong>${SCREENS_N} screens</strong>Ready-made scans, one tap</span></div>
+    <div><b>${icon('bell', 18)}</b><span><strong>Alerts</strong>Know when a stock enters</span></div>
+  </section>
+  <p class="disc" style="text-align:center">A learning and research tool. Not investment advice.</p>`;
+  const inp = el.querySelector('#xi'), sug = el.querySelector('#sug');
+  el.querySelector('#xf').onsubmit = e => { e.preventDefault(); const v = inp.value.trim().toUpperCase().replace(/\s+/g, ''); if (v) go('xray/' + encodeURIComponent(v)); };
+  let t = 0;
+  inp.oninput = () => { clearTimeout(t); t = setTimeout(async () => {
+    const v = inp.value.trim(); if (v.length < 2) { sug.innerHTML = ''; return; }
+    let L = await api.search(v).catch(() => null); L = L && (Array.isArray(L) ? L : L.results || []); if (!L || !L.length) L = searchSample(v);
+    sug.innerHTML = L.length ? `<div class="grp">${L.slice(0, 6).map(s => link(`xray/${encodeURIComponent(s.symbol)}`, `${mono(s.symbol)}<span class="m"><b>${esc(s.symbol)}</b><span>${esc(clean(s.name))}</span></span>${icon('chev', 16)}`, 'gi')).join('')}</div>` : '';
+  }, 180); };
+}
+
 export default async function xray(el, r) {
-  const sym = (r.arg || '').toUpperCase() || 'RELIANCE', isHome = !r.arg;
+  if (!r.arg) return landing(el);
+  const sym = r.arg.toUpperCase(), isHome = false;
   el.innerHTML = `
   <div class="page-h">
     ${isHome ? `<h1 class="h1">Stock X-Ray</h1><p class="lede">Search any NSE stock. Every number comes with a one-line meaning.</p>` : ''}
