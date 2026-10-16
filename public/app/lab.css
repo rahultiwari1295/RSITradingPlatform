@@ -735,3 +735,92 @@ body,html{background:var(--bg)}
 .flow li+li{border-left:1px solid var(--line)}
 .gl,.r-kpis,.two,.xgrid,.kp2{gap:18px}
 .tabbody{gap:20px}
+
+/* ================================================================ v7: phone fit, feel, bell, premium tiles */
+/* nothing may push the page sideways; no zoom on input focus (iOS zooms below 16px); no double-tap zoom */
+html,body{overflow-x:hidden;max-width:100%}
+@supports (overflow:clip){html,body{overflow-x:clip}}
+html{touch-action:manipulation;-webkit-text-size-adjust:100%}
+input,select,textarea,.search input,.xsearch input,.inp,.find input,.qed textarea{font-size:16px!important}
+.qhl{font-size:16px!important}
+#view,.wrap{min-width:0;max-width:100%}
+.sx,.pv{min-width:0}.sx .dt,.pv .dt{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+img,svg,table{max-width:100%}
+
+/* tactile press: everything you can tap sinks in */
+.btn,.chip,.seg button,.tabs a,.srow,.stile2,.deal,.gi,.frow,.gearbtn,.qsnip button,.tabs-x button,.rail button{transition:box-shadow .15s var(--ease),transform .12s var(--ease),color .15s}
+.btn:active,.chip:active,.gearbtn:active,.qsnip button:active{transform:scale(.96);box-shadow:var(--press-sm)}
+.btn.pri:active{transform:scale(.96)}
+.srow:active,.stile2:active,.deal:active,.frow:active{transform:scale(.985)}
+
+/* dock: icons centred inside the pill, Build circle sits inside too */
+.tabs{height:70px;align-items:center;padding:0 8px}
+.tabs a{height:56px;margin:0 2px;gap:4px;justify-content:center}
+.tabs a.go{gap:3px}
+.tabs a.go span.c{width:40px;height:40px}
+.tabs a.go span.l{font-size:10px;line-height:1}
+#view{padding-bottom:calc(70px + var(--safe-b) + 44px)}
+
+/* bell + badge */
+.bell{position:relative}
+.bdg{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;display:grid;place-items:center;font:700 10.5px/1 var(--f);font-style:normal;color:#fff;background:var(--weak);box-shadow:0 0 0 2px var(--bg)}
+.feedsheet{max-height:86vh}
+.feedh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.feedh h3{margin:0}
+.nt{display:flex;gap:12px;align-items:center;padding:14px;border-radius:18px;box-shadow:var(--press-sm);margin-bottom:14px}
+.nt>svg,.nt .bi{flex:none;color:var(--brand)}.nt.on>svg{color:var(--good)}
+.nt div{flex:1;display:grid;gap:2px}.nt b{font-size:14.5px}.nt span{font-size:12.5px;color:var(--ink-3);line-height:1.4}
+.fg{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:14px 4px 6px}
+.feed{display:grid}
+.frow{display:flex;gap:12px;align-items:center;padding:10px 6px;border-radius:14px}
+.frow:hover{background:color-mix(in srgb,var(--brand) 5%,transparent)}
+.fi{position:relative;flex:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:11.5px;font-weight:750;color:var(--brand);box-shadow:var(--raise-sm)}
+.fi.new::after{content:"";position:absolute;top:0;right:0;width:10px;height:10px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 2px var(--bg)}
+.fm{display:grid;min-width:0}.fm b{font-size:14px;font-weight:620;line-height:1.35}.fm b em{font-style:normal;color:var(--brand-ink)}.fm small{font-size:12px;color:var(--ink-3)}
+
+/* Screens: each scan is its own raised tile */
+.stiles{display:grid;gap:14px}
+@media (min-width:700px) and (max-width:1099px){.stiles{grid-template-columns:1fr 1fr}}
+.stile{border-radius:22px;background:var(--bg);box-shadow:var(--raise);overflow:hidden}
+.stile .srow{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 16px;border-radius:22px}
+.stile .srow:hover{background:transparent}.stile .srow:hover .m b{color:var(--brand)}
+.stile .srow.on{box-shadow:var(--press-sm);background:transparent}
+.sic{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--c);box-shadow:var(--press-sm)}
+.stile .m b{font-size:15px;font-weight:680;letter-spacing:-.01em}.stile .m span{font-size:12.5px;color:var(--ink-3);line-height:1.4}
+.stile .cnt{display:grid;place-items:center;align-content:center;width:52px;height:52px;border-radius:50%;padding:0;box-shadow:var(--raise-sm);line-height:1}
+.stile .cnt b{font-size:17px;font-weight:760;color:var(--brand)}.stile .cnt small{font-size:9px;color:var(--ink-3);font-weight:650;margin-top:1px}
+.stile .cnt.soon{font-size:10.5px;width:52px;height:30px;border-radius:15px;box-shadow:var(--press-sm)}
+.stile .sx{border-radius:0;background:transparent;box-shadow:none;padding:4px 14px 16px}
+.sg+.sg{margin-top:26px}
+
+/* Strategies: premium tiles with a win-rate dial */
+.stl{display:grid;gap:16px}
+@media (min-width:900px){.stl{grid-template-columns:1fr 1fr}}
+.stile2{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:18px;border-radius:24px;background:var(--bg);box-shadow:var(--raise)}
+.stile2:hover .tt b{color:var(--brand)}
+.stile2 .m{display:grid;gap:6px;min-width:0}
+.stile2 .tt{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.stile2 .tt b{font-size:16px;font-weight:700;letter-spacing:-.015em}
+.stile2 .ab{font-size:13px;color:var(--ink-2);line-height:1.45}
+.sm3{display:grid;grid-template-columns:repeat(3,auto);justify-content:start;gap:6px 18px;margin-top:4px;padding-top:10px;border-top:1px solid var(--line)}
+.sm3 span{display:grid}.sm3 small{font-size:11px;color:var(--ink-3);font-weight:600}.sm3 b{font-size:14.5px;font-weight:700}
+.wr2{display:grid;justify-items:center;gap:6px}.wr2>small{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3)}
+.wring{--p:50;--c:var(--fair);position:relative;width:76px;height:76px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--c) calc(var(--p)*1%),transparent 0);box-shadow:var(--raise-sm)}
+.wring.good{--c:var(--good)}.wring.weak{--c:var(--weak)}
+.wring::before{content:"";position:absolute;inset:7px;border-radius:50%;background:var(--bg);box-shadow:var(--press-sm)}
+.wring b{position:relative;font-size:20px;font-weight:780;letter-spacing:-.03em}.wring b small{font-size:11px;font-weight:700;margin-left:1px}
+
+/* bulk deals as tiles */
+.deals{display:grid;gap:14px}
+@media (min-width:700px){.deals{grid-template-columns:1fr 1fr}}
+@media (min-width:1100px){.deals{grid-template-columns:1fr 1fr 1fr}}
+.deal{display:grid;gap:10px;padding:16px;border-radius:22px;background:var(--bg);box-shadow:var(--raise)}
+.dh{display:flex;align-items:center;gap:12px}.dh .mono{width:42px;height:42px}
+.dn2{flex:1;display:grid;min-width:0}.dn2 b{font-size:15.5px;font-weight:700}.dn2 small{font-size:12px;color:var(--ink-3)}
+.who2{font-size:13.5px;color:var(--ink-2)}
+.d3{display:grid;grid-template-columns:repeat(3,1fr);border-radius:14px;box-shadow:var(--press-sm)}
+.d3>span{display:grid;gap:1px;padding:10px 12px}.d3>span+span{border-left:1px solid var(--line)}
+.d3 small{font-size:11px;color:var(--ink-3);font-weight:600}.d3 b{font-size:14.5px;font-weight:700}
+.page-h,.head{grid-template-columns:minmax(0,1fr)}
+.ph-row>div{flex:1;min-width:0}
+.toolbar{min-width:0}.toolbar .seg{flex:none}
+.tabs a{justify-content:flex-end;padding-bottom:9px}
+.tabs a.go{padding-bottom:7px}

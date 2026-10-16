@@ -12,7 +12,8 @@ import { report as sampleReport, searchSample, NEWS } from '../sample.js';
    solvency, peers, catalysts.checklist, chart_candles
    Never shown: why_buy/why_avoid, stance, action_title, trade_execution_card. */
 const ADV = /\b(buy|sell|target|stop[- ]?loss|accumulate|entry|exit|avoid|book profit|undervalued|overvalued|multibagger)\b/i;
-const clean = s => String(s || '').replace(/&#x27;/g, "'").replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim();
+const txt = s => (s && typeof s === 'object' ? (Array.isArray(s) ? s.map(txt).join(' ') : ['text', 'summary', 'headline', 'body', 'line', 'what', 'one_liner'].map(k => s[k]).filter(v => typeof v === 'string').join(' ') || Object.values(s).filter(v => typeof v === 'string').join(' ')) : s);
+const clean = s => String(txt(s) || '').replace(/&#x27;/g, "'").replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim();
 const POPULAR = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'TATAMOTORS', 'HAL', 'DIXON', 'ZOMATO', 'TRENT', 'BEL'];
 const sgn = (v, d = 1) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d) + '%';
 const tone = v => (v > 0 ? 'up' : v < 0 ? 'dn' : '');
@@ -64,11 +65,12 @@ export default async function xray(el, r) {
     sug.innerHTML = L.length ? `<div class="grp">${L.slice(0, 6).map(s => link(`xray/${encodeURIComponent(s.symbol)}`, `${mono(s.symbol)}<span class="m"><b>${esc(s.symbol)}</b><span>${esc(clean(s.name))}</span></span>${icon('chev', 16)}`, 'gi')).join('')}</div>` : '';
   }, 180); };
 
+  const repEl = el.querySelector('#rep');
   let d = null;
   try { d = await Promise.race([api.report(sym), new Promise((_, no) => setTimeout(() => no(new Error('slow')), 6000))]); if (!d || d.error || !d.current_metrics) d = null; } catch { d = null; }
   const sample = !d; if (!d) d = sampleReport(sym);
-  if (!el.isConnected) return;
-  draw(el.querySelector('#rep'), d, sym, sample, r.q.get('tab'));
+  if (!repEl.isConnected) return;  // the person moved to another page while this loaded
+  draw(repEl, d, sym, sample, r.q.get('tab'));
 }
 
 function draw(rep, d, sym, sample, tab0) {
@@ -109,7 +111,7 @@ function draw(rep, d, sym, sample, tab0) {
 
   const T = {};
   T.overview = `
-    ${u.beginner_summary ? `<div class="summary">${icon('spark', 18)}<p>${esc(clean(u.beginner_summary))}</p></div>` : ''}
+    ${clean(u.beginner_summary) ? `<div class="summary">${icon('spark', 18)}<p>${esc(clean(u.beginner_summary))}</p></div>` : ''}
     <div class="two">
     ${ok(score) ? block('X-Ray score', 'Four checks rolled into one number from 0 to 100. A description, not a signal.', `
       <div class="score"><div class="ring" style="--p:${score}"><b class="tnum">${Math.round(score)}</b></div><div>${st(...S.score(score))}<p>${score >= 70 ? 'Most checks look healthy.' : score >= 45 ? 'Some checks look good, some do not.' : 'Several checks look weak.'}</p></div></div>

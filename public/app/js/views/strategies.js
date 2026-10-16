@@ -6,6 +6,7 @@ import { STRATEGIES, strategyDetail } from '../sample.js';
 const STEPS = `<ol class="flow"><li><b>1</b><span><strong>Write a scanner</strong><small>Rules that pick stocks</small></span></li><li><b>2</b><span><strong>Add exit rules</strong><small>When a trade ends</small></span></li><li><b>3</b><span><strong>See how it did</strong><small>Years of past prices</small></span></li></ol>`;
 const wc = w => (w >= 55 ? 'good' : w < 45 ? 'weak' : 'fair');
 const exitTxt = e => [e.stop ? `falls ${e.stop}%` : '', e.target ? `rises ${e.target}%` : '', e.time ? `${e.time} days pass` : ''].filter(Boolean).join(', or ');
+const ring = w => `<span class="wring ${wc(w)}" style="--p:${w}"><b class="tnum">${Math.round(w)}<small>%</small></b></span>`;
 const wbar = w => `<span class="wbar"><i class="${wc(w)}" style="width:${w}%"></i><em></em></span>`;
 
 export default async function strategies(el, r) {
@@ -17,13 +18,14 @@ export default async function strategies(el, r) {
     <div class="row-b">${link('build', `${icon('plus', 16)}Create your own`, 'btn pri sm')}${link('screens', 'Start from a screen', 'btn quiet sm')}</div></div>
   <div id="mine"></div>
   <section class="sec"><div class="sec-h"><h2 class="h2">Library</h2><div class="seg sm" id="srt"><button data-v="win">Win rate</button><button data-v="avg">Avg return</button><button data-v="trades">Trades</button></div></div>
-    <div class="grp" id="lst"></div>
+    <div class="stl" id="lst"></div>
     <p class="disc">Hypothetical tests on past NSE prices with 0.10% costs each way. Past results do not predict future results. The dotted line on each bar marks 50%.</p></section>`;
   const lst = el.querySelector('#lst'), srt = el.querySelector('#srt');
   const draw = () => {
     srt.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === sort));
-    lst.innerHTML = STRATEGIES.slice().sort((a, b) => b[sort] - a[sort]).map(s => link(`strategies/${s.id}`, `<span class="m"><b>${esc(s.name)}</b><span>${esc(s.about)}</span><small>${s.tf === '1W' ? 'Weekly' : 'Daily'} · ${fmt.int(s.trades)} trades · avg <em class="${fmt.tone(s.avg)}">${fmt.pct(s.avg, 2)}</em></small></span>
-      <span class="wr"><small>Win rate</small><b class="tnum ${wc(s.win)}">${s.win.toFixed(0)}%</b>${wbar(s.win)}</span>`, 'strow')).join('');
+    lst.innerHTML = STRATEGIES.slice().sort((a, b) => b[sort] - a[sort]).map(s => link(`strategies/${s.id}`, `<span class="m"><span class="tt"><b>${esc(s.name)}</b><span class="pill">${s.tf === '1W' ? 'Weekly' : 'Daily'}</span></span><span class="ab">${esc(s.about)}</span>
+      <span class="sm3"><span><small>Avg / trade</small><b class="tnum ${fmt.tone(s.avg)}">${fmt.pct(s.avg, 2)}</b></span><span><small>Trades</small><b class="tnum">${fmt.int(s.trades)}</b></span><span><small>In it now</small><b class="tnum">${s.open}</b></span></span></span>
+      <span class="wr2">${ring(s.win)}<small>Win rate</small></span>`, 'stile2')).join('');
   };
   srt.onclick = e => { const b = e.target.closest('button'); if (b) { sort = b.dataset.v; draw(); } };
   draw();

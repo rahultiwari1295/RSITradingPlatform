@@ -8,6 +8,8 @@ const KEY = 'qs-screens-view';
 const getV = () => { try { return localStorage.getItem(KEY) || 'list'; } catch { return 'list'; } };
 const setV = v => { try { localStorage.setItem(KEY, v); } catch { /* blocked */ } };
 const buildUrl = s => `build?query=${encodeURIComponent(s.query)}&tf=${s.tf}&name=${encodeURIComponent(s.name)}`;
+const GI = { breakout: ['trend', '#6C5CE7'], momentum: ['bolt', '#E08A1E'], volume: ['bars', '#0E9F8A'], pullback: ['target', '#2F80ED'], weak: ['warn', '#E5484D'], business: ['shield', '#8E5BD9'], owners: ['me', '#1E9E6A'] };
+const gIcon = (s, g) => { const [ic, c] = GI[g || s.group] || ['layers', '#6C5CE7']; return `<span class="sic" style="--c:${c}">${icon(ic, 18)}</span>`; };
 const count = s => (s.live ? screenRows(s).length : null);
 const table = (s, rows, max = 99) => `<table class="dt"><thead><tr><th>Stock</th><th>Price</th><th>Today</th><th>${esc(colName(s.col))}</th></tr></thead><tbody>${rows.slice(0, max).map(x => `<tr data-href="xray/${encodeURIComponent(x.sym)}"><td><span class="nm">${mono(x.sym)}<span><b>${esc(x.sym)}</b><small>${esc(x.sec)}</small></span></span></td><td class="tnum">${fmt.inr(x.price)}</td><td class="tnum ${fmt.tone(x.chg)}">${fmt.pct(x.chg)}</td><td class="tnum hl">${esc(x.vf)}</td></tr>`).join('')}</tbody></table>`;
 
@@ -23,7 +25,7 @@ export default async function screens(el, r) {
   const groups = () => SCREEN_GROUPS.filter(g => cat === 'all' || g.id === cat).map(g => ({ ...g, items: g.items.filter(s => !q || (s.name + ' ' + s.about).toLowerCase().includes(q)) })).filter(g => g.items.length);
   const cats = () => [['all', 'All scans', SCREENS.length], ...SCREEN_GROUPS.map(g => [g.id, g.name, g.items.length])];
 
-  const rowH = s => { const c = count(s); return `<button class="srow ${s.id === sel ? 'on' : ''}" data-s="${s.id}"><span class="m"><b>${esc(s.name)}</b><span>${esc(s.about)}</span></span>${c == null ? '<span class="cnt soon">Soon</span>' : `<span class="cnt">${c}</span>`}</button><div class="sx" data-x="${s.id}" hidden></div>`; };
+  const rowH = (s, g) => { const c = count(s); return `<div class="stile"><button class="srow ${s.id === sel ? 'on' : ''}" data-s="${s.id}">${gIcon(s, g)}<span class="m"><b>${esc(s.name)}</b><span>${esc(s.about)}</span></span>${c == null ? '<span class="cnt soon">Soon</span>' : `<span class="cnt"><b>${c}</b><small>stocks</small></span>`}</button><div class="sx" data-x="${s.id}" hidden></div></div>`; };
   const preview = s => {
     const rows = s.live ? screenRows(s) : [];
     return `<div class="pv-h"><span class="lbl">${esc(s.groupName)}</span><h2>${esc(s.name)}</h2><p>${esc(s.about)}</p></div>
@@ -44,7 +46,7 @@ export default async function screens(el, r) {
       return;
     }
     if (!sel || !G.some(g => g.items.some(s => s.id === sel))) sel = G[0].items[0].id;
-    body.innerHTML = `<div class="sc3">${rail}<div class="slist">${G.map(g => `<section class="sg"><header><h2>${esc(g.name)}</h2><p>${esc(g.about)}</p></header><div class="grp">${g.items.map(rowH).join('')}</div></section>`).join('')}</div>
+    body.innerHTML = `<div class="sc3">${rail}<div class="slist">${G.map(g => `<section class="sg"><header><h2>${esc(g.name)}</h2><p>${esc(g.about)}</p></header><div class="stiles">${g.items.map(s => rowH(s, g.id)).join('')}</div></section>`).join('')}</div>
       <aside class="pv" id="pv">${preview(SCREENS.find(s => s.id === sel))}</aside></div>`;
   }
   const wide = () => matchMedia('(min-width:1100px)').matches;

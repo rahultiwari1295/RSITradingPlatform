@@ -158,7 +158,7 @@ export function boot() {
   const top = d.getElementById('top'), tabs = d.getElementById('tabs');
   top.innerHTML = `<div class="top-in"><a class="brand" href="${BASE}/" data-nav aria-label="QuantSync Lab home">${LOGO}<span>QuantSync <em>Lab</em></span></a>
     <nav class="nav" aria-label="Main">${[['', 'X-Ray', 'xray'], ['screens', 'Screens', 'screens'], ['build', 'Build', 'build'], ['strategies', 'Strategies', 'strat'], ['news', 'News', 'news']].map(([p, l, t]) => link(p, l, '', `data-tab="${t}"`)).join('')}</nav>
-    <span class="grow"></span>${link('config', `${icon('gear', 19)}<i class="sdot" id="sdot"></i>`, 'gearbtn', 'data-tab="cfg" aria-label="Settings: server"')}${themeSwitch()}<span id="acct"></span></div>`;
+    <span class="grow"></span><button class="gearbtn bell" id="bell" type="button" aria-label="Activity and alerts">${icon('bell', 19)}<i class="bdg" id="bdg" hidden></i></button>${themeSwitch()}<span id="acct"></span></div>`;
   tabs.innerHTML = TABS.map(([k, p, l, ic]) => k === 'build'
     ? link(p, `<span class="c">${icon(ic, 22)}</span><span class="l">${l}</span>`, 'go', `data-tab="${k}" aria-label="Build a strategy"`)
     : link(p, `${icon(ic, 23)}<span>${l}</span>`, '', `data-tab="${k}"`)).join('');
@@ -177,7 +177,17 @@ export function boot() {
   });
   auth.init();
   render(parse());
-  /* server status dot on the gear: green answers, red does not */
-  const sd = d.getElementById('sdot');
-  QD.settings.probe(QD.settings.active().lab).then(r => { sd.className = 'sdot ' + (r.ok ? 'ok' : 'bad'); sd.title = r.ok ? `Lab server OK · ${r.ms} ms` : `Lab server: ${r.error}`; if (!r.ok) toast('Lab server is not answering. Tap the gear to change it.'); });
+  /* bell: activity feed + browser notifications; haptic tick on every tap */
+  import('./feel.js').then(F => {
+    F.wireHaptics();
+    let items = F.sampleFeed();
+    const bdg = d.getElementById('bdg'), paintB = () => { const k = F.unread(items); bdg.hidden = !k; bdg.textContent = k > 9 ? '9+' : k; };
+    paintB();
+    d.getElementById('bell').onclick = () => {
+      const sh = sheet(F.feedHTML(items, esc, fmt, icon, link)); sh.el.classList.add('feedsheet');
+      const en = sh.el.querySelector('[data-enable]'); if (en) en.onclick = async () => { const r = await F.enableNotifs(); toast(r === 'granted' ? 'Alerts are on.' : r === 'denied' ? 'Alerts were blocked in the browser.' : 'Alerts not turned on.'); sh.close(); };
+      sh.el.addEventListener('click', e => { const a = e.target.closest('a[data-nav]'); if (a) { e.preventDefault(); e.stopPropagation(); sh.close(); go(a.getAttribute('href').slice(BASE.length + 1)); } });
+      F.markSeen(); paintB();
+    };
+  });
 }
