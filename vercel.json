@@ -149,22 +149,22 @@
   "redirects": [
     {
       "source": "/",
-      "destination": "/m/",
+      "destination": "/app/",
       "permanent": false
     },
     {
       "source": "/home",
-      "destination": "/m/",
+      "destination": "/app/",
       "permanent": false
     },
     {
       "source": "/xray",
-      "destination": "/m/xray",
+      "destination": "/app/",
       "permanent": false
     },
     {
       "source": "/xray/:sym",
-      "destination": "/m/xray/:sym",
+      "destination": "/app/xray/:sym",
       "permanent": false
     },
     {
