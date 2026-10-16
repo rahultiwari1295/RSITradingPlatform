@@ -20,8 +20,7 @@ export default async function build(el, r) {
   keep(S);
 
   el.innerHTML = `
-  <div class="head"><span class="ey">${icon('search', 16)}Scanner</span><h1 class="h1">${words('Write it. <em>Scan it.</em> Test it.')}</h1>
-    <p class="lede">Type conditions one per line, like a screener query. Every line is checked as you type and shown in plain words below.</p></div>
+  <div class="page-h"><div><h1 class="h1">Build a scanner</h1><p class="lede">Write one rule per line. Each line is checked as you type and shown in plain words below. Then scan today and test it on past prices.</p></div></div>
   <div class="stepper" aria-hidden="true"><span class="on" id="s1"></span><span id="s2"></span><span id="s3"></span></div>
 
   <div id="mine"></div>

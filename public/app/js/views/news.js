@@ -1,4 +1,4 @@
-import { icon, esc, words, link, fmt } from '../app.js';
+import { icon, esc, link, fmt, go } from '../app.js';
 import { NEWS } from '../sample.js';
 
 /* News: Indian market, global, and bulk / block deals. Sample items until the feed is connected. */
@@ -8,23 +8,22 @@ const qty = v => v >= 1e7 ? (v / 1e7).toFixed(2) + ' cr' : v >= 1e5 ? (v / 1e5).
 export default async function news(el, r) {
   let tab = ['india', 'global', 'deals'].includes(r.q.get('t')) ? r.q.get('t') : 'india';
   el.innerHTML = `
-  <div class="head"><span class="ey">${icon('news', 16)}News</span><h1 class="h1">${words('What moved <em>today</em>')}</h1><p class="lede">Indian markets, the world, and large trades by big investors.</p></div>
-  <div class="seg" id="nt" style="max-width:460px"><button data-v="india">Indian</button><button data-v="global">Global</button><button data-v="deals">Bulk deals</button></div>
-  <div class="samp" style="margin-top:14px">${icon('info', 15)}<span><b>Sample items.</b> Headlines and deals are placeholders until the news feed is connected.</span></div>
-  <div id="nb" style="margin-top:12px"></div>`;
+  <div class="page-h"><div class="ph-row"><div><h1 class="h1">News</h1><p class="lede">Indian markets, the world, and large trades by big investors.</p></div><span class="tag-s">Sample data</span></div>
+    <div class="seg" id="nt" style="max-width:420px"><button data-v="india">Indian</button><button data-v="global">Global</button><button data-v="deals">Bulk deals</button></div></div>
+  <div id="nb"></div>`;
   const nb = el.querySelector('#nb'), nt = el.querySelector('#nt');
+  nb.addEventListener('click', e => { const t = e.target.closest('tr[data-href]'); if (t) go(t.dataset.href); });
   const paint = () => {
     nt.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === tab));
     history.replaceState({}, '', '/app/news' + (tab === 'india' ? '' : '?t=' + tab));
     if (tab === 'deals') {
-      const D = NEWS.deals, buy = D.filter(x => x.side === 'Buy').reduce((a, x) => a + x.qty * x.px, 0), sell = D.filter(x => x.side === 'Sell').reduce((a, x) => a + x.qty * x.px, 0);
-      nb.innerHTML = `<div class="kpis k2"><div><small>Bought in large deals</small><b class="tnum up">${fmt.cr(buy / 1e7)}</b><span>${D.filter(x => x.side === 'Buy').length} deals</span></div><div><small>Sold in large deals</small><b class="tnum dn">${fmt.cr(sell / 1e7)}</b><span>${D.filter(x => x.side === 'Sell').length} deals</span></div></div>
-        <p class="small" style="margin:14px 2px 10px">A <b>bulk deal</b> is one investor trading more than 0.5% of a company’s shares in a day. A <b>block deal</b> is a single large trade of at least ₹10 crore in a special window.</p>
-        <div class="tb t5"><div class="th"><span>Stock</span><span>Investor</span><span>Side</span><span>Shares</span><span>Price</span></div>${D.map(x => link(`xray/${encodeURIComponent(x.sym)}`, `<span class="nm"><span><b>${esc(x.sym)}</b><small>${x.kind} · ${fmt.date(x.date)}</small></span></span><span class="who">${esc(x.who)}</span><span class="${x.side === 'Buy' ? 'up' : 'dn'}" style="font-weight:700">${x.side === 'Buy' ? 'Bought' : 'Sold'}</span><span class="tnum">${qty(x.qty)}</span><span class="tnum">${fmt.inr(x.px)}</span>`, 'tr')).join('')}</div>`;
+      const D = NEWS.deals, B = D.filter(x => x.side === 'Buy'), Sl = D.filter(x => x.side === 'Sell'), val = L => L.reduce((a, x) => a + x.qty * x.px, 0) / 1e7;
+      nb.innerHTML = `<div class="kp2"><div><span>Bought in large deals</span><b class="tnum up">${fmt.cr(val(B))}</b><small>${B.length} deals today</small></div><div><span>Sold in large deals</span><b class="tnum dn">${fmt.cr(val(Sl))}</b><small>${Sl.length} deals today</small></div></div>
+        <div class="info-b">${icon('info', 16)}<span><b>Bulk deal</b>: one investor trades more than 0.5% of a company’s shares in a day. <b>Block deal</b>: one trade of ₹10 crore or more in a special window.</span></div>
+        <div class="card flush"><table class="dt"><thead><tr><th>Stock</th><th>Investor</th><th>Side</th><th>Shares</th><th>Price</th></tr></thead><tbody>${D.map(x => `<tr data-href="xray/${encodeURIComponent(x.sym)}"><td><span class="nm"><span><b>${esc(x.sym)}</b><small>${x.kind} · ${fmt.date(x.date)}</small></span></span></td><td class="who">${esc(x.who)}</td><td><span class="st ${x.side === 'Buy' ? 'good' : 'weak'}">${x.side === 'Buy' ? 'Bought' : 'Sold'}</span></td><td class="tnum">${qty(x.qty)}</td><td class="tnum">${fmt.inr(x.px)}</td></tr>`).join('')}</tbody></table></div>`;
       return;
     }
-    const L = NEWS[tab];
-    nb.innerHTML = `<div class="grp">${L.map(x => `<article class="ni"><div class="nh"><span class="pill">${esc(x.tag)}</span><span class="tiny">${esc(x.src)} · ${rel(x.at)}</span></div><b>${esc(x.t)}</b>${(x.syms || []).length ? `<div class="ns">${x.syms.map(s => link(`xray/${encodeURIComponent(s)}`, esc(s), 'tag')).join('')}</div>` : ''}</article>`).join('')}</div>`;
+    nb.innerHTML = `<div class="grp">${NEWS[tab].map(x => `<article class="ni"><div class="nh"><span class="ntag">${esc(x.tag)}</span><span>${esc(x.src)} · ${rel(x.at)}</span></div><h3>${esc(x.t)}</h3>${(x.syms || []).length ? `<div class="ns">${x.syms.map(s => link(`xray/${encodeURIComponent(s)}`, esc(s), 'sym')).join('')}</div>` : ''}</article>`).join('')}</div>`;
   };
   nt.onclick = e => { const b = e.target.closest('button'); if (b) { tab = b.dataset.v; paint(); } };
   paint();
