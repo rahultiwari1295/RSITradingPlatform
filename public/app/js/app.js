@@ -38,6 +38,7 @@ const P = {
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
   moon: '<path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10z"/>',
   flask: '<path d="M9.5 3.5h5M10 3.5v6L4.8 18.2A1.5 1.5 0 0 0 6.1 20.5h11.8a1.5 1.5 0 0 0 1.3-2.3L14 9.5v-6"/><path d="M7.5 14.5h9"/>',
+  news: '<path d="M5 4h11a1 1 0 0 1 1 1v14a1 1 0 0 0 2 0V8h1a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a1 1 0 0 1 1-1z"/><path d="M8 8h6M8 12h6M8 16h4"/>',
   gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
   phone: '<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>',
   trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/>',
@@ -115,16 +116,18 @@ export function line(el, series, o = {}) {
 export const spark = (el, data, color) => line(el, [{ data, color, w: 1.8 }], { w: 120, h: 34, bare: true });
 
 /* ---------------------------------------------------------------- router */
-const TABS = [['home', '', 'Home', 'home'], ['ideas', 'ideas', 'Ideas', 'ideas'], ['build', 'build', 'Build', 'build'], ['learn', 'learn', 'Learn', 'learn'], ['me', 'me', 'Me', 'me']];
+const TABS = [['xray', '', 'X-Ray', 'xray'], ['screens', 'screens', 'Screens', 'layers'], ['build', 'build', 'Build', 'build'], ['strat', 'strategies', 'Strategies', 'flask'], ['news', 'news', 'News', 'news']];
 const ROUTES = [
-  [/^$/, 'home', 'home'], [/^build$/, 'build', 'build'], [/^ideas$/, 'ideas', 'ideas'], [/^ideas\/([\w-]+)$/, 'idea', 'ideas'],
-  [/^learn$/, 'learn', 'learn'], [/^learn\/([\w-]+)$/, 'lesson', 'learn'], [/^xray$/, 'xray', 'xr'], [/^xray\/([^/]+)$/, 'xray', 'xr'],
-  [/^me$/, 'me', 'me'], [/^(config|settings)$/, 'config', 'cfg'], [/^s\/([\w-]+)$/, 'strategy', 'me'],
+  [/^$/, 'xray', 'xray'], [/^xray$/, 'xray', 'xray'], [/^xray\/([^/]+)$/, 'xray', 'xray'],
+  [/^(?:screens|ideas)$/, 'screens', 'screens'], [/^screens\/([\w-]+)$/, 'screens', 'screens'], [/^ideas\/([\w-]+)$/, 'idea', 'screens'],
+  [/^build$/, 'build', 'build'],
+  [/^(?:strategies|learn)$/, 'strategies', 'strat'], [/^strategies\/([\w-]+)$/, 'strategies', 'strat'], [/^learn\/([\w-]+)$/, 'lesson', 'strat'],
+  [/^news$/, 'news', 'news'], [/^me$/, 'me', 'strat'], [/^s\/([\w-]+)$/, 'strategy', 'strat'], [/^(config|settings)$/, 'config', 'cfg'],
 ];
 export function parse(loc = location) {
   let p = loc.pathname.replace(/\/+$/, ''); if (p.startsWith(BASE)) p = p.slice(BASE.length); p = p.replace(/^\/+/, '').replace(/\.html$/, '').replace(/^index$/, '');
   for (const [re, view, tab] of ROUTES) { const m = p.match(re); if (m) return { view, tab, arg: m[1] ? decodeURIComponent(m[1]) : '', q: new URLSearchParams(loc.search), path: p }; }
-  return { view: 'home', tab: 'home', arg: '', q: new URLSearchParams(), path: '' };
+  return { view: 'xray', tab: 'xray', arg: '', q: new URLSearchParams(), path: '' };
 }
 let cleanup = null, seq = 0;
 async function render(r) {
@@ -146,7 +149,7 @@ export function go(path, { replace = false } = {}) {
   render(parse());
 }
 export const link = (path, inner, cls = '', attrs = '') => `<a href="${BASE}/${path}" data-nav class="${cls}" ${attrs}>${inner}</a>`;
-const footer = () => `<footer class="foot"><div class="links">${link('', 'Home')}${link('ideas', 'Ideas')}${link('build', 'Build')}${link('learn', 'Learn')}${link('xray', 'Stock X-Ray')}${link('me', 'My strategies')}${link('config', 'Settings')}</div>
+const footer = () => `<footer class="foot"><div class="links">${link('', 'X-Ray')}${link('screens', 'Screens')}${link('build', 'Build')}${link('strategies', 'Strategies')}${link('news', 'News')}${link('me', 'My strategies')}${link('learn/rules', 'Learn')}${link('config', 'Settings')}</div>
   <p>QuantSync Lab is a tool for building and testing your own rule-based ideas, and for learning how markets work. It does not give investment advice or recommendations, and QuantSync is not a SEBI-registered investment adviser or research analyst. Stocks shown are the ones that meet rules you chose. Test results are hypothetical and based on past prices; they do not predict future results.</p></footer>`;
 
 /* ---------------------------------------------------------------- shell */
@@ -154,7 +157,7 @@ export function boot() {
   try { const t = localStorage.getItem('qs-theme'); if (t) d.documentElement.dataset.theme = t; } catch { /* blocked */ }
   const top = d.getElementById('top'), tabs = d.getElementById('tabs');
   top.innerHTML = `<div class="top-in"><a class="brand" href="${BASE}/" data-nav aria-label="QuantSync Lab home">${LOGO}<span>QuantSync <em>Lab</em></span></a>
-    <nav class="nav" aria-label="Main">${[['build', 'Build'], ['ideas', 'Ideas'], ['learn', 'Learn'], ['xray', 'X-Ray'], ['me', 'My strategies']].map(([p, l]) => link(p, l, '', `data-tab="${p === 'xray' ? 'xr' : p}"`)).join('')}</nav>
+    <nav class="nav" aria-label="Main">${[['', 'X-Ray', 'xray'], ['screens', 'Screens', 'screens'], ['build', 'Build', 'build'], ['strategies', 'Strategies', 'strat'], ['news', 'News', 'news']].map(([p, l, t]) => link(p, l, '', `data-tab="${t}"`)).join('')}</nav>
     <span class="grow"></span>${link('config', `${icon('gear', 19)}<i class="sdot" id="sdot"></i>`, 'gearbtn', 'data-tab="cfg" aria-label="Settings: server"')}${themeSwitch()}<span id="acct"></span></div>`;
   tabs.innerHTML = TABS.map(([k, p, l, ic]) => k === 'build'
     ? link(p, `<span class="c">${icon(ic, 22)}</span><span class="l">${l}</span>`, 'go', `data-tab="${k}" aria-label="Build a strategy"`)
