@@ -129,13 +129,15 @@ export function parse(loc = location) {
   for (const [re, view, tab] of ROUTES) { const m = p.match(re); if (m) return { view, tab, arg: m[1] ? decodeURIComponent(m[1]) : '', q: new URLSearchParams(loc.search), path: p }; }
   return { view: 'xray', tab: 'xray', arg: '', q: new URLSearchParams(), path: '' };
 }
-let cleanup = null, seq = 0;
+let cleanup = null, seq = 0, M = null;
 async function render(r) {
   const my = ++seq;
   d.querySelectorAll('[data-tab]').forEach(a => a.setAttribute('aria-current', a.dataset.tab === r.tab ? 'page' : 'false'));
   const view = d.getElementById('view');
   try { cleanup && cleanup(); } catch { /* ignore */ } cleanup = null;
+  M && M.loading(true);
   const mod = await import(`./views/${r.view}.js`);
+  M && M.loading(false);
   if (my !== seq) return;
   view.innerHTML = ''; view.className = 'wrap view-in'; void view.offsetWidth;
   try { cleanup = (await mod.default(view, r)) || null; } catch (e) { console.error(e); view.innerHTML = `<div class="head">${errBox('This page failed to load. ' + e.message, false)}</div>`; }
@@ -176,7 +178,7 @@ export function boot() {
     acct.innerHTML = link('me', u.photoURL ? `<img src="${esc(u.photoURL)}" alt="" referrerpolicy="no-referrer">` : esc(ini), 'avbtn', 'aria-label="My strategies"');
   });
   auth.init();
-  render(parse());
+  import('./motion.js').then(m => { M = m; m.initMotion(); }).finally(() => render(parse()));
   /* bell: activity feed + browser notifications; haptic tick on every tap */
   import('./feel.js').then(F => {
     F.wireHaptics();

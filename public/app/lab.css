@@ -883,3 +883,52 @@ img,svg,table{max-width:100%}
 :root:not([data-theme="dark"]) .stile .srow.on{box-shadow:inset 3px 3px 7px rgba(150,157,180,.35),inset -3px -3px 7px #fff}
 :root:not([data-theme="dark"]) .srvc.on{box-shadow:var(--tile-lift),0 0 0 2px color-mix(in srgb,var(--brand) 45%,transparent)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) :is(.blk,.gl>div,.hero-x,.stile,.stile2,.deal,.grp,.r-main,.r-kpis>div,.kp2>div,.pv,.bc,.rulebox,.srvc,.cta,.list,.card,.flow,.yrs>div,.pr,.nowbar){box-shadow:var(--raise)}}
+
+/* =====================================================================================
+   v10 · MOTION — reveal on scroll, page enter, count-up, ring and bar fills, press feel
+   ===================================================================================== */
+:root{--spring:cubic-bezier(.22,1.2,.36,1);--glide:cubic-bezier(.16,1,.3,1)}
+@property --p{syntax:'<number>';inherits:true;initial-value:0}
+/* page enter */
+.view-in{animation:vin2 .55s var(--glide) both}
+@keyframes vin2{from{opacity:0;transform:translate3d(0,14px,0);filter:blur(6px)}}
+/* tiles and rows: wait below the fold, then rise in, one after another */
+.mo{opacity:0;transform:translate3d(0,22px,0) scale(.975);filter:blur(4px)}
+.mo.mo-in{opacity:1;transform:none;filter:none;transition:opacity .6s var(--glide) var(--d,0ms),transform .8s var(--spring) var(--d,0ms),filter .6s var(--glide) var(--d,0ms)}
+:is(.dt tbody tr,.mini tr,.chips .chip,.rail button).mo{transform:translate3d(-10px,0,0);filter:none}
+.page-h.mo,.head.mo,.sec-h.mo{transform:translate3d(0,10px,0)}
+/* rings and bars fill as they appear */
+.wring{transition:--p 1.2s var(--glide)}
+.mo:not(.mo-in) .wring{--p:0!important}
+.mo.mo-in .wring{animation:ringfill 1.3s var(--glide) calc(var(--d,0ms) + 120ms) both}
+@keyframes ringfill{from{--p:0}}
+.mo.mo-in :is(.wbar i,.meter i,.pbar i,.split50 i){animation:barfill 1.1s var(--glide) calc(var(--d,0ms) + 150ms) both;transform-origin:left}
+@keyframes barfill{from{transform:scaleX(0)}}
+/* charts draw from left */
+.mo.mo-in svg path[fill="none"]{stroke-dasharray:4000;stroke-dashoffset:4000;animation:draw 1.8s var(--glide) calc(var(--d,0ms) + 100ms) forwards}
+/* status dots pulse once on arrival */
+.mo.mo-in :is(.st,.cnt,.pill){animation:pop .55s var(--spring) calc(var(--d,0ms) + 250ms) both}
+@keyframes pop{from{transform:scale(.6);opacity:0}}
+/* skeletons: soft breathing sheen */
+.sk{position:relative;overflow:hidden;animation:skb 1.6s ease-in-out infinite}
+.sk::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.55) 50%,transparent 80%);animation:sheen 1.4s var(--glide) infinite}
+:root[data-theme="dark"] .sk::after{background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.07) 50%,transparent 80%)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .sk::after{background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.07) 50%,transparent 80%)}}
+@keyframes sheen{to{transform:translateX(100%)}}
+@keyframes skb{50%{opacity:.7}}
+/* route loading line + scroll progress */
+#sbar{position:fixed;left:0;right:0;top:0;height:2.5px;z-index:60;transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,var(--brand),#00C2A8);pointer-events:none;opacity:.85}
+html.busy::before{content:"";position:fixed;left:0;top:0;height:2.5px;width:40%;z-index:61;background:linear-gradient(90deg,transparent,var(--brand),transparent);animation:busy 1s var(--glide) infinite}
+@keyframes busy{from{transform:translateX(-100%)}to{transform:translateX(260%)}}
+/* touch feel: everything you can tap sinks a little, and springs back */
+:is(.stile .srow,.stile2,.deal,.pr,.btn,.chip,.seg button,.rail button,.grp>a,.strow,.tabs a,.dt tbody tr[data-href],.bc,.ni){transition:transform .45s var(--spring),box-shadow .3s var(--glide),background-color .25s}
+:is(.stile .srow,.stile2,.deal,.pr,.grp>a,.strow,.bc,.ni):active{transform:scale(.975)}
+:is(.btn,.chip,.seg button,.rail button,.tabs a):active{transform:scale(.94)}
+@media (hover:hover){:is(.stile2,.deal,.pr,.bc,.stile):hover{transform:translateY(-3px)}}
+.seg button[aria-pressed="true"]{animation:segin .4s var(--spring)}
+@keyframes segin{from{transform:scale(.9)}}
+/* expanding scan preview on phone */
+.sx:not([hidden]){animation:open .5s var(--glide) both}
+@keyframes open{from{opacity:0;transform:translateY(-8px);clip-path:inset(0 0 100% 0)}to{clip-path:inset(0 0 0 0)}}
+.sheet{transition:transform .5s var(--spring)}
+@media (prefers-reduced-motion:reduce){.mo{opacity:1!important;transform:none!important;filter:none!important}#sbar,html.busy::before{display:none}}
