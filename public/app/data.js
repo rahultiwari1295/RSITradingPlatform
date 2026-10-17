@@ -101,15 +101,27 @@ auth.whenReady = () => auth.ready ? Promise.resolve(auth.user) : new Promise(res
 
 /* ---------------- http ---------------- */
 class ApiError extends Error { constructor(status, msg) { super(msg); this.status = status; } }
-async function http(method, url, body, { authed = true } = {}) {
+async function http(method, url, body, { authed = true, timeout, signal } = {}) {
   const h = { Accept: 'application/json' };
   if (body !== undefined) h['Content-Type'] = 'application/json';
   if (authed && CFG.devUid) h['X-Dev-Uid'] = CFG.devUid;
   else if (authed) { const t = await auth.token(); if (t) h.Authorization = 'Bearer ' + t; }
-  const send = hh => fetch(url, { method, headers: hh, body: body === undefined ? undefined : JSON.stringify(body) });
+  /* every request has a time limit (a slow server must not hang a page) and can be cancelled by the caller */
+  const limit = timeout || (method === 'GET' ? 15000 : 30000);
+  const send = hh => {
+    const ctl = new AbortController(), tm = setTimeout(() => { ctl.timedOut = true; ctl.abort(); }, limit);
+    if (signal) { if (signal.aborted) ctl.abort(); else signal.addEventListener('abort', () => ctl.abort(), { once: true }); }
+    return fetch(url, { method, headers: hh, body: body === undefined ? undefined : JSON.stringify(body), signal: ctl.signal })
+      .catch(e => { e.timedOut = !!ctl.timedOut; throw e; }).finally(() => clearTimeout(tm));
+  };
   let r;
-  const down = () => new ApiError(0, `Can't reach the Lab server (${CFG.lab}). Check it is running, or change it in Settings.`);
-  try { r = await send(h); } catch { if (method !== 'GET') throw down(); await sleep(800); try { r = await send(h); } catch { throw down(); } }
+  const down = e => { const x = new ApiError(0, e && e.timedOut ? 'The server is slow right now. Try again in a moment.' : `Can't reach the Lab server (${CFG.lab}). Check it is running, or change it in Settings.`); x.timeout = !!(e && e.timedOut); return x; };
+  const cancelled = () => !!(signal && signal.aborted);
+  try { r = await send(h); } catch (e) {
+    if (cancelled()) throw new ApiError(-1, 'cancelled');
+    if (method !== 'GET') throw down(e);
+    await sleep(800); try { r = await send(h); } catch (e2) { if (cancelled()) throw new ApiError(-1, 'cancelled'); throw down(e2); }
+  }
   if (method === 'GET' && r.status >= 502 && r.status <= 504) { await sleep(900); r = await send(h); }
   if (r.status === 401 && h.Authorization && method === 'GET') { delete h.Authorization; r = await send(h); }
   if (!r.ok) {
@@ -141,7 +153,10 @@ const lab = {
   today: () => cached('lab:today:' + uidKey(), 2 * MIN, () => L('GET', '/today')),
   matches: () => cached('lab:matches:' + uidKey(), MIN, () => L('GET', '/matches').then(m => { const rows = mergeQ(m.rows || []), nl = rows.filter(r => r.latest).length; return { ...m, rows, counts: { latest: nl, older: rows.length - nl } }; })),
   alerts: () => cached('lab:alerts:' + uidKey(), MIN, () => L('GET', '/alerts')),
-  scan: (tf, entry) => L('POST', '/scan', { tf, entry }, { authed: false }),
+  scan: (tf, entry, signal) => L('POST', '/scan', { tf, entry }, { authed: false, timeout: 20000, signal }),
+  /** Ready-made screens, worked out ahead of time on the server: one small answer for every card. */
+  board: (signal) => L('GET', '/screens/board', undefined, { authed: false, timeout: 12000, signal }),
+  screenFull: (id, signal) => cached('lab:screen:' + id, 2 * MIN, () => L('GET', '/screens/' + encodeURIComponent(id), undefined, { authed: false, timeout: 12000, signal })),
   backtest: (tf, entry, exit) => L('POST', '/backtest', { tf, entry, exit }),
   job: id => L('GET', '/jobs/' + id),
   strategies: scope => cached(`lab:strats:${scope}:${uidKey()}`, 2 * MIN, () => L('GET', '/strategies' + q({ scope }), undefined, { authed: scope === 'mine' || scope === 'people' })),
@@ -236,7 +251,8 @@ const intel = {
   deals: (days = 5) => keep('in:deals:' + days, 5 * MIN, () => I('/deals' + q({ days }))),
   insiders: (days = 30) => keep('in:ins:' + days, 5 * MIN, () => I('/insiders' + q({ days }))),
   calendar: (days = 14) => keep('in:cal:' + days, 10 * MIN, () => I('/calendar' + q({ days }))),
-  markets: () => keep('in:mk', 2 * MIN, () => I('/markets')),
+  markets: () => keep('in:mk', 60e3, () => I('/markets')),
+  home: () => keep('in:home', 2 * MIN, () => I('/home')),
   status: () => I('/status'),
 };
 

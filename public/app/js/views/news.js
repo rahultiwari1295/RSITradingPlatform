@@ -1,9 +1,10 @@
 import { icon, esc, link, fmt, go, intel, mono } from '../app.js';
+import { alertPrefs, seenAt } from '../feel.js';
 import { NEWS } from '../sample.js';
 
 /* News: the intelligence feed. Brief (07:00 / 17:00), every filing scored, bulk/block deals, insider trades,
    the results calendar and world markets. Live from /api/intel2; labelled sample rows only if that is unreachable. */
-const TABS = [['brief', 'Brief'], ['filings', 'Filings'], ['deals', 'Deals'], ['insiders', 'Insiders'], ['calendar', 'Calendar'], ['world', 'World']];
+const TABS = [['today', 'Today'], ['brief', 'Brief'], ['filings', 'Filings'], ['deals', 'Deals'], ['insiders', 'Insiders'], ['calendar', 'Calendar'], ['world', 'World']];
 const rel = iso => { if (!iso) return ''; const t = new Date(String(iso).replace(' ', 'T')); const m = Math.round((Date.now() - t) / 6e4); return isNaN(m) ? '' : m < 1 ? 'now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : fmt.date(iso); };
 const qty = v => v >= 1e7 ? (v / 1e7).toFixed(2) + ' cr' : v >= 1e5 ? (v / 1e5).toFixed(1) + ' L' : fmt.int(v);
 const imp = v => `<span class="imp ${v >= 70 ? 'hi' : v >= 45 ? 'md' : 'lo'}" style="--p:${v}" title="Impact ${v} of 100"><b>${v}</b></span>`;
@@ -31,11 +32,51 @@ export function evCard(e, { showSym = true } = {}) {
   </article>`;
 }
 
+
+/* ---------------------------------------------------------------- Today (home)
+   Mood line, the biggest stories, then one short paragraph and dotted bullets each for Indian stocks, India economy
+   and policy, and Global. Dot: green = good news, red = bad news, blue = mixed or unclear, ring = a stock on your watchlist.
+   The server writes it every 15 minutes (/api/intel2/home). If that is not there yet, the same page is built here from the feeds. */
+const evT = e => new Date(String(e.ts || '').replace(' ', 'T') + (/[zZ]|[+-]\d\d:?\d\d$/.test(String(e.ts)) ? '' : '+05:30')).getTime() || 0;
+const tone = s => (s === 'positive' ? 'pos' : s === 'negative' ? 'neg' : '');
+const K60 = 'qs-60';
+const get60 = () => { try { return localStorage.getItem(K60) === '1'; } catch { return false; } };
+const set60 = v => { try { localStorage.setItem(K60, v ? '1' : '0'); } catch { /* blocked */ } };
+const bullet = (x, W) => {
+  const inner = `<i class="dot ${tone(x.sentiment)} ${x.symbol && W.has(x.symbol) ? 'ring' : ''}"></i><span><b>${esc(x.headline || String(x.summary || '').split('\n')[0])}</b><small>${x.symbol ? esc(x.symbol) + ' · ' : ''}${esc(x.source || '')}${x.ts ? ' · ' + rel(x.ts) : ''}</small></span>`;
+  return x.symbol ? link(`xray/${encodeURIComponent(x.symbol)}?tab=filings`, inner, 'hm-b') : `<a class="hm-b" href="${esc(x.url || '#')}" ${x.url ? 'target="_blank" rel="noopener"' : ''}>${inner}</a>`;
+};
+async function buildHome() {
+  const [m, top, a, b, c] = await Promise.all([intel.markets().catch(() => ({ items: [], flows: [] })), intel.top(24, 12),
+    intel.events({ days: 1, category: 'filing,insider,deal,meeting,news', min_impact: 40, limit: 8 }).catch(() => ({ items: [] })),
+    intel.events({ days: 2, category: 'macro', limit: 6 }).catch(() => ({ items: [] })), intel.events({ days: 2, category: 'global', limit: 6 }).catch(() => ({ items: [] }))]);
+  const mk = (m.items || []), idx = mk.filter(x => /^(Nifty 50|Bank Nifty)$/.test(x.name) && x.chg_pct != null), avg = idx.length ? idx.reduce((s, x) => s + x.chg_pct, 0) / idx.length : 0;
+  const fii = (m.flows || []).find(f => /fii|fpi/i.test(f.who || '')), brent = mk.find(x => /brent/i.test(x.name)), spx = mk.find(x => /s&p/i.test(x.name));
+  const t = avg > 0.15 ? 'pos' : avg < -0.15 ? 'neg' : '', label = avg > 0.6 ? 'Positive' : avg > 0.15 ? 'Mildly positive' : avg < -0.6 ? 'Negative' : avg < -0.15 ? 'Mildly negative' : 'Mixed';
+  const parts = [idx[0] && `Nifty ${fmt.pct(idx[0].chg_pct, 2)}`, fii && `FII net ${fii.net_cr > 0 ? 'buying' : 'selling'} ${fmt.cr(Math.abs(fii.net_cr))}`, brent && brent.chg_pct != null && `Brent ${fmt.pct(brent.chg_pct, 1)}`, spx && spx.chg_pct != null && `S&P 500 ${fmt.pct(spx.chg_pct, 1)}`].filter(Boolean);
+  const para = (L, what) => { const n = L.length, p = L.filter(x => x.sentiment === 'positive').length, q = L.filter(x => x.sentiment === 'negative').length; return n ? `${n} notable ${what} items. ${p} look positive and ${q} negative. Biggest: ${(L[0].headline || '').replace(/\.$/, '')}.` : ''; };
+  return { mood: { label, tone: t, line: parts.join(' · ') || 'Waiting for market data.' }, top: (Array.isArray(top) ? top : []).slice(0, 3),
+    sections: [{ id: 'stocks', title: 'Indian stocks', paragraph: para(a.items || [], 'stock'), items: a.items || [] }, { id: 'economy', title: 'India economy and policy', paragraph: para(b.items || [], 'policy'), items: b.items || [] }, { id: 'global', title: 'Global', paragraph: para(c.items || [], 'global'), items: c.items || [] }] };
+}
+async function getHome() { try { const h = await intel.home(); if (h && h.mood) return h; } catch { /* not on the server yet */ } return buildHome(); }
+async function todayView() {
+  const H = await getHome(), W = new Set(alertPrefs().watch), s0 = seenAt(), sixty = get60();
+  const fresh = (H.top || []).concat(...H.sections.map(s => s.items)).filter(x => evT(x) > s0).length;
+  const wl = H.sections.reduce((n, s) => n + s.items.filter(x => x.symbol && W.has(x.symbol)).length, 0);
+  const top = (H.top || []).slice(0, 3);
+  return `<div class="hm-mood ${H.mood.tone || ''}"><i class="dot big ${H.mood.tone || ''}"></i><div><small>Market mood${H.as_of ? ' · ' + rel(H.as_of) : ''}</small><b>${esc(H.mood.label)}</b><p>${esc(H.mood.line || '')}</p></div></div>
+    <div class="hm-bar"><span>${fresh ? `<b>${fresh} new</b> since you last opened` : 'Nothing new since you last opened'}${wl ? ` · <b>${wl}</b> about your watchlist` : ''}</span><div class="seg sm" id="hm60"><button data-v="0" aria-pressed="${!sixty}">Full</button><button data-v="1" aria-pressed="${sixty}">60 sec</button></div></div>
+    <p class="hm-key"><span><i class="dot pos"></i>Good news</span><span><i class="dot neg"></i>Bad news</span><span><i class="dot"></i>Mixed or unclear</span><span><i class="dot ring"></i>Your watchlist</span></p>
+    <section class="sec"><div class="sec-h"><h3 class="h3">Biggest today</h3><span class="tiny">ranked by impact</span></div>${top.length ? (sixty ? `<div class="grp hm-l">${top.map(x => bullet(x, W)).join('')}</div>` : top.map(x => evCard(x)).join('')) : '<p class="empty-s">Quiet so far today.</p>'}</section>
+    ${H.sections.map(s => `<section class="sec hm-s"><div class="sec-h"><h3 class="h3">${esc(s.title)}</h3></div>${!sixty && s.paragraph ? `<p class="hm-p">${esc(s.paragraph)}</p>` : ''}<div class="grp hm-l">${s.items.slice(0, sixty ? 5 : 8).map(x => bullet(x, W)).join('') || '<p class="empty-s" style="padding:14px">Nothing notable yet.</p>'}</div></section>`).join('')}
+    <p class="disc">Facts from exchange filings and news, summarised automatically and scored 0 to 100. Not investment advice.</p>`;
+}
+
 export default async function news(el, r) {
-  let tab = TABS.some(t => t[0] === r.q.get('t')) ? r.q.get('t') : 'brief';
+  let tab = TABS.some(t => t[0] === r.q.get('t')) ? r.q.get('t') : 'today';
   let filt = { min: 0, cat: '', q: '' };
   el.innerHTML = `
-  <div class="page-h"><div class="ph-row"><div><h1 class="h1">News</h1><p class="lede">Every filing, deal and insider trade, scored for impact and explained in two lines.</p></div><span class="tag-s" id="src">Live</span></div>
+  <div class="page-h"><div class="ph-row"><div><h1 class="h1">News</h1><p class="lede">What matters today, then every filing, deal and insider trade scored for impact.</p></div><span class="tag-s" id="src">Live</span></div>
     <div class="tabs-x" id="nt" role="tablist">${TABS.map(([v, l]) => `<button role="tab" data-v="${v}">${l}</button>`).join('')}</div></div>
   <div id="nb"></div>`;
   const nb = el.querySelector('#nb'), nt = el.querySelector('#nt'), src = el.querySelector('#src');
@@ -47,7 +88,7 @@ export default async function news(el, r) {
   async function paint() {
     const my = ++token;
     nt.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.v === tab));
-    history.replaceState(history.state, '', '/app/news' + (tab === 'brief' ? '' : '?t=' + tab));
+    history.replaceState(history.state, '', '/app/news' + (tab === 'today' ? '' : '?t=' + tab));
     nb.innerHTML = sk(4);
     try {
       const html = await VIEW[tab]();
@@ -59,6 +100,7 @@ export default async function news(el, r) {
     }
   }
   function wire() {
+    const h6 = nb.querySelector('#hm60'); if (h6) h6.onclick = e => { const b = e.target.closest('[data-v]'); if (b) { set60(b.dataset.v === '1'); paint(); } };
     const f = nb.querySelector('#ff'); if (!f) return;
     f.onclick = e => { const b = e.target.closest('[data-min],[data-cat]'); if (!b) return; if (b.dataset.min) filt.min = +b.dataset.min; if (b.dataset.cat !== undefined) filt.cat = b.dataset.cat; paint(); };
     const s = nb.querySelector('#fq'); if (s) { let t = 0; s.oninput = () => { clearTimeout(t); t = setTimeout(() => { filt.q = s.value.trim(); paint(); }, 300); }; }
@@ -66,6 +108,7 @@ export default async function news(el, r) {
   }
 
   const VIEW = {
+    today: todayView,
     async brief() {
       const b = await intel.brief('auto');
       if (b.empty) return `<div class="info-b">${icon('clock', 16)}<span>The first brief is made at 07:00 or 17:00. Until then, the Filings tab has everything collected so far.</span></div>`;
@@ -130,6 +173,7 @@ export default async function news(el, r) {
   /* labelled samples, only when the server is unreachable */
   const sampleNews = L => `<div class="grp">${L.map(x => `<article class="ni"><div class="nh"><span class="ntag">${esc(x.tag)}</span><span>${esc(x.src)} · ${rel(x.at)}</span></div><h3>${esc(x.t)}</h3>${(x.syms || []).length ? `<div class="ns">${x.syms.map(sym).join('')}</div>` : ''}</article>`).join('')}</div>`;
   const FALLBACK = {
+    today: () => `<div class="info-b">${icon('info', 16)}<span>The server is not reachable, so this is sample news.</span></div>${sampleNews(NEWS.india)}`,
     brief: () => `<div class="info-b">${icon('info', 16)}<span>The server is not reachable, so this is sample news.</span></div>${sampleNews(NEWS.india)}`,
     filings: () => sampleNews(NEWS.india), world: () => sampleNews(NEWS.global),
     deals: () => `<div class="deals">${NEWS.deals.map(x => link(`xray/${encodeURIComponent(x.sym)}`, `<span class="dh">${mono(x.sym)}<span class="dn2"><b>${esc(x.sym)}</b><small>${x.kind} deal · ${fmt.date(x.date)}</small></span><span class="st ${x.side === 'Buy' ? 'good' : 'weak'}">${x.side === 'Buy' ? 'Bought' : 'Sold'}</span></span><span class="who2">${esc(x.who)}</span><span class="d3"><span><small>Shares</small><b class="tnum">${qty(x.qty)}</b></span><span><small>Price</small><b class="tnum">${fmt.inr(x.px)}</b></span><span><small>Value</small><b class="tnum">${fmt.cr(x.qty * x.px / 1e7)}</b></span></span>`, 'deal')).join('')}</div>`,
