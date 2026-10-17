@@ -58,7 +58,7 @@ export const words = html => { let i = 0; return html.replace(/(<[^>]+>)|([^<\s]
 
 /* ---------------------------------------------------------------- theme */
 export const isDark = () => (d.documentElement.dataset.theme ? d.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches);
-function setTheme(t) { d.documentElement.dataset.theme = t; try { localStorage.setItem('qs-theme', t); } catch { /* blocked */ } d.querySelectorAll('[data-theme-btn]').forEach(b => b.setAttribute('aria-checked', t === 'dark')); }
+export function setTheme(t) { d.documentElement.dataset.theme = t; try { localStorage.setItem('qs-theme', t); } catch { /* blocked */ } d.querySelectorAll('[data-theme-btn]').forEach(b => b.setAttribute('aria-checked', t === 'dark')); }
 const themeSwitch = () => `<button class="tsw" type="button" role="switch" data-theme-btn aria-checked="${isDark()}" aria-label="Night mode"><span class="k">${icon('sun', 14)}${icon('moon', 14)}</span></button>`;
 
 /* ---------------------------------------------------------------- toast, sheet */
@@ -128,7 +128,7 @@ const ROUTES = [
   [/^(?:screens|ideas)$/, 'screens', 'screens'], [/^screens\/([\w-]+)$/, 'screens', 'screens'], [/^ideas\/([\w-]+)$/, 'idea', 'screens'],
   [/^build$/, 'build', 'build'],
   [/^(?:strategies|learn)$/, 'strategies', 'strat'], [/^strategies\/([\w-]+)$/, 'strategies', 'strat'], [/^learn\/([\w-]+)$/, 'lesson', 'strat'],
-  [/^news$/, 'news', 'news'], [/^me$/, 'me', 'strat'], [/^s\/([\w-]+)$/, 'strategy', 'strat'], [/^(config|settings)$/, 'config', 'cfg'],
+  [/^news$/, 'news', 'news'], [/^me$/, 'me', 'strat'], [/^(account|profile)$/, 'account', 'acct'], [/^s\/([\w-]+)$/, 'strategy', 'strat'], [/^(config|settings)$/, 'config', 'cfg'],
 ];
 export function parse(loc = location) {
   let p = loc.pathname.replace(/\/+$/, ''); if (p.startsWith(BASE)) p = p.slice(BASE.length); p = p.replace(/^\/+/, '').replace(/\.html$/, '').replace(/^index$/, '');
@@ -157,7 +157,7 @@ export function go(path, { replace = false } = {}) {
   render(parse());
 }
 export const link = (path, inner, cls = '', attrs = '') => `<a href="${BASE}/${path}" data-nav class="${cls}" ${attrs}>${inner}</a>`;
-const footer = () => `<footer class="foot"><div class="links">${link('', 'X-Ray')}${link('screens', 'Screens')}${link('build', 'Build')}${link('strategies', 'Strategies')}${link('news', 'News')}${link('me', 'My strategies')}${link('learn/rules', 'Learn')}${link('config', 'Settings')}</div>
+const footer = () => `<footer class="foot"><div class="links">${link('', 'X-Ray')}${link('screens', 'Screens')}${link('build', 'Build')}${link('strategies', 'Strategies')}${link('news', 'News')}${link('me', 'My strategies')}${link('learn/rules', 'Learn')}${link('account', 'Account')}${link('config', 'Settings')}</div>
   <p>QuantSync Lab is a tool for building and testing your own rule-based ideas, and for learning how markets work. It does not give investment advice or recommendations, and QuantSync is not a SEBI-registered investment adviser or research analyst. Stocks shown are the ones that meet rules you chose. Test results are hypothetical and based on past prices; they do not predict future results.</p></footer>`;
 
 /* ---------------------------------------------------------------- shell */
@@ -179,9 +179,9 @@ export function boot() {
   addEventListener('popstate', () => render(parse()));
   const acct = d.getElementById('acct');
   auth.onChange(u => {
-    if (!u) { acct.innerHTML = `<button class="btn sm pri" data-signin>Sign in</button>`; acct.firstChild.onclick = () => auth.signIn().catch(e => toast(e.message)); return; }
+    if (!u) { acct.innerHTML = link('account', icon('me', 19), 'gearbtn acctbtn', 'aria-label="Account, theme and alerts"'); return; }
     const nm = u.displayName || u.email || 'You', ini = nm.split(/\s+/).map(x => x[0]).join('').slice(0, 2).toUpperCase();
-    acct.innerHTML = link('me', u.photoURL ? `<img src="${esc(u.photoURL)}" alt="" referrerpolicy="no-referrer">` : esc(ini), 'avbtn', 'aria-label="My strategies"');
+    acct.innerHTML = link('account', u.photoURL ? `<img src="${esc(u.photoURL)}" alt="" referrerpolicy="no-referrer">` : esc(ini), 'avbtn', 'aria-label="Account, theme and alerts"');
   });
   auth.init();
   import('./motion.js').then(m => { M = m; m.initMotion(); }).finally(() => render(parse()));

@@ -1,0 +1,192 @@
+/* =====================================================================================
+   PORCELAIN — tactile neumorphism (branch ui-porcelain)
+   Same-colour surfaces lifted by a light and a dark shadow with a fine white rim; wells pressed into the
+   surface for anything you type into or read numbers from; every control sinks when pressed and the
+   accent is a soft violet gradient that glows. Loaded after lab.css; delete this file to go back.
+   ===================================================================================== */
+:root{
+  --bg:#ECEAE5;--card:#FCFBF8;--card-2:#FFFEFB;--paper:#FCFBF8;--screen:#F1EFEA;
+  --fill:#EFEDE8;--fill-2:#E6E3DC;
+  --ink:#23252D;--ink-2:#575B66;--ink-3:#8E909A;--line:rgba(43,49,66,.07);--line-2:rgba(43,49,66,.11);
+  --brand:#6C5CE7;--brand-ink:#5646D6;--brand-soft:#E3E0FB;--brand-2:#8E7CFF;
+  --acc:linear-gradient(135deg,#8E7CFF 0%,#6C5CE7 100%);--acc-glow:rgba(108,92,231,.32);
+  --grad-btn:var(--acc);
+  --sd:#D2CDC3;--sd-2:#C9C3B8;--sl:#FFFFFF;--rim:rgba(255,255,255,.9);
+  --raise-sm:4px 4px 10px var(--sd),-4px -4px 10px var(--sl);
+  --raise:8px 8px 18px var(--sd),-8px -8px 18px var(--sl);
+  --raise-lg:14px 14px 30px var(--sd),-12px -12px 28px var(--sl);
+  --press-sm:inset 3px 3px 7px var(--sd),inset -3px -3px 7px var(--sl);
+  --press:inset 5px 5px 11px var(--sd),inset -5px -5px 11px var(--sl);
+  --press-deep:inset 7px 7px 15px var(--sd-2),inset -7px -7px 15px var(--sl);
+  --tile-lift:0 0 0 1px rgba(60,52,40,.05),0 1px 2px rgba(60,52,40,.05),0 8px 18px -6px rgba(90,78,60,.14),10px 14px 30px -12px rgba(90,78,60,.22),-6px -6px 16px rgba(255,255,255,.85),inset 0 1px 0 #fff;
+  --card-edge:rgba(60,52,40,.05);
+  --glow:0 6px 16px var(--acc-glow);
+  --glass:rgba(236,234,229,.92);
+  --r:24px;--r-s:16px;
+  --f:"Plus Jakarta Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono-f:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --press-ease:cubic-bezier(.4,0,.2,1);--lift-ease:cubic-bezier(.16,1,.3,1);
+}
+:root[data-theme="dark"]{
+  --bg:#181B22;--card:#20242D;--card-2:#242833;--paper:#20242D;--card-edge:rgba(255,255,255,.09);--tile-lift:8px 10px 22px rgba(0,0,0,.45),-5px -5px 14px rgba(44,49,62,.45),inset 0 1px 0 rgba(255,255,255,.05);--screen:#15181F;--fill:#15181F;--fill-2:#13161C;
+  --ink:#F1F3F9;--ink-2:#A2AAC0;--ink-3:#646D84;--line:rgba(255,255,255,.05);--line-2:rgba(255,255,255,.09);
+  --brand:#8A79FF;--brand-ink:#A597FF;--brand-soft:#2B2A48;--brand-2:#A597FF;
+  --acc:linear-gradient(135deg,#A597FF 0%,#8A79FF 100%);--acc-glow:rgba(138,121,255,.35);
+  --sd:#0D0F14;--sd-2:#0B0D11;--sl:#262A35;--rim:rgba(255,255,255,.09);
+  --raise-sm:4px 4px 9px var(--sd),-4px -4px 9px var(--sl);
+  --raise:7px 7px 16px var(--sd),-6px -6px 15px var(--sl);
+  --raise-lg:12px 12px 28px var(--sd),-8px -8px 22px var(--sl);
+  --press-sm:inset 3px 3px 7px var(--sd),inset -3px -3px 7px var(--sl);
+  --press:inset 5px 5px 11px #111319,inset -5px -5px 11px #252934;
+  --press-deep:inset 7px 7px 15px var(--sd-2),inset -7px -7px 15px #252934;
+  --glass:rgba(27,30,38,.92);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#181B22;--card:#20242D;--card-2:#242833;--paper:#20242D;--card-edge:rgba(255,255,255,.09);--tile-lift:8px 10px 22px rgba(0,0,0,.45),-5px -5px 14px rgba(44,49,62,.45),inset 0 1px 0 rgba(255,255,255,.05);--screen:#15181F;--fill:#15181F;--fill-2:#13161C;
+  --ink:#F1F3F9;--ink-2:#A2AAC0;--ink-3:#646D84;--line:rgba(255,255,255,.05);--line-2:rgba(255,255,255,.09);
+  --brand:#8A79FF;--brand-ink:#A597FF;--brand-soft:#2B2A48;--brand-2:#A597FF;
+  --acc:linear-gradient(135deg,#A597FF 0%,#8A79FF 100%);--acc-glow:rgba(138,121,255,.35);
+  --sd:#0D0F14;--sd-2:#0B0D11;--sl:#262A35;--rim:rgba(255,255,255,.09);
+  --raise-sm:4px 4px 9px var(--sd),-4px -4px 9px var(--sl);
+  --raise:7px 7px 16px var(--sd),-6px -6px 15px var(--sl);
+  --raise-lg:12px 12px 28px var(--sd),-8px -8px 22px var(--sl);
+  --press-sm:inset 3px 3px 7px var(--sd),inset -3px -3px 7px var(--sl);
+  --press:inset 5px 5px 11px #111319,inset -5px -5px 11px #252934;
+  --press-deep:inset 7px 7px 15px var(--sd-2),inset -7px -7px 15px #252934;
+  --glass:rgba(27,30,38,.92);
+}}
+
+/* ---------------------------------------------------------------- type */
+html,body{font-family:var(--f);background:var(--bg)}
+body{-webkit-font-smoothing:antialiased;font-feature-settings:"ss01","cv11"}
+.h1{font-weight:800;letter-spacing:-.035em}.h2,.h3,h2,h3{font-weight:750;letter-spacing:-.02em}
+.tnum,.cnt b,.wring b,.imp b,.mk b,.mk em,.d3 b,.ev-n b,.sm3 b,.r-kpis b,.kp2 b,.yrow b,code,.qhl,.qed textarea,.gpt-pre,.gpt-in{font-family:var(--mono-f);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.lbl,.gl-l,.mk-g>small,.ev-n small,.sm3 small,.d3 small{letter-spacing:.06em;font-weight:700}
+
+/* ---------------------------------------------------------------- raised surfaces (one rule, every tile) */
+html :is(.blk,.gl>div,.hero-x,.stile,.stile2,.deal,.grp,.r-main,.r-kpis>div,.kp2>div,.pv,.bc,.rulebox,.srvc,.cta,.list,.card,.flow,.yrs>div,.nowbar,
+  .ev,.mk-g,.cal-i,.gpt-steps li,.land-card,.how3>*,.coach,.result>div,.empty){
+  background:var(--card)!important;border:1px solid var(--card-edge,var(--rim))!important;box-shadow:var(--tile-lift,var(--raise))!important}
+html :is(.blk,.hero-x,.stile2,.deal,.r-main,.pv,.cta,.card,.ev,.pr,.coach){border-radius:var(--r)}
+html :is(.gl>div,.r-kpis>div,.kp2>div,.bc,.mk-g,.yrs>div){border-radius:20px}
+html :is(.cal-i,.gpt-steps li){border-radius:18px;box-shadow:var(--raise-sm)!important}
+html .stile{border-radius:22px}
+/* the inner part of a tile that you read numbers from sits in a shallow well */
+html :is(.d3,.sm3,.ev-n span,.yrow>div){background:var(--screen)!important;box-shadow:var(--press-sm)!important;border:0!important}
+html .d3,html .sm3{border-radius:16px;padding:10px 12px}
+html .sm3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+
+/* tiles you tap: lift on hover (pointer), sink on press */
+html :is(.stile .srow,.stile2,.deal,.pr,.grp>a,.strow,.bc,.cal-i,.ev){transition:transform .25s var(--lift-ease),box-shadow .25s var(--lift-ease)}
+html :is(.stile2,.deal,.pr,.cal-i):active,html .stile:has(.srow:active){transform:scale(.985)!important;box-shadow:var(--raise-sm)!important}
+html .stile .srow.on{background:transparent;box-shadow:none}
+html .stile:has(.srow.on){box-shadow:var(--press)!important;background:var(--screen)!important}
+
+/* ---------------------------------------------------------------- wells: anything you type into or read code from */
+html :is(.search,.xsearch,.inp,.qed,.ask,.url,.addf,.qline,.qcode,.honest,.summary,.qref>div,.work,textarea.inp,select.inp,.gpt-pre,.gpt-in){
+  background:var(--screen)!important;border:0!important;box-shadow:var(--press)!important}
+html .qed{border-radius:22px;box-shadow:var(--press-deep)!important}
+html :is(.search,.xsearch){border-radius:20px}
+html :is(.search,.xsearch,.inp,.qed):focus-within,html .inp:focus{box-shadow:var(--press),0 0 0 2px color-mix(in srgb,var(--brand) 35%,transparent)!important}
+html .info-b{background:var(--screen)!important;border:0!important;box-shadow:var(--press-sm)!important;border-radius:18px}
+
+/* ---------------------------------------------------------------- buttons: raised, sink + turn accent on press */
+html .btn{background:var(--bg);color:var(--ink);border:1px solid var(--rim);box-shadow:var(--raise-sm);border-radius:16px;font-weight:700;
+  transition:transform .16s var(--press-ease),box-shadow .16s var(--press-ease),color .16s}
+html .btn:hover{background:var(--bg);color:var(--brand)}
+html .btn:active,html .btn.is-pressed{box-shadow:var(--press);transform:scale(.97);color:var(--brand)}
+html .btn.quiet{background:var(--bg);box-shadow:var(--raise-sm)}
+html .btn.pri,html .gptb{background:var(--acc);color:#fff;border:1px solid rgba(255,255,255,.25);box-shadow:var(--glow),var(--raise-sm)}
+html .gptb{background:linear-gradient(135deg,#19C39A 0%,#0E8F6E 100%);box-shadow:0 6px 16px rgba(16,163,127,.32),var(--raise-sm)}
+html .btn.pri:hover,html .gptb:hover{color:#fff;filter:brightness(1.05)}
+html .btn.pri:active,html .gptb:active{transform:scale(.96);box-shadow:inset 3px 3px 8px rgba(0,0,0,.25);color:#fff}
+html .btn.sm{border-radius:14px}
+
+/* round icon buttons (bell, close, account) */
+html :is(.gearbtn,.avbtn){width:40px;height:40px;border-radius:50%;background:var(--bg);border:1px solid var(--rim);box-shadow:var(--raise-sm);display:grid;place-items:center;color:var(--ink-2);
+  transition:transform .18s var(--press-ease),box-shadow .18s var(--press-ease),color .18s}
+html :is(.gearbtn,.avbtn):active,html .gearbtn[aria-current="page"]{box-shadow:var(--press);transform:scale(.94);color:var(--brand)}
+html .bdg{box-shadow:0 0 0 2px var(--bg),0 3px 8px rgba(229,72,77,.45)}
+
+/* ---------------------------------------------------------------- segmented + tabs + chips: chosen = pressed in, accent text */
+html .seg{background:transparent;box-shadow:none;padding:0;gap:8px;border-radius:0}
+html .seg button{height:36px;border-radius:14px;background:var(--bg);border:1px solid var(--rim);box-shadow:var(--raise-sm);color:var(--ink-2);font-weight:650;
+  transition:transform .16s var(--press-ease),box-shadow .16s var(--press-ease),color .16s}
+html .seg button[aria-pressed="true"]{background:var(--screen);box-shadow:var(--press);border-color:transparent;color:var(--brand);font-weight:800}
+html .seg button:active{transform:scale(.96)}
+html .seg.sm button{height:32px;border-radius:12px}
+html .tabs-x{background:var(--bg);border-bottom:0;gap:10px;padding-top:10px;padding-bottom:12px}
+html .tabs-x button{height:38px;padding:0 16px;border-radius:14px;background:var(--bg);border:1px solid var(--rim);box-shadow:var(--raise-sm);color:var(--ink-2);font-weight:650;flex:none;
+  transition:transform .16s var(--press-ease),box-shadow .16s var(--press-ease),color .16s}
+html .tabs-x button::after{display:none}
+html .tabs-x button[aria-selected="true"]{background:var(--screen);box-shadow:var(--press);border-color:transparent;color:var(--brand);font-weight:800}
+html .tabs-x button:active{transform:scale(.96)}
+html .chip{background:var(--bg);border:1px solid var(--rim);box-shadow:var(--raise-sm);border-radius:14px;font-weight:650;transition:transform .16s var(--press-ease),box-shadow .16s var(--press-ease),color .16s}
+html .chip[aria-pressed="true"]{background:var(--screen);box-shadow:var(--press-sm);border-color:transparent;color:var(--brand);font-weight:800}
+html .chip:active{transform:scale(.95)}
+html .rail button{border-radius:14px;transition:box-shadow .16s,color .16s}
+html .rail button[aria-current="true"]{background:var(--screen);box-shadow:var(--press);color:var(--brand)}
+
+/* status words and small badges: tiny raised pills */
+html .st,html .pill,html .tag-s{border-radius:999px;box-shadow:var(--raise-sm);border:1px solid var(--rim);background:var(--card);font-weight:750}
+html .st.good{color:var(--good)}html .st.weak{color:var(--weak)}html .st.fair{color:var(--fair)}
+html .tag-s.live{color:var(--good)}
+html .cnt{background:var(--card);box-shadow:var(--raise-sm);border:1px solid var(--rim)}
+html .stile:has(.srow.on) .cnt{box-shadow:var(--raise-sm)}
+
+/* ---------------------------------------------------------------- the theme switch: a real toggle */
+html .tsw{width:56px;height:32px;border-radius:16px;background:var(--screen);box-shadow:var(--press-sm);border:0}
+html .tsw .k{top:4px;left:4px;width:24px;height:24px;background:var(--bg);box-shadow:var(--raise-sm);border:1px solid var(--rim);color:#E0A21B;transition:transform .32s var(--spring,cubic-bezier(.22,1.2,.36,1)),background .2s}
+html .tsw[aria-checked="true"]{background:var(--acc);box-shadow:inset 2px 2px 5px rgba(0,0,0,.25)}
+html .tsw[aria-checked="true"] .k{transform:translateX(24px);color:var(--brand)}
+html .tsw:active .k{width:28px}
+html .tsw[aria-checked="true"]:active .k{transform:translateX(20px)}
+
+/* top bar: same surface, soft shadow when scrolled */
+html .top{background:var(--bg)}
+html .top.on{box-shadow:0 10px 20px -14px var(--sd)}
+html .nav a{border-radius:14px;font-weight:650;transition:box-shadow .16s,color .16s}
+html .nav a[aria-current="page"]{background:var(--screen);box-shadow:var(--press-sm);color:var(--brand)}
+
+/* ---------------------------------------------------------------- dials: deeper wells, glowing rims */
+html .wring{box-shadow:var(--raise)}
+html .wring::before{background:var(--screen)!important;box-shadow:var(--press-sm)}
+html .imp{box-shadow:var(--raise-sm)}html .imp::before{background:var(--bg)!important}
+html .wbar,html .meter,html .pbar{background:var(--screen);box-shadow:var(--press-sm)}
+html .wbar i.good,html .meter i{box-shadow:0 0 8px color-mix(in srgb,var(--good) 45%,transparent)}
+
+/* mono avatars: tiny pressed discs */
+html .mono{background:var(--screen)!important;box-shadow:var(--press-sm)!important;border:0!important}
+html .sic{box-shadow:var(--raise-sm);border:1px solid var(--rim);background:var(--bg)}
+
+/* sheets / dialogs */
+html .sheet{background:var(--bg);border:1px solid var(--rim);box-shadow:var(--raise-lg);border-radius:30px 30px 0 0}
+html .sheet .grab{background:var(--screen);box-shadow:var(--press-sm);height:6px;width:44px}
+html .scrim{background:rgba(20,22,30,.32);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+
+/* tables inside cards stay flat but readable */
+html .dt th{color:var(--ink-3);font-weight:750;letter-spacing:.05em}
+html .dt tbody tr:active{background:var(--screen)}
+
+/* skeletons look pressed in */
+html .sk{background:var(--screen)!important;box-shadow:var(--press-sm)!important}
+
+/* landing banners keep their colours but gain the rim */
+html .pr{overflow:hidden}
+
+/* reduce motion */
+@media (prefers-reduced-motion:reduce){html *{transition-duration:.001ms!important}}
+
+/* polish */
+html body,html p,html .lede,html small,html span,html .small,html .tiny{letter-spacing:0}
+html .lede{line-height:1.55;color:var(--ink-2)}
+html .sm3 small{font-size:9.5px;white-space:nowrap;letter-spacing:.04em}
+html .sm3 b{font-size:14px}
+html .btn svg{transition:transform .2s var(--lift-ease)}html .btn:active svg{transform:scale(.9)}
+
+/* dark: a soft grey edge so every card reads as its own block */
+:root[data-theme="dark"] :is(.blk,.gl>div,.hero-x,.stile,.stile2,.deal,.grp,.r-main,.r-kpis>div,.kp2>div,.pv,.bc,.rulebox,.srvc,.cta,.list,.card,.flow,.ev,.mk-g,.cal-i,.pr,.coach){border-color:rgba(255,255,255,.09)!important}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) :is(.blk,.gl>div,.hero-x,.stile,.stile2,.deal,.grp,.r-main,.r-kpis>div,.kp2>div,.pv,.bc,.rulebox,.srvc,.cta,.list,.card,.flow,.ev,.mk-g,.cal-i,.pr,.coach){border-color:rgba(255,255,255,.09)!important}}
+/* light: card titles and labels a touch stronger on cream */
+:root:not([data-theme="dark"]) :is(.gl-l,.lbl){color:#6B6E78}
+html .acc-box{background:var(--card);border:1px solid var(--card-edge,var(--rim));box-shadow:var(--tile-lift,var(--raise))}
