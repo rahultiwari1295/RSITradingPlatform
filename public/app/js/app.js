@@ -169,7 +169,7 @@ export function boot() {
     <span class="grow"></span><button class="gearbtn bell" id="bell" type="button" aria-label="Activity and alerts">${icon('bell', 19)}<i class="bdg" id="bdg" hidden></i></button>${themeSwitch()}<span id="acct"></span></div>`;
   tabs.innerHTML = TABS.map(([k, p, l, ic]) => k === 'build'
     ? link(p, `<span class="c">${icon(ic, 22)}</span><span class="l">${l}</span>`, 'go', `data-tab="${k}" aria-label="Build a strategy"`)
-    : link(p, `${icon(ic, 23)}<span>${l}</span>`, '', `data-tab="${k}"`)).join('');
+    : link(p, `<i class="dc">${icon(ic, 21)}</i><span>${l}</span>`, '', `data-tab="${k}"`)).join('');
   d.addEventListener('click', e => {
     if (e.target.closest('[data-theme-btn]')) { setTheme(isDark() ? 'light' : 'dark'); return; }
     const a = e.target.closest('a[data-nav]'); if (!a || e.metaKey || e.ctrlKey || a.target === '_blank') return;
