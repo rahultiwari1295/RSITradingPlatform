@@ -1,5 +1,4 @@
 /* Feel: haptic taps, and the bell (activity feed + browser notifications). */
-import { STRATEGIES, strategyDetail } from './sample.js';
 
 /* ---------------------------------------------------------------- haptics
    Android/Chrome: navigator.vibrate. iPhone Safari (iOS 18+) has no vibrate API, but toggling an
@@ -29,20 +28,12 @@ export function wireHaptics() {
 }
 
 /* ---------------------------------------------------------------- activity feed
-   New stocks entering strategies. Sample until the alerts API is connected; signed-in users also get
-   their own strategies' matches from the Lab (lab.matches). */
+   The bell badge counts new high-impact items that match the person's alert settings. The full lists live on the Activity page. */
 const SEEN = 'qs-feed-seen';
 const seen = () => { try { return +localStorage.getItem(SEEN) || 0; } catch { return 0; } };
 const markSeen = () => { try { localStorage.setItem(SEEN, String(Date.now())); } catch { /* blocked */ } };
-export function sampleFeed() {
-  const out = [];
-  STRATEGIES.forEach((s, k) => strategyDetail(s).active.slice(0, 3).forEach((a, j) => {
-    const t = new Date(a.date + 'T15:45:00+05:30').getTime() - (k * 7 + j) * 6e5;
-    out.push({ id: s.id + a.sym, t, sym: a.sym, strat: s.name, sid: s.id, price: a.entry, kind: 'enter' });
-  }));
-  return out.sort((a, b) => b.t - a.t).slice(0, 30);
-}
-export const unread = items => items.filter(x => x.t > seen()).length;
+export const seenAt = seen;
+export const unread = items => { const P = alertPrefs(); return items.filter(x => x.t > seen() && wanted(x, P)).length; };
 /** Live feed: the highest-impact filings, deals and insider trades of the last two days (from /api/intel2/top). */
 export async function liveFeed(intel) {
   const L = await intel.top(48, 30);
@@ -54,7 +45,7 @@ const AK = 'qs-alerts';
 export const ALERT_DEFAULT = { on: true, min: 70, kinds: ['filing', 'insider', 'deal', 'meeting', 'news'], neg: true, watch: [] };
 export function alertPrefs() { try { return { ...ALERT_DEFAULT, ...JSON.parse(localStorage.getItem(AK) || '{}') }; } catch { return { ...ALERT_DEFAULT }; } }
 export function saveAlertPrefs(p) { try { localStorage.setItem(AK, JSON.stringify(p)); } catch { /* blocked */ } }
-const wanted = (x, p) => p.on && (x.impact >= p.min || (p.watch.length && p.watch.includes(x.sym) && x.impact >= 30)) && (!x.cat || p.kinds.includes(x.cat)) && (p.neg || x.sent !== 'negative');
+export const wanted = (x, p) => p.on && (x.impact >= p.min || (p.watch.length && p.watch.includes(x.sym) && x.impact >= 30)) && (!x.cat || p.kinds.includes(x.cat)) && (p.neg || x.sent !== 'negative');
 /** While the page is open, tell the user about new items that match their alert settings (browser notification if allowed). */
 export function watchFeed(intel, onItems) {
   let known = new Set();
@@ -95,19 +86,4 @@ export async function enableNotifs() {
   return p;
 }
 
-/** Bell sheet content. */
-export function feedHTML(items, esc, fmt, icon, link) {
-  const st = notifState();
-  const card = st === 'granted' ? `<div class="nt on">${icon('check', 18)}<div><b>Notifications are on</b><span>This browser will alert you when a stock enters a strategy.</span></div></div>`
-    : st === 'denied' ? `<div class="nt">${icon('bell', 18)}<div><b>Notifications are blocked</b><span>Allow them for this site in your browser settings, then reload.</span></div></div>`
-    : st === 'ios-install' ? `<div class="nt">${icon('bell', 18)}<div><b>Get alerts on iPhone</b><span>Tap Share → Add to Home Screen, open QuantSync from there, then turn alerts on.</span></div></div>`
-    : st === 'unsupported' ? '' : `<div class="nt"><span class="bi">${icon('bell', 18)}</span><div><b>Turn on alerts</b><span>Get a notification for high-impact filings while QuantSync is open.</span></div><button class="btn pri sm" data-enable>Enable</button></div>`;
-  const s0 = seen(); let last = '';
-  const liveRows = items.length && items[0].kind === 'event';
-  const rows = items.map(x => { const g = when(x.t), h = g !== last ? `<h4 class="fg">${g}</h4>` : ''; last = g;
-    if (x.kind === 'event') return h + link(`xray/${encodeURIComponent(x.sym)}?tab=filings`, `<span class="fi ${x.t > s0 ? 'new' : ''} ${x.sent === 'negative' ? 'neg' : x.sent === 'positive' ? 'pos' : ''}">${x.impact}</span><span class="fm"><b>${esc(x.sym)} · <em>${esc(x.label)}</em></b><small>${esc(x.head.slice(0, 110))} · ${time(x.t)}</small></span>`, 'frow');
-    return h + link(`strategies/${x.sid}`, `<span class="fi ${x.t > s0 ? 'new' : ''}">${esc(x.sym.slice(0, 2))}</span><span class="fm"><b>${esc(x.sym)} entered <em>${esc(x.strat)}</em></b><small>at ${fmt.inr(x.price)} · ${time(x.t)}</small></span>`, 'frow'); }).join('');
-  return `<div class="feedh"><h3>${liveRows ? 'What matters now' : 'Activity'}</h3><span class="tag-s ${liveRows ? 'live' : ''}">${liveRows ? 'Live · impact 0–100' : 'Sample'}</span></div>${card}<div class="feed">${rows || '<p class="empty-s">Nothing new yet.</p>'}</div>
-    <div class="row-b" style="margin-top:14px;justify-content:space-between"><a href="/app/config" data-nav class="btn sm quiet" data-close>Server settings</a><button class="btn sm quiet" data-close>Close</button></div>`;
-}
 export { markSeen };

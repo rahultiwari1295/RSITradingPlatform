@@ -17,7 +17,7 @@ export default async function build(el, r) {
   if (ideaId && ideaById(ideaId)) { const x = ideaById(ideaId); S = { tf: x.tf, mode: x.mode, conds: JSON.parse(JSON.stringify(x.conds)), exit: { ...EXIT }, name: x.name, from: x.name }; }
   else if (qtext) { read = readIdea(qtext); S = { tf: read.tf, mode: read.mode, conds: read.conds, exit: { ...EXIT }, name: '', from: qtext }; }
   if (qq) S = { tf: r.q.get('tf') === '1W' ? '1W' : '1D', mode: 'all', conds: [], exit: { ...EXIT }, name: r.q.get('name') || '', from: r.q.get('name') || '' };
-  if (ideaId || qtext || qq) history.replaceState({}, '', '/app/build');
+  if (ideaId || qtext || qq) history.replaceState(history.state, '', '/app/build');
   keep(S);
 
   el.innerHTML = `

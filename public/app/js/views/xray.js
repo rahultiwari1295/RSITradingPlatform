@@ -231,8 +231,10 @@ function draw(rep, d, sym, sample, tab0) {
   <p class="disc">Facts and figures from public data, explained in plain words. Not a rating, research report or recommendation.${sample ? ' Sample numbers shown because the X-Ray server is not connected.' : ''}</p>`;
 
   const tb = rep.querySelector('#tb'), xt = rep.querySelector('#xt');
-  const show = k2 => { tab = k2; xt.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.t === k2)); tb.innerHTML = k2 === 'filings' ? skel(110, 3) : T[k2]; if (k2 === 'filings') filings(sym, tb); try { history.replaceState({}, '', location.pathname + (k2 === 'overview' ? '' : '?tab=' + k2)); } catch { /* ignore */ } };
-  xt.onclick = e => { const b = e.target.closest('[data-t]'); if (b) show(b.dataset.t); };
+  /* After a tab switch, land at the top of the new tab, just under the sticky tab bar. */
+  const toTop = () => { const hdr = (document.getElementById('top') || {}).offsetHeight || 58, y = tb.getBoundingClientRect().top + scrollY - hdr - xt.offsetHeight - 6; if (scrollY > y) scrollTo({ top: Math.max(0, y), behavior: 'instant' in window ? 'instant' : 'auto' }); };
+  const show = (k2, user) => { if (user && k2 === tab && tb.innerHTML) { toTop(); return; } tab = k2; xt.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.t === k2)); tb.innerHTML = k2 === 'filings' ? skel(110, 3) : T[k2]; if (k2 === 'filings') filings(sym, tb); if (user) toTop(); try { history.replaceState(history.state, '', location.pathname + (k2 === 'overview' ? '' : '?tab=' + k2)); } catch { /* ignore */ } };
+  xt.onclick = e => { const b = e.target.closest('[data-t]'); if (b) show(b.dataset.t, true); };
   tb.addEventListener('click', e => { const t2 = e.target.closest('tr[data-href]'); if (t2) go(t2.dataset.href); });
   show(tab);
 

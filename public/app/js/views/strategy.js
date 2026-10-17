@@ -23,7 +23,7 @@ export default async function strategy(el, r) {
   <div class="seg" id="tab" style="margin-top:18px"><button data-v="test">Test</button><button data-v="coach">AI coach</button><button data-v="now">Now</button><button data-v="settings">Settings</button></div>
   <div id="pane" style="margin-top:16px"></div>`;
   const pane = el.querySelector('#pane'), tabs = el.querySelector('#tab');
-  const paint = () => { tabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === tab)); history.replaceState({}, '', `/app/s/${id}${tab === 'test' ? '' : '?tab=' + tab}`); ({ test, coach, now, settings })[tab](); };
+  const paint = () => { tabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === tab)); history.replaceState(history.state, '', `/app/s/${id}${tab === 'test' ? '' : '?tab=' + tab}`); ({ test, coach, now, settings })[tab](); };
   tabs.onclick = e => { const b = e.target.closest('button'); if (!b) return; tab = b.dataset.v; paint(); };
   let alive = true;
 

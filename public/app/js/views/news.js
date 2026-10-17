@@ -8,6 +8,8 @@ const rel = iso => { if (!iso) return ''; const t = new Date(String(iso).replace
 const qty = v => v >= 1e7 ? (v / 1e7).toFixed(2) + ' cr' : v >= 1e5 ? (v / 1e5).toFixed(1) + ' L' : fmt.int(v);
 const imp = v => `<span class="imp ${v >= 70 ? 'hi' : v >= 45 ? 'md' : 'lo'}" style="--p:${v}" title="Impact ${v} of 100"><b>${v}</b></span>`;
 const ahead = d => { const t = new Date(d + 'T00:00:00'), n = new Date(); n.setHours(0, 0, 0, 0); const k = Math.round((t - n) / 864e5); return k === 0 ? 'Today' : k === 1 ? 'Tomorrow' : t.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' }); };
+/* dot: green = good news, red = bad news, blue = mixed or unclear */
+export const DOT = { positive: 'pos', negative: 'neg' };
 const SENT = { positive: 'good', negative: 'weak', neutral: 'info' };
 const sym = s => s ? link(`xray/${encodeURIComponent(s)}`, esc(s), 'sym') : '';
 
@@ -21,7 +23,7 @@ export function evCard(e, { showSym = true } = {}) {
   const lines = String(e.summary || e.headline || '').split('\n').filter(Boolean);
   return `<article class="ev" data-ev="${esc(e.id)}">
     <div class="ev-h">${showSym && e.symbol ? `${mono(e.symbol)}<span class="ev-s"><b>${esc(e.symbol)}</b><small>${esc(e.company || '')}</small></span>` : `<span class="ev-s"><b>${esc(e.company || e.source || '')}</b><small>${esc(e.source || '')}</small></span>`}${imp(e.impact || 0)}</div>
-    <div class="ev-t"><span class="st ${SENT[e.sentiment] || 'info'}">${esc(e.label || String(e.type || '').replace(/_/g, ' ').replace(/^./, c => c.toUpperCase()))}</span><span class="tiny">${esc(e.source || '')} · ${rel(e.ts)}</span>${e.ai_status === 'done' ? '<span class="ai-b">AI read</span>' : ''}</div>
+    <div class="ev-t"><i class="dot ${DOT[e.sentiment] || ''}" title="${esc(e.sentiment || 'unclear')}"></i><span class="st ${SENT[e.sentiment] || 'info'}">${esc(e.label || String(e.type || '').replace(/_/g, ' ').replace(/^./, c => c.toUpperCase()))}</span><span class="tiny">${esc(e.source || '')} · ${rel(e.ts)}</span>${e.ai_status === 'done' ? '<span class="ai-b">AI read</span>' : ''}</div>
     <p class="ev-l1">${esc(lines[0] || '')}</p>${lines[1] ? `<p class="ev-l2">${esc(lines[1])}</p>` : ''}
     ${facts ? `<div class="ev-n">${facts}</div>` : ''}
     ${e.ai && e.ai.what_changed && !/nothing new/i.test(e.ai.what_changed) ? `<p class="ev-w">${icon('swap', 14)}<span>${esc(e.ai.what_changed)}</span></p>` : ''}
@@ -45,7 +47,7 @@ export default async function news(el, r) {
   async function paint() {
     const my = ++token;
     nt.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.v === tab));
-    history.replaceState({}, '', '/app/news' + (tab === 'brief' ? '' : '?t=' + tab));
+    history.replaceState(history.state, '', '/app/news' + (tab === 'brief' ? '' : '?t=' + tab));
     nb.innerHTML = sk(4);
     try {
       const html = await VIEW[tab]();

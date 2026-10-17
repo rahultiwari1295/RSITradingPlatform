@@ -1070,3 +1070,24 @@ html.busy::before{content:"";position:fixed;left:0;top:0;height:2.5px;width:40%;
 
 .acc-chips{display:flex;flex-wrap:wrap;gap:8px}.acc-chips .chip{height:36px}
 .acc-sw{position:relative;cursor:pointer}
+
+/* ===== Activity (bell page) ===== */
+.act-h{display:flex;align-items:flex-start;gap:12px}.act-h>div{min-width:0}
+.actback{flex:none;margin-top:2px}
+.act-t{margin-top:6px}.act-t button{display:inline-flex;align-items:center;gap:7px}
+.tc{font-style:normal;min-width:19px;height:19px;padding:0 6px;border-radius:10px;display:inline-grid;place-items:center;font:700 11px/1 var(--f);color:#fff;background:var(--brand)}
+.act-note,.act-sum,.act-f{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:14px 2px 6px;font-size:13px;color:var(--ink-3)}
+.act-sum{font-size:14px;color:var(--ink-2)}.act-sum b{color:var(--ink)}
+.act-i{position:relative}.act-i.new::before{content:"";position:absolute;left:-2px;top:14px;width:8px;height:8px;border-radius:50%;background:var(--brand);z-index:2}
+.dot{flex:none;display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--info,#3B82F6);box-shadow:0 0 0 3px color-mix(in srgb,var(--info,#3B82F6) 18%,transparent)}
+.dot.pos{background:var(--good);box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 18%,transparent)}
+.dot.neg{background:var(--weak);box-shadow:0 0 0 3px color-mix(in srgb,var(--weak) 18%,transparent)}
+.dot.ring{background:transparent;border:2px solid var(--brand);box-shadow:none}
+.ev-t .dot{margin-right:2px}
+.al{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 6px;border-radius:14px}
+.al:hover{background:color-mix(in srgb,var(--brand) 5%,transparent)}
+.al-k{display:grid;justify-items:center;gap:3px;width:58px;padding:7px 0;border-radius:14px;font-size:10.5px;font-weight:700;letter-spacing:.02em;box-shadow:var(--raise-sm)}
+.al-k i{font-style:normal}.al-k.in{color:var(--good)}.al-k.out{color:var(--weak)}
+.al-m{display:grid;min-width:0}.al-m b{font-size:15px;font-weight:680}.al-m small{font-size:12.5px;color:var(--ink-3);line-height:1.4}.al-m em{font-style:normal;color:var(--brand-ink)}
+.al-v{display:grid;justify-items:end;font-size:15px;font-weight:700}.al-v small{font-size:10.5px;color:var(--ink-3);font-weight:600}
+.act-f{margin-top:16px}

@@ -128,7 +128,7 @@ const ROUTES = [
   [/^(?:screens|ideas)$/, 'screens', 'screens'], [/^screens\/([\w-]+)$/, 'screens', 'screens'], [/^ideas\/([\w-]+)$/, 'idea', 'screens'],
   [/^build$/, 'build', 'build'],
   [/^(?:strategies|learn)$/, 'strategies', 'strat'], [/^strategies\/([\w-]+)$/, 'strategies', 'strat'], [/^learn\/([\w-]+)$/, 'lesson', 'strat'],
-  [/^news$/, 'news', 'news'], [/^me$/, 'me', 'strat'], [/^(account|profile)$/, 'account', 'acct'], [/^s\/([\w-]+)$/, 'strategy', 'strat'], [/^(config|settings)$/, 'config', 'cfg'],
+  [/^news$/, 'news', 'news'], [/^(?:activity|alerts|notifications)$/, 'activity', 'act'], [/^me$/, 'me', 'strat'], [/^(account|profile)$/, 'account', 'acct'], [/^s\/([\w-]+)$/, 'strategy', 'strat'], [/^(config|settings)$/, 'config', 'cfg'],
 ];
 export function parse(loc = location) {
   let p = loc.pathname.replace(/\/+$/, ''); if (p.startsWith(BASE)) p = p.slice(BASE.length); p = p.replace(/^\/+/, '').replace(/\.html$/, '').replace(/^index$/, '');
@@ -139,6 +139,7 @@ let cleanup = null, seq = 0, M = null;
 async function render(r) {
   const my = ++seq;
   d.querySelectorAll('[data-tab]').forEach(a => a.setAttribute('aria-current', a.dataset.tab === r.tab ? 'page' : 'false'));
+  const bl = d.getElementById('bell'); if (bl) bl.setAttribute('aria-current', r.tab === 'act' ? 'page' : 'false');
   const view = d.getElementById('view');
   try { cleanup && cleanup(); } catch { /* ignore */ } cleanup = null;
   M && M.loading(true);
@@ -152,7 +153,7 @@ async function render(r) {
 }
 export function go(path, { replace = false } = {}) {
   const url = BASE + '/' + String(path).replace(/^\/+/, '');
-  if (url !== location.pathname + location.search) history[replace ? 'replaceState' : 'pushState']({}, '', url);
+  if (url !== location.pathname + location.search) history[replace ? 'replaceState' : 'pushState']({ i: replace ? (history.state && history.state.i) | 0 : ((history.state && history.state.i) | 0) + 1 }, '', url);
   W.scrollTo({ top: 0, behavior: 'instant' in W ? 'instant' : 'auto' });
   render(parse());
 }
@@ -166,7 +167,7 @@ export function boot() {
   const top = d.getElementById('top'), tabs = d.getElementById('tabs');
   top.innerHTML = `<div class="top-in"><a class="brand" href="${BASE}/" data-nav aria-label="QuantSync Lab home">${LOGO}<span>QuantSync <em>Lab</em></span></a>
     <nav class="nav" aria-label="Main">${[['', 'X-Ray', 'xray'], ['screens', 'Screens', 'screens'], ['build', 'Build', 'build'], ['strategies', 'Strategies', 'strat'], ['news', 'News', 'news']].map(([p, l, t]) => link(p, l, '', `data-tab="${t}"`)).join('')}</nav>
-    <span class="grow"></span><button class="gearbtn bell" id="bell" type="button" aria-label="Activity and alerts">${icon('bell', 19)}<i class="bdg" id="bdg" hidden></i></button>${themeSwitch()}<span id="acct"></span></div>`;
+    <span class="grow"></span>${link('activity', `${icon('bell', 19)}<i class="bdg" id="bdg" hidden></i>`, 'gearbtn bell', 'id="bell" aria-label="Activity: news and alerts"')}${themeSwitch()}<span id="acct"></span></div>`;
   tabs.innerHTML = TABS.map(([k, p, l, ic]) => k === 'build'
     ? link(p, `<span class="c">${icon(ic, 22)}</span><span class="l">${l}</span>`, 'go', `data-tab="${k}" aria-label="Build a strategy"`)
     : link(p, `${icon(ic, 23)}<span>${l}</span>`, '', `data-tab="${k}"`)).join('');
@@ -185,18 +186,12 @@ export function boot() {
   });
   auth.init();
   import('./motion.js').then(m => { M = m; m.initMotion(); }).finally(() => render(parse()));
-  /* bell: activity feed + browser notifications; haptic tick on every tap */
+  /* bell: the badge counts new high-impact items; the Activity page lists them. Every tap gets a haptic tick. */
   import('./feel.js').then(F => {
     F.wireHaptics();
-    let items = F.sampleFeed();
+    let items = [];
     const bdg = d.getElementById('bdg'), paintB = () => { const k = F.unread(items); bdg.hidden = !k; bdg.textContent = k > 9 ? '9+' : k; };
-    paintB();
     F.watchFeed(intel, L => { if (L.length) { items = L; paintB(); } });
-    d.getElementById('bell').onclick = () => {
-      const sh = sheet(F.feedHTML(items, esc, fmt, icon, link)); sh.el.classList.add('feedsheet');
-      const en = sh.el.querySelector('[data-enable]'); if (en) en.onclick = async () => { const r = await F.enableNotifs(); toast(r === 'granted' ? 'Alerts are on.' : r === 'denied' ? 'Alerts were blocked in the browser.' : 'Alerts not turned on.'); sh.close(); };
-      sh.el.addEventListener('click', e => { const a = e.target.closest('a[data-nav]'); if (a) { e.preventDefault(); e.stopPropagation(); sh.close(); go(a.getAttribute('href').slice(BASE.length + 1)); } });
-      F.markSeen(); paintB();
-    };
+    addEventListener('qs-seen', paintB);
   });
 }
