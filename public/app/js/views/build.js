@@ -2,6 +2,7 @@ import { icon, esc, fmt, lab, go, toast, needUser, skel, errBox, words, link } f
 import { catalog, readIdea, say, toRule, EXIT, ideaById, exitSay } from '../rules.js';
 import { parse, format, highlight, vocab, SNIPPETS } from '../query.js';
 import { sheet } from '../app.js';
+import { buildPrompt, extractQuery } from '../gpt.js';
 import { stockRow, renderTest, runJob } from '../parts.js';
 
 const KEY = 'qs-lab-draft';
@@ -31,7 +32,7 @@ export default async function build(el, r) {
       <div class="qsug" id="qsug" aria-label="Suggestions"></div>
       <div id="qdiag" aria-live="polite"></div>
       <div class="qsnip" id="qsnip"><span class="tiny">Insert</span>${SNIPPETS.map(([l, q]) => `<button type="button" data-snip="${esc(q)}">${esc(l)}</button>`).join('')}</div>
-      <div class="qbar"><button class="btn sm quiet" id="qhelp">${icon('info', 16)}Syntax</button><button class="btn sm quiet" id="qsave">${icon('save', 16)}Save scanner</button><span class="grow"></span><span class="tiny kbd">Ctrl + Enter to scan</span></div>
+      <div class="qbar"><button class="btn sm gptb" id="qgpt"><span class="gpt-ic">✦</span>Write it with ChatGPT</button><button class="btn sm quiet" id="qhelp">${icon('info', 16)}Syntax</button><button class="btn sm quiet" id="qsave">${icon('save', 16)}Save scanner</button><span class="grow"></span><span class="tiny kbd">Ctrl + Enter to scan</span></div>
     </div>
     <div id="wpane" hidden>
       <div style="display:flex;gap:8px"><input class="inp" id="dq" placeholder="e.g. above 200 DMA and RSI below 40" value="${esc(qtext || '')}" autocomplete="off"><button class="btn sm pri" id="dgo" style="height:46px">Read</button></div>
@@ -211,9 +212,44 @@ export default async function build(el, r) {
     <div class="qref">${[
       ['Compare', 'close > sma(200)', 'rsi(14) <= 30'], ['Cross', 'sma(50) crosses above sma(200)', 'macd crosses below signal'], ['Range', 'rsi(14) between 40 and 60', ''],
       ['Averages', 'sma(10|20|50|100|150|200)', 'ema(9|10|20|21|50|100|200)'], ['Highs, lows', 'high(20)  high(52w)', 'low(20)  low(52w)'], ['Change %', 'change(1) > 3', 'change(5)  change(20)  gap > 2'],
-      ['Volume', 'rvol > 2  (× 20-day avg)', 'volume > avg_volume'], ['Indicators', 'adx(14)  atr(14)  cci(20)', 'macd  signal  bb_upper  bb_lower'], ['Yes / no', 'green  inside_bar', 'rs_leader  stage2  power_gap  apex_base  high_tight_flag'],
+      ['Volume', 'rvol > 2  (× 20-day avg)', 'volume > avg_volume  delivery > 60'], ['Indicators', 'adx(14)  atr(14)  cci(20)', 'macd  signal  bb_upper  bb_lower'], ['Yes / no', 'green  inside_bar  nr7', 'rs_leader  stage2  power_gap  apex_base  high_tight_flag'],
+      ['Bars ago', 'close[1]  = yesterday', 'rsi(14)[3] < rsi(14)'], ['Business', 'pe < 20  roce > 20', 'debt_to_equity < 0.5  profit_growth_yoy > 25'], ['Owners', 'promoter > 50  pledge < 1', 'promoter_change_qoq > 0  fii_change_qoq > 1'],
+      ['Events', 'insider_buy_cr_30d > 1', 'days_to_results <= 7  days_since_order_win <= 10'],
     ].map(([h, a, b]) => `<div><small>${h}</small><code>${esc(a)}</code>${b ? `<code>${esc(b)}</code>` : ''}</div>`).join('')}</div>
     <button class="btn quiet block" data-close style="margin-top:16px">Close</button>`);
+
+  /* ChatGPT helper: copy our full prompt, write the idea there, paste the answer back */
+  $('#qgpt').onclick = () => {
+    const prompt = buildPrompt(cat);
+    const sh = sheet(`<div class="gpt"><div class="gpt-h"><span class="gpt-ic big">✦</span><div><h3>Write your scanner with ChatGPT</h3><p class="small">Describe the idea in plain words. ChatGPT gets every field we have, so it writes a query that runs here.</p></div></div>
+      <ol class="gpt-steps">
+        <li><b>1</b><div><strong>Copy the prompt</strong><small>It explains our query language and all ${((cat && cat.features) || []).length || 'our'} fields.</small>
+          <div class="row-b"><button class="btn pri sm" id="gcopy">${icon('copy', 15)}Copy prompt</button><a class="btn quiet sm" href="https://chatgpt.com/" target="_blank" rel="noopener">Open ChatGPT ↗</a><button class="btn quiet sm" id="gview">View</button></div>
+          <pre class="gpt-pre" id="gpre" hidden></pre></div></li>
+        <li><b>2</b><div><strong>Paste it in ChatGPT and add your idea</strong><small>For example: "stocks near all-time high where promoters bought in the last month and delivery is high".</small></div></li>
+        <li><b>3</b><div><strong>Paste ChatGPT's answer here</strong><small>The whole reply is fine; we take the query out of it.</small>
+          <textarea class="inp gpt-in" id="gin" rows="6" spellcheck="false" placeholder="Paste the reply or just the query"></textarea>
+          <div id="gchk"></div>
+          <div class="row-b"><button class="btn pri sm" id="guse">${icon('check', 15)}Use this query</button><button class="btn quiet sm" data-close>Close</button></div></div></li>
+      </ol></div>`);
+    const E = q => sh.el.querySelector(q);
+    E('#gpre').textContent = prompt;
+    E('#gview').onclick = () => { E('#gpre').hidden = !E('#gpre').hidden; };
+    E('#gcopy').onclick = async () => {
+      try { await navigator.clipboard.writeText(prompt); }
+      catch { const ta = document.createElement('textarea'); ta.value = prompt; document.body.append(ta); ta.select(); try { document.execCommand('copy'); } catch { /* manual */ } ta.remove(); }
+      E('#gcopy').innerHTML = `${icon('check', 15)}Copied`; toast('Prompt copied. Paste it in ChatGPT, then add your idea.');
+    };
+    const verify = () => {
+      const qx = extractQuery(E('#gin').value); if (!qx) { E('#gchk').innerHTML = ''; return null; }
+      const r = parse(qx, cat);
+      E('#gchk').innerHTML = r.errors.length ? `<div class="qerr">${r.errors.map(e => `<div>${icon('warn', 15)}<span>${e.n ? `<b>Line ${e.n}</b> · ` : ''}${esc(e.error)}</span></div>`).join('')}<div class="tiny">Ask ChatGPT to fix that line, or edit it after pasting.</div></div>`
+        : `<div class="qok">${icon('check', 15)}<span>${r.conds.length} conditions, ready to run</span></div>`;
+      return { qx, r };
+    };
+    E('#gin').addEventListener('input', verify);
+    E('#guse').onclick = () => { const v = verify(); if (!v) { toast('Paste ChatGPT\'s answer first.'); return; } setText(v.qx); check(); sh.close(); qt.focus(); toast(v.r.errors.length ? 'Pasted. Fix the marked line, then scan.' : 'Query ready. Press Scan.'); };
+  };
 
   /* saved scanners: kept in this browser */
   const SK = 'qs-scanners';

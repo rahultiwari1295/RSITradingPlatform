@@ -2,7 +2,7 @@
 const W = window, d = document, QD = W.QD;
 export const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const BASE = '/app';
-export const { fmt, n, ok, lab, api, auth } = QD;
+export const { fmt, n, ok, lab, api, auth, intel } = QD;
 export const esc = fmt.esc;
 
 /* ---------------------------------------------------------------- icons */
@@ -34,6 +34,12 @@ const P = {
   bell: '<path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 20a1.9 1.9 0 0 0 3.4 0"/>',
   save: '<path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v5h8V3M7 21v-7h10v7"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+  copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/>',
+  doc: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+  users: '<circle cx="9" cy="8.5" r="3.3"/><path d="M3 19.5c.9-3 3.1-4.6 6-4.6s5.1 1.6 6 4.6"/><path d="M16 5.5a3 3 0 0 1 0 6M18 14.5c1.6.6 2.6 2.1 3 4"/>',
+  cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  globe: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.6 5.4 3.6 8.5s-1.1 5.9-3.6 8.5c-2.5-2.6-3.6-5.4-3.6-8.5s1.1-5.9 3.6-8.5z"/>',
+  swap: '<path d="M4 8h13l-3.5-3.5M20 16H7l3.5 3.5"/>',
   candle: '<path d="M7 3v4M7 15v6M17 3v6M17 17v4"/><rect x="5" y="7" width="4" height="8" rx="1"/><rect x="15" y="9" width="4" height="8" rx="1"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
   moon: '<path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10z"/>',
@@ -185,6 +191,7 @@ export function boot() {
     let items = F.sampleFeed();
     const bdg = d.getElementById('bdg'), paintB = () => { const k = F.unread(items); bdg.hidden = !k; bdg.textContent = k > 9 ? '9+' : k; };
     paintB();
+    F.watchFeed(intel, L => { if (L.length) { items = L; paintB(); } });
     d.getElementById('bell').onclick = () => {
       const sh = sheet(F.feedHTML(items, esc, fmt, icon, link)); sh.el.classList.add('feedsheet');
       const en = sh.el.querySelector('[data-enable]'); if (en) en.onclick = async () => { const r = await F.enableNotifs(); toast(r === 'granted' ? 'Alerts are on.' : r === 'denied' ? 'Alerts were blocked in the browser.' : 'Alerts not turned on.'); sh.close(); };

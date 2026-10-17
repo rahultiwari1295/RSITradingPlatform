@@ -84,63 +84,103 @@ export function report(sym) {
   };
 }
 
-/* ---------------------------------------------------------------- screens */
-const S = (id, name, about, query, col, tf = '1D', live = true) => ({ id, name, about, query, col, tf, live });
+/* ---------------------------------------------------------------- screens
+   Every query is real scanner language; Screens runs it on the Lab. The sample rows below are only shown when the
+   Lab cannot be reached (and are labelled as sample). `col` = the field shown next to each match. */
+const S = (id, name, about, query, col, tf = '1D', needs = '') => ({ id, name, about, query, col, tf, needs, live: true });
 export const SCREEN_GROUPS = [
   { id: 'breakout', name: 'Breakouts', about: 'Prices leaving a range or a level that held before.', items: [
-    S('52wh', '52-week high', 'Closed at a new one-year high today.', 'close > high(52w)', 'from_52w_high'),
-    S('52wh-vol', '52-week high on volume', 'New one-year high with 1.5× normal volume.', 'close > high(52w)\nand rvol > 1.5', 'rvol'),
-    S('near52', 'Near 52-week high', 'Within 5% of the one-year high.', 'from_52w_high > -5\nand close > sma(50)', 'from_52w_high'),
-    S('20dbo', '20-day breakout', 'Closed above the highest price of the last 20 days.', 'close > high(20)', 'change(1)'),
-    S('bb-bo', 'Bollinger breakout', 'Closed above the upper Bollinger band.', 'close crosses above bb_upper', 'rvol'),
-    S('stage2', 'Stage-2 base breakout', 'Left a 3-month base while the 30-week average turns up.', 'stage2', 'rvol') ] },
+    S('52wh', '52-week high', 'Closed at a new one-year high today.', 'close > high(52w)', 'dist_hh52_pct'),
+    S('52wh-vol', '52-week high on volume', 'New one-year high with 1.5× normal volume.', 'close > high(52w)\nand rvol > 1.5', 'vol_ratio'),
+    S('ath', 'Near all-time high', 'Within 3% of the highest price ever, in an uptrend.', 'from_ath > -3\nand close > sma(50)', 'dist_ath_pct'),
+    S('near52', 'Near 52-week high', 'Within 5% of the one-year high.', 'from_52w_high > -5\nand close > sma(50)', 'dist_hh52_pct'),
+    S('20dbo', '20-day breakout', 'Closed above the highest price of the last 20 days.', 'close > high(20)\nand close > sma(200)', 'ret_1'),
+    S('bb-bo', 'Bollinger breakout', 'Closed above the upper Bollinger band.', 'close crosses above bb_upper', 'vol_ratio'),
+    S('squeeze', 'Squeeze breakout', 'Bands were tight yesterday; today price breaks the upper band.', 'bb_width[1] < 10\nand close > bb_upper', 'bb_width_pct'),
+    S('nr7', 'NR7 in an uptrend', 'Quietest day of the week in a rising stock: a coiled spring.', 'nr7\nand close > sma(50)\nand sma_50_slope > 0', 'range_pct'),
+    S('stage2', 'Stage-2 base breakout', 'Left a long base as the 30-week average turns up.', 'stage2', 'vol_ratio') ] },
   { id: 'momentum', name: 'Momentum', about: 'Stocks already moving, and how strongly.', items: [
-    S('rsi60', 'RSI crossing 60', 'Momentum turning strong.', 'rsi(14) crosses above 60', 'rsi(14)'),
-    S('golden', 'Golden cross', '50-day average crossed above the 200-day.', 'sma(50) crosses above sma(200)', 'change(20)'),
-    S('ema921', 'EMA 9 / 21 crossover', 'Fast average crossed above the slower one.', 'ema(9) crosses above ema(21)\nand close > sma(200)', 'change(5)'),
-    S('macd', 'MACD bullish cross', 'MACD line crossed above its signal line.', 'macd crosses above signal', 'rsi(14)'),
-    S('adx', 'Strong trend', 'ADX above 25 and price above the 50-day average.', 'adx(14) > 25\nand close > sma(50)', 'adx(14)'),
-    S('rs', 'Relative-strength leaders', 'Leaders breaking out on heavy volume.', 'rs_leader', 'change(20)') ] },
-  { id: 'volume', name: 'Volume & gaps', about: 'Unusual activity that often follows news.', items: [
-    S('vshock', 'Volume shockers', 'Trading at least 3× the 20-day average.', 'rvol > 3', 'rvol'),
-    S('vup', 'Up on heavy volume', 'Up 2% or more on twice normal volume.', 'change(1) > 2\nand rvol > 2', 'change(1)'),
-    S('gapup', 'Gap up', 'Opened 2% or more above yesterday’s close.', 'gap > 2', 'gap'),
-    S('pgap', 'Power gap', 'Big gap up on very heavy volume that held.', 'power_gap', 'rvol'),
-    S('dry', 'Volume dry-up', 'Quiet day in an uptrend: volume half of normal.', 'rvol < 0.5\nand close > sma(50)', 'rvol') ] },
+    S('rsi60', 'RSI crossing 60', 'Momentum turning strong.', 'rsi(14) crosses above 60', 'rsi_14'),
+    S('golden', 'Golden cross', '50-day average crossed above the 200-day.', 'sma(50) crosses above sma(200)', 'ret_20'),
+    S('ema921', 'EMA 9 / 21 crossover', 'Fast average crossed above the slower one, in an uptrend.', 'ema(9) crosses above ema(21)\nand close > sma(200)', 'ret_5'),
+    S('macd', 'MACD bullish cross', 'MACD line crossed above its signal line.', 'macd crosses above signal', 'rsi_14'),
+    S('adx', 'Strong trend', 'ADX above 25 and price above the 50-day average.', 'adx(14) > 25\nand close > sma(50)', 'adx_14'),
+    S('lead60', '3-month leaders', 'Up 30%+ in 60 days and still above the 50-day average.', 'change(60) > 30\nand close > sma(50)', 'ret_60'),
+    S('streak', 'Five green days', 'Closed higher five sessions in a row.', 'up_streak >= 5', 'up_streak'),
+    S('rs', 'Relative-strength leaders', 'Leaders breaking out on heavy volume.', 'rs_leader', 'ret_20') ] },
+  { id: 'volume', name: 'Volume & delivery', about: 'Unusual activity, and whether buyers took delivery.', items: [
+    S('vshock', 'Volume shockers', 'Trading at least 3× the 20-day average.', 'rvol > 3', 'vol_ratio'),
+    S('vup', 'Up on heavy volume', 'Up 2% or more on twice normal volume.', 'change(1) > 2\nand rvol > 2', 'ret_1'),
+    S('deliv', 'High delivery', 'More than 60% of traded shares taken for delivery, volume up.', 'delivery > 60\nand rvol > 1.5', 'delivery_pct', '1D', 'delivery'),
+    S('delivbo', 'Delivery-backed breakout', 'New 20-day high with delivery 1.5× its usual level.', 'close > high(20)\nand delivery_ratio > 1.5', 'delivery_ratio', '1D', 'delivery'),
+    S('gapup', 'Gap up', 'Opened 2% or more above yesterday’s close.', 'gap > 2', 'gap_pct'),
+    S('pgap', 'Power gap', 'Big gap up on very heavy volume that held.', 'power_gap', 'vol_ratio'),
+    S('dry', 'Volume dry-up', 'Quiet day in an uptrend: volume half of normal.', 'rvol < 0.5\nand close > sma(50)', 'vol_ratio') ] },
   { id: 'pullback', name: 'Pullbacks & reversals', about: 'Strong stocks resting, or weak ones turning.', items: [
-    S('pb50', 'Pullback to the 50-day', 'Uptrend that has dipped near its 50-day average.', 'close > sma(200)\nand rsi(14) between 38 and 48', 'rsi(14)'),
-    S('oversold', 'Oversold bounce', 'RSI below 30 and a green candle today.', 'rsi(14) < 30\nand green', 'rsi(14)'),
-    S('inside', 'Inside bar in uptrend', 'Today’s range sits inside yesterday’s.', 'inside_bar\nand close > sma(50)', 'change(1)'),
-    S('apex', 'Tightening base (VCP)', 'Swings getting smaller, then a break up.', 'apex_base', 'rvol'),
-    S('htf', 'High tight flag', 'Sharp rise, short tight pause, then a break.', 'high_tight_flag', 'change(20)') ] },
-  { id: 'weak', name: 'Weakness', about: 'Useful to know what to steer clear of studying.', items: [
-    S('52wl', '52-week low', 'Closed at a new one-year low.', 'close < low(52w)', 'change(20)'),
-    S('death', 'Death cross', '50-day average crossed below the 200-day.', 'sma(50) crosses below sma(200)', 'change(20)'),
-    S('b200', 'Broke the 200-day', 'Closed below the 200-day average today.', 'close crosses below sma(200)', 'change(1)'),
-    S('vdown', 'Down on heavy volume', 'Down 3% or more on twice normal volume.', 'change(1) < -3\nand rvol > 2', 'change(1)') ] },
+    S('pb50', 'Pullback in an uptrend', 'Above the 200-day average, RSI cooled to 38–48.', 'close > sma(200)\nand rsi(14) between 38 and 48', 'rsi_14'),
+    S('ema20', 'Bounce off EMA 20', 'Touched the 20-day EMA and closed green in an uptrend.', 'from_ema20 between -1.5 and 1\nand green\nand ema(20) > ema(50)', 'dist_ema_20_pct'),
+    S('3red', 'Three red days, trend up', 'A short dip in a strong trend.', 'down_streak >= 3\nand close > sma(100)', 'down_streak'),
+    S('oversold', 'Oversold bounce', 'RSI below 30 and a green candle today.', 'rsi(14) < 30\nand green', 'rsi_14'),
+    S('inside', 'Inside bar in uptrend', 'Today’s range sits inside yesterday’s.', 'inside_bar\nand close > sma(50)', 'ret_1'),
+    S('apex', 'Tightening base (VCP)', 'Swings getting smaller, then a break up.', 'apex_base', 'vol_ratio'),
+    S('htf', 'High tight flag', 'Sharp rise, short tight pause, then a break.', 'high_tight_flag', 'ret_20') ] },
+  { id: 'events', name: 'Filings & insiders', about: 'What companies and insiders just did, from exchange filings.', items: [
+    S('insider', 'Insiders buying', 'Insiders bought over ₹50 lakh in the last 30 days.', 'insider_buy_cr_30d > 0.5', 'insider_buy_cr_30d', '1D', 'events'),
+    S('prombuy', 'Promoters buying in the market', 'Promoter open-market buying in the last 90 days.', 'promoter_buy_cr_90d > 0', 'promoter_buy_cr_90d', '1D', 'events'),
+    S('bulkbuy', 'Bulk or block buying', 'A large investor bought in a bulk/block deal in 10 days.', 'bulk_buy_count_10d >= 1', 'bulk_buy_count_10d', '1D', 'events'),
+    S('orders', 'Fresh order wins', 'Announced an order or contract in the last 7 days.', 'days_since_order_win <= 7', 'days_since_order_win', '1D', 'events'),
+    S('resweek', 'Results this week', 'Board meeting for results within 7 days.', 'days_to_results <= 7', 'days_to_results', '1D', 'events'),
+    S('postres', 'Post-results breakout', 'Results in the last 5 days and a 20-day high on volume.', 'days_since_results <= 5\nand close > high(20)\nand rvol > 1.5', 'days_since_results', '1D', 'events'),
+    S('upgrade', 'Credit rating upgrades', 'Upgraded by a rating agency in the last 6 months.', 'rating_upgrades_180d >= 1', 'rating_upgrades_180d', '1D', 'events'),
+    S('hot', 'High-impact news', 'Something scored 70+ in impact in the last 7 days.', 'impact_max_7d >= 70', 'impact_max_7d', '1D', 'events') ] },
   { id: 'business', name: 'Business quality', about: 'Company numbers, not the chart. Like Screener.in.', items: [
-    S('qual', 'Quality at fair price', 'Return on capital above 20% and P/E below 30.', 'roce > 20\nand pe < 30', 'roce', '1D', false),
-    S('debtfree', 'Debt-free companies', 'Almost no borrowings, profits growing.', 'debt_to_equity < 0.1\nand profit_growth_3y > 10', 'debt_to_equity', '1D', false),
-    S('growth', 'Consistent growers', 'Sales and profit up 15%+ a year for 5 years.', 'sales_growth_5y > 15\nand profit_growth_5y > 15', 'sales_growth_5y', '1D', false),
-    S('div', 'High dividend', 'Dividend yield above 3% with steady profits.', 'dividend_yield > 3', 'dividend_yield', '1D', false),
-    S('coffee', 'Coffee-can', '10 years of 10%+ sales growth and 15%+ ROCE.', 'sales_growth_10y > 10\nand roce > 15', 'roce', '1D', false),
-    S('magic', 'Magic formula', 'High return on capital, high earnings yield.', 'rank(roce) + rank(earnings_yield)', 'roce', '1D', false) ] },
+    S('qual', 'Quality at fair price', 'Return on capital above 20% and P/E below 30.', 'roce > 20\nand pe < 30\nand pe > 0', 'roce', '1D', 'business'),
+    S('debtfree', 'Debt-free growers', 'Almost no borrowings, profits growing 10%+ a year.', 'debt_to_equity < 0.1\nand profit_growth_3y > 10', 'debt_to_equity', '1D', 'business'),
+    S('growth', 'Consistent growers', 'Sales and profit up 15%+ a year for 5 years.', 'sales_growth_5y > 15\nand profit_growth_5y > 15', 'sales_growth_5y', '1D', 'business'),
+    S('qtrgrowth', 'Strong latest quarter', 'Profit up 25%+ and sales up 15%+ vs a year ago.', 'profit_growth_yoy > 25\nand sales_growth_yoy > 15', 'profit_growth_yoy', '1D', 'business'),
+    S('div', 'High dividend', 'Dividend yield above 3%.', 'dividend_yield > 3', 'dividend_yield', '1D', 'business'),
+    S('coffee', 'Coffee-can', '10 years of 10%+ sales growth and 15%+ ROCE.', 'sales_growth_10y > 10\nand roce > 15', 'roce', '1D', 'business'),
+    S('magic', 'Magic formula (simple)', 'High return on capital and high earnings yield.', 'roce > 25\nand earnings_yield > 6', 'earnings_yield', '1D', 'business'),
+    S('cheap', 'Cheap and profitable', 'P/E under 12, ROE above 15%, market cap over ₹1,000 cr.', 'pe < 12\nand pe > 0\nand roe > 15\nand market_cap > 1000', 'pe', '1D', 'business') ] },
   { id: 'owners', name: 'Who is buying', about: 'Changes in ownership each quarter.', items: [
-    S('fii', 'Foreign funds adding', 'FII holding up 1% or more this quarter.', 'fii_change_qoq > 1', 'fii_change', '1D', false),
-    S('dii', 'Mutual funds adding', 'DII holding up 1% or more this quarter.', 'dii_change_qoq > 1', 'dii_change', '1D', false),
-    S('prom', 'Founders adding', 'Promoter holding went up this quarter.', 'promoter_change_qoq > 0', 'promoter_change', '1D', false),
-    S('deliv', 'High delivery', 'More than 60% of traded shares taken for delivery.', 'delivery > 60', 'delivery', '1D', false) ] },
+    S('fii', 'Foreign funds adding', 'FII holding up 1 point or more this quarter.', 'fii_change_qoq > 1', 'fii_change_qoq', '1D', 'owners'),
+    S('dii', 'Mutual funds adding', 'DII holding up 1 point or more this quarter.', 'dii_change_qoq > 1', 'dii_change_qoq', '1D', 'owners'),
+    S('prom', 'Founders adding', 'Promoter holding went up this quarter.', 'promoter_change_qoq > 0', 'promoter_change_qoq', '1D', 'owners'),
+    S('unpledge', 'Pledge coming down', 'Promoters released 1 point or more of pledged shares.', 'pledge_change_qoq < -1', 'pledge_change_qoq', '1D', 'owners'),
+    S('clean', 'High promoter, zero pledge', 'Promoters own 60%+ and have pledged nothing.', 'promoter > 60\nand pledge = 0', 'promoter_pct', '1D', 'owners') ] },
+  { id: 'weak', name: 'Warning signs', about: 'Useful to know what to steer clear of studying.', items: [
+    S('52wl', '52-week low', 'Closed at a new one-year low.', 'close < low(52w)', 'ret_20'),
+    S('death', 'Death cross', '50-day average crossed below the 200-day.', 'sma(50) crosses below sma(200)', 'ret_20'),
+    S('b200', 'Broke the 200-day', 'Closed below the 200-day average today.', 'close crosses below sma(200)', 'ret_1'),
+    S('vdown', 'Down on heavy volume', 'Down 3% or more on twice normal volume.', 'change(1) < -3\nand rvol > 2', 'ret_1'),
+    S('pledgeup', 'Pledge rising', 'Promoters pledged 2 points more shares this quarter.', 'pledge_change_qoq > 2', 'pledge_change_qoq', '1D', 'owners'),
+    S('insell', 'Insiders selling', 'Insiders sold over ₹1 crore in 30 days.', 'insider_sell_cr_30d > 1', 'insider_sell_cr_30d', '1D', 'events'),
+    S('redflags', 'Repeated bad news', 'Two or more negative filings or news items in 30 days.', 'negative_events_30d >= 2', 'negative_events_30d', '1D', 'events') ] },
 ];
 export const SCREENS = SCREEN_GROUPS.flatMap(g => g.items.map(x => ({ ...x, group: g.id, groupName: g.name })));
-const COLFMT = { rvol: v => v.toFixed(1) + '×', 'rsi(14)': v => v.toFixed(0), 'adx(14)': v => v.toFixed(0), from_52w_high: v => v.toFixed(1) + '%', gap: v => '+' + v.toFixed(1) + '%', 'change(1)': v => (v > 0 ? '+' : '') + v.toFixed(1) + '%', 'change(5)': v => (v > 0 ? '+' : '') + v.toFixed(1) + '%', 'change(20)': v => (v > 0 ? '+' : '') + v.toFixed(1) + '%', roce: v => v.toFixed(0) + '%', debt_to_equity: v => v.toFixed(2), sales_growth_5y: v => v.toFixed(0) + '%', dividend_yield: v => v.toFixed(1) + '%', fii_change: v => '+' + v.toFixed(1) + '%', dii_change: v => '+' + v.toFixed(1) + '%', promoter_change: v => '+' + v.toFixed(2) + '%', delivery: v => v.toFixed(0) + '%' };
-const COLNAME = { rvol: 'Volume ×', 'rsi(14)': 'RSI', 'adx(14)': 'ADX', from_52w_high: 'From high', gap: 'Gap', 'change(1)': 'Today', 'change(5)': '5 days', 'change(20)': '20 days', roce: 'ROCE', debt_to_equity: 'Debt/Eq', sales_growth_5y: 'Sales 5y', dividend_yield: 'Yield', fii_change: 'FII Δ', dii_change: 'DII Δ', promoter_change: 'Promoter Δ', delivery: 'Delivery' };
-const COLRANGE = { rvol: [1.5, 5], 'rsi(14)': [30, 72], 'adx(14)': [25, 48], from_52w_high: [-5, 0], gap: [2, 7], 'change(1)': [1, 7], 'change(5)': [2, 12], 'change(20)': [4, 30], roce: [18, 45], debt_to_equity: [0, .1], sales_growth_5y: [15, 34], dividend_yield: [3, 7], fii_change: [1, 4], dii_change: [1, 3.5], promoter_change: [.05, 1.5], delivery: [60, 85] };
-export const colName = c => COLNAME[c] || c;
-/** today's matches for a screen: [{ sym, name, price, chg, v, vf }] */
+const P1 = v => (v > 0 ? '+' : '') + v.toFixed(1) + '%';
+const COLFMT = { vol_ratio: v => v.toFixed(1) + '×', delivery_ratio: v => v.toFixed(1) + '×', rsi_14: v => v.toFixed(0), adx_14: v => v.toFixed(0),
+  dist_hh52_pct: v => v.toFixed(1) + '%', dist_ath_pct: v => v.toFixed(1) + '%', dist_ema_20_pct: P1, gap_pct: P1, ret_1: P1, ret_5: P1, ret_20: P1, ret_60: P1,
+  roce: v => v.toFixed(0) + '%', roe: v => v.toFixed(0) + '%', pe: v => v.toFixed(1), debt_to_equity: v => v.toFixed(2), sales_growth_5y: v => v.toFixed(0) + '%',
+  profit_growth_yoy: P1, dividend_yield: v => v.toFixed(1) + '%', earnings_yield: v => v.toFixed(1) + '%', fii_change_qoq: v => (v > 0 ? '+' : '') + v.toFixed(2),
+  dii_change_qoq: v => (v > 0 ? '+' : '') + v.toFixed(2), promoter_change_qoq: v => (v > 0 ? '+' : '') + v.toFixed(2), pledge_change_qoq: v => (v > 0 ? '+' : '') + v.toFixed(2),
+  promoter_pct: v => v.toFixed(1) + '%', delivery_pct: v => v.toFixed(0) + '%', insider_buy_cr_30d: v => '₹' + v.toFixed(2) + ' cr', insider_sell_cr_30d: v => '₹' + v.toFixed(2) + ' cr',
+  promoter_buy_cr_90d: v => '₹' + v.toFixed(2) + ' cr', days_since_order_win: v => v.toFixed(0) + 'd ago', days_since_results: v => v.toFixed(0) + 'd ago',
+  days_to_results: v => 'in ' + v.toFixed(0) + 'd', bb_width_pct: v => v.toFixed(1) + '%', range_pct: v => v.toFixed(1) + '%', up_streak: v => v.toFixed(0) + ' days', down_streak: v => v.toFixed(0) + ' days' };
+const COLNAME = { vol_ratio: 'Volume ×', delivery_ratio: 'Delivery ×', rsi_14: 'RSI', adx_14: 'ADX', dist_hh52_pct: 'From high', dist_ath_pct: 'From ATH', dist_ema_20_pct: 'From EMA 20',
+  gap_pct: 'Gap', ret_1: 'Today', ret_5: '5 days', ret_20: '20 days', ret_60: '60 days', roce: 'ROCE', roe: 'ROE', pe: 'P/E', debt_to_equity: 'Debt/Eq', sales_growth_5y: 'Sales 5y',
+  profit_growth_yoy: 'Profit YoY', dividend_yield: 'Yield', earnings_yield: 'Earn. yield', fii_change_qoq: 'FII Δ pts', dii_change_qoq: 'DII Δ pts', promoter_change_qoq: 'Promoter Δ',
+  pledge_change_qoq: 'Pledge Δ', promoter_pct: 'Promoter', delivery_pct: 'Delivery', insider_buy_cr_30d: 'Insider buys', insider_sell_cr_30d: 'Insider sells', promoter_buy_cr_90d: 'Promoter buys',
+  days_since_order_win: 'Order', days_since_results: 'Results', days_to_results: 'Results', bb_width_pct: 'Band width', range_pct: 'Range', up_streak: 'Streak', down_streak: 'Streak',
+  bulk_buy_count_10d: 'Deals', rating_upgrades_180d: 'Upgrades', impact_max_7d: 'Impact', negative_events_30d: 'Bad news' };
+const COLRANGE = { vol_ratio: [1.5, 5], rsi_14: [30, 72], adx_14: [25, 48], dist_hh52_pct: [-5, 0], ret_1: [1, 7], ret_5: [2, 12], ret_20: [4, 30], ret_60: [30, 80], roce: [18, 45], pe: [8, 30] };
+export const colName = c => COLNAME[c] || c.replace(/_/g, ' ');
+export const colFmt = (c, v) => (v == null || !Number.isFinite(+v) ? '—' : (COLFMT[c] || (z => (+z).toFixed(1)))(+v));
+/** Sample matches, only for when the Lab is unreachable: [{ sym, name, price, chg, v, vf }] */
 export function screenRows(sc) {
   const r = rng('scan:' + sc.id), n = sc.id.length % 3 === 0 ? 3 + Math.floor(r() * 6) : 6 + Math.floor(r() * 22);
-  const pool = UNIVERSE.slice().sort(() => r() - .5).slice(0, n), [a, b] = COLRANGE[sc.col] || [0, 100], weak = sc.group === 'weak';
-  return pool.map(x => { const v = a + r() * (b - a), chg = weak ? -(r() * 5) : sc.col === 'change(1)' ? v : (r() - .3) * 5; return { sym: x.s, name: x.n, sec: x.sec, price: rd(x.p * (1 + chg / 100)), chg: rd(chg), v, vf: (COLFMT[sc.col] || (z => z.toFixed(1)))(v) }; }).sort((p, q) => sc.col === 'from_52w_high' ? q.v - p.v : Math.abs(q.v) - Math.abs(p.v));
+  const pool = UNIVERSE.slice().sort(() => r() - .5).slice(0, n), [a, b] = COLRANGE[sc.col] || [0, 10], weak = sc.group === 'weak';
+  return pool.map(x => { const v = a + r() * (b - a), chg = weak ? -(r() * 5) : sc.col === 'ret_1' ? v : (r() - .3) * 5; return { sym: x.s, name: x.n, sec: x.sec, price: rd(x.p * (1 + chg / 100)), chg: rd(chg), v, vf: colFmt(sc.col, v) }; }).sort((p, q) => Math.abs(q.v) - Math.abs(p.v));
 }
 
 /* ---------------------------------------------------------------- strategies */

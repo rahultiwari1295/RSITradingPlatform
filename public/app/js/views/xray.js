@@ -1,4 +1,5 @@
-import { icon, esc, fmt, n, ok, api, go, skel, line, link, mono } from '../app.js';
+import { icon, esc, fmt, n, ok, api, go, skel, line, link, mono, intel } from '../app.js';
+import { evCard } from './news.js';
 import { report as sampleReport, searchSample, NEWS, SCREENS } from '../sample.js';
 const SCREENS_N = SCREENS.length;
 
@@ -18,7 +19,7 @@ const clean = s => String(txt(s) || '').replace(/&#x27;/g, "'").replace(/[\u{1F0
 const POPULAR = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'TATAMOTORS', 'HAL', 'DIXON', 'ZOMATO', 'TRENT', 'BEL'];
 const sgn = (v, d = 1) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d) + '%';
 const tone = v => (v > 0 ? 'up' : v < 0 ? 'dn' : '');
-const TABS = [['overview', 'Overview'], ['price', 'Price'], ['business', 'Business'], ['owners', 'Owners'], ['peers', 'Peers']];
+const TABS = [['overview', 'Overview'], ['filings', 'Filings'], ['price', 'Price'], ['business', 'Business'], ['owners', 'Owners'], ['peers', 'Peers']];
 
 /* status word + colour for a value */
 const st = (c, w) => `<span class="st ${c}">${w}</span>`;
@@ -230,7 +231,7 @@ function draw(rep, d, sym, sample, tab0) {
   <p class="disc">Facts and figures from public data, explained in plain words. Not a rating, research report or recommendation.${sample ? ' Sample numbers shown because the X-Ray server is not connected.' : ''}</p>`;
 
   const tb = rep.querySelector('#tb'), xt = rep.querySelector('#xt');
-  const show = k2 => { tab = k2; xt.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.t === k2)); tb.innerHTML = T[k2]; try { history.replaceState({}, '', location.pathname + (k2 === 'overview' ? '' : '?tab=' + k2)); } catch { /* ignore */ } };
+  const show = k2 => { tab = k2; xt.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.t === k2)); tb.innerHTML = k2 === 'filings' ? skel(110, 3) : T[k2]; if (k2 === 'filings') filings(sym, tb); try { history.replaceState({}, '', location.pathname + (k2 === 'overview' ? '' : '?tab=' + k2)); } catch { /* ignore */ } };
   xt.onclick = e => { const b = e.target.closest('[data-t]'); if (b) show(b.dataset.t); };
   tb.addEventListener('click', e => { const t2 = e.target.closest('tr[data-href]'); if (t2) go(t2.dataset.href); });
   show(tab);
@@ -239,4 +240,25 @@ function draw(rep, d, sym, sample, tab0) {
   const rg = rep.querySelector('#rng'), setR = v => { rg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === v)); draw1(+v); };
   rg.onclick = e => { const b = e.target.closest('button'); if (b) setR(b.dataset.v); };
   setR('999');
+}
+
+/* Filings tab: everything the company and its insiders filed, scored, newest first. */
+async function filings(sym, box) {
+  try {
+    const d = await intel.stock(sym);
+    if (!box.isConnected) return;
+    const tl = d.timeline || [], ins = d.insiders || [], dl = d.deals || [], mt = d.meetings || [], ow = d.owners || [], pl = d.pledge || [];
+    const next = mt.filter(m => m.meeting_date >= new Date().toISOString().slice(0, 10)).sort((a, b) => a.meeting_date.localeCompare(b.meeting_date))[0];
+    const hi = tl.filter(e => e.impact >= 60).slice(0, 3);
+    box.innerHTML = `${next ? `<div class="info-b">${icon('cal', 16)}<span><b>Board meeting ${fmt.date(next.meeting_date)}</b> · ${esc(next.purpose || '')}</span></div>` : ''}
+      ${hi.length ? `<section class="fsec"><h3 class="h3">Biggest recent items</h3>${hi.map(e => evCard(e, { showSym: false })).join('')}</section>` : ''}
+      ${ins.length ? `<section class="fsec"><h3 class="h3">Insider trades</h3><div class="card flush"><table class="dt"><thead><tr><th>Who</th><th>Side</th><th>Value</th></tr></thead><tbody>${ins.slice(0, 12).map(i => `<tr><td>${esc((i.person || '').slice(0, 30))}<small class="tiny" style="display:block">${esc(i.category || '')} · ${fmt.date(i.known_at)}${i.pct_after != null ? ' · now ' + (+i.pct_after).toFixed(2) + '%' : ''}</small></td><td><span class="st ${i.side === 'Buy' ? 'good' : 'weak'}">${i.side === 'Buy' ? 'Bought' : 'Sold'}</span></td><td class="tnum">₹${(+i.value_cr || 0).toFixed(2)} cr</td></tr>`).join('')}</tbody></table></div></section>` : ''}
+      ${dl.length ? `<section class="fsec"><h3 class="h3">Bulk and block deals</h3><div class="card flush"><table class="dt"><thead><tr><th>Party</th><th>Side</th><th>Value</th></tr></thead><tbody>${dl.slice(0, 12).map(x => `<tr><td>${esc((x.party || '').slice(0, 32))}<small class="tiny" style="display:block">${fmt.int(x.qty)} @ ${fmt.inr(x.price)} · ${fmt.date(x.deal_date)}</small></td><td><span class="st ${x.side === 'Buy' ? 'good' : 'weak'}">${x.side === 'Buy' ? 'Bought' : 'Sold'}</span></td><td class="tnum">${fmt.cr(x.value_cr)}</td></tr>`).join('')}</tbody></table></div></section>` : ''}
+      ${ow.length ? `<section class="fsec"><h3 class="h3">Who owns it, by quarter</h3><div class="card flush"><table class="dt"><thead><tr><th>Quarter</th><th>Promoter</th><th>Pledged</th><th>FII</th><th>DII</th></tr></thead><tbody>${ow.map(o => `<tr><td>${fmt.dateY(o.quarter_end)}</td><td class="tnum">${o.promoter_pct != null ? (+o.promoter_pct).toFixed(2) + '%' : '—'}${o.promoter_change_qoq ? `<small class="${o.promoter_change_qoq > 0 ? 'up' : 'dn'}"> ${o.promoter_change_qoq > 0 ? '+' : ''}${(+o.promoter_change_qoq).toFixed(2)}</small>` : ''}</td><td class="tnum">${o.pledged_pct != null ? (+o.pledged_pct).toFixed(2) + '%' : '—'}</td><td class="tnum">${o.fii_pct != null ? (+o.fii_pct).toFixed(2) + '%' : '—'}</td><td class="tnum">${o.dii_pct != null ? (+o.dii_pct).toFixed(2) + '%' : '—'}</td></tr>`).join('')}</tbody></table></div></section>` : ''}
+      ${pl.length > 1 ? `<p class="tiny">Promoter pledge: ${pl.slice(0, 4).map(p => `${(+p.pledged_pct || 0).toFixed(2)}% (${fmt.date(p.known_at)})`).join(' ← ')}</p>` : ''}
+      <section class="fsec"><div class="sec-h" style="margin:0 0 8px"><h3 class="h3">Timeline</h3><span class="tiny">${tl.length} items</span></div>${tl.length ? tl.slice(0, 40).map(e => evCard(e, { showSym: false })).join('') : '<p class="empty-s">No filings collected for this company yet.</p>'}</section>
+      <p class="disc">From NSE and BSE filings, SEBI insider disclosures and news. Impact is an automatic 0–100 score of how much an item usually matters.</p>`;
+  } catch (e) {
+    if (box.isConnected) box.innerHTML = `<div class="info-b">${icon('info', 16)}<span>Filings need the server, which is not reachable right now.</span></div>`;
+  }
 }

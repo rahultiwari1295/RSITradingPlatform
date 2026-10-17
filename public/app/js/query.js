@@ -20,8 +20,13 @@ const ALIAS = {
   signal: 'macd_signal', macd_signal: 'macd_signal', hist: 'macd_hist', macd_hist: 'macd_hist', histogram: 'macd_hist',
   high52: 'hh_52', high_52w: 'hh_52', '52w_high': 'hh_52', yearly_high: 'hh_52', low52: 'll_52', low_52w: 'll_52', '52w_low': 'll_52',
   high20: 'hh_20', low20: 'll_20', from_52w_high: 'dist_hh52_pct', dist_52w_high: 'dist_hh52_pct', from_20d_high: 'dist_hh20_pct',
-  from_sma50: 'dist_sma_50_pct', from_sma200: 'dist_sma_200_pct', stoch: 'stoch_k', di_plus: 'pdi_14', di_minus: 'ndi_14', '+di': 'pdi_14', '-di': 'ndi_14',
+  from_sma50: 'dist_sma_50_pct', from_sma200: 'dist_sma_200_pct', from_ema20: 'dist_ema_20_pct', from_ema_20: 'dist_ema_20_pct', stoch: 'stoch_k', di_plus: 'pdi_14', di_minus: 'ndi_14', '+di': 'pdi_14', '-di': 'ndi_14',
   close_location: 'close_loc', turnover: 'turnover',
+  market_cap: 'mcap_cr', mcap: 'mcap_cr', marketcap: 'mcap_cr', debt_equity: 'debt_to_equity', de: 'debt_to_equity', d_e: 'debt_to_equity',
+  promoter: 'promoter_pct', promoter_holding: 'promoter_pct', pledge: 'pledged_pct', pledged: 'pledged_pct', fii: 'fii_pct', dii: 'dii_pct',
+  delivery: 'delivery_pct', deliv: 'delivery_pct', from_ath: 'dist_ath_pct', ath_dist: 'dist_ath_pct', from_52w_low: 'dist_ll52_pct',
+  nr7: 'is_nr7', dividend: 'dividend_yield', div_yield: 'dividend_yield', eps: 'eps_ttm', sales_growth: 'sales_growth_yoy', profit_growth: 'profit_growth_yoy',
+  insider_buying: 'insider_buy_cr_30d', insider_selling: 'insider_sell_cr_30d', ey: 'earnings_yield', ps: 'pb',
   green: 'is_green', inside_bar: 'is_inside_bar', inside: 'is_inside_bar', rs_leader: 'sig_rs_leader', stage2: 'sig_stage2_base', stage_2: 'sig_stage2_base',
   power_gap: 'sig_power_gap', apex: 'sig_apex_base', apex_base: 'sig_apex_base', vcp: 'sig_apex_base', htf: 'sig_high_tight_flag', high_tight_flag: 'sig_high_tight_flag',
 };
@@ -41,13 +46,19 @@ function fn(name, args, keys) {
     case 'cci': return N && N !== '20' ? { error: 'Only cci(20) is available' } : need('cci_20');
     case 'high': case 'hh': case 'highest': if (!N) return { f: 'high' }; return /^(52w?|252|1y)$/.test(N) ? { f: 'hh_52' } : N === '20' ? { f: 'hh_20' } : { error: 'Use high(20) or high(52w)' };
     case 'low': case 'll': case 'lowest': if (!N) return { f: 'low' }; return /^(52w?|252|1y)$/.test(N) ? { f: 'll_52' } : N === '20' ? { f: 'll_20' } : { error: 'Use low(20) or low(52w)' };
-    case 'change': case 'ret': case 'return': case 'chg': { const k = 'ret_' + (N || 1); return keys.has(k) ? { f: k } : { error: 'Use change(1), change(5) or change(20)' }; }
+    case 'change': case 'ret': case 'return': case 'chg': { const k = 'ret_' + (N || 1); return keys.has(k) ? { f: k } : { error: 'Use change(1), (5), (20), (60), (120) or (250)' }; }
     case 'volume': case 'vol': return N === '20' ? { f: 'vol_sma_20' } : { error: 'Use volume, avg_volume or rvol' };
     case 'macd': return { f: 'macd' };
     default: return { error: `Unknown function "${name}"` };
   }
 }
 function term(t, keys) {
+  const r = term0(t, keys);
+  if (t.lag && r.f) { if (t.lag > 20) return { error: 'Look back at most 20 bars: field[1] … field[20]' }; r.lag = t.lag; }
+  return r;
+}
+const opd = T => (T.lag ? { f: T.f, lag: T.lag } : { f: T.f });
+function term0(t, keys) {
   if (t.kind === 'num') return { c: t.v };
   const name = t.v.toLowerCase();
   if (t.args) return fn(name, t.args, keys);
@@ -59,16 +70,16 @@ function term(t, keys) {
 }
 
 /* ---------------------------------------------------------------- tokenizer */
-const TOK = /\s*(?:(-?\d+(?:\.\d+)?)(?![\d.A-Za-wyz_]|x[A-Za-z0-9_])\s*(%|x\b)?|([A-Za-z_][A-Za-z0-9_]*)\s*\(\s*([^)]*)\)|(>=|<=|==|!=|>|<|=)|(\+di|-di|[0-9]*[A-Za-z_][A-Za-z0-9_]*)|(\S))/y;
+const TOK = /\s*(?:(-?\d+(?:\.\d+)?)(?![\d.A-Za-wyz_]|x[A-Za-z0-9_])\s*(%|x\b)?|([A-Za-z_][A-Za-z0-9_]*)\s*\(\s*([^)]*)\)(?:\[(\d+)\])?|(>=|<=|==|!=|>|<|=)|(\+di|-di|[0-9]*[A-Za-z_][A-Za-z0-9_]*)(?:\[(\d+)\])?|(\S))/y;
 export function tokens(src) {
   const out = []; TOK.lastIndex = 0; let m;
   while (TOK.lastIndex < src.length && (m = TOK.exec(src))) {
     const at = m.index + (m[0].length - m[0].trimStart().length);
     if (m[1] !== undefined) out.push({ kind: 'num', v: parseFloat(m[1]), at, raw: m[0].trim() });
-    else if (m[3] !== undefined) out.push({ kind: 'id', v: m[3], args: m[4].split(',').map(s => s.trim()).filter(Boolean), at, raw: m[0].trim() });
-    else if (m[5] !== undefined) out.push({ kind: 'op', v: m[5], at, raw: m[5] });
-    else if (m[6] !== undefined) { const w = m[6].toLowerCase(); out.push({ kind: KEYWORDS.includes(w) ? 'kw' : 'id', v: KEYWORDS.includes(w) ? w : m[6], at, raw: m[6] }); }
-    else if (m[7] !== undefined) out.push({ kind: 'bad', v: m[7], at, raw: m[7] });
+    else if (m[3] !== undefined) out.push({ kind: 'id', v: m[3], args: m[4].split(',').map(s => s.trim()).filter(Boolean), lag: m[5] ? +m[5] : 0, at, raw: m[0].trim() });
+    else if (m[6] !== undefined) out.push({ kind: 'op', v: m[6], at, raw: m[6] });
+    else if (m[7] !== undefined) { const w = m[7].toLowerCase(), kw = KEYWORDS.includes(w) && !m[8]; out.push({ kind: kw ? 'kw' : 'id', v: kw ? w : m[7], lag: m[8] ? +m[8] : 0, at, raw: m[0].trim() }); }
+    else if (m[9] !== undefined) out.push({ kind: 'bad', v: m[9], at, raw: m[9] });
   }
   return out;
 }
@@ -82,7 +93,7 @@ function cond(ts, keys) {
   if (ts.length === 1) {
     if (L.c !== undefined) return { error: 'A number alone is not a condition' };
     if (!/^(is_|sig_)/.test(L.f)) return { error: `"${ts[0].raw}" needs a comparison, e.g. ${ts[0].raw} > 50` };
-    return { x: { l: { f: L.f }, op: 'is_true' } };
+    return { x: { l: opd(L), op: 'is_true' } };
   }
   let i = 1, op;
   const t1 = ts[1], t2 = ts[2];
@@ -93,16 +104,16 @@ function cond(ts, keys) {
     const a = ts[2], and = ts[3], b = ts[4];
     if (!a || a.kind !== 'num' || !and || and.v !== 'and' || !b || b.kind !== 'num' || ts.length > 5) return { error: 'Write it as: field between 40 and 60' };
     if (L.f === undefined) return { error: 'The left side of "between" must be a field' };
-    return { x: { l: { f: L.f }, op: 'between', r: { list: [Math.min(a.v, b.v), Math.max(a.v, b.v)] } } };
+    return { x: { l: opd(L), op: 'between', r: { list: [Math.min(a.v, b.v), Math.max(a.v, b.v)] } } };
   } else if ((t1.kind === 'op' || t1.kind === 'kw') && OPS[t1.v]) { op = OPS[t1.v]; i = 2; }
   else return { error: `Expected a comparison after "${ts[0].raw}" (>, <, crosses above, between…)` };
   const rt = ts[i]; if (!rt) return { error: 'Missing the right side' };
   if (ts.length > i + 1) return { error: `Unexpected "${ts[i + 1].raw}". Put each condition on its own line with and / or` };
   const R = term(rt, keys); if (R.error) return R;
   if (L.c !== undefined && R.c !== undefined) return { error: 'Compare a field, not two numbers' };
-  if (L.c !== undefined) { const flip = { '>': '<', '<': '>', '>=': '<=', '<=': '>=', '==': '==', '!=': '!=' }[op]; if (!flip) return { error: 'Put the field on the left of "crosses"' }; return { x: { l: { f: R.f }, op: flip, r: { c: L.c } } }; }
+  if (L.c !== undefined) { const flip = { '>': '<', '<': '>', '>=': '<=', '<=': '>=', '==': '==', '!=': '!=' }[op]; if (!flip) return { error: 'Put the field on the left of "crosses"' }; return { x: { l: opd(R), op: flip, r: { c: L.c } } }; }
   if (/^(is_|sig_)/.test(L.f)) return { error: `"${ts[0].raw}" is yes/no; write it alone` };
-  return { x: { l: { f: L.f }, op, r: R.c !== undefined ? { c: R.c } : { f: R.f } } };
+  return { x: { l: opd(L), op, r: R.c !== undefined ? { c: R.c } : opd(R) } };
 }
 
 /* ---------------------------------------------------------------- whole query */
@@ -141,22 +152,24 @@ export function parse(src, cat) {
 }
 
 /* ---------------------------------------------------------------- rules -> text */
-const BACK = { vol_ratio: 'rvol', gap_pct: 'gap', is_green: 'green', is_inside_bar: 'inside_bar', sig_rs_leader: 'rs_leader', sig_stage2_base: 'stage2', sig_power_gap: 'power_gap', sig_apex_base: 'apex_base', sig_high_tight_flag: 'high_tight_flag', hh_52: 'high(52w)', hh_20: 'high(20)', ll_52: 'low(52w)', ll_20: 'low(20)', vol_sma_20: 'avg_volume', macd_signal: 'signal', macd_hist: 'macd_hist', dist_hh52_pct: 'from_52w_high' };
+const BACK = { is_nr7: 'nr7', vol_ratio: 'rvol', gap_pct: 'gap', is_green: 'green', is_inside_bar: 'inside_bar', sig_rs_leader: 'rs_leader', sig_stage2_base: 'stage2', sig_power_gap: 'power_gap', sig_apex_base: 'apex_base', sig_high_tight_flag: 'high_tight_flag', hh_52: 'high(52w)', hh_20: 'high(20)', ll_52: 'low(52w)', ll_20: 'low(20)', vol_sma_20: 'avg_volume', macd_signal: 'signal', macd_hist: 'macd_hist', dist_hh52_pct: 'from_52w_high' };
 export function tokenOf(k) {
   if (BACK[k]) return BACK[k];
   let m;
   if ((m = k.match(/^(sma|ema)_(\d+)$/))) return `${m[1]}(${m[2]})`;
   if ((m = k.match(/^(rsi|adx|atr|cci)_(\d+)$/))) return `${m[1]}(${m[2]})`;
   if ((m = k.match(/^ret_(\d+)$/))) return `change(${m[1]})`;
+  if (k === 'mcap_cr') return 'market_cap';
   return k;
 }
 const OPTXT = { '>': '>', '>=': '>=', '<': '<', '<=': '<=', '==': '=', '!=': '!=', crosses_above: 'crosses above', crosses_below: 'crosses below' };
+const tk = o => tokenOf(o.f) + (o.lag ? `[${o.lag}]` : '');
 export function format(mode, conds) {
   return (conds || []).map((x, i) => {
-    const L = tokenOf(x.l.f); let s;
+    const L = tk(x.l); let s;
     if (x.op === 'is_true') s = L;
     else if (x.op === 'between') s = `${L} between ${x.r.list[0]} and ${x.r.list[1]}`;
-    else s = `${L} ${OPTXT[x.op] || x.op} ${x.r.f ? tokenOf(x.r.f) : x.r.c}`;
+    else s = `${L} ${OPTXT[x.op] || x.op} ${x.r.f ? tk(x.r) : x.r.c}`;
     return (i ? (mode === 'any' ? 'or ' : 'and ') : '') + s;
   }).join('\n');
 }
@@ -165,7 +178,8 @@ export function format(mode, conds) {
 export const SNIPPETS = [
   ['Above 200 SMA', 'close > sma(200)'], ['RSI below 40', 'rsi(14) < 40'], ['RSI 40–60', 'rsi(14) between 40 and 60'], ['Golden cross', 'sma(50) crosses above sma(200)'],
   ['EMA 9 × 21', 'ema(9) crosses above ema(21)'], ['2× volume', 'rvol > 2'], ['52-week high', 'close > high(52w)'], ['20-day breakout', 'close > high(20)'],
-  ['Up 3% today', 'change(1) > 3'], ['Gap up 2%', 'gap > 2'], ['Strong trend', 'adx(14) > 25'], ['MACD cross', 'macd crosses above signal'], ['Green candle', 'green'], ['Near 52w high', 'from_52w_high > -5'],
+  ['Up 3% today', 'change(1) > 3'], ['Yesterday red', 'change(1)[1] < 0'], ['Insiders buying', 'insider_buy_cr_30d > 0.5'], ['ROCE above 20%', 'roce > 20'],
+  ['Promoter adding', 'promoter_change_qoq > 0'], ['High delivery', 'delivery > 60'], ['Results next 7 days', 'days_to_results <= 7'], ['Gap up 2%', 'gap > 2'], ['Strong trend', 'adx(14) > 25'], ['MACD cross', 'macd crosses above signal'], ['Green candle', 'green'], ['Near 52w high', 'from_52w_high > -5'],
 ];
 /** Every word the editor can complete, with a short hint. */
 export function vocab(cat) {

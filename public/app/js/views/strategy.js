@@ -14,7 +14,7 @@ export default async function strategy(el, r) {
   let tab = ['coach', 'now', 'settings'].includes(r.q.get('tab')) ? r.q.get('tab') : 'test';
 
   el.innerHTML = `
-  <div class="head">${link('me', `${icon('back', 16)}My strategies`, 'ey')}
+  <div class="head">${s.kind === 'library' || s.kind === 'flagship' ? link('strategies', `${icon('back', 16)}Strategies`, 'ey') : link('me', `${icon('back', 16)}My strategies`, 'ey')}
     <h1 class="h1" style="font-size:clamp(30px,7.6vw,46px)">${words(esc(s.name))}</h1>
     <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill">${s.tf === '1W' ? 'Weekly' : 'Daily'} chart</span>${s.enhanced ? `<span class="pill ai">${icon('spark', 13)}AI coach filter on</span>` : ''}${s.live_from ? `<span class="pill">Tracking since ${fmt.date(s.live_from)}</span>` : ''}</div></div>
   <div class="rulebox" style="margin-top:14px"><b class="h3">Rules</b>

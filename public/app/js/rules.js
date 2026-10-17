@@ -3,7 +3,10 @@
 import { lab, esc } from './app.js';
 
 let CAT = null;
-export const catalog = async () => (CAT ||= await lab.catalog());
+import { LOCAL_CATALOG } from './fields.js';
+/** Server catalog when reachable (it can be newer); the bundled copy otherwise, so editing never breaks offline. */
+export const catalog = async () => (CAT ||= await lab.catalog().then(c => (c && c.features && c.features.length >= LOCAL_CATALOG.features.length ? c : { ...LOCAL_CATALOG, ...c, features: mergeF(c && c.features) })).catch(() => LOCAL_CATALOG));
+const mergeF = fs => { const m = new Map(LOCAL_CATALOG.features.map(f => [f.key, f])); (fs || []).forEach(f => m.set(f.key, f)); return [...m.values()]; };
 const c = (l, op, r) => ({ l: { f: l }, op, ...(r === undefined ? {} : { r: typeof r === 'string' ? { f: r } : Array.isArray(r) ? { list: r } : { c: r } }) });
 export const toRule = (mode, conds) => ({ v: 1, [mode]: conds });
 

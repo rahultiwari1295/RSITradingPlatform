@@ -9,30 +9,65 @@ const exitTxt = e => [e.stop ? `falls ${e.stop}%` : '', e.target ? `rises ${e.ta
 const ring = w => `<span class="wring ${wc(w)}" style="--p:${w}"><b class="tnum">${Math.round(w)}<small>%</small></b></span>`;
 const wbar = w => `<span class="wbar"><i class="${wc(w)}" style="width:${w}%"></i><em></em></span>`;
 
+const FAM = ['All', 'Breakout', 'Pattern', 'Trend', 'Pullback', 'Volume', 'Events', 'Owners', 'Business'];
+const tileLive = s => {
+  const rec = s.record || {}, w = rec.win_rate, n = rec.trades || 0;
+  const ringH = w == null ? `<span class="wring none"><b>${s.record ? '—' : '<i class="spin"></i>'}</b></span>` : ring(w);
+  return link(`s/${s.id}`, `<span class="m"><span class="tt"><b>${esc(s.name)}</b><span class="pill">${s.tf === '1W' ? 'Weekly' : 'Daily'}</span>${s.family ? `<span class="pill ghost">${esc(s.family)}</span>` : ''}</span><span class="ab">${esc(s.about || '')}</span>
+    <span class="sm3"><span><small>Avg / trade</small><b class="tnum ${fmt.tone(rec.avg_ret)}">${rec.avg_ret == null ? '—' : fmt.pct(rec.avg_ret, 2)}</b></span><span><small>Past trades</small><b class="tnum">${s.record ? fmt.int(n) : '…'}</b></span><span><small>Worst dip</small><b class="tnum dn">${rec.max_dd == null ? '—' : fmt.pct(rec.max_dd)}</b></span></span>
+    ${s.record && !n ? '<span class="note">No past trades yet: this uses data the server is still collecting.</span>' : ''}</span>
+    <span class="wr2">${ringH}<small>${s.record ? 'Win rate' : 'Testing'}</small></span>`, 'stile2');
+};
+
 export default async function strategies(el, r) {
   if (r.arg) return detail(el, r.arg);
-  let sort = 'win';
+  let sort = 'win', fam = 'All', LIVE = null;
   el.innerHTML = `
-  <div class="page-h"><div class="ph-row"><div><h1 class="h1">Strategies</h1><p class="lede">A strategy is a scanner plus exit rules, tested on past prices. <b>Win rate</b> = how often a past trade ended higher.</p></div><span class="tag-s">Sample data</span></div>
+  <div class="page-h"><div class="ph-row"><div><h1 class="h1">Strategies</h1><p class="lede">A strategy is a scanner plus exit rules, tested on years of real NSE prices. <b>Win rate</b> = how often a past trade ended higher.</p></div><span class="tag-s" id="src">Loading</span></div>
     ${STEPS}
     <div class="row-b">${link('build', `${icon('plus', 16)}Create your own`, 'btn pri sm')}${link('screens', 'Start from a screen', 'btn quiet sm')}</div></div>
   <div id="mine"></div>
   <section class="sec"><div class="sec-h"><h2 class="h2">Library</h2><div class="seg sm" id="srt"><button data-v="win">Win rate</button><button data-v="avg">Avg return</button><button data-v="trades">Trades</button></div></div>
-    <div class="stl" id="lst"></div>
-    <p class="disc">Hypothetical tests on past NSE prices with 0.10% costs each way. Past results do not predict future results. The dotted line on each bar marks 50%.</p></section>`;
-  const lst = el.querySelector('#lst'), srt = el.querySelector('#srt');
+    <div class="chips" id="fam" style="margin-bottom:12px"></div>
+    <div class="stl" id="lst">${'<div class="sk" style="height:132px;margin-bottom:12px"></div>'.repeat(4)}</div>
+    <p class="disc" id="disc">Tests on past NSE prices with 0.10% costs each way, entering at the next day’s open. Past results do not predict future results.</p></section>`;
+  const lst = el.querySelector('#lst'), srt = el.querySelector('#srt'), famBox = el.querySelector('#fam'), src = el.querySelector('#src');
+  const key = { win: s => (s.record || {}).win_rate ?? -1, avg: s => (s.record || {}).avg_ret ?? -99, trades: s => (s.record || {}).trades ?? -1 };
+  const keyS = { win: s => s.win, avg: s => s.avg, trades: s => s.trades };
   const draw = () => {
     srt.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === sort));
-    lst.innerHTML = STRATEGIES.slice().sort((a, b) => b[sort] - a[sort]).map(s => link(`strategies/${s.id}`, `<span class="m"><span class="tt"><b>${esc(s.name)}</b><span class="pill">${s.tf === '1W' ? 'Weekly' : 'Daily'}</span></span><span class="ab">${esc(s.about)}</span>
+    famBox.innerHTML = LIVE ? FAM.map(f => `<button class="chip" data-f="${f}" aria-pressed="${f === fam}">${f}</button>`).join('') : '';
+    if (LIVE) {
+      const L = LIVE.filter(s => fam === 'All' || s.family === fam).sort((a, b) => key[sort](b) - key[sort](a));
+      lst.innerHTML = L.length ? L.map(tileLive).join('') : '<p class="empty-s">No strategy in this group.</p>';
+      return;
+    }
+    lst.innerHTML = STRATEGIES.slice().sort((a, b) => keyS[sort](b) - keyS[sort](a)).map(s => link(`strategies/${s.id}`, `<span class="m"><span class="tt"><b>${esc(s.name)}</b><span class="pill">${s.tf === '1W' ? 'Weekly' : 'Daily'}</span></span><span class="ab">${esc(s.about)}</span>
       <span class="sm3"><span><small>Avg / trade</small><b class="tnum ${fmt.tone(s.avg)}">${fmt.pct(s.avg, 2)}</b></span><span><small>Trades</small><b class="tnum">${fmt.int(s.trades)}</b></span><span><small>In it now</small><b class="tnum">${s.open}</b></span></span></span>
       <span class="wr2">${ring(s.win)}<small>Win rate</small></span>`, 'stile2')).join('');
   };
   srt.onclick = e => { const b = e.target.closest('button'); if (b) { sort = b.dataset.v; draw(); } };
+  famBox.onclick = e => { const b = e.target.closest('[data-f]'); if (b) { fam = b.dataset.f; draw(); } };
+  try {
+    const L = await lab.strategies('library');
+    if (!Array.isArray(L) || !L.length) throw new Error('empty');
+    LIVE = L; src.textContent = 'Live'; src.classList.add('live');
+    const asof = L.map(s => s.live_from).filter(Boolean).sort().pop();
+    if (asof) el.querySelector('#disc').insertAdjacentText('afterbegin', `Data up to ${fmt.dateY(asof)}. `);
+  } catch { LIVE = null; src.textContent = 'Sample data'; }
+  if (!el.isConnected) return;
   draw();
+  // tiles still testing: poll a few times so win rates fill in without a reload
+  if (LIVE && LIVE.some(s => !s.record)) {
+    let tries = 0; const t = setInterval(async () => {
+      if (!el.isConnected || ++tries > 20) { clearInterval(t); return; }
+      QD.bust('lab:strats:library'); try { LIVE = await lab.strategies('library'); draw(); if (!LIVE.some(s => !s.record)) clearInterval(t); } catch { /* keep */ }
+    }, 6000);
+  }
   try {
     const u = await Promise.race([auth.whenReady(), new Promise(z => setTimeout(() => z(null), 2500))]); if (!u) return;
-    const L = await lab.strategies('mine'); if (!L.length || !el.isConnected) return;
-    el.querySelector('#mine').innerHTML = `<section class="sec"><div class="sec-h"><h2 class="h2">Yours</h2>${link('me', 'Manage', 'a-l')}</div><div class="grp">${L.map(s => link(`s/${s.id}`, `<span class="m"><b>${esc(s.name)}</b><span>${s.tf === '1W' ? 'Weekly' : 'Daily'} · ${fmt.int((s.stats || {}).open || 0)} stocks in it now</span></span><span class="wr"><small>Win rate</small><b class="tnum">${s.stats && s.stats.win_rate != null ? fmt.plain(s.stats.win_rate) : '—'}</b></span>`, 'strow')).join('')}</div></section>`;
+    const M = await lab.strategies('mine'); if (!M.length || !el.isConnected) return;
+    el.querySelector('#mine').innerHTML = `<section class="sec"><div class="sec-h"><h2 class="h2">Yours</h2>${link('me', 'Manage', 'a-l')}</div><div class="grp">${M.map(s => link(`s/${s.id}`, `<span class="m"><b>${esc(s.name)}</b><span>${s.tf === '1W' ? 'Weekly' : 'Daily'} · ${fmt.int((s.stats || {}).open || 0)} stocks in it now</span></span><span class="wr"><small>Win rate</small><b class="tnum">${s.record && s.record.win_rate != null ? fmt.plain(s.record.win_rate) : s.stats && s.stats.win_rate != null ? fmt.plain(s.stats.win_rate) : '—'}</b></span>`, 'strow')).join('')}</div></section>`;
   } catch { /* offline: library only */ }
 }
 

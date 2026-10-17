@@ -2,7 +2,7 @@
    numbers count up, rings and bars fill. Works for async loads, tab switches and redraws via a
    MutationObserver, so views need no changes. Off when the user prefers reduced motion. */
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const SEL = '.blk,.gl>div,.hero-x,.stile,.stile2,.deal,.ni,.grp>a,.r-main,.r-kpis>div,.kp2>div,.pv,.bc,.rulebox,.srvc,.cta,.card,.flow li,.yrs>div,.yrow>div,.pr,.nowbar,.sg>header,.bd-h,.page-h,.head,.landing>*,.how3>*,.rail button,.chips .chip,.dt tbody tr,.mini tr,.info-b,.sec-h,.strow,.sx>*';
+const SEL = '.ev,.mk-g,.cal-i,.blk,.gl>div,.hero-x,.stile,.stile2,.deal,.ni,.grp>a,.r-main,.r-kpis>div,.kp2>div,.pv,.bc,.rulebox,.srvc,.cta,.card,.flow li,.yrs>div,.yrow>div,.pr,.nowbar,.sg>header,.bd-h,.page-h,.head,.landing>*,.how3>*,.rail button,.chips .chip,.dt tbody tr,.mini tr,.info-b,.sec-h,.strow,.sx>*';
 const seen = new WeakSet();
 let io = null, view = null, q = [], tq = 0;
 

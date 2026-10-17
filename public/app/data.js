@@ -210,6 +210,36 @@ const api = {
   screener: o => cached('api:scr:' + JSON.stringify(o), 10 * MIN, () => A('/screener' + q(o)).catch(() => ({ rows: [] }))),
 };
 
+/* ---------------- Intel API: filings, deals, insiders, briefs (VPS /api/intel2) ----------------
+   Memory + sessionStorage cache: a revisit paints instantly from the last answer, and if the server is
+   unreachable the last good answer is shown (marked stale) instead of an empty page. */
+const I = p => http('GET', CFG.api + '/intel2' + p, undefined, { authed: false });
+function keep(key, ttl, fn) {
+  const sk = 'qs-c:' + key;
+  return cached(key, ttl, async () => {
+    let old = null;
+    try { old = JSON.parse(sessionStorage.getItem(sk) || 'null'); } catch { /* blocked */ }
+    if (old && Date.now() - old.t < ttl) return old.v;
+    try {
+      const v = await fn();
+      try { sessionStorage.setItem(sk, JSON.stringify({ t: Date.now(), v })); } catch { /* full or blocked */ }
+      return v;
+    } catch (e) { if (old) return Object.assign(old.v, { _stale: true }); throw e; }
+  });
+}
+const intel = {
+  events: (o = {}) => keep('in:ev:' + JSON.stringify(o), 30e3, () => I('/events' + q(o))),
+  event: id => keep('in:e:' + id, 5 * MIN, () => I('/events/' + encodeURIComponent(id))),
+  top: (hours = 24, limit = 20) => keep(`in:top:${hours}:${limit}`, MIN, () => I('/top' + q({ hours, limit }))),
+  stock: sym => keep('in:stk:' + sym, MIN, () => I('/stock/' + encodeURIComponent(sym))),
+  brief: (kind = 'auto') => keep('in:brief:' + kind, 2 * MIN, () => I('/brief' + q({ kind }))),
+  deals: (days = 5) => keep('in:deals:' + days, 5 * MIN, () => I('/deals' + q({ days }))),
+  insiders: (days = 30) => keep('in:ins:' + days, 5 * MIN, () => I('/insiders' + q({ days }))),
+  calendar: (days = 14) => keep('in:cal:' + days, 10 * MIN, () => I('/calendar' + q({ days }))),
+  markets: () => keep('in:mk', 2 * MIN, () => I('/markets')),
+  status: () => I('/status'),
+};
+
 /* ---------------- formatting ---------------- */
 const n = v => (v == null || v === '' ? NaN : typeof v === 'number' ? v : parseFloat(String(v).replace(/[,₹%]/g, '')));
 const ok = v => Number.isFinite(n(v));
@@ -449,5 +479,5 @@ const qsai = {
   },
 };
 
-W.QD = { settings, qsai, QS_NAME,  isFresh, changes, CAT_ORDER, FRESH_DAYS, FRESH_MOVE,  CFG, auth, http, lab, api, waitJob, fmt, n, ok, scoreTone, marketStatus, param, PRESETS, toRule, fromRule, describeRule, describeCond, describeExit, buildExit, validCond, label, pickOptions, gateStat, plainStat, exitGate, loadPatterns, holdings, bust, ApiError };
+W.QD = { settings, qsai, QS_NAME,  isFresh, changes, CAT_ORDER, FRESH_DAYS, FRESH_MOVE,  CFG, auth, http, lab, api, intel, waitJob, fmt, n, ok, scoreTone, marketStatus, param, PRESETS, toRule, fromRule, describeRule, describeCond, describeExit, buildExit, validCond, label, pickOptions, gateStat, plainStat, exitGate, loadPatterns, holdings, bust, ApiError };
 })();

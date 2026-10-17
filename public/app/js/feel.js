@@ -43,6 +43,29 @@ export function sampleFeed() {
   return out.sort((a, b) => b.t - a.t).slice(0, 30);
 }
 export const unread = items => items.filter(x => x.t > seen()).length;
+/** Live feed: the highest-impact filings, deals and insider trades of the last two days (from /api/intel2/top). */
+export async function liveFeed(intel) {
+  const L = await intel.top(48, 30);
+  return (Array.isArray(L) ? L : []).map(e => ({ id: e.id, t: new Date(String(e.ts).replace(' ', 'T') + '+05:30').getTime() || Date.now(), sym: e.symbol || '',
+    kind: 'event', label: e.label || e.type, head: String(e.summary || e.headline || '').split('\n')[0], impact: e.impact || 0, sent: e.sentiment }));
+}
+/** While the page is open, tell the user about new 70+ items (browser notification if allowed). */
+export function watchFeed(intel, onItems) {
+  let known = new Set();
+  const tick = async () => {
+    try {
+      const items = await liveFeed(intel); onItems(items);
+      const fresh = items.filter(x => x.impact >= 70 && !known.has(x.id) && x.t > seen());
+      if (known.size && fresh.length && notifState() === 'granted') {
+        const x = fresh[0], opt = { body: x.head.slice(0, 160), tag: 'qs-' + x.id, icon: '/favicon.ico' };
+        try { const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null; if (reg) reg.showNotification(`${x.sym} · ${x.label}`, opt); else new Notification(`${x.sym} · ${x.label}`, opt); } catch { /* ignore */ }
+      }
+      known = new Set(items.map(x => x.id));
+    } catch { /* offline: keep what we have */ }
+  };
+  tick();
+  return setInterval(() => { if (!document.hidden) tick(); }, 5 * 60e3);
+}
 
 const when = t => { const d = new Date(t), now = new Date(), days = Math.floor((new Date(now.toDateString()) - new Date(d.toDateString())) / 864e5); return days <= 0 ? 'Today' : days === 1 ? 'Yesterday' : d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' }); };
 const time = t => new Date(t).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
@@ -72,11 +95,13 @@ export function feedHTML(items, esc, fmt, icon, link) {
   const card = st === 'granted' ? `<div class="nt on">${icon('check', 18)}<div><b>Notifications are on</b><span>This browser will alert you when a stock enters a strategy.</span></div></div>`
     : st === 'denied' ? `<div class="nt">${icon('bell', 18)}<div><b>Notifications are blocked</b><span>Allow them for this site in your browser settings, then reload.</span></div></div>`
     : st === 'ios-install' ? `<div class="nt">${icon('bell', 18)}<div><b>Get alerts on iPhone</b><span>Tap Share → Add to Home Screen, open QuantSync from there, then turn alerts on.</span></div></div>`
-    : st === 'unsupported' ? '' : `<div class="nt"><span class="bi">${icon('bell', 18)}</span><div><b>Turn on alerts</b><span>Get a notification when a stock enters a strategy.</span></div><button class="btn pri sm" data-enable>Enable</button></div>`;
+    : st === 'unsupported' ? '' : `<div class="nt"><span class="bi">${icon('bell', 18)}</span><div><b>Turn on alerts</b><span>Get a notification for high-impact filings while QuantSync is open.</span></div><button class="btn pri sm" data-enable>Enable</button></div>`;
   const s0 = seen(); let last = '';
+  const liveRows = items.length && items[0].kind === 'event';
   const rows = items.map(x => { const g = when(x.t), h = g !== last ? `<h4 class="fg">${g}</h4>` : ''; last = g;
+    if (x.kind === 'event') return h + link(`xray/${encodeURIComponent(x.sym)}?tab=filings`, `<span class="fi ${x.t > s0 ? 'new' : ''} ${x.sent === 'negative' ? 'neg' : x.sent === 'positive' ? 'pos' : ''}">${x.impact}</span><span class="fm"><b>${esc(x.sym)} · <em>${esc(x.label)}</em></b><small>${esc(x.head.slice(0, 110))} · ${time(x.t)}</small></span>`, 'frow');
     return h + link(`strategies/${x.sid}`, `<span class="fi ${x.t > s0 ? 'new' : ''}">${esc(x.sym.slice(0, 2))}</span><span class="fm"><b>${esc(x.sym)} entered <em>${esc(x.strat)}</em></b><small>at ${fmt.inr(x.price)} · ${time(x.t)}</small></span>`, 'frow'); }).join('');
-  return `<div class="feedh"><h3>Activity</h3><span class="tag-s">Sample</span></div>${card}<div class="feed">${rows || '<p class="empty-s">Nothing new yet.</p>'}</div>
+  return `<div class="feedh"><h3>${liveRows ? 'What matters now' : 'Activity'}</h3><span class="tag-s ${liveRows ? 'live' : ''}">${liveRows ? 'Live · impact 0–100' : 'Sample'}</span></div>${card}<div class="feed">${rows || '<p class="empty-s">Nothing new yet.</p>'}</div>
     <div class="row-b" style="margin-top:14px;justify-content:space-between"><a href="/app/config" data-nav class="btn sm quiet" data-close>Server settings</a><button class="btn sm quiet" data-close>Close</button></div>`;
 }
 export { markSeen };

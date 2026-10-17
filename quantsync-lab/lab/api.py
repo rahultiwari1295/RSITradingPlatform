@@ -173,6 +173,9 @@ def _card(con, s, uid=None, cfg: Config | None = None) -> dict:
             "enhanced": bool(v["ai_gate"]), "exit_choice": v["exit_choice"],
             "enhancement": {"id": enh["id"], "status": enh["status"]} if enh else None,
             "stats": service.live_stats(con, v["id"]), "source": "lab"}
+    if s["kind"] == "library":
+        from .library import meta_for
+        card.update(meta_for(s["name"]), owner="QuantSync library")
     eng = _engine(cfg, s) if cfg else None
     if eng:  # flagships show the live engine's own record
         card.update(stats=engine_feed.stats(cfg, eng), source="engine", ai_gate=None, enhanced=False, enhancement=None,
@@ -204,6 +207,8 @@ def list_strategies(request: Request, scope: str = "mine", uid: str | None = Dep
         q, a = "SELECT * FROM strategies WHERE owner_uid=? AND archived=0 ORDER BY created_at DESC", (uid,)
     elif scope == "flagship":
         q, a = "SELECT * FROM strategies WHERE kind='flagship' AND archived=0", ()
+    elif scope == "library":
+        q, a = "SELECT * FROM strategies WHERE kind='library' AND archived=0 ORDER BY name", ()
     else:  # people's strategies: ranked by followers, never by returns
         q, a = ("SELECT s.* FROM strategies s LEFT JOIN follows f ON f.strategy_id=s.id AND f.uid IS NOT s.owner_uid WHERE s.visibility='public' AND s.kind='user' "
                 "AND s.archived=0 GROUP BY s.id ORDER BY count(f.uid) DESC, s.created_at DESC LIMIT 50"), ()
@@ -211,6 +216,12 @@ def list_strategies(request: Request, scope: str = "mine", uid: str | None = Dep
     for s in con.execute(q, a).fetchall():
         try:
             out.append(_card(con, s, uid, cfg_of(request)))
+            if scope == "library" and out[-1].get("record") is None:  # no past test yet: queue one (once per version)
+                try:
+                    v = con.execute("SELECT * FROM strategy_versions WHERE id=?", (s["current_version"],)).fetchone()
+                    service.ensure_backtest(con, s, v)
+                except Exception:  # noqa: BLE001
+                    log.exception("could not queue library test for %s", s["id"])
         except Exception:  # noqa: BLE001 - one bad record must not hide the whole list
             log.exception("card failed for %s", s["id"])
             out.append({"id": s["id"], "name": s["name"], "tf": s["tf"], "kind": s["kind"], "visibility": s["visibility"], "owner": None,

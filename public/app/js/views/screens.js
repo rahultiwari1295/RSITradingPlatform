@@ -1,38 +1,94 @@
-import { icon, esc, link, go, mono, fmt } from '../app.js';
-import { SCREEN_GROUPS, SCREENS, screenRows, colName } from '../sample.js';
+import { icon, esc, link, go, mono, fmt, lab } from '../app.js';
+import { SCREEN_GROUPS, SCREENS, screenRows, colName, colFmt } from '../sample.js';
+import { catalog } from '../rules.js';
+import { parse } from '../query.js';
 
-/* Screens: ready-made scans (Chartink / Screener.in style).
-   Desktop: categories | scans | today's matches, all on one screen.  Phone: category chips, scans, tap to expand.
-   Board view: several scans' matches side by side. */
+/* Screens: ready-made scans (Chartink / Screener.in style), run live on the Lab.
+   Counts load as tiles scroll into view (3 at a time, cached 5 min), so opening the page never fires 60 scans.
+   If the Lab can't be reached, the page switches to labelled sample rows instead of going blank. */
 const KEY = 'qs-screens-view';
 const getV = () => { try { return localStorage.getItem(KEY) || 'list'; } catch { return 'list'; } };
 const setV = v => { try { localStorage.setItem(KEY, v); } catch { /* blocked */ } };
 const buildUrl = s => `build?query=${encodeURIComponent(s.query)}&tf=${s.tf}&name=${encodeURIComponent(s.name)}`;
-const GI = { breakout: ['trend', '#6C5CE7'], momentum: ['bolt', '#E08A1E'], volume: ['bars', '#0E9F8A'], pullback: ['target', '#2F80ED'], weak: ['warn', '#E5484D'], business: ['shield', '#8E5BD9'], owners: ['me', '#1E9E6A'] };
+const GI = { breakout: ['trend', '#6C5CE7'], momentum: ['bolt', '#E08A1E'], volume: ['bars', '#0E9F8A'], pullback: ['target', '#2F80ED'], events: ['doc', '#C2410C'],
+  weak: ['warn', '#E5484D'], business: ['shield', '#8E5BD9'], owners: ['users', '#1E9E6A'] };
 const gIcon = (s, g) => { const [ic, c] = GI[g || s.group] || ['layers', '#6C5CE7']; return `<span class="sic" style="--c:${c}">${icon(ic, 18)}</span>`; };
-const count = s => (s.live ? screenRows(s).length : null);
-const table = (s, rows, max = 99) => `<table class="dt"><thead><tr><th>Stock</th><th>Price</th><th>Today</th><th>${esc(colName(s.col))}</th></tr></thead><tbody>${rows.slice(0, max).map(x => `<tr data-href="xray/${encodeURIComponent(x.sym)}"><td><span class="nm">${mono(x.sym)}<span><b>${esc(x.sym)}</b><small>${esc(x.sec)}</small></span></span></td><td class="tnum">${fmt.inr(x.price)}</td><td class="tnum ${fmt.tone(x.chg)}">${fmt.pct(x.chg)}</td><td class="tnum hl">${esc(x.vf)}</td></tr>`).join('')}</tbody></table>`;
+
+/* ---------------------------------------------------------------- live scans */
+const RES = new Map();      // id -> { t, p }
+let OFFLINE = false;
+function run(s) {
+  const hit = RES.get(s.id);
+  if (hit && Date.now() - hit.t < 5 * 60e3) return hit.p;
+  const p = (async () => {
+    if (OFFLINE) throw new Error('offline');
+    const cat = await catalog();
+    const q = parse(s.query, cat);
+    if (q.errors.length || !q.conds.length) throw new Error(q.errors[0] ? q.errors[0].error : 'Empty rule');
+    const r = await lab.scan(s.tf, { v: 1, [q.mode]: q.conds });
+    const rows = (r.rows || []).map(x => ({ sym: x.symbol, name: '', sec: '', price: x.close, chg: x.ret_1, v: x[s.col], vf: colFmt(s.col, x[s.col]) }))
+      .sort((a, b) => (Number.isFinite(+b.v) ? Math.abs(+b.v) : -1) - (Number.isFinite(+a.v) ? Math.abs(+a.v) : -1));
+    return { rows, count: r.count ?? rows.length, asOf: r.as_of, live: true };
+  })().catch(e => {
+    if (e && (e.status === 0 || /reach|fetch|offline/i.test(e.message))) OFFLINE = true;
+    if (OFFLINE) { const rows = screenRows(s); return { rows, count: rows.length, live: false }; }
+    RES.delete(s.id); throw e;
+  });
+  RES.set(s.id, { t: Date.now(), p });
+  return p;
+}
+/* at most 3 scans in flight */
+const queue = [], active = { n: 0 };
+function enqueue(s, done) {
+  queue.push([s, done]); pump();
+}
+function pump() {
+  while (active.n < 3 && queue.length) {
+    const [s, done] = queue.shift(); active.n++;
+    run(s).then(r => done(null, r), e => done(e)).finally(() => { active.n--; pump(); });
+  }
+}
+
+const table = (s, rows, max = 99) => `<table class="dt"><thead><tr><th>Stock</th><th>Price</th><th>Today</th><th>${esc(colName(s.col))}</th></tr></thead><tbody>${rows.slice(0, max).map(x => `<tr data-href="xray/${encodeURIComponent(x.sym)}"><td><span class="nm">${mono(x.sym)}<span><b>${esc(x.sym)}</b>${x.sec ? `<small>${esc(x.sec)}</small>` : ''}</span></span></td><td class="tnum">${fmt.inr(x.price)}</td><td class="tnum ${fmt.tone(x.chg)}">${fmt.pct(x.chg)}</td><td class="tnum hl">${esc(x.vf)}</td></tr>`).join('')}</tbody></table>`;
+const cntHTML = r => !r ? '<span class="cnt ld"><i></i></span>' : r.err ? '<span class="cnt soon" title="Could not run">!</span>' : `<span class="cnt${r.count ? '' : ' zero'}"><b>${r.count}</b><small>${r.count === 1 ? 'stock' : 'stocks'}</small></span>`;
 
 export default async function screens(el, r) {
   if (r.arg) return one(el, r.arg);
   let cat = r.q.get('g') || 'all', view = getV(), sel = null, q = '';
   el.innerHTML = `
-  <div class="page-h"><div class="ph-row"><div><h1 class="h1">Screens</h1><p class="lede">${SCREENS.length} ready-made scans in plain words. Pick one to see today’s matches.</p></div><span class="tag-s">Sample data</span></div>
+  <div class="page-h"><div class="ph-row"><div><h1 class="h1">Screens</h1><p class="lede">${SCREENS.length} ready-made scans across price, company numbers, owners and filings. Pick one to see today’s matches.</p></div><span class="tag-s" id="src">Live</span></div>
     <div class="toolbar"><label class="search sm">${icon('search', 17)}<input id="sq" placeholder="Find a scan" autocomplete="off"></label><div class="seg" id="vw"><button data-v="list">List</button><button data-v="board">Board</button></div></div>
     <div class="chips only-m" id="catm"></div></div>
   <div id="body"></div>`;
   const $ = s => el.querySelector(s), body = $('#body');
-  const groups = () => SCREEN_GROUPS.filter(g => cat === 'all' || g.id === cat).map(g => ({ ...g, items: g.items.filter(s => !q || (s.name + ' ' + s.about).toLowerCase().includes(q)) })).filter(g => g.items.length);
+  const groups = () => SCREEN_GROUPS.filter(g => cat === 'all' || g.id === cat).map(g => ({ ...g, items: g.items.filter(s => !q || (s.name + ' ' + s.about + ' ' + s.query).toLowerCase().includes(q)) })).filter(g => g.items.length);
   const cats = () => [['all', 'All scans', SCREENS.length], ...SCREEN_GROUPS.map(g => [g.id, g.name, g.items.length])];
+  const known = new Map();   // id -> result for drawing counts instantly on redraw
+  const setSrc = () => { const s = $('#src'); if (!s) return; s.textContent = OFFLINE ? 'Sample data' : 'Live'; s.classList.toggle('live', !OFFLINE); };
 
-  const rowH = (s, g) => { const c = count(s); return `<div class="stile"><button class="srow ${s.id === sel ? 'on' : ''}" data-s="${s.id}">${gIcon(s, g)}<span class="m"><b>${esc(s.name)}</b><span>${esc(s.about)}</span></span>${c == null ? '<span class="cnt soon">Soon</span>' : `<span class="cnt"><b>${c}</b><small>stocks</small></span>`}</button><div class="sx" data-x="${s.id}" hidden></div></div>`; };
-  const preview = s => {
-    const rows = s.live ? screenRows(s) : [];
-    return `<div class="pv-h"><span class="lbl">${esc(s.groupName)}</span><h2>${esc(s.name)}</h2><p>${esc(s.about)}</p></div>
+  const rowH = (s, g) => `<div class="stile"><button class="srow ${s.id === sel ? 'on' : ''}" data-s="${s.id}">${gIcon(s, g)}<span class="m"><b>${esc(s.name)}</b><span>${esc(s.about)}</span></span><span data-cnt="${s.id}">${cntHTML(known.get(s.id))}</span></button><div class="sx" data-x="${s.id}" hidden></div></div>`;
+  const previewShell = s => `<div class="pv-h"><span class="lbl">${esc(s.groupName)}</span><h2>${esc(s.name)}</h2><p>${esc(s.about)}</p></div>
       <div class="qline"><span>Rule</span><code>${esc(s.query).replace(/\n/g, '<br>')}</code></div>
-      ${s.live ? `<div class="pv-c"><b class="tnum">${rows.length}</b> stocks match today</div>${table(s, rows, 8)}` : `<div class="info-b">${icon('info', 16)}<span>Uses company results and ownership data. Runs once that feed is connected.</span></div>`}
-      <div class="row-b">${link(`screens/${s.id}`, s.live && rows.length > 8 ? `See all ${rows.length}` : 'Open', 'btn sm quiet')}${link(buildUrl(s), `${icon('edit', 15)}Edit in Build`, 'btn sm pri')}</div>`;
-  };
+      <div class="pv-b" data-pv="${s.id}"><div class="sk" style="height:180px"></div></div>
+      <div class="row-b">${link(`screens/${s.id}`, 'Open full list', 'btn sm quiet')}${link(buildUrl(s), `${icon('edit', 15)}Edit in Build`, 'btn sm pri')}</div>`;
+  const fillPreview = (s, box) => run(s).then(res => {
+    if (!box.isConnected) return;
+    known.set(s.id, res); setSrc();
+    box.innerHTML = res.count ? `<div class="pv-c"><b class="tnum">${res.count}</b> ${res.count === 1 ? 'stock matches' : 'stocks match'} ${res.live ? (res.asOf ? 'on ' + fmt.date(res.asOf) : 'today') : '(sample)'}</div>${table(s, res.rows, 8)}`
+      : `<div class="info-b">${icon('info', 16)}<span>No stock matches this today${s.needs ? '. It uses ' + ({ events: 'filings and insider data', business: 'company numbers', owners: 'shareholding data', delivery: 'delivery data' }[s.needs]) + ', which fills in as the server collects it' : ''}.</span></div>`;
+  }, e => { if (box.isConnected) box.innerHTML = `<div class="info-b">${icon('warn', 16)}<span>${esc(e.message)}</span></div>`; });
+
+  let io = null;
+  function watchCounts() {
+    io && io.disconnect();
+    io = new IntersectionObserver(es => es.forEach(en => {
+      if (!en.isIntersecting) return; io.unobserve(en.target);
+      const id = en.target.dataset.cnt, s = SCREENS.find(x => x.id === id); if (!s || known.has(id)) return;
+      enqueue(s, (err, res) => { known.set(id, err ? { err: true } : res); setSrc(); body.querySelectorAll(`[data-cnt="${id}"]`).forEach(c => { c.innerHTML = cntHTML(known.get(id)); }); });
+    }), { rootMargin: '200px 0px' });
+    body.querySelectorAll('[data-cnt]').forEach(c => { if (!known.has(c.dataset.cnt)) io.observe(c); });
+  }
+
   function draw() {
     $('#vw').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === view));
     $('#catm').innerHTML = cats().map(([id, l]) => `<button class="chip" data-g="${id}" aria-pressed="${id === cat}">${esc(id === 'all' ? 'All' : l)}</button>`).join('');
@@ -41,13 +97,18 @@ export default async function screens(el, r) {
     if (!G.length) { body.innerHTML = `<div class="sc3">${rail}<p class="empty-s">No scan matches “${esc(q)}”.</p></div>`; return; }
     if (view === 'board') {
       body.innerHTML = `<div class="sc2">${rail}<div>${G.map(g => `<section class="bd"><header class="bd-h"><h2>${esc(g.name)}</h2><p>${esc(g.about)}</p></header>
-        <div class="bcols">${g.items.map(s => { const rows = s.live ? screenRows(s) : []; return `<article class="bc"><header>${link(`screens/${s.id}`, `<b>${esc(s.name)}</b>`)}<span class="cnt ${s.live ? '' : 'soon'}">${s.live ? rows.length : 'Soon'}</span></header><p>${esc(s.about)}</p>
-          ${s.live ? `<table class="mini"><tbody>${rows.slice(0, 5).map(x => `<tr data-href="xray/${encodeURIComponent(x.sym)}"><td>${esc(x.sym)}</td><td class="tnum ${fmt.tone(x.chg)}">${fmt.pct(x.chg)}</td><td class="tnum hl">${esc(x.vf)}</td></tr>`).join('')}</tbody></table>${rows.length > 5 ? link(`screens/${s.id}`, `+${rows.length - 5} more`, 'more-l') : ''}` : '<p class="note">Needs the fundamentals feed.</p>'}</article>`; }).join('')}</div></section>`).join('')}</div></div>`;
+        <div class="bcols">${g.items.map(s => `<article class="bc"><header>${link(`screens/${s.id}`, `<b>${esc(s.name)}</b>`)}<span data-cnt="${s.id}">${cntHTML(known.get(s.id))}</span></header><p>${esc(s.about)}</p><div data-bc="${s.id}"><div class="sk" style="height:96px"></div></div></article>`).join('')}</div></section>`).join('')}</div></div>`;
+      body.querySelectorAll('[data-bc]').forEach(box => { const s = SCREENS.find(x => x.id === box.dataset.bc);
+        enqueue(s, (err, res) => { if (!box.isConnected) return; known.set(s.id, err ? { err: true } : res); setSrc();
+          box.innerHTML = err ? `<p class="note">${esc(err.message)}</p>` : res.count ? `<table class="mini"><tbody>${res.rows.slice(0, 5).map(x => `<tr data-href="xray/${encodeURIComponent(x.sym)}"><td>${esc(x.sym)}</td><td class="tnum ${fmt.tone(x.chg)}">${fmt.pct(x.chg)}</td><td class="tnum hl">${esc(x.vf)}</td></tr>`).join('')}</tbody></table>${res.count > 5 ? link(`screens/${s.id}`, `+${res.count - 5} more`, 'more-l') : ''}` : '<p class="note">No matches today.</p>';
+          body.querySelectorAll(`[data-cnt="${s.id}"]`).forEach(c => { c.innerHTML = cntHTML(known.get(s.id)); }); }); });
       return;
     }
     if (!sel || !G.some(g => g.items.some(s => s.id === sel))) sel = G[0].items[0].id;
     body.innerHTML = `<div class="sc3">${rail}<div class="slist">${G.map(g => `<section class="sg"><header><h2>${esc(g.name)}</h2><p>${esc(g.about)}</p></header><div class="stiles">${g.items.map(s => rowH(s, g.id)).join('')}</div></section>`).join('')}</div>
-      <aside class="pv" id="pv">${preview(SCREENS.find(s => s.id === sel))}</aside></div>`;
+      <aside class="pv" id="pv"></aside></div>`;
+    if (wide()) { const s = SCREENS.find(x => x.id === sel); $('#pv').innerHTML = previewShell(s); fillPreview(s, $('#pv [data-pv]')); }
+    watchCounts();
   }
   const wide = () => matchMedia('(min-width:1100px)').matches;
   body.addEventListener('click', e => {
@@ -56,26 +117,34 @@ export default async function screens(el, r) {
     const b = e.target.closest('[data-s]'); if (!b) return;
     const s = SCREENS.find(x => x.id === b.dataset.s); sel = s.id;
     body.querySelectorAll('.srow').forEach(x => x.classList.toggle('on', x === b));
-    if (wide()) { $('#pv').innerHTML = preview(s); return; }
+    if (wide()) { $('#pv').innerHTML = previewShell(s); fillPreview(s, $('#pv [data-pv]')); return; }
     const x = body.querySelector(`[data-x="${s.id}"]`), open = !x.hidden;
     body.querySelectorAll('.sx').forEach(y => { y.hidden = true; y.innerHTML = ''; });
-    if (!open) { x.hidden = false; x.innerHTML = preview(s); } else b.classList.remove('on');
+    if (!open) { x.hidden = false; x.innerHTML = previewShell(s); fillPreview(s, x.querySelector('[data-pv]')); } else b.classList.remove('on');
   });
   $('#catm').onclick = e => { const b = e.target.closest('[data-g]'); if (b) { cat = b.dataset.g; sel = null; draw(); } };
   $('#vw').onclick = e => { const b = e.target.closest('button'); if (!b) return; view = b.dataset.v; setV(view); draw(); };
-  $('#sq').oninput = e => { q = e.target.value.trim().toLowerCase(); draw(); };
+  let qt = 0;
+  $('#sq').oninput = e => { clearTimeout(qt); qt = setTimeout(() => { q = e.target.value.trim().toLowerCase(); draw(); }, 120); };
   draw();
+  return () => { io && io.disconnect(); queue.length = 0; };
 }
 
-function one(el, id) {
+async function one(el, id) {
   const s = SCREENS.find(x => x.id === id);
   if (!s) { go('screens', { replace: true }); return; }
-  const rows = s.live ? screenRows(s) : [];
   el.innerHTML = `
-  <div class="page-h">${link('screens', `${icon('back', 16)}Screens`, 'back')}<div class="ph-row"><div><span class="lbl">${esc(s.groupName)}</span><h1 class="h1">${esc(s.name)}</h1><p class="lede">${esc(s.about)}</p></div><span class="tag-s">Sample data</span></div></div>
+  <div class="page-h">${link('screens', `${icon('back', 16)}Screens`, 'back')}<div class="ph-row"><div><span class="lbl">${esc(s.groupName)}</span><h1 class="h1">${esc(s.name)}</h1><p class="lede">${esc(s.about)}</p></div><span class="tag-s" id="src">Live</span></div></div>
   <div class="card pad"><div class="qline"><span>Rule · ${s.tf === '1W' ? 'weekly' : 'daily'} chart</span><code>${esc(s.query).replace(/\n/g, '<br>')}</code></div>
-    <div class="row-b" style="margin-top:14px">${link(buildUrl(s), `${icon('edit', 16)}Edit in Build`, 'btn pri sm')}${link(buildUrl(s) + '&test=1', `${icon('play', 14)}Run it`, 'btn quiet sm')}</div></div>
-  <section class="sec">${s.live ? `<div class="pv-c" style="margin:0 2px 12px"><b class="tnum">${rows.length}</b> stocks match today</div><div class="card flush">${table(s, rows)}</div>` : `<div class="info-b">${icon('info', 16)}<span>This scan uses company numbers. It runs once the fundamentals feed is connected.</span></div>`}
-    <p class="disc">What the scan found, not a recommendation. Tap a stock for its X-Ray.</p></section>`;
+    <div class="row-b" style="margin-top:14px">${link(buildUrl(s), `${icon('edit', 16)}Edit in Build`, 'btn pri sm')}${link(buildUrl(s) + '&test=1', `${icon('play', 14)}Test it on past prices`, 'btn quiet sm')}</div></div>
+  <section class="sec" id="res"><div class="sk" style="height:320px"></div></section>
+  <p class="disc">What the scan found, not a recommendation. Tap a stock for its X-Ray.</p>`;
   el.addEventListener('click', e => { const tr = e.target.closest('tr[data-href]'); if (tr) go(tr.dataset.href); });
+  const box = el.querySelector('#res');
+  try {
+    const res = await run(s); if (!box.isConnected) return;
+    el.querySelector('#src').textContent = res.live ? 'Live' : 'Sample data';
+    box.innerHTML = res.count ? `<div class="pv-c" style="margin:0 2px 12px"><b class="tnum">${res.count}</b> ${res.count === 1 ? 'stock matches' : 'stocks match'} ${res.asOf ? 'on ' + fmt.date(res.asOf) : ''}</div><div class="card flush">${table(s, res.rows)}</div>`
+      : `<div class="info-b">${icon('info', 16)}<span>No stock matches this today.</span></div>`;
+  } catch (e) { box.innerHTML = `<div class="info-b">${icon('warn', 16)}<span>${esc(e.message)}</span></div>`; }
 }
