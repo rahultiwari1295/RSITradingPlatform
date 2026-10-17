@@ -5,33 +5,34 @@
    accent is a soft violet gradient that glows. Loaded after lab.css; delete this file to go back.
    ===================================================================================== */
 :root{
-  --bg:#ECEEF4;--card:#ECEEF4;--card-2:#F2F4F9;--paper:#ECEEF4;--screen:#E4E8F2;
-  --fill:#E4E8F2;--fill-2:#DCE1EC;
-  --ink:#2B3142;--ink-2:#5D657C;--ink-3:#959DB2;--line:rgba(43,49,66,.07);--line-2:rgba(43,49,66,.11);
+  --bg:#ECEAE5;--card:#FCFBF8;--card-2:#FFFEFB;--paper:#FCFBF8;--screen:#F1EFEA;
+  --fill:#EFEDE8;--fill-2:#E6E3DC;
+  --ink:#23252D;--ink-2:#575B66;--ink-3:#8E909A;--line:rgba(43,49,66,.07);--line-2:rgba(43,49,66,.11);
   --brand:#6C5CE7;--brand-ink:#5646D6;--brand-soft:#E3E0FB;--brand-2:#8E7CFF;
   --acc:linear-gradient(135deg,#8E7CFF 0%,#6C5CE7 100%);--acc-glow:rgba(108,92,231,.32);
   --grad-btn:var(--acc);
-  --sd:#CBD0DC;--sd-2:#C4C9D6;--sl:#FFFFFF;--rim:rgba(255,255,255,.75);
+  --sd:#D2CDC3;--sd-2:#C9C3B8;--sl:#FFFFFF;--rim:rgba(255,255,255,.9);
   --raise-sm:4px 4px 10px var(--sd),-4px -4px 10px var(--sl);
   --raise:8px 8px 18px var(--sd),-8px -8px 18px var(--sl);
   --raise-lg:14px 14px 30px var(--sd),-12px -12px 28px var(--sl);
   --press-sm:inset 3px 3px 7px var(--sd),inset -3px -3px 7px var(--sl);
   --press:inset 5px 5px 11px var(--sd),inset -5px -5px 11px var(--sl);
   --press-deep:inset 7px 7px 15px var(--sd-2),inset -7px -7px 15px var(--sl);
-  --tile-lift:var(--raise),inset 0 0 0 1px var(--rim);
+  --tile-lift:0 0 0 1px rgba(60,52,40,.05),0 1px 2px rgba(60,52,40,.05),0 8px 18px -6px rgba(90,78,60,.14),10px 14px 30px -12px rgba(90,78,60,.22),-6px -6px 16px rgba(255,255,255,.85),inset 0 1px 0 #fff;
+  --card-edge:rgba(60,52,40,.05);
   --glow:0 6px 16px var(--acc-glow);
-  --glass:rgba(236,238,244,.92);
+  --glass:rgba(236,234,229,.92);
   --r:24px;--r-s:16px;
   --f:"Plus Jakarta Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --mono-f:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --press-ease:cubic-bezier(.4,0,.2,1);--lift-ease:cubic-bezier(.16,1,.3,1);
 }
 :root[data-theme="dark"]{
-  --bg:#1B1E26;--card:#1B1E26;--card-2:#20242E;--paper:#1B1E26;--screen:#15181F;--fill:#15181F;--fill-2:#13161C;
+  --bg:#181B22;--card:#20242D;--card-2:#242833;--paper:#20242D;--card-edge:rgba(255,255,255,.09);--tile-lift:8px 10px 22px rgba(0,0,0,.45),-5px -5px 14px rgba(44,49,62,.45),inset 0 1px 0 rgba(255,255,255,.05);--screen:#15181F;--fill:#15181F;--fill-2:#13161C;
   --ink:#F1F3F9;--ink-2:#A2AAC0;--ink-3:#646D84;--line:rgba(255,255,255,.05);--line-2:rgba(255,255,255,.09);
   --brand:#8A79FF;--brand-ink:#A597FF;--brand-soft:#2B2A48;--brand-2:#A597FF;
   --acc:linear-gradient(135deg,#A597FF 0%,#8A79FF 100%);--acc-glow:rgba(138,121,255,.35);
-  --sd:#101217;--sd-2:#0E1015;--sl:#262A35;--rim:rgba(255,255,255,.05);
+  --sd:#0D0F14;--sd-2:#0B0D11;--sl:#262A35;--rim:rgba(255,255,255,.09);
   --raise-sm:4px 4px 9px var(--sd),-4px -4px 9px var(--sl);
   --raise:7px 7px 16px var(--sd),-6px -6px 15px var(--sl);
   --raise-lg:12px 12px 28px var(--sd),-8px -8px 22px var(--sl);
@@ -41,11 +42,11 @@
   --glass:rgba(27,30,38,.92);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#1B1E26;--card:#1B1E26;--card-2:#20242E;--paper:#1B1E26;--screen:#15181F;--fill:#15181F;--fill-2:#13161C;
+  --bg:#181B22;--card:#20242D;--card-2:#242833;--paper:#20242D;--card-edge:rgba(255,255,255,.09);--tile-lift:8px 10px 22px rgba(0,0,0,.45),-5px -5px 14px rgba(44,49,62,.45),inset 0 1px 0 rgba(255,255,255,.05);--screen:#15181F;--fill:#15181F;--fill-2:#13161C;
   --ink:#F1F3F9;--ink-2:#A2AAC0;--ink-3:#646D84;--line:rgba(255,255,255,.05);--line-2:rgba(255,255,255,.09);
   --brand:#8A79FF;--brand-ink:#A597FF;--brand-soft:#2B2A48;--brand-2:#A597FF;
   --acc:linear-gradient(135deg,#A597FF 0%,#8A79FF 100%);--acc-glow:rgba(138,121,255,.35);
-  --sd:#101217;--sd-2:#0E1015;--sl:#262A35;--rim:rgba(255,255,255,.05);
+  --sd:#0D0F14;--sd-2:#0B0D11;--sl:#262A35;--rim:rgba(255,255,255,.09);
   --raise-sm:4px 4px 9px var(--sd),-4px -4px 9px var(--sl);
   --raise:7px 7px 16px var(--sd),-6px -6px 15px var(--sl);
   --raise-lg:12px 12px 28px var(--sd),-8px -8px 22px var(--sl);
@@ -65,7 +66,7 @@ body{-webkit-font-smoothing:antialiased;font-feature-settings:"ss01","cv11"}
 /* ---------------------------------------------------------------- raised surfaces (one rule, every tile) */
 html :is(.blk,.gl>div,.hero-x,.stile,.stile2,.deal,.grp,.r-main,.r-kpis>div,.kp2>div,.pv,.bc,.rulebox,.srvc,.cta,.list,.card,.flow,.yrs>div,.nowbar,
   .ev,.mk-g,.cal-i,.gpt-steps li,.land-card,.how3>*,.coach,.result>div,.empty){
-  background:var(--bg)!important;border:1px solid var(--rim)!important;box-shadow:var(--raise)!important}
+  background:var(--card)!important;border:1px solid var(--card-edge,var(--rim))!important;box-shadow:var(--tile-lift,var(--raise))!important}
 html :is(.blk,.hero-x,.stile2,.deal,.r-main,.pv,.cta,.card,.ev,.pr,.coach){border-radius:var(--r)}
 html :is(.gl>div,.r-kpis>div,.kp2>div,.bc,.mk-g,.yrs>div){border-radius:20px}
 html :is(.cal-i,.gpt-steps li){border-radius:18px;box-shadow:var(--raise-sm)!important}
@@ -127,10 +128,10 @@ html .rail button{border-radius:14px;transition:box-shadow .16s,color .16s}
 html .rail button[aria-current="true"]{background:var(--screen);box-shadow:var(--press);color:var(--brand)}
 
 /* status words and small badges: tiny raised pills */
-html .st,html .pill,html .tag-s{border-radius:999px;box-shadow:var(--raise-sm);border:1px solid var(--rim);background:var(--bg);font-weight:750}
+html .st,html .pill,html .tag-s{border-radius:999px;box-shadow:var(--raise-sm);border:1px solid var(--rim);background:var(--card);font-weight:750}
 html .st.good{color:var(--good)}html .st.weak{color:var(--weak)}html .st.fair{color:var(--fair)}
 html .tag-s.live{color:var(--good)}
-html .cnt{background:var(--bg);box-shadow:var(--raise-sm);border:1px solid var(--rim)}
+html .cnt{background:var(--card);box-shadow:var(--raise-sm);border:1px solid var(--rim)}
 html .stile:has(.srow.on) .cnt{box-shadow:var(--raise-sm)}
 
 /* ---------------------------------------------------------------- the theme switch: a real toggle */
@@ -140,20 +141,6 @@ html .tsw[aria-checked="true"]{background:var(--acc);box-shadow:inset 2px 2px 5p
 html .tsw[aria-checked="true"] .k{transform:translateX(24px);color:var(--brand)}
 html .tsw:active .k{width:28px}
 html .tsw[aria-checked="true"]:active .k{transform:translateX(20px)}
-
-/* ---------------------------------------------------------------- dock: floating card, round raised keys, chosen = glowing accent */
-html .tabs{background:var(--bg);border:1px solid var(--rim);box-shadow:var(--raise-lg);border-radius:28px;height:78px;padding:0 10px;bottom:calc(12px + var(--safe-b))}
-html .tabs a{height:66px;gap:5px;color:var(--ink-3);font-size:10px;font-weight:700}
-html .tabs a .dc{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--bg);border:1px solid var(--rim);box-shadow:var(--raise-sm);color:var(--ink-2);
-  transition:transform .2s var(--press-ease),box-shadow .2s var(--press-ease),background .25s,color .2s}
-html .tabs a .dc svg{width:20px;height:20px}
-html .tabs a:active .dc{transform:scale(.92);box-shadow:var(--press)}
-html .tabs a[aria-current="page"]{color:var(--brand);font-weight:800}
-html .tabs a[aria-current="page"] .dc{background:var(--acc);color:#fff;border-color:rgba(255,255,255,.25);box-shadow:var(--glow),var(--raise-sm)}
-html .tabs a.go span.c{width:48px;height:48px;border-radius:50%;background:var(--acc);border:1px solid rgba(255,255,255,.25);box-shadow:0 8px 20px var(--acc-glow),var(--raise-sm);color:#fff;transition:transform .2s var(--press-ease),box-shadow .2s}
-html .tabs a.go:active span.c{transform:scale(.92);box-shadow:inset 3px 3px 8px rgba(0,0,0,.25)}
-html .tabs a.go[aria-current="page"] span.c{box-shadow:0 0 0 4px var(--bg),0 0 0 6px color-mix(in srgb,var(--brand) 35%,transparent),0 10px 24px var(--acc-glow)}
-html #view{padding-bottom:calc(78px + var(--safe-b) + 48px)}
 
 /* top bar: same surface, soft shadow when scrolled */
 html .top{background:var(--bg)}
@@ -193,7 +180,12 @@ html .pr{overflow:hidden}
 /* polish */
 html body,html p,html .lede,html small,html span,html .small,html .tiny{letter-spacing:0}
 html .lede{line-height:1.55;color:var(--ink-2)}
-html .tabs a[aria-current="page"],html .tabs a:hover{background:transparent!important;box-shadow:none!important}
 html .sm3 small{font-size:9.5px;white-space:nowrap;letter-spacing:.04em}
 html .sm3 b{font-size:14px}
 html .btn svg{transition:transform .2s var(--lift-ease)}html .btn:active svg{transform:scale(.9)}
+
+/* dark: a soft grey edge so every card reads as its own block */
+:root[data-theme="dark"] :is(.blk,.gl>div,.hero-x,.stile,.stile2,.deal,.grp,.r-main,.r-kpis>div,.kp2>div,.pv,.bc,.rulebox,.srvc,.cta,.list,.card,.flow,.ev,.mk-g,.cal-i,.pr,.coach){border-color:rgba(255,255,255,.09)!important}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) :is(.blk,.gl>div,.hero-x,.stile,.stile2,.deal,.grp,.r-main,.r-kpis>div,.kp2>div,.pv,.bc,.rulebox,.srvc,.cta,.list,.card,.flow,.ev,.mk-g,.cal-i,.pr,.coach){border-color:rgba(255,255,255,.09)!important}}
+/* light: card titles and labels a touch stronger on cream */
+:root:not([data-theme="dark"]) :is(.gl-l,.lbl){color:#6B6E78}
