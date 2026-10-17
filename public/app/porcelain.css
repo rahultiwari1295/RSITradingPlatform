@@ -189,3 +189,4 @@ html .btn svg{transition:transform .2s var(--lift-ease)}html .btn:active svg{tra
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) :is(.blk,.gl>div,.hero-x,.stile,.stile2,.deal,.grp,.r-main,.r-kpis>div,.kp2>div,.pv,.bc,.rulebox,.srvc,.cta,.list,.card,.flow,.ev,.mk-g,.cal-i,.pr,.coach){border-color:rgba(255,255,255,.09)!important}}
 /* light: card titles and labels a touch stronger on cream */
 :root:not([data-theme="dark"]) :is(.gl-l,.lbl){color:#6B6E78}
+html .acc-box{background:var(--card);border:1px solid var(--card-edge,var(--rim));box-shadow:var(--tile-lift,var(--raise))}

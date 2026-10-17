@@ -47,15 +47,21 @@ export const unread = items => items.filter(x => x.t > seen()).length;
 export async function liveFeed(intel) {
   const L = await intel.top(48, 30);
   return (Array.isArray(L) ? L : []).map(e => ({ id: e.id, t: new Date(String(e.ts).replace(' ', 'T') + '+05:30').getTime() || Date.now(), sym: e.symbol || '',
-    kind: 'event', label: e.label || e.type, head: String(e.summary || e.headline || '').split('\n')[0], impact: e.impact || 0, sent: e.sentiment }));
+    kind: 'event', cat: e.category, label: e.label || e.type, head: String(e.summary || e.headline || '').split('\n')[0], impact: e.impact || 0, sent: e.sentiment }));
 }
-/** While the page is open, tell the user about new 70+ items (browser notification if allowed). */
+/** Alert preferences (this browser): on/off, minimum impact, which kinds, optional watchlist. */
+const AK = 'qs-alerts';
+export const ALERT_DEFAULT = { on: true, min: 70, kinds: ['filing', 'insider', 'deal', 'meeting', 'news'], neg: true, watch: [] };
+export function alertPrefs() { try { return { ...ALERT_DEFAULT, ...JSON.parse(localStorage.getItem(AK) || '{}') }; } catch { return { ...ALERT_DEFAULT }; } }
+export function saveAlertPrefs(p) { try { localStorage.setItem(AK, JSON.stringify(p)); } catch { /* blocked */ } }
+const wanted = (x, p) => p.on && (x.impact >= p.min || (p.watch.length && p.watch.includes(x.sym) && x.impact >= 30)) && (!x.cat || p.kinds.includes(x.cat)) && (p.neg || x.sent !== 'negative');
+/** While the page is open, tell the user about new items that match their alert settings (browser notification if allowed). */
 export function watchFeed(intel, onItems) {
   let known = new Set();
   const tick = async () => {
     try {
       const items = await liveFeed(intel); onItems(items);
-      const fresh = items.filter(x => x.impact >= 70 && !known.has(x.id) && x.t > seen());
+      const P = alertPrefs(), fresh = items.filter(x => wanted(x, P) && !known.has(x.id) && x.t > seen());
       if (known.size && fresh.length && notifState() === 'granted') {
         const x = fresh[0], opt = { body: x.head.slice(0, 160), tag: 'qs-' + x.id, icon: '/favicon.ico' };
         try { const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null; if (reg) reg.showNotification(`${x.sym} · ${x.label}`, opt); else new Notification(`${x.sym} · ${x.label}`, opt); } catch { /* ignore */ }
