@@ -3,7 +3,8 @@ import { SERVER, LAB_URL } from './_env';
 
 /* Forwards /api/* and /lab/api/* to the server named in _env.ts (see the rewrites in vercel.json).
    p = "api/<path>" or "lab/<path>". */
-const PASS = ['authorization', 'content-type', 'accept', 'x-dev-uid', 'x-requested-with'];
+const PASS = ['authorization', 'content-type', 'accept', 'x-dev-uid', 'x-requested-with', 'if-none-match'];
+const TIMEOUT_MS = 25000;   // a slow phone answers with a clear 504 the app can retry, not a hung request
 export const config = { api: { bodyParser: false } };
 
 async function rawBody(req: VercelRequest): Promise<Buffer | undefined> {
@@ -21,14 +22,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   for (const [k, v] of Object.entries(req.query)) if (k !== 'p') ([] as string[]).concat(v as any).forEach(x => qs.append(k, x));
   const url = `${base}/${p}${qs.toString() ? '?' + qs : ''}`;
   const headers: Record<string, string> = { 'ngrok-skip-browser-warning': '1' };
+  const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim(); if (ip) headers['x-forwarded-for'] = ip;   // so per-person limits count the visitor, not Vercel
   for (const h of PASS) { const v = req.headers[h]; if (v) headers[h] = Array.isArray(v) ? v.join(',') : v; }
   try {
-    const r = await fetch(url, { method: req.method, headers, body: await rawBody(req) });
+    const r = await fetch(url, { method: req.method, headers, body: await rawBody(req), signal: AbortSignal.timeout(TIMEOUT_MS) });
     res.status(r.status);
     const ct = r.headers.get('content-type'); if (ct) res.setHeader('Content-Type', ct);
     const cc = r.headers.get('cache-control'); if (cc) res.setHeader('Cache-Control', cc);
+    const et = r.headers.get('etag'); if (et) res.setHeader('ETag', et);
     res.send(Buffer.from(await r.arrayBuffer()));
   } catch (e: any) {
+    if (e && (e.name === 'TimeoutError' || e.name === 'AbortError')) return res.status(504).json({ error: 'Server took too long', server: base });
     res.status(502).json({ error: 'Server not reachable', server: base, detail: String(e && e.message || e) });
   }
 }

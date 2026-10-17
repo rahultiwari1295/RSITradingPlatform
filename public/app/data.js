@@ -151,6 +151,8 @@ const lab = {
   health: () => cached('lab:health', 5 * MIN, () => L('GET', '/health', undefined, { authed: false })),
   catalog: () => cached('lab:catalog', 60 * MIN, () => L('GET', '/catalog', undefined, { authed: false })),
   today: () => cached('lab:today:' + uidKey(), 2 * MIN, () => L('GET', '/today')),
+  /** Entered/left events for the strategies switched on, built on the server in one request. */
+  changes: (days = 30) => cached('lab:changes:' + uidKey() + ':' + days, MIN, () => L('GET', '/changes?days=' + days)),
   matches: () => cached('lab:matches:' + uidKey(), MIN, () => L('GET', '/matches').then(m => { const rows = mergeQ(m.rows || []), nl = rows.filter(r => r.latest).length; return { ...m, rows, counts: { latest: nl, older: rows.length - nl } }; })),
   alerts: () => cached('lab:alerts:' + uidKey(), MIN, () => L('GET', '/alerts')),
   scan: (tf, entry, signal) => L('POST', '/scan', { tf, entry }, { authed: false, timeout: 20000, signal }),

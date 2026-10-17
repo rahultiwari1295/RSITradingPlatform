@@ -41,8 +41,15 @@ export default async function activity(el, r) {
     await auth.whenReady();
     let ev, subs = [], signed = !!auth.user;
     if (signed) {
-      const m = await lab.matches().catch(() => ({ rows: [] }));
-      ev = await QD.changes(m.rows || [], 30);
+      const WHY = { stop: 'loss limit in its rules', target: 'gain limit in its rules', trail: 'trailing exit in its rules', time: 'time limit in its rules' };
+      const server = await lab.changes(30).then(d => (d && Array.isArray(d.items) ? d.items : null)).catch(() => null);
+      if (server) {
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        ev = server.map(e => ({ ...e, age: Math.round((today - new Date(String(e.date).slice(0, 10) + 'T00:00:00')) / 864e5), why: e.kind === 'out' ? (WHY[String(e.reason || '').split('_')[0]] || 'its exit rule') : undefined }));
+      } else {
+        const m = await lab.matches().catch(() => ({ rows: [] }));
+        ev = await QD.changes(m.rows || [], 30);
+      }
       subs = ((await lab.alerts().catch(() => ({ items: [] }))).items || []).filter(i => i.on);
     } else ev = await QD.qsai.changes(30);
     const nAdd = ev.filter(x => x.kind === 'add').length, nOut = ev.length - nAdd;
