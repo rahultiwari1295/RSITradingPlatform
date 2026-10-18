@@ -11,12 +11,34 @@ const wbar = w => `<span class="wbar"><i class="${wc(w)}" style="width:${w}%"></
 
 const FAM = ['All', 'Breakout', 'Pattern', 'Trend', 'Pullback', 'Volume', 'Events', 'Owners', 'Business'];
 const tileLive = s => {
-  const rec = s.record || {}, w = rec.win_rate, n = rec.trades || 0;
+  const rec = s.record || {};
+  const ai = s.ai || {};
+  let variant = 'ai';
+  if (ai.verdict === 'improved') {
+    try {
+      const saved = localStorage.getItem('qs-strat-var-' + s.id);
+      if (saved === 'plain' || saved === 'ai') variant = saved;
+    } catch { /* blocked */ }
+  } else {
+    variant = 'plain';
+  }
+
+  const stat = (ai.verdict === 'improved' && variant === 'ai' && ai.enhanced && ai.enhanced.win_rate != null)
+    ? ai.enhanced
+    : ((ai.verdict === 'improved' && variant === 'plain' && ai.plain && ai.plain.win_rate != null) ? ai.plain : rec);
+
+  const w = stat.win_rate != null ? stat.win_rate : rec.win_rate;
+  const n = stat.trades != null ? stat.trades : (rec.trades || 0);
+  const avg = stat.avg_ret != null ? stat.avg_ret : rec.avg_ret;
+
   const ringH = w == null ? `<span class="wring none"><b>${s.record ? '—' : '<i class="spin"></i>'}</b></span>` : ring(w);
-  return link(`s/${s.id}`, `<span class="m"><span class="tt"><b>${esc(s.name)}</b><span class="pill">${s.tf === '1W' ? 'Weekly' : 'Daily'}</span>${s.family ? `<span class="pill ghost">${esc(s.family)}</span>` : ''}</span><span class="ab">${esc(s.about || '')}</span>
-    <span class="sm3"><span><small>Avg / trade</small><b class="tnum ${fmt.tone(rec.avg_ret)}">${rec.avg_ret == null ? '—' : fmt.pct(rec.avg_ret, 2)}</b></span><span><small>Past trades</small><b class="tnum">${s.record ? fmt.int(n) : '…'}</b></span><span><small>Worst dip</small><b class="tnum dn">${rec.max_dd == null ? '—' : fmt.pct(rec.max_dd)}</b></span></span>
+  return link(`s/${s.id}`, `<span class="m"><span class="tt"><b>${esc(s.name)}</b><span class="pill">${s.tf === '1W' ? 'Weekly' : 'Daily'}</span>${s.family ? `<span class="pill ghost">${esc(s.family)}</span>` : ''}
+    ${ai.verdict === 'improved' ? `<span class="seg sm" data-var-switch="${s.id}" style="margin-left:auto;z-index:2"><button type="button" data-var="plain" aria-pressed="${variant === 'plain'}">Plain</button><button type="button" data-var="ai" aria-pressed="${variant === 'ai'}">AI</button></span>` : ''}
+    ${ai.verdict === 'no_edge' ? `<span class="pill ghost" style="color:var(--ink-2);margin-left:auto">AI tested · no gain</span>` : ''}
+  </span><span class="ab">${esc(s.about || '')}</span>
+    <span class="sm3"><span><small>Avg / trade</small><b class="tnum ${fmt.tone(avg)}">${avg == null ? '—' : fmt.pct(avg, 2)}</b></span><span><small>Past trades</small><b class="tnum">${s.record || stat.trades != null ? fmt.int(n) : '…'}</b></span><span><small>Worst dip</small><b class="tnum dn">${rec.max_dd == null ? '—' : fmt.pct(rec.max_dd)}</b></span></span>
     ${s.record && !n ? '<span class="note">No past trades yet: this uses data the server is still collecting.</span>' : ''}</span>
-    <span class="wr2">${ringH}<small>${s.record ? 'Win rate' : 'Testing'}</small></span>`, 'stile2');
+    <span class="wr2">${ringH}<small>${s.record || stat.win_rate != null ? 'Win rate' : 'Testing'}</small></span>`, 'stile2');
 };
 
 export default async function strategies(el, r) {
@@ -32,7 +54,22 @@ export default async function strategies(el, r) {
     <div class="stl" id="lst">${'<div class="sk" style="height:132px;margin-bottom:12px"></div>'.repeat(4)}</div>
     <p class="disc" id="disc">Tests on past NSE prices with 0.10% costs each way, entering at the next day’s open. Past results do not predict future results.</p></section>`;
   const lst = el.querySelector('#lst'), srt = el.querySelector('#srt'), famBox = el.querySelector('#fam'), src = el.querySelector('#src');
-  const key = { win: s => (s.record || {}).win_rate ?? -1, avg: s => (s.record || {}).avg_ret ?? -99, trades: s => (s.record || {}).trades ?? -1 };
+  const getStat = s => {
+    const ai = s.ai || {};
+    let variant = 'ai';
+    if (ai.verdict === 'improved') {
+      try {
+        const saved = localStorage.getItem('qs-strat-var-' + s.id);
+        if (saved === 'plain' || saved === 'ai') variant = saved;
+      } catch { /* blocked */ }
+    } else {
+      variant = 'plain';
+    }
+    return (ai.verdict === 'improved' && variant === 'ai' && ai.enhanced && ai.enhanced.win_rate != null)
+      ? ai.enhanced
+      : ((ai.verdict === 'improved' && variant === 'plain' && ai.plain && ai.plain.win_rate != null) ? ai.plain : (s.record || {}));
+  };
+  const key = { win: s => getStat(s).win_rate ?? -1, avg: s => getStat(s).avg_ret ?? -99, trades: s => getStat(s).trades ?? -1 };
   const keyS = { win: s => s.win, avg: s => s.avg, trades: s => s.trades };
   const draw = () => {
     srt.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === sort));
@@ -48,6 +85,18 @@ export default async function strategies(el, r) {
   };
   srt.onclick = e => { const b = e.target.closest('button'); if (b) { sort = b.dataset.v; draw(); } };
   famBox.onclick = e => { const b = e.target.closest('[data-f]'); if (b) { fam = b.dataset.f; draw(); } };
+  el.addEventListener('click', e => {
+    const btn = e.target.closest('[data-var]');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const seg = btn.closest('[data-var-switch]');
+    if (!seg) return;
+    const sid = seg.dataset.varSwitch;
+    const v = btn.dataset.var;
+    try { localStorage.setItem('qs-strat-var-' + sid, v); } catch { /* blocked */ }
+    draw();
+  });
   try {
     const L = await lab.strategies('library');
     if (!Array.isArray(L) || !L.length) throw new Error('empty');

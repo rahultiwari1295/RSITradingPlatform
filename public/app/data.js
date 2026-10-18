@@ -163,7 +163,7 @@ const lab = {
   job: id => L('GET', '/jobs/' + id),
   strategies: scope => cached(`lab:strats:${scope}:${uidKey()}`, 2 * MIN, () => L('GET', '/strategies' + q({ scope }), undefined, { authed: scope === 'mine' || scope === 'people' })),
   strategy: id => L('GET', '/strategies/' + id),
-  strategyBacktest: id => L('GET', `/strategies/${id}/backtest`),
+  strategyBacktest: (id, variant) => L('GET', `/strategies/${id}/backtest` + (variant ? `?variant=${encodeURIComponent(variant)}` : '')),
   createStrategy: b => L('POST', '/strategies', b).then(x => { bust('lab:'); return x; }),
   copyStrategy: id => L('POST', `/strategies/${id}/copy`).then(x => { bust('lab:'); return x; }),
   trades: (id, status) => L('GET', `/strategies/${id}/trades` + q({ status })),

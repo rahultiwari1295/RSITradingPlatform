@@ -30,14 +30,48 @@ export default async function strategy(el, r) {
   /* ---------- past test ---------- */
   async function test() {
     pane.innerHTML = skel(90, 3);
-    for (let k = 0; alive && k < 60; k++) {
-      let b; try { b = await lab.strategyBacktest(id); } catch (e) { pane.innerHTML = errBox(e.message, false); return; }
-      if (tab !== 'test') return;
-      if (b.status === 'done') { await renderTest(pane, b.result, { title: s.name }); return; }
-      if (b.status === 'failed') { pane.innerHTML = errBox(b.error || 'The test did not finish. Try again later.', false); return; }
-      pane.innerHTML = `<div class="work"><div style="display:flex;gap:10px;align-items:center"><span class="spin" style="color:var(--brand)"></span><b>Testing on past prices</b></div><div class="tiny">${b.status === 'queued' ? 'In line' : 'Working'}${b.position ? ' · position ' + b.position : ''}</div></div>`;
-      await new Promise(z => setTimeout(z, 4000));
+    const aiVerdict = s.ai ? s.ai.verdict : null;
+    let variantChoice = 'ai';
+    if (aiVerdict === 'improved') {
+      try {
+        const saved = localStorage.getItem('qs-strat-var-' + id);
+        if (saved === 'plain' || saved === 'ai') variantChoice = saved;
+      } catch { /* blocked */ }
+    } else {
+      variantChoice = 'plain';
     }
+
+    async function loadTest(v) {
+      pane.innerHTML = `
+        ${aiVerdict === 'improved' ? `<div class="seg sm" id="vsw" style="margin-bottom:14px"><button type="button" data-v="ai" aria-pressed="${v === 'ai'}">With AI filter</button><button type="button" data-v="plain" aria-pressed="${v === 'plain'}">Plain rules</button></div>` : ''}
+        ${aiVerdict === 'no_edge' ? `<div style="margin-bottom:12px"><span class="pill ghost" style="color:var(--ink-2)">AI tested · no gain</span></div>` : ''}
+        <div id="tpane">${skel(90, 3)}</div>`;
+      const tpane = pane.querySelector('#tpane');
+      const vsw = pane.querySelector('#vsw');
+      if (vsw) {
+        vsw.onclick = e => {
+          const b = e.target.closest('button');
+          if (!b || b.dataset.v === v) return;
+          const nv = b.dataset.v;
+          try { localStorage.setItem('qs-strat-var-' + id, nv); } catch { /* blocked */ }
+          loadTest(nv);
+        };
+      }
+      for (let k = 0; alive && k < 60; k++) {
+        let b;
+        try { b = await lab.strategyBacktest(id, aiVerdict === 'improved' ? v : undefined); }
+        catch (e) { tpane.innerHTML = errBox(e.message, false); return; }
+        if (tab !== 'test') return;
+        if (b.status === 'done') {
+          await renderTest(tpane, b.result, { title: s.name + (aiVerdict === 'improved' && v === 'ai' ? ' (with AI filter)' : '') });
+          return;
+        }
+        if (b.status === 'failed') { tpane.innerHTML = errBox(b.error || 'The test did not finish. Try again later.', false); return; }
+        tpane.innerHTML = `<div class="work"><div style="display:flex;gap:10px;align-items:center"><span class="spin" style="color:var(--brand)"></span><b>Testing on past prices</b></div><div class="tiny">${b.status === 'queued' ? 'In line' : 'Working'}${b.position ? ' · position ' + b.position : ''}</div></div>`;
+        await new Promise(z => setTimeout(z, 4000));
+      }
+    }
+    await loadTest(variantChoice);
   }
 
   /* ---------- AI coach ---------- */
@@ -48,26 +82,168 @@ export default async function strategy(el, r) {
     const cb = pane.querySelector('#cb');
     let e; try { e = await lab.enhancement(id); } catch { e = { status: 'none' }; }
     if (tab !== 'coach') return;
-    if (!s.mine) { cb.innerHTML = '<p>Only the owner can run the coach on a strategy.</p>'; return; }
-    if (e.status === 'queued' || e.status === 'running') { cb.innerHTML = `<div style="display:flex;gap:10px;align-items:center"><span class="spin"></span><b>The coach is studying your matches</b></div><p class="tiny" style="color:rgba(228,234,248,.6)">This takes a few minutes. You can leave and come back.</p>`; setTimeout(() => alive && tab === 'coach' && coach(), 5000); return; }
+
+    if (e.status === 'queued' || e.status === 'running') {
+      cb.innerHTML = `<div style="display:flex;gap:10px;align-items:center"><span class="spin"></span><b>The coach is studying your matches</b></div><p class="tiny" style="color:rgba(228,234,248,.6)">This takes a few minutes. You can leave and come back.</p>`;
+      setTimeout(() => alive && tab === 'coach' && coach(), 5000);
+      return;
+    }
+
+    const isPrebuilt = s.kind === 'library' || s.kind === 'flagship';
+
     if (e.status !== 'done') {
+      if (!s.mine) {
+        cb.innerHTML = `<p>${isPrebuilt ? 'AI check has not run yet for this strategy.' : 'Only the owner can run the coach on a strategy.'}</p>
+          ${isPrebuilt ? `<button class="btn quiet" id="copy" style="margin-top:14px">${icon('copy', 16)}Make my copy</button><p class="tiny" style="color:var(--ink-2);margin-top:4px">Copy it to change the rules and run the coach yourself.</p>` : ''}`;
+        const cp = cb.querySelector('#copy');
+        if (cp) cp.onclick = async () => { try { const out = await lab.copyStrategy(id); toast('Copied to your strategies.'); go('s/' + out.id); } catch (x) { toast(x.message); } };
+        return;
+      }
       cb.innerHTML = `<button class="btn pri" id="go">${icon('spark', 17)}Start the AI coach</button>${e.status === 'failed' ? `<p class="tiny" style="margin-top:8px;color:#FF9A9E">Last run did not finish${e.reason ? ': ' + esc(e.reason) : ''}. Try again.</p>` : ''}`;
       cb.querySelector('#go').onclick = async () => { try { await runJob(() => lab.enhance(id), cb, 'The coach is studying your matches'); coach(); } catch (x) { toast(x.message); coach(); } };
       return;
     }
-    const res = e.result || {}, opts = QD.pickOptions(res);
-    const card = (t, st, ai) => `<div class="${ai ? 'ai' : ''}"><small>${t}</small><b>${fmt.plain(st.win_rate)}</b><span>ended higher · ${fmt.int(st.trades)} matches · avg ${fmt.pct(st.avg_ret)}</span></div>`;
-    if (!opts.length) {
-      cb.innerHTML = `<b style="font-size:17px">${s.enhanced ? 'The coach’s filter is on.' : 'No reliable improvement found.'}</b><p>${s.enhanced ? 'Your strategy uses the filter the coach suggested.' : 'The coach tested many filters and none clearly beat your rules across the years it never saw. Your rules stay as they are.'}</p>
-        ${s.enhanced ? '<button class="btn quiet" id="off" style="margin-top:12px">Back to my original rules</button>' : ''}`;
-    } else {
-      const plain = QD.plainStat(res, 'All');
-      cb.innerHTML = opts.map(o => { const st = QD.gateStat(res, o.gate, 'All'), on = s.ai_gate === o.gate; return `<div style="margin-top:6px"><b style="font-size:17px">${esc(o.title)}</b><p>${esc(o.blurb)}</p>
-        <div class="cmp">${card('Your rules', plain)}${card('With the coach’s filter', st, true)}</div>
-        <div style="margin-top:12px">${on ? `<span class="pill up">${icon('check', 13)}In use</span> <button class="btn sm quiet" id="off">Back to my rules</button>` : `<button class="btn pri" data-gate="${o.gate}">Use this version</button>`}</div></div>`; }).join('<hr style="border:0;height:1px;background:rgba(255,255,255,.12);margin:18px 0">');
+
+    const res = e.result || {};
+    const verdict = e.verdict || res.verdict;
+    const verdictMsg = {
+      improved: 'The AI filter kept the stronger matches in years it never saw.',
+      no_edge: 'AI tested, no improvement. The plain rules are shown.',
+      insufficient: 'Not enough past trades for the AI to learn from.',
+      paused_live: 'AI filter paused: it stopped beating the plain rules in live tracking.'
+    };
+
+    const checkedDate = res.checked_at || e.as_of;
+    const checkedDateStr = checkedDate ? fmt.date(checkedDate) : (e.as_of ? fmt.date(e.as_of) : '');
+
+    let html = '';
+    if (isPrebuilt) {
+      html += `<div class="tiny" style="color:var(--ink-2);margin-bottom:12px;display:flex;align-items:center;gap:6px">${icon('spark', 14)}<span>AI-checked by QuantSync${checkedDateStr ? ' · ' + esc(checkedDateStr) : ''}</span></div>`;
     }
-    cb.querySelectorAll('[data-gate]').forEach(b => b.onclick = async () => { b.disabled = true; try { await lab.setGate(id, +b.dataset.gate); toast('Done. Its record starts fresh from today.'); s = await lab.strategy(id); coach(); } catch (x) { toast(x.message); b.disabled = false; } });
-    const off = cb.querySelector('#off'); if (off) off.onclick = async () => { off.disabled = true; try { await lab.setGate(id, null); toast('Back to your original rules.'); s = await lab.strategy(id); coach(); } catch (x) { toast(x.message); off.disabled = false; } };
+
+    if (verdict) {
+      const isImp = verdict === 'improved';
+      html += `<div class="v-banner" style="padding:12px 14px;border-radius:10px;margin-bottom:14px;background:var(--fill);display:flex;gap:10px;align-items:center">
+        <span style="color:${isImp ? 'var(--good)' : 'var(--ink-2)'}">${icon(isImp ? 'check' : 'info', 18)}</span>
+        <div><b>${isImp ? 'Verified Edge' : verdict === 'paused_live' ? 'AI Filter Paused' : 'AI Check'}</b>
+        <div class="tiny" style="color:var(--ink-2)">${esc(verdictMsg[verdict] || e.reason || 'AI check completed.')}</div></div>
+      </div>`;
+    }
+
+    if (res.tune || res.valid || res.blind) {
+      const tPlain = (res.tune && res.tune.plain) || {};
+      const tAi = (res.tune && res.tune.ai) || {};
+      const vPlain = (res.valid && res.valid.plain) || {};
+      const vAi = (res.valid && res.valid.ai) || {};
+      const bPlain = (res.blind && res.blind.plain) || {};
+      const bAi = (res.blind && res.blind.ai) || {};
+
+      const cell = (st, isAi) => {
+        if (!st || st.trades == null || st.trades === 0) return '<span style="color:var(--ink-3)">—</span>';
+        return `<div><b class="tnum ${isAi ? 'good' : ''}">${st.win_rate != null ? fmt.plain(st.win_rate) : '—'}</b> higher</div>
+                <div class="tiny" style="color:var(--ink-2)">${fmt.int(st.trades)} matches · avg ${fmt.pct(st.avg_ret)}</div>`;
+      };
+
+      const tuneLabel = (res.tune && res.tune.years && res.tune.years.length)
+        ? `Learned on ${res.tune.years[0]}–${String(res.tune.years.at(-1)).slice(2)}`
+        : 'Learned on 2022–24';
+      const validLabel = (res.valid && res.valid.year) ? `Checked on ${res.valid.year}` : 'Checked on 2025';
+      const blindLabel = (res.blind && res.blind.year) ? `Blind test ${res.blind.year}` : 'Blind test 2026';
+
+      html += `
+      <div style="overflow-x:auto;margin:16px 0">
+        <table style="width:100%;border-collapse:collapse;text-align:left;font-size:13.5px">
+          <thead>
+            <tr style="border-bottom:1px solid var(--line-2)">
+              <th style="padding:8px 6px"></th>
+              <th style="padding:8px 6px"><b>${esc(tuneLabel)}</b></th>
+              <th style="padding:8px 6px"><b>${esc(validLabel)}</b></th>
+              <th style="padding:8px 6px"><b>${esc(blindLabel)}</b></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--line)">
+              <td style="padding:10px 6px;white-space:nowrap"><b>Plain rules</b></td>
+              <td style="padding:10px 6px">${cell(tPlain, false)}</td>
+              <td style="padding:10px 6px">${cell(vPlain, false)}</td>
+              <td style="padding:10px 6px">${cell(bPlain, false)}</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 6px;white-space:nowrap"><b style="color:var(--brand)">With AI filter</b></td>
+              <td style="padding:10px 6px">${cell(tAi, true)}</td>
+              <td style="padding:10px 6px">${cell(vAi, true)}</td>
+              <td style="padding:10px 6px">${cell(bAi, true)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>`;
+    }
+
+    if (isPrebuilt) {
+      html += `
+        <div style="margin-top:18px">
+          <button class="btn quiet" id="copy">${icon('copy', 16)}Make my copy</button>
+          <p class="tiny" style="color:var(--ink-2);margin-top:6px">Copy it to change the rules and run the coach yourself.</p>
+        </div>`;
+    } else if (s.mine) {
+      const gate = res.gate || 60;
+      if (verdict === 'improved') {
+        const on = s.ai_gate === gate || s.enhanced;
+        html += `<div style="margin-top:16px">
+          ${on ? `<span class="pill up">${icon('check', 13)}In use</span> <button class="btn sm quiet" id="off">Back to my rules</button>`
+               : `<button class="btn pri" id="use" data-gate="${gate}">Use this version</button>`}
+        </div>`;
+      }
+    }
+
+    cb.innerHTML = html;
+
+    const copyBtn = cb.querySelector('#copy');
+    if (copyBtn) {
+      copyBtn.onclick = async () => {
+        copyBtn.disabled = true;
+        try {
+          const cp = await lab.copyStrategy(id);
+          toast('Copied to your strategies.');
+          go('s/' + cp.id);
+        } catch (x) {
+          toast(x.message);
+          copyBtn.disabled = false;
+        }
+      };
+    }
+
+    const useBtn = cb.querySelector('#use');
+    if (useBtn) {
+      useBtn.onclick = async () => {
+        useBtn.disabled = true;
+        try {
+          await lab.setGate(id, +useBtn.dataset.gate);
+          toast('Done. Its record starts fresh from today.');
+          s = await lab.strategy(id);
+          coach();
+        } catch (x) {
+          toast(x.message);
+          useBtn.disabled = false;
+        }
+      };
+    }
+
+    const offBtn = cb.querySelector('#off');
+    if (offBtn) {
+      offBtn.onclick = async () => {
+        offBtn.disabled = true;
+        try {
+          await lab.setGate(id, null);
+          toast('Back to your original rules.');
+          s = await lab.strategy(id);
+          coach();
+        } catch (x) {
+          toast(x.message);
+          offBtn.disabled = false;
+        }
+      };
+    }
   }
 
   /* ---------- stocks that meet it now ---------- */
