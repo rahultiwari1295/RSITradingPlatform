@@ -37,6 +37,7 @@ const tileLive = s => {
     ${ai.verdict === 'no_edge' ? `<span class="pill ghost" style="color:var(--ink-2);margin-left:auto">AI tested · no gain</span>` : ''}
   </span><span class="ab">${esc(s.about || '')}</span>
     <span class="sm3"><span><small>Avg / trade</small><b class="tnum ${fmt.tone(avg)}">${avg == null ? '—' : fmt.pct(avg, 2)}</b></span><span><small>Past trades</small><b class="tnum">${s.record || stat.trades != null ? fmt.int(n) : '…'}</b></span><span><small>Worst dip</small><b class="tnum dn">${rec.max_dd == null ? '—' : fmt.pct(rec.max_dd)}</b></span></span>
+    ${s.engine_record && s.lab_record ? `<span class="tiny" style="color:var(--ink-2);margin-top:2px;display:block">Engine: ${fmt.int(s.engine_record.trades)} trades (${s.engine_record.win_rate != null ? fmt.plain(s.engine_record.win_rate) : '—'}) · Lab: ${fmt.int(s.lab_record.trades)} trades (${s.lab_record.win_rate != null ? fmt.plain(s.lab_record.win_rate) : '—'})</span>` : ''}
     ${s.record && !n ? '<span class="note">No past trades yet: this uses data the server is still collecting.</span>' : ''}</span>
     <span class="wr2">${ringH}<small>${s.record || stat.win_rate != null ? 'Win rate' : 'Testing'}</small></span>`, 'stile2');
 };
