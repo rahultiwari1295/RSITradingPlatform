@@ -1,7 +1,7 @@
 /* Pieces shared by Build and the saved-strategy page. */
 import { fmt, esc, icon, mono, link, line, lab, ok } from './app.js';
 
-export const HONEST = `<div class="honest">${icon('info', 18)}<span>Hypothetical test of rules you chose, run on past NSE prices: each match is followed from the next day’s open, with 0.10% costs each way. It is a learning tool, not a forecast. Fewer than 30 trades means the numbers can swing a lot.</span></div>`;
+export const HONEST = `<div class="honest">${icon('info', 18)}<span>Hypothetical test of rules you chose, run on past NSE prices: each match is followed from the next day’s open, with 0.10% costs each way. It is a learning tool, not a forecast. Fewer than 30 trades means the numbers can swing a lot. Stocks that were delisted are not in the data, which makes past results look slightly better.</span></div>`;
 
 /** A stock that meets the person's rules. Facts only: no ranking, no advice. */
 export function stockRow(r) {
