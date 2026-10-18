@@ -23,12 +23,18 @@ export async function renderTest(el, r, { title = 'Your rules', note = true } = 
     </div>
     <div class="card pad" style="margin-top:12px">
       <div class="legend"><span><i style="--c:var(--brand)"></i>${esc(title)}</span><span><i class="dash" style="--c:var(--ink-3)"></i>Nifty 50</span></div>
-      <div class="tiny" style="margin-bottom:6px">Value of ₹1,00,000 following every match, equal amounts</div>
-      <div id="tq"></div></div>
+      <div class="tiny" style="margin-bottom:6px">₹1,00,000 split across up to 10 trades at a time</div>
+      <div id="tq"></div>
+      ${(() => {
+        const port = a.portfolio || an.portfolio || {};
+        const cagrTxt = port.cagr != null ? `CAGR ${fmt.pct(port.cagr, 1)}` : '';
+        const takenTxt = (port.taken != null && a.trades != null) ? `Taken ${fmt.int(port.taken)} of ${fmt.int(a.trades)} matches` : '';
+        return (cagrTxt || takenTxt) ? `<div class="tiny" style="margin-top:6px;display:flex;justify-content:space-between;color:var(--ink-2)"><span>${cagrTxt}</span><span>${takenTxt}</span></div>` : '';
+      })()}</div>
     ${yrs.length ? `<div class="yrs" style="margin-top:12px">${yrs.map(y => { const s = (r.summary || {})[String(y)] || {}; return `<div><small>${y}${y === new Date().getFullYear() ? ' so far' : ''}</small><b>${fmt.plain(s.win_rate)}</b><div class="tiny">ended higher · ${fmt.int(s.trades)} matches</div></div>`; }).join('')}</div>` : ''}
     ${note ? `<div style="margin-top:12px">${HONEST}</div>` : ''}`;
   const eq = an.equity || []; if (eq.length < 2) return;
-  const dates = eq.map(p => p.d), vals = eq.map(p => p.v * 1000);
+  const dates = eq.map(p => p.d), vals = eq.map(p => p.v >= 1000 ? p.v : p.v * 1000);
   let bench = null;
   try {
     const b = await lab.benchmark(dates[0]); const bd = b.points || [];

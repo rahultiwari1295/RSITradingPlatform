@@ -88,7 +88,8 @@ function detail(el, id) {
     </div>
   </section>
 
-  <section class="card pad sec"><div class="sec-h" style="margin:0 0 6px"><h3 class="h3">₹1,00,000 following every trade</h3><span class="tiny">${s.since} to now</span></div><div id="eq"></div>
+  <section class="card pad sec"><div class="sec-h" style="margin:0 0 6px"><h3 class="h3">₹1,00,000 split across up to 10 trades at a time</h3><span class="tiny">${s.since} to now</span></div><div id="eq"></div>
+    ${(s.portfolio && (s.portfolio.cagr != null || s.portfolio.taken != null)) ? `<div class="tiny" style="margin:6px 0;display:flex;justify-content:space-between;color:var(--ink-2)"><span>${s.portfolio.cagr != null ? `CAGR ${fmt.pct(s.portfolio.cagr, 1)}` : ''}</span><span>${s.portfolio.taken != null ? `Taken ${fmt.int(s.portfolio.taken)} of ${fmt.int(s.trades)} matches` : ''}</span></div>` : ''}
     <div class="yrow">${s.y.map(y => `<div><small>${y.y}</small><b class="${wc(y.win)}">${y.win}%</b><span>${y.n} trades</span></div>`).join('')}</div></section>
 
   <section class="card pad sec"><h3 class="h3">The rules</h3>
