@@ -225,7 +225,7 @@ function jobCard(j) {
     <div class="m"><span>When</span><b>${esc(j.schedule)}</b>
     <span>Last</span><b>${last ? `${ago(last)} <span class="mut" style="font-weight:500">· ${stamp(last)}${j.durationS != null ? ' · took ' + dur(j.durationS) : ''}${!j.lastStart && j.lastOutput ? ' · log activity' : ''}</span>` : '<span class="mut" style="font-weight:500">no record yet</span>'}</b>
     ${j.runsToday ? `<span>Today</span><b>${j.runsToday}× ${j.failedToday ? `<span style="color:var(--bad)">(${j.failedToday} failed)</span>` : ''}</b>` : ''}
-    ${j.note && j.ok !== true ? `<span>Result</span><b class="wrap" style="font-weight:500;word-break:break-word">${esc(j.note.slice(0, 160))}</b>` : j.note ? `<span>Result</span><b style="font-weight:500" class="mut">${esc(j.note.slice(0, 90))}</b>` : ''}
+    ${j.note && j.ok !== true ? `<span>Result</span><b class="wrap" style="font-weight:500;word-break:break-word">${esc(j.note.slice(0, 160))}</b>` : j.note && !j.note.startsWith('{') ? `<span>Result</span><b style="font-weight:500" class="mut">${esc(j.note.slice(0, 90))}</b>` : ''}
     <span>Next</span><b>${j.next ? `${inn(j.next)} <span class="mut" style="font-weight:500">· ${day(j.next)} ${tm(j.next)}</span>` : '<span class="mut" style="font-weight:500">–</span>'}</b></div>
     ${can ? `<div style="margin-top:9px">${run ? '<span class="tag acc">Running now…</span>' : `<button class="btn ghost sm" data-act="run" data-key="${esc(j.run)}" data-label="${esc(j.label)}">${ico('play')} Run now</button>`}${S.sched.runnable[j.run].heavy ? ' <span class="tag warn">heavy</span>' : ''}</div>` : j.critical ? '<div class="xs mut" style="margin-top:8px">Trading job: view only. It runs by itself on the scheduler.</div>' : ''}</div>`;
 }
