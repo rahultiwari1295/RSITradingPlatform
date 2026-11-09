@@ -1,55 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { SERVER } from './_env';
 
-const SUNFLAG_V3_FALLBACK = {
-  sym: "SUNFLAG",
-  symbol: "SUNFLAG",
-  ab: "SU",
-  name: "Sunflag Limited",
-  companyName: "Sunflag Iron & Steel Co.",
-  sector: "Metals & Mining",
-  tag: "Metals & Mining · 52W High Breakout",
-  stage: "52W High Breakout 📐",
-  strategyName: "52W High Breakout",
-  strategyId: "52W_HIGH",
-  engine: "v3",
-  engineBadge: "AI SNIPER (V3)",
-  stars: 5,
-  starsDisplay: "★★★★★",
-  ml: 90,
-  risk: "Low",
-  comp: 90,
-  compositeScore: 90,
-  entry: 449.20,
-  entryPrice: 449.20,
-  now: 433.50,
-  price: 433.50,
-  currentPrice: 433.50,
-  stop: 413.26,
-  stopLoss: 413.26,
-  target: 489.63,
-  targetPrice: 489.63,
-  pivot: 428.00,
-  floor: 426.74,
-  pnlPct: -3.50,
-  roiPct: -3.50,
-  currentROI: -3.50,
-  chg: -3.50,
-  pnl: -408.20,
-  r: -0.44,
-  days: 6,
-  holdingDays: 6,
-  shares: 26,
-  action: "BUY_NOW",
-  actionLabel: "BUY NOW",
-  actionColor: "green",
-  slippageText: "-3.5% slippage",
-  entryDate: "2026-09-28",
-  date: "2026-09-28",
-  grad: "linear-gradient(135deg,#8B5CF6,#6366F1)",
-  why: "Breaking out of a 28-day base with 2.4× volume. Fibonacci 1.272 extension sits at ₹489.63. Prior run held above weekly swing. Classic 52W High Breakout accumulation with tightening volatility."
-};
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method Not Allowed' });
@@ -97,16 +48,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let inTradeTrades: any[] = rawData.inTradeTrades || rawData.active || [];
     let closedTrades: any[] = rawData.closedTrades || rawData.closed || [];
 
-    // Ensure V3 active trade SUNFLAG is always unified into V2/AI Pro view
+    // Tag engine badges from the trade's own engine field (no invented trades)
     if (requestedVersion === 'v2') {
-      const hasSunflag = inTradeTrades.some((t: any) => (t.sym || t.symbol || '').toUpperCase() === 'SUNFLAG');
-      if (!hasSunflag) {
-        inTradeTrades = [SUNFLAG_V3_FALLBACK, ...inTradeTrades];
-      }
-
-      // Ensure engine badges are tagged
       inTradeTrades = inTradeTrades.map((t: any) => {
-        const isV3 = (t.sym || t.symbol || '').toUpperCase() === 'SUNFLAG' || t.engine === 'v3';
+        const isV3 = String(t.engine || '').toLowerCase() === 'v3';
         return {
           ...t,
           engine: isV3 ? 'v3' : 'v2',
