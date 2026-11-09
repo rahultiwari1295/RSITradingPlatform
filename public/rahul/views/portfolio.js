@@ -99,7 +99,7 @@ export default async function portfolio(el, r) {
         <div class="small">${x.status === 'ok' ? `${fmt.int(x.count)} holdings · checked ${esc(x.as_of || '')}${x.expires ? ' · valid till ' + esc(x.expires) : ''}` : esc(x.error || '')}</div>${body || ''}</div>`; };
     return `${card('Angel')}
       ${card('Kite', `<p class="small">Zerodha logs out every morning, so Kite needs one tap a day. You log in on Zerodha's own page; this app never sees your password.</p>${(b.Kite || {}).status === 'not_set_up' ? '<p class="small"><b>Setup once:</b> create a Kite Connect app at developers.kite.trade, set its redirect URL to <code>https://quantsync-api.duckdns.org:40034/api/owner/kite/callback</code>, then put <code>api_key</code> and <code>api_secret</code> under <code>"kite"</code> in the VPS config.json.</p>' : '<button class="btn block" data-kite>Connect Kite (Zerodha login)</button>'}`)}
-      ${card('Dhan', (b.Dhan || {}).status === 'ok' ? '' : '<p class="small"><b>Setup:</b> in web.dhan.co → My Profile → DhanHQ Trading APIs, generate an access token (valid up to 30 days) and put <code>client_id</code> and <code>access_token</code> under <code>"dhan"</code> in the VPS config.json. Holdings then refresh on their own.</p>')}
+      ${card('Dhan', `<p class="small">Dhan logs out every day, so Dhan needs one tap a day. You log in on Dhan's own page; this app never sees your password.</p><button class="btn block" data-dhan>Connect Dhan (Dhan login)</button>`)}
       <div class="panel brk"><div class="brk-h"><b>Manual</b><span class="pill">${fmt.int(nTrades)} trades</span></div><div class="small">For anything not in a connected broker. Add with +.</div></div>
       <p class="small" style="margin-top:8px">All brokers are fetched when you open this page and saved every trading day at 4:10 PM.</p>`;
   }
@@ -115,6 +115,7 @@ export default async function portfolio(el, r) {
 
   function bind(L) {
     L.querySelector('[data-addb]')?.addEventListener('click', () => tradeSheet());
+    L.querySelector('[data-dhan]')?.addEventListener('click', async () => { try { const d = await ownerApi('/owner/dhan/login'); location.href = d.url; } catch (e) { toast(e.message); } });
     L.querySelector('[data-kite]')?.addEventListener('click', async () => { try { const d = await ownerApi('/owner/kite/login'); location.href = d.url; } catch (e) { toast(e.message); } });
     L.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => tradeSheet(D.trades.find(t => String(t.id) === b.dataset.edit)));
     L.querySelector('[data-import]')?.addEventListener('click', async () => {
