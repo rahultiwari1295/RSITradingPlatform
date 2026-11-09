@@ -1139,3 +1139,7 @@ html.busy::before{content:"";position:fixed;left:0;top:0;height:2.5px;width:40%;
 .hm-l{padding:4px}
 .hm-b{display:flex;gap:12px;align-items:flex-start;padding:11px 10px;border-radius:14px}.hm-b:hover{background:color-mix(in srgb,var(--brand) 5%,transparent)}
 .hm-b .dot{margin-top:5px}.hm-b span{display:grid;gap:2px;min-width:0}.hm-b b{font-size:14.5px;font-weight:620;line-height:1.4}.hm-b small{font-size:12px;color:var(--ink-3)}
+
+/* embedded inside /rahul (iframe only): hide this site's own header and tab bar */
+[data-embed] #top,[data-embed] #tabs{display:none!important}
+[data-embed] body{padding-bottom:24px}

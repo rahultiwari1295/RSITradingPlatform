@@ -3,23 +3,93 @@
   "buildCommand": "",
   "installCommand": "npm install --no-audit --no-fund",
   "outputDirectory": "public",
-  "functions": { "api/*.ts": { "maxDuration": 60 } },
+  "functions": {
+    "api/*.ts": {
+      "maxDuration": 60
+    }
+  },
   "headers": [
-    { "source": "/m/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }] },
-    { "source": "/app/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }] },
-    { "source": "/rahul/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }, { "key": "X-Robots-Tag", "value": "noindex, nofollow" }] }
+    {
+      "source": "/m/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/app/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/rahul/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, must-revalidate"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    }
   ],
   "redirects": [
-    { "source": "/", "destination": "/app/", "permanent": false },
-    { "source": "/app", "destination": "/app/", "permanent": false },
-    { "source": "/m", "destination": "/m/", "permanent": false }
+    {
+      "source": "/",
+      "destination": "/app/",
+      "permanent": false
+    },
+    {
+      "source": "/app",
+      "destination": "/app/",
+      "permanent": false
+    },
+    {
+      "source": "/m",
+      "destination": "/m/",
+      "permanent": false
+    }
   ],
   "rewrites": [
-    { "source": "/rahul", "destination": "/rahul/index.html" },
-    { "source": "/config.js", "destination": "/api/config" },
-    { "source": "/lab/api/:path*", "destination": "/api/proxy?p=lab/:path*" },
-    { "source": "/api/:path*", "destination": "/api/proxy?p=api/:path*" },
-    { "source": "/app/:path*", "destination": "/app/index.html" },
-    { "source": "/m/:path*", "destination": "/m/index.html" }
+    {
+      "source": "/rahul/ops",
+      "destination": "/rahul/ops/index.html"
+    },
+    {
+      "source": "/rahul",
+      "destination": "/rahul/index.html"
+    },
+    {
+      "source": "/rahul/:path((?!ops).*)",
+      "destination": "/rahul/index.html"
+    },
+    {
+      "source": "/config.js",
+      "destination": "/api/config"
+    },
+    {
+      "source": "/lab/api/:path*",
+      "destination": "/api/proxy?p=lab/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/proxy?p=api/:path*"
+    },
+    {
+      "source": "/app/:path*",
+      "destination": "/app/index.html"
+    },
+    {
+      "source": "/m/:path*",
+      "destination": "/m/index.html"
+    }
   ]
 }
