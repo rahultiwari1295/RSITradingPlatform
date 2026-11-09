@@ -1,4 +1,4 @@
-import { reveal, chrome, fill, fmt, icon, link, loadTerminal, allSignals, segmented, tone, toDate, tradeStats, yearTrades } from '../core.js';
+import { reveal, chrome, fill, fmt, icon, link, loadTerminal, allSignals, segmented, tone, toDate, tradeStats, yearTrades, auth, isOwner, ownedSymbols } from '../core.js';
 import { settle } from '../charts.js';
 import { closedRow, footNote, signalList, isFreshSignal } from './parts.js';
 
@@ -19,8 +19,9 @@ export default async function calls(el, r) {
 
   function draw(t) {
     if (tab === 'closed') { closed(t); reveal(list); return; }
-    list.innerHTML = `<p class="tab-note"><b>Active trades</b> are calls that are still open. Buy only the fresh ones; the older ones have already moved.</p>${signalList(allSignals(t))}`;
-    settle(list); reveal(list);
+    const paint = (o = {}) => { list.innerHTML = `<p class="tab-note"><b>Active trades</b> are calls that are still open. Buy only the fresh ones; the older ones have already moved.</p>${o.expand ? `<p class="tab-note own">${o.owned.size ? `<b>Green border</b> = you already hold it (Angel or manual).` : 'Your holdings are loading…'} <a href="/m/mine" data-nav>My portfolio</a></p>` : ''}${signalList(allSignals(t), o)}`; settle(list); reveal(list); };
+    paint();
+    auth.whenReady().then(() => { if (!isOwner() || tab !== 'signals') return; paint({ expand: true, owned: new Set() }); ownedSymbols().then(owned => { if (tab === 'signals') paint({ expand: true, owned }); }); });
   }
 
   function closed(t) {

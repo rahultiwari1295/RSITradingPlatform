@@ -29,13 +29,15 @@ export const ago = c => {
   if (d) { const t = new Date(); k = Math.max(0, Math.round((new Date(t.getFullYear(), t.getMonth(), t.getDate()) - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5)); }
   return !isFinite(k) ? '' : k === 0 ? 'Today' : k === 1 ? '1 day ago' : k + ' days ago';
 };
-export function signalCard(c) {
-  const fresh = isFreshSignal(c), traded = paper.has(c.sym);
+export function signalCard(c, o = {}) {
+  const fresh = isFreshSignal(c), traded = paper.has(c.sym), owned = !!(o.owned && o.owned.has(String(c.sym).toUpperCase()));
   const run = (c.now / c.entry - 1) * 100;
   const pct = Math.abs(c.roi) < .05 ? '<span class="d0">0.0%</span>' : delta(c.roi);
-  const body = `<div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}${traded ? '<span class="tag paper">Paper</span>' : ''}</div><div class="s">${engineBadge(c)}<span class="ago">${ago(c)}</span></div></div><div class="px"><div class="v">${fmt.px(c.now)}</div>${pct}</div></div>`;
-  if (!fresh) return link(callPath(c), `${body}${isFinite(run) && run > 1 ? `<p class="note">Already <b>${fmt.sp(run)}</b> above the entry.</p>` : ''}`, 'sig old compact', `aria-label="${esc(c.sym)}, ${engineName(c)}, old signal"`);
-  return link(callPath(c), `${body}${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: c.now }, { short: true })}`, 'sig new', `aria-label="${esc(c.sym)}, ${engineName(c)}, fresh signal"`);
+  const body = `<div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}${owned ? '<span class="tag bought">Bought</span>' : ''}${traded ? '<span class="tag paper">Paper</span>' : ''}</div><div class="s">${engineBadge(c)}<span class="ago">${ago(c)}</span></div></div><div class="px"><div class="v">${fmt.px(c.now)}</div>${pct}</div></div>`;
+  const ob = owned ? ' owned' : '';
+  if (!fresh && !o.expand) return link(callPath(c), `${body}${isFinite(run) && run > 1 ? `<p class="note">Already <b>${fmt.sp(run)}</b> above the entry.</p>` : ''}`, 'sig old compact' + ob, `aria-label="${esc(c.sym)}, ${engineName(c)}, old signal${owned ? ', bought' : ''}"`);
+  const note = !fresh && isFinite(run) && run > 1 ? `<p class="note">Already <b>${fmt.sp(run)}</b> above the entry.</p>` : '';
+  return link(callPath(c), `${body}${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: c.now }, { short: true })}${note}`, (fresh ? 'sig new' : 'sig old') + ob, `aria-label="${esc(c.sym)}, ${engineName(c)}, ${fresh ? 'fresh' : 'old'} signal${owned ? ', bought' : ''}"`);
 }
 /** Kept for callers that still wire paper-trade buttons (the call detail page). */
 export function bindSignals(root, list, onChange) {
@@ -44,12 +46,12 @@ export function bindSignals(root, list, onChange) {
 }
 const head = (t, sub, n, cls = '') => `<div class="sig-sec ${cls}"><div class="h"><h3>${t}</h3><span class="n tnum">${n}</span></div><p>${sub}</p></div>`;
 /** Fresh signals first, then old ones under a "skip" heading. Age is on every card, so no per-card badge. */
-export function signalList(list) {
+export function signalList(list, o = {}) {
   const fresh = list.filter(isFreshSignal).sort((a, b) => (b.score || 0) - (a.score || 0));
   const old = list.filter(c => !isFreshSignal(c)).sort((a, b) => (a.days || 0) - (b.days || 0));
   return `${head('Fresh signals', 'From the last scan. Paper trade these.', fresh.length, 'fresh')}
-    <div class="sig-stack">${fresh.length ? fresh.map(signalCard).join('') : `<div class="empty"><div class="ic">${icon('clock', 24)}</div><h3>No fresh signal in the last scan</h3><p>The scanner runs after every close. New setups appear here first.</p></div>`}</div>
-    ${old.length ? `${head('Old signals', 'Skip these. The best entry has passed.', old.length, 'old')}<div class="sig-stack">${old.map(signalCard).join('')}</div>` : ''}`;
+    <div class="sig-stack">${fresh.length ? fresh.map(c => signalCard(c, o)).join('') : `<div class="empty"><div class="ic">${icon('clock', 24)}</div><h3>No fresh signal in the last scan</h3><p>The scanner runs after every close. New setups appear here first.</p></div>`}</div>
+    ${old.length ? `${head('Old signals', 'Skip these. The best entry has passed.', old.length, 'old')}<div class="sig-stack">${old.map(c => signalCard(c, o)).join('')}</div>` : ''}`;
 }
 export const scanRule = () => '';
 export const scanLogo = () => `<span class="scan-mark" aria-hidden="true">${icon('target', 17)}</span>`;

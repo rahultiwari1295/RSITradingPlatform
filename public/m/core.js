@@ -298,6 +298,26 @@ auth.signIn = async () => {
 };
 auth.signOut = async () => { const a = await fb(); if (a) await FB.U.signOut(a); };
 auth.token = async () => { if (!auth.user) return null; try { return await auth.user.getIdToken(); } catch { return null; } };
+/* Owner-only extras (/m/mine, purchased marks on AI calls). The server re-checks the signed-in owner on every call. */
+export const OWNER = 'rahultiwari1295@gmail.com';
+export const isOwner = () => String(auth.user?.email || '').toLowerCase() === OWNER;
+/** GET an owner-only endpoint with the Firebase ID token. 404 means not the owner. */
+export async function ownerApi(path) {
+  const tok = await auth.token(); if (!tok) { const e = new Error('Sign in first.'); e.status = 401; throw e; }
+  const r = await fetch(CFG.api + path, { headers: { Accept: 'application/json', Authorization: 'Bearer ' + tok }, cache: 'no-store' });
+  if (!r.ok) { const e = new Error(r.status === 404 ? 'Not found.' : r.status >= 500 ? ((await r.json().catch(() => ({}))).error || 'Angel One is not answering. Try again.') : `Request failed (${r.status}).`); e.status = r.status; throw e; }
+  return r.json();
+}
+let ownedP = null, ownedT = 0;
+/** Symbols the owner holds (Angel + manual), refreshed every 2 minutes. Empty set for everyone else. */
+export async function ownedSymbols() {
+  await auth.whenReady(); if (!isOwner()) return new Set();
+  if (ownedP && Date.now() - ownedT < 2 * MIN) return ownedP;
+  ownedT = Date.now();
+  ownedP = Promise.all([ownerApi('/owner/holdings').then(d => d.items || []).catch(() => []), holdings.get().then(h => h.items || []).catch(() => [])])
+    .then(([a, m]) => new Set([...a, ...m].map(x => String(x.symbol || '').toUpperCase()).filter(Boolean)));
+  return ownedP;
+}
 
 const HK = 'qs-holdings'; // shared with the scanner app at /app, so both show the same portfolio
 const local = { get() { try { const v = JSON.parse(localStorage.getItem(HK) || '[]'); return Array.isArray(v) ? v : []; } catch { return []; } }, set(v) { try { localStorage.setItem(HK, JSON.stringify(v)); } catch { /* storage blocked */ } } };
@@ -535,6 +555,7 @@ const ROUTES = [
   [/^xray\/([^/]+)$/, 'report', 'xray'],
   [/^market$/, 'market', 'today'],
   [/^portfolio$/, 'portfolio', 'portfolio'],
+  [/^mine$/, 'mine', 'portfolio'],
 ];
 export function parse(loc = location) {
   let p = loc.pathname.replace(/\/+$/, '');

@@ -1,4 +1,4 @@
-import { engineName, callPath, paper, reveal, api, chrome, fmt, esc, icon, n, ok, link, mono, delta, tone, holdings, auth, sheet, toast, go, scoreTone, scoreColor, clean, loadTerminal, loadPatterns, empty, errBox, skel, hue } from '../core.js';
+import { engineName, callPath, paper, reveal, api, chrome, fmt, esc, icon, n, ok, link, mono, delta, tone, holdings, auth, isOwner, sheet, toast, go, scoreTone, scoreColor, clean, loadTerminal, loadPatterns, empty, errBox, skel, hue } from '../core.js';
 import { sec, footNote } from './parts.js';
 import { addSheet } from './report.js';
 
@@ -16,6 +16,7 @@ export default async function portfolio(el) {
       <span class="mono" style="--h:220;border-radius:50%">${u ? esc((u.displayName || u.email || '?').slice(0, 1).toUpperCase()) : icon('user', 18)}</span>
       <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14.5px">${u ? esc(u.displayName || u.email) : 'Saved on this phone'}</div><div class="small">${u ? 'Synced to your account' : 'Sign in to keep it on every device'}</div></div>
       <button class="btn ${u ? 'quiet' : ''} sm" data-auth>${u ? 'Sign out' : 'Sign in'}</button></div>`;
+    if (isOwner()) a.insertAdjacentHTML('beforeend', link('mine', `${icon('pf', 18)}<span><b>My private portfolio</b><br><span class="small">Angel + manual holdings, matched with AI calls</span></span>${icon('chev', 16)}`, 'panel own-door'));
     a.querySelector('[data-auth]').onclick = async () => { try { u ? await auth.signOut() : await auth.signIn(); } catch (e) { toast(e.message || 'Sign-in failed.'); } };
   }
 
