@@ -5,7 +5,10 @@ import { api, chrome, fill, fmt, esc, icon, ok, link, mono, delta, tone, engineB
 import { priceChart, toCandles, withEmas, ruler, settle } from '../charts.js';
 import { sec, statCell, footNote } from './parts.js';
 import { loadBook, enrich, technicals, TREND, STATUS, EXIT_DAYS } from './pfdata.js';
-import { orderSheet } from './trade.js';
+import { orderSheet, stopSheet } from './trade.js';
+import { edgeStock, rsPill, cr, day } from './edgedata.js';
+import { ownerSend } from '../core.js';
+import { titleCase } from './today.js';
 
 const SRC = ['Angel', 'Kite', 'Dhan', 'Manual'];
 const rel = iso => { const t = toDate(iso); if (!t) return ''; const d = Math.round((Date.now() - t) / 864e5); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d < 30 ? d + ' days ago' : fmt.date(iso); };
@@ -54,7 +57,8 @@ export default async function stock(el, r) {
         ${c ? `<div style="margin-top:6px">${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: x.ltp })}</div>` : ''}
       </div>
       <div class="verdict sk-v ${vt}" style="margin-top:12px"><div class="h">${esc(vh)}</div><p style="color:var(--ink)">${vp}</p></div>
-      <div class="sk-act">${canTrade ? `<button class="btn block" data-buy>${held ? 'Buy more' : 'Buy'}</button>` : ''}${sellable ? `<button class="btn block ${x.status === 'exit' || x.status === 'stop' ? 'sell' : 'quiet'}" data-sell>Sell</button>` : ''}</div>
+      <div class="sk-act">${canTrade ? `<button class="btn block" data-buy>${held ? 'Buy more' : 'Buy'}</button>` : ''}${sellable ? `<button class="btn block ${x.status === 'exit' || x.status === 'stop' ? 'sell' : 'quiet'}" data-sell>Sell</button>` : ''}${held && c && sellable && x.status === 'ai' ? `<button class="btn block quiet" data-stop>Set stop</button>` : ''}</div>
+      <div id="k-warn"></div>
 
       ${held ? sec('Your position', `<div class="stats four">
           ${stt('Your entry', fmt.px(x.avg), `${fmt.x(x.qty, x.qty % 1 ? 2 : 0)} shares`)}
@@ -90,6 +94,8 @@ export default async function stock(el, r) {
           </div>
           <div class="sk-52"><div class="sk-52h"><span>52-week low ${fmt.px(T.lo)}</span><span>${fmt.sp(T.offHigh)} from the high</span><span>52-week high ${fmt.px(T.hi)}</span></div><div class="sk-52b"><i style="left:${Math.max(0, Math.min(100, T.pos52))}%"></i></div></div>
         </div>`) : ''}
+      <div id="k-edge"></div>
+      <div id="k-ask"></div>
       <div id="k-xray"></div>
       <div id="k-news"></div>
       ${footNote(`Private page. "Exit call" means the AI closed its call in the last ${EXIT_DAYS} days.`)}`;
@@ -98,6 +104,10 @@ export default async function stock(el, r) {
     const call = c || null;
     root.querySelector('[data-buy]')?.addEventListener('click', () => orderSheet({ sym, side: 'BUY', call, onDone: okd => okd && load(true) }));
     root.querySelector('[data-sell]')?.addEventListener('click', () => orderSheet({ sym, side: 'SELL', call, broker: Object.keys(x.parts || {}).find(k => k !== 'Manual'), onDone: okd => okd && load(true) }));
+
+    root.querySelector('[data-stop]')?.addEventListener('click', () => { const b = Object.keys(x.parts || {}).find(k => k !== 'Manual'); stopSheet({ sym, broker: b, qty: x.parts[b].qty, stop: c.stop, ltp: x.ltp }); });
+    edgeBox(x, held, c);
+    askBox(x, held, c);
 
     const chartEl = root.querySelector('#k-chart');
     if (cs.length > 20) {
@@ -126,6 +136,55 @@ export default async function stock(el, r) {
         const inner = `<span class="sk-nd ${dot(n.sentiment)}"></span><div class="main"><div class="t">${esc(clean(n.label || String(n.type || '').replace(/_/g, ' ')))}</div><div class="s">${esc(line)}</div><div class="small">${esc(n.source || '')} · ${rel(n.ts)}</div></div>`;
         return n.url ? `<a class="row sk-n" href="${esc(n.url)}" target="_blank" rel="noopener">${inner}</a>` : `<div class="row sk-n">${inner}</div>`; }).join('')}</div>`, { more: link(`xray/${encodeURIComponent(sym)}`, 'All filings', 'more') });
     }, '', { quiet: true });
+  }
+
+  function edgeBox(x, held, c) {
+    fill(root.querySelector('#k-edge'), () => edgeStock(sym), d => {
+      const box = root.querySelector('#k-edge'), W = root.querySelector('#k-warn');
+      if (!d || !d.symbol) return;
+      if (W && (d.warnings || []).length) W.innerHTML = `<div class="sk-warn">${d.warnings.map(w => `<div class="${w.level === 'bad' ? 'dn' : 'warn'}">${icon(w.level === 'bad' ? 'alert' : 'clock', 15)}<span>${esc(w.text)}${w.d ? ` <i>${day(w.d)}</i>` : ''}</span></div>`).join('')}</div>`;
+      const e = d.earnings, o = d.owners, dl = d.delivery, cell = (k, v, sm = '') => `<div><span>${k}</span><b class="tnum">${v}</b>${sm ? `<small>${sm}</small>` : ''}</div>`;
+      const chg = v => (v == null ? '' : `<span class="${tone(v)}">${fmt.sp(v, 2)}</span> last quarter`);
+      box.innerHTML = sec('Edge read', `<div class="sk-tech"><div class="sk-grid">
+          ${cell('Strength rank', d.rs ? fmt.int(d.rs) + ' / 99' : '—', d.rs ? (d.rs >= 80 ? 'a market leader' : d.rs >= 50 ? 'better than most' : d.rs >= 30 ? 'weaker than most' : 'among the weakest') : 'not liquid enough')}
+          ${cell('Sector', d.sector_rank ? `#${d.sector_rank} of ${d.sectors}` : '—', esc(d.sector || ''))}
+          ${e ? cell(`Results (${esc(e.quarter)})`, `<span class="${e.score >= 65 ? 'up' : e.score <= 35 ? 'dn' : ''}">${fmt.int(e.score)} / 100</span>`, e.fresh ? 'latest quarter' : 'older quarter, new one not in yet') : ''}
+          ${e ? cell('Sales, yearly', `<span class="${tone(e.sales_yoy)}">${fmt.sp(e.sales_yoy, 0)}</span>`, `₹${fmt.int(e.sales_cr)} cr`) : ''}
+          ${e ? cell('Profit, yearly', e.turnaround ? '<span class="up">Turned positive</span>' : e.profit_yoy == null ? '—' : `<span class="${tone(e.profit_yoy)}">${fmt.sp(e.profit_yoy, 0)}</span>`, `₹${fmt.int(e.profit_cr)} cr`) : ''}
+          ${e && e.result_date ? cell('Price on the result', `<span class="${tone(e.react)}">${fmt.sp(e.react)}</span>`, `${day(e.result_date)} · ${fmt.sp(e.since)} since`) : ''}
+          ${o && o.promoter != null ? cell('Promoters', fmt.x(o.promoter, 1) + '%', chg(o.promoter_chg)) : ''}
+          ${o && o.fii != null ? cell('Foreign funds', fmt.x(o.fii, 1) + '%', chg(o.fii_chg)) : ''}
+          ${o && o.dii != null ? cell('Indian funds', fmt.x(o.dii, 1) + '%', chg(o.dii_chg)) : ''}
+          ${o && o.pledge != null ? cell('Promoter pledge', `<span class="${o.pledge >= 20 ? 'dn' : ''}">${fmt.x(o.pledge, 0)}%</span>`, 'of promoter shares') : ''}
+          ${dl ? cell('Delivery, 5 days', fmt.x(dl.deliv5, 0) + '%', `was ${fmt.x(dl.deliv30, 0)}% · ${fmt.x(dl.qty_x, 1)}× shares`) : ''}
+        </div>
+        ${(d.smart || []).length ? `<div class="sk-smart">${d.smart.map(b => `<div><b>${esc(titleCase(b.party))}</b> bought ${cr(b.cr)} on ${day(b.d)}. Their past buys beat the market ${fmt.x(b.win, 0)}% of the time (${b.scored} buys).</div>`).join('')}</div>` : ''}
+        ${(o && o.insider || []).length ? `<div class="sk-smart">${o.insider.slice(0, 3).map(i => `<div>${day(i.d)}: ${esc(i.text)}</div>`).join('')}</div>` : ''}</div>`, { p: `Built ${day(d.as_of)} from prices and filings.`, more: link('edge', 'Edge lists', 'more') });
+    }, '', { quiet: true });
+  }
+
+  function askBox(x, held, c) {
+    const box = root.querySelector('#k-ask');
+    const QS = held ? ['Should I be worried about anything here?', 'What changed in the last results?', 'What are the main risks?'] : ['What does this company do and how is it doing?', 'What changed in the last results?', 'What are the main risks?'];
+    box.innerHTML = sec('Ask about this stock', `<div class="panel pad sk-ask">
+        <div class="hs" style="margin-bottom:8px">${QS.map(q => `<button class="chip sm" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>
+        <div class="sk-askrow"><input id="k-q" placeholder="Type a question about ${esc(sym)}" maxlength="300"><button class="btn sm" data-ask>Ask</button></div>
+        <button class="btn sm quiet block" data-read style="margin-top:8px">Read the latest results filing for me</button>
+        <div id="k-ans"></div></div>`, { p: 'Answers come from your own data on this stock: prices, results, ownership and filings.' });
+    const ans = box.querySelector('#k-ans'), inp = box.querySelector('#k-q');
+    const pos = held ? { qty: x.qty, avg_price: x.avg, value: x.value, pnl_pct: x.pnl_pct } : null;
+    const call = c ? { entry: c.entry, stop: c.stop, target: c.target, days: c.days, entry_date: c.entryDate } : x.exitCall ? { closed_on: x.exitCall.exitDate, exit: x.exitCall.exit, reason: x.exitCall.reason } : null;
+    const run = async (path, bodyJ, title) => {
+      ans.innerHTML = `<div class="sk" style="height:90px;border-radius:12px;margin-top:10px"></div>`;
+      try { const d = await ownerSend('POST', path, bodyJ); const text = d.answer || d.summary || '';
+        ans.innerHTML = `<div class="sk-ans"><div class="small">${esc(title)}${d.headline ? ' · ' + esc(d.headline) + ' (' + day(d.date) + ')' : ''}</div>${text.split(/\n{2,}/).map(p => `<p>${esc(p).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^#+\s*(.+)$/gm, '<b>$1</b>').replace(/\n/g, '<br>')}</p>`).join('')}</div>`; }
+      catch (e) { ans.innerHTML = `<p class="ot-warn" style="margin-top:10px">${esc(e.message)}</p>`; }
+    };
+    const ask = q => { q = String(q || '').trim(); if (q.length < 3) return; inp.value = q; run('/owner/ask', { symbol: sym, question: q, position: pos, call }, q); };
+    box.querySelector('[data-ask]').onclick = () => ask(inp.value);
+    inp.onkeydown = e => { if (e.key === 'Enter') ask(inp.value); };
+    box.querySelectorAll('[data-q]').forEach(b => b.onclick = () => ask(b.dataset.q));
+    box.querySelector('[data-read]').onclick = () => run('/owner/read', { symbol: sym }, 'Latest results filing');
   }
   return () => (el._stops || []).forEach(f => f && f());
 }

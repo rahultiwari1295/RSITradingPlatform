@@ -151,6 +151,7 @@ export function orderSheet(opts) {
           <div><span>Order</span><b>${st.otype === 'LIMIT' ? `Limit at ${fmt.px2(st.limit)}` : 'Market'} · Delivery · NSE</b></div>
           <div><span>Value</span><b class="tnum">${st.otype === 'MARKET' ? '≈ ' : ''}${fmt.inr(val)}</b></div>
         </div>
+        ${side === 'BUY' && opts.call && n(opts.call.stop) > 0 && n(opts.call.stop) < p ? `<label class="ot-stop"><input type="checkbox" id="ot-st" checked><span>Also leave a <b>stop-loss sell at ${fmt.px2(opts.call.stop)}</b> with ${esc(st.broker)} (the AI call's stop). It sells on its own if price falls there.</span></label>` : ''}
         <div class="field" style="margin-top:14px"><label for="ot-pin">Trade code</label><input id="ot-pin" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Type your code to confirm"></div>
         <div id="ot-err"></div>
         <button class="btn block ot-go" data-send disabled>${side === 'BUY' ? 'Place buy order' : 'Place sell order'}</button>
@@ -164,7 +165,13 @@ export function orderSheet(opts) {
       if (st.busy) return; st.busy = true; send.disabled = true; send.textContent = 'Sending…';
       try {
         const r = await ownerSend('POST', '/owner/order', { broker: st.broker, symbol: sym, side, qty: st.qty, order_type: st.otype, price: st.otype === 'LIMIT' ? st.limit : 0, pin: pin.value, nonce: st.nonce });
-        done(true, r);
+        let sl = null;
+        if (B.querySelector('#ot-st')?.checked) {
+          send.textContent = 'Placing stop…';
+          try { sl = await ownerSend('POST', '/owner/stop', { broker: st.broker, symbol: sym, qty: st.qty, trigger: n(opts.call.stop), pin: pin.value, nonce: st.nonce + '-s' }); sl.ok = true; }
+          catch (e2) { sl = { ok: false, message: e2.message }; }
+        }
+        done(true, r, sl);
       } catch (e) {
         st.busy = false; pin.value = ''; send.textContent = side === 'BUY' ? 'Place buy order' : 'Place sell order';
         if (/trade code|locked/i.test(e.message)) { B.querySelector('#ot-err').innerHTML = `<p class="ot-warn">${esc(e.message)}</p>`; pin.focus(); }
@@ -173,14 +180,40 @@ export function orderSheet(opts) {
     };
   }
 
-  function done(okd, r) {
+  function done(okd, r, sl = null) {
     stop();
     B.innerHTML = `<div class="ot-done">
       <div class="ot-ic ${okd ? 'up' : 'dn'}">${icon(okd ? 'check' : 'x', 28)}</div>
       <h3>${okd ? `Order sent to ${esc(st.broker)}` : 'Order not placed'}</h3>
       <p>${okd ? `${side === 'BUY' ? 'Buy' : 'Sell'} ${fmt.int(st.qty)} ${esc(sym)}${r.order_id ? ` · order id <b>${esc(r.order_id)}</b>` : ''}. Check ${esc(st.broker)} for the fill, then tap ↻ on the portfolio to update it.` : esc(r.message || 'The broker refused the order.')}</p>
+      ${sl ? `<p class="${sl.ok ? 'small' : 'ot-warn'}">${sl.ok ? `Stop-loss sell left with ${esc(st.broker)} at ${fmt.px2(opts.call.stop)}.` : `The stop-loss was not placed: ${esc(sl.message || 'refused')}. Set it from the stock page once the buy has filled.`}</p>` : ''}
       <button class="btn block" data-close>Done</button></div>`;
     if (okd) toast(`${side === 'BUY' ? 'Buy' : 'Sell'} order sent: ${st.qty} ${sym}`);
     opts.onDone && opts.onDone(okd);
   }
+}
+
+
+/** Leave a stop-loss sell with the broker for shares already held. opts: { sym, broker, qty, stop, ltp } */
+export function stopSheet(opts) {
+  const sym = String(opts.sym).toUpperCase(), nonce = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now());
+  const s = sheet(`<div class="ot" data-side="SELL"><div class="ot-h">${mono(sym, 'lg')}<div style="min-width:0;flex:1"><h3 style="margin:0">Stop-loss for ${esc(sym)}</h3><div class="small">A sell order that waits at ${esc(opts.broker)} and fires if price falls to the stop.</div></div></div>
+    <div class="kv2" style="margin-top:12px"><div class="field"><label for="sl-q">Quantity</label><input id="sl-q" inputmode="numeric" value="${Math.floor(n(opts.qty) || 0)}"></div>
+      <div class="field"><label for="sl-p">Stop price (₹)</label><input id="sl-p" inputmode="decimal" value="${n(opts.stop).toFixed(2)}"></div></div>
+    <div class="ot-sum" id="sl-sum"></div>
+    <div class="field" style="margin-top:10px"><label for="sl-pin">Trade code</label><input id="sl-pin" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Type your code to confirm"></div>
+    <div id="sl-err"></div><button class="btn block ot-go" data-send disabled>Place stop-loss</button>
+    <p class="tiny" style="text-align:center;margin:10px 0 0">The sell limit sits 2% under the stop so it fills. Cancel or change it in the ${esc(opts.broker)} app (GTT / Forever orders).</p></div>`, { label: `Stop-loss ${sym}` });
+  const $ = id => s.el.querySelector(id), send = $('[data-send]');
+  const calc = () => { const q = Math.floor(n($('#sl-q').value) || 0), p = n($('#sl-p').value) || 0, l = n(opts.ltp);
+    $('#sl-sum').innerHTML = `<div><span>Price now</span><b class="tnum">${fmt.px2(l)}</b></div><div><span>Stop is</span><b class="tnum dn">${l > 0 && p > 0 ? fmt.sp((p / l - 1) * 100) : '—'} from here</b></div><div><span>Sale value at the stop</span><b class="tnum">${fmt.inr(q * p)}</b></div>`;
+    send.disabled = !(q > 0 && p > 0 && p < l && $('#sl-pin').value.length >= 4); };
+  ['#sl-q', '#sl-p', '#sl-pin'].forEach(i => { $(i).oninput = calc; });
+  calc();
+  send.onclick = async () => {
+    send.disabled = true; send.textContent = 'Sending…';
+    try { const r = await ownerSend('POST', '/owner/stop', { broker: opts.broker, symbol: sym, qty: Math.floor(n($('#sl-q').value)), trigger: n($('#sl-p').value), pin: $('#sl-pin').value, nonce });
+      s.el.querySelector('.ot').innerHTML = `<div class="ot-done"><div class="ot-ic up">${icon('check', 28)}</div><h3>Stop-loss placed</h3><p>${esc(opts.broker)} will sell ${esc(sym)} if price falls to ${fmt.px2(n($('#sl-p')?.value) || opts.stop)}${r.order_id ? ` · id <b>${esc(r.order_id)}</b>` : ''}.</p></div>`; toast('Stop-loss placed'); }
+    catch (e) { send.textContent = 'Place stop-loss'; $('#sl-pin').value = ''; $('#sl-err').innerHTML = `<p class="ot-warn">${esc(e.message)}</p>`; calc(); }
+  };
 }

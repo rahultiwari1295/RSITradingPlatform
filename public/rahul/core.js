@@ -544,14 +544,17 @@ export async function loadPatterns() {
 
 /* ---------------------------------------------------------------- router and screens */
 const TABS = [
-  ['news', '', 'News', 'today'],
+  ['today', '', 'Today', 'today'],
+  ['news', 'news', 'News', 'news'],
   ['calls', 'calls', 'AI Calls', 'ai'],
   ['patterns', 'patterns', 'Patterns', 'pattern'],
+  ['edge', 'edge', 'Edge', 'bolt'],
   ['xray', 'xray', 'X-Ray', 'xray'],
   ['portfolio', 'portfolio', 'Portfolio', 'pf'],
 ];
 const ROUTES = [
-  [/^$/, 'embed', 'news'],
+  [/^$/, 'today', 'today'],
+  [/^edge$/, 'edge', 'edge'],
   [/^news$/, 'embed', 'news'],
   [/^calls$/, 'calls', 'calls'],
   [/^calls\/closed\/([^/]+)$/, 'closed', 'calls'],
@@ -572,7 +575,7 @@ export function parse(loc = location) {
     const m = p.match(re);
     if (m) return { view, tab, arg: m[1] ? decodeURIComponent(m[1]) : '', path: p, query: new URLSearchParams(loc.search), root: view === tab };
   }
-  return { view: 'embed', tab: 'news', arg: '', path: '', query: new URLSearchParams(), root: true };
+  return { view: 'today', tab: 'today', arg: '', path: '', query: new URLSearchParams(), root: true };
 }
 const stage = () => document.getElementById('stage');
 const roots = {};
@@ -595,7 +598,7 @@ function setTabs(tab) {
   if (ind && i >= 0) ind.style.transform = `translateX(${i * 100}%)`;
 }
 function title(r) {
-  const t = { embed: { news: 'News', xray: 'Stock X-Ray' }[r.tab], today: 'Today', calls: 'AI Calls', patterns: 'Pattern Calls', xray: 'Stock X-Ray', portfolio: 'Portfolio', record: 'Track record', market: 'Market map' }[r.view] || r.arg;
+  const t = { embed: { news: 'News', xray: 'Stock X-Ray' }[r.tab], today: 'Today', edge: 'Edge', calls: 'AI Calls', patterns: 'Pattern Calls', xray: 'Stock X-Ray', portfolio: 'Portfolio', record: 'Track record', market: 'Market map' }[r.view] || r.arg;
   document.title = (t ? t + ' · ' : '') + 'QuantSync';
 }
 const anim = (el, kf, o) => (RM || !el.animate ? Promise.resolve() : el.animate(kf, { duration: 340, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'both', ...o }).finished.catch(() => {}));
@@ -744,6 +747,7 @@ function bootApp() {
   const theme = (() => { try { return localStorage.getItem('qs-theme'); } catch { return null; } })();
   if (theme) document.documentElement.dataset.theme = theme;
   const tabs = document.getElementById('tabs'), rail = document.getElementById('rail');
+  tabs.style.setProperty('--tn', TABS.length);
   tabs.innerHTML = '<span class="ind" aria-hidden="true"></span>' + TABS.map(([k, p, l, ic]) => `<a class="tab" href="${CFG.base}/${p}" data-nav data-tab="${k}" aria-label="${l}">${tabIcon(ic)}<span>${l}</span></a>`).join('');
   rail.innerHTML = `<div class="brand">${logo(28)}QuantSync</div>` + TABS.map(([k, p, l, ic]) => `<a href="${CFG.base}/${p}" data-nav data-tab="${k}">${tabIcon(ic)}<span>${l}</span></a>`).join('') +
     `<a href="/rahul/ops/" style="margin-top:14px">${icon('chip', 22)}<span>Control room</span></a><a href="/app/">${icon('flask', 22)}<span>Strategy Lab</span></a><div class="rail-foot">Research and education. Not investment advice. Prices can be delayed.</div>`;

@@ -5,6 +5,8 @@ import { ruler } from '../charts.js';
 import { footNote } from './parts.js';
 import { loadBook, STATUS, EXIT_DAYS } from './pfdata.js';
 import { orderSheet } from './trade.js';
+import { reviewView } from './review.js';
+import { edgeStocks } from './edgedata.js';
 import { go } from '../core.js';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -14,7 +16,7 @@ export default async function portfolio(el, r) {
     actions: '<button class="ib" data-add aria-label="Add a trade">' + icon('plus', 22) + '</button><button class="ib" data-refresh aria-label="Refresh" style="font-size:20px">↻</button>' });
   body.innerHTML = `<div id="pf">${skel(90, 1, 18)}${skel(56, 6)}</div>`;
   const root = body.querySelector('#pf');
-  let tab = ['log', 'brokers', 'act'].includes(r.query.get('v')) ? r.query.get('v') : 'pf', D = null;
+  let tab = ['log', 'brokers', 'act', 'review'].includes(r.query.get('v')) ? r.query.get('v') : 'pf', D = null;
   let view = ['all', 'ai', 'non', 'exit'].includes(r.query.get('f')) ? r.query.get('f') : 'all';
   let sortBy = (() => { try { return localStorage.getItem('rh-pf-sort') || 'value_d'; } catch { return 'value_d'; } })();
   el.querySelector('[data-add]').onclick = () => tradeSheet();
@@ -25,7 +27,7 @@ export default async function portfolio(el, r) {
     root.innerHTML = `${skel(90, 1, 18)}${skel(96, 5)}`;
     const [book, tr, act] = await Promise.all([loadBook(fresh), ownerApi('/owner/trades').catch(() => ({ trades: [] })),
       ownerApi('/owner/activity').catch(() => ({ orders: [], moves: [] }))]);
-    D = { pf: book.pf, rows: book.rows, trades: tr.trades || [], act };
+    D = { pf: book.pf, rows: book.rows, term: book.term, trades: tr.trades || [], act };
     if (fresh) { const today = new Date().toISOString().slice(0, 10), m = (act.moves || []).filter(x => String(x.ts).slice(0, 10) === today && /sold|reduced/.test(x.kind));
       if (m.length) toast(`Spotted as sold: ${m.slice(0, 3).map(x => x.symbol).join(', ')}${m.length > 3 ? ' +' + (m.length - 3) : ''}`); }
     draw();
@@ -53,7 +55,7 @@ export default async function portfolio(el, r) {
     const nAct = (act.orders || []).length + (act.moves || []).length;
     root.innerHTML = `${pf.error ? errBox(pf.error) : ''}${bad.map(([k, b]) => `<div class="err" role="alert"><span>${k}: ${esc(b.status === 'login_needed' ? 'connect again (Brokers tab)' : b.error || b.status)}</span></div>`).join('')}
       <div id="pf-seg"></div><div id="pf-body" style="margin-top:12px"></div>`;
-    segmented(root.querySelector('#pf-seg'), [['pf', 'Holdings', open.length], ['act', 'Activity', nAct], ['log', 'Manual', trades.length], ['brokers', 'Brokers', Object.values(pf.brokers || {}).filter(b => b.status === 'ok').length]], tab,
+    segmented(root.querySelector('#pf-seg'), [['pf', 'Holdings', open.length], ['review', 'Review'], ['act', 'Activity', nAct || null], ['log', 'Manual'], ['brokers', 'Brokers']], tab,
       v => { tab = v; history.replaceState(history.state, '', location.pathname + '?v=' + v + (v === 'pf' ? '&f=' + view : '')); body2(); });
     root.querySelector('[data-retry]')?.addEventListener('click', () => load(true));
     body2();
@@ -63,6 +65,7 @@ export default async function portfolio(el, r) {
       if (tab === 'log') B.innerHTML = logView(trades);
       else if (tab === 'brokers') B.innerHTML = brokersView(pf.brokers || {}, trades.length);
       else if (tab === 'act') B.innerHTML = actView(act);
+      else if (tab === 'review') { B.innerHTML = skel(90, 4, 16); edgeStocks(open.map(x => String(x.symbol).toUpperCase())).catch(() => ({})).then(S => { if (tab !== 'review') return; B.innerHTML = reviewView(open, act, D.term, S); reveal(B); }); return; }
       else {
         const rows = [...sets[view]].sort((a, b) => SORTS[sortBy][1](a) - SORTS[sortBy][1](b)), t = totals(rows);
         const kpi = (k, v, cls = '', sub = '') => `<div class="panel"><div class="k">${k}</div><div class="v ${cls} tnum">${v}</div>${sub ? `<div class="small">${sub}</div>` : ''}</div>`;
