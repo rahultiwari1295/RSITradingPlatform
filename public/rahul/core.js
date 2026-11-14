@@ -313,7 +313,7 @@ export async function ownerSend(method, path, body) {
   const tok = await auth.token(); if (!tok) throw new Error('Sign in first.');
   const r = await fetch(CFG.api + path, { method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' });
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d.detail || d.error || `Request failed (${r.status}).`);
+  if (!r.ok) throw new Error(d.detail || d.message || d.error || `Request failed (${r.status}).`);
   ownedP = null; return d;
 }
 let ownedP = null, ownedT = 0;
@@ -562,6 +562,7 @@ const ROUTES = [
   [/^xray$/, 'embed', 'xray'],
   [/^xray\/([^/]+)$/, 'embed', 'xray'],
   [/^portfolio$/, 'portfolio', 'portfolio'],
+  [/^stock\/([^/]+)$/, 'stock', 'portfolio'],
 ];
 export function parse(loc = location) {
   let p = loc.pathname.replace(/\/+$/, '');

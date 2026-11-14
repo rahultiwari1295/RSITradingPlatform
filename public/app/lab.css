@@ -1143,3 +1143,29 @@ html.busy::before{content:"";position:fixed;left:0;top:0;height:2.5px;width:40%;
 /* embedded inside /rahul (iframe only): hide this site's own header and tab bar */
 [data-embed] #top,[data-embed] #tabs{display:none!important}
 [data-embed] body{padding-bottom:24px}
+
+/* ---- News briefing: good / bad columns, merged stories, one deal card per stock ---- */
+.br-g{margin-top:6px!important;font-weight:600;color:var(--ink)!important}
+.br-2{display:grid;gap:18px;margin-top:18px}
+@media (min-width:860px){.br-2{grid-template-columns:1fr 1fr;align-items:start}}
+.br-c{margin-top:18px}.br-2 .br-c{margin-top:0}
+.br-ch{display:flex;align-items:center;gap:10px;margin:0 2px 10px}.br-ch .h3{margin:0}
+.br-n{min-width:24px;height:24px;padding:0 7px;border-radius:12px;display:inline-grid;place-items:center;font-size:12.5px;font-weight:700;background:var(--sunk,rgba(127,127,127,.14));color:var(--ink-2)}
+.br-c.pos .br-n{background:var(--good-bg);color:var(--good)}.br-c.neg .br-n{background:var(--weak-bg);color:var(--weak)}
+.br-r{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:start;padding:14px 16px;color:inherit;text-decoration:none}
+.br-r+.br-r{border-top:1px solid var(--line)}
+.br-r:hover{background:color-mix(in srgb,var(--ink) 4%,transparent)}
+.br-i{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--info-bg);color:var(--info)}
+.br-i b{font-size:15px;font-weight:760;font-variant-numeric:tabular-nums}
+.br-i.pos{background:var(--good-bg);color:var(--good)}.br-i.neg{background:var(--weak-bg);color:var(--weak)}
+.br-t{display:grid;gap:3px;min-width:0}
+.br-t>b{font-size:15px;font-weight:650;line-height:1.35;letter-spacing:-.01em}
+.br-s{justify-self:start;font-size:11.5px;font-weight:750;letter-spacing:.03em;padding:2px 7px;border-radius:6px;background:var(--sunk,rgba(127,127,127,.14));color:var(--ink-2)}
+.br-s.ring{box-shadow:0 0 0 2px #3B82F6}
+.br-w{font-size:13.5px;line-height:1.45;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.br-t small{font-size:12px;color:var(--ink-3)}
+.br-more{margin:8px 4px 0}
+.deal.dg{align-content:start}
+.dg-l{display:flex;gap:9px;align-items:flex-start;font-size:13.5px;line-height:1.45;color:var(--ink-2)}
+.dg-l .dot{margin-top:5px;box-shadow:none;width:8px;height:8px}.dg-l b{color:var(--ink);font-variant-numeric:tabular-nums}.dg-l.mute{color:var(--ink-3);font-size:12.5px}
+.dg-x{margin-top:18px}.dg-x summary{cursor:pointer;font-size:14px;font-weight:600;color:var(--ink-2);padding:10px 4px}.dg-x .deals{margin-top:10px}

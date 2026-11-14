@@ -3,6 +3,9 @@
 import { chrome, fmt, esc, icon, n, mono, delta, tone, link, holdings, ownerApi, ownerSend, loadTerminal, allSignals, engineBadge, callPath, segmented, skel, errBox, empty, reveal, sheet, toast } from '../core.js';
 import { ruler } from '../charts.js';
 import { footNote } from './parts.js';
+import { loadBook, STATUS, EXIT_DAYS } from './pfdata.js';
+import { orderSheet } from './trade.js';
+import { go } from '../core.js';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -11,28 +14,27 @@ export default async function portfolio(el, r) {
     actions: '<button class="ib" data-add aria-label="Add a trade">' + icon('plus', 22) + '</button><button class="ib" data-refresh aria-label="Refresh" style="font-size:20px">↻</button>' });
   body.innerHTML = `<div id="pf">${skel(90, 1, 18)}${skel(56, 6)}</div>`;
   const root = body.querySelector('#pf');
-  let tab = ['log', 'brokers'].includes(r.query.get('v')) ? r.query.get('v') : 'pf', D = null;
-  let view = ['all', 'ai', 'non'].includes(r.query.get('f')) ? r.query.get('f') : 'all';
+  let tab = ['log', 'brokers', 'act'].includes(r.query.get('v')) ? r.query.get('v') : 'pf', D = null;
+  let view = ['all', 'ai', 'non', 'exit'].includes(r.query.get('f')) ? r.query.get('f') : 'all';
   let sortBy = (() => { try { return localStorage.getItem('rh-pf-sort') || 'value_d'; } catch { return 'value_d'; } })();
   el.querySelector('[data-add]').onclick = () => tradeSheet();
   el.querySelector('[data-refresh]').onclick = () => load(true);
   load(false);
 
   async function load(fresh) {
-    root.innerHTML = `${skel(90, 1, 18)}${skel(56, 6)}`;
-    const [pf, tr, term] = await Promise.all([
-      ownerApi('/owner/portfolio' + (fresh ? '?fresh=1' : '')).catch(e => ({ error: e.message, rows: [], by_source: {}, brokers: {} })),
-      ownerApi('/owner/trades').catch(() => ({ trades: [] })),
-      loadTerminal().catch(() => null),
-    ]);
-    const calls = term ? allSignals(term) : [];
-    D = { pf, trades: tr.trades || [], callOf: s => calls.filter(c => String(c.sym).toUpperCase() === s) };
+    root.innerHTML = `${skel(90, 1, 18)}${skel(96, 5)}`;
+    const [book, tr, act] = await Promise.all([loadBook(fresh), ownerApi('/owner/trades').catch(() => ({ trades: [] })),
+      ownerApi('/owner/activity').catch(() => ({ orders: [], moves: [] }))]);
+    D = { pf: book.pf, rows: book.rows, trades: tr.trades || [], act };
+    if (fresh) { const today = new Date().toISOString().slice(0, 10), m = (act.moves || []).filter(x => String(x.ts).slice(0, 10) === today && /sold|reduced/.test(x.kind));
+      if (m.length) toast(`Spotted as sold: ${m.slice(0, 3).map(x => x.symbol).join(', ')}${m.length > 3 ? ' +' + (m.length - 3) : ''}`); }
     draw();
   }
 
   const SORTS = { value_d: ['Value: high to low', x => -x.value], value_a: ['Value: low to high', x => x.value],
     pct_d: ['P&L %: high to low', x => -(x.pnl_pct ?? -1e9)], pct_a: ['P&L %: low to high', x => (x.pnl_pct ?? 1e9)],
-    pnl_d: ['P&L ₹: high to low', x => -x.pnl], pnl_a: ['P&L ₹: low to high', x => x.pnl], day_d: ['Today: best first', x => -(x.day_pct ?? -1e9)] };
+    pnl_d: ['P&L ₹: high to low', x => -x.pnl], pnl_a: ['P&L ₹: low to high', x => x.pnl], day_d: ['Today: best first', x => -(x.day_pct ?? -1e9)],
+    act: ['Needs action first', x => STATUS[x.status].rank * 1e9 - x.value] };
   const SRC = ['Angel', 'Kite', 'Dhan', 'Manual'];
 
   function totals(rows) {
@@ -43,13 +45,15 @@ export default async function portfolio(el, r) {
   }
 
   function draw() {
-    const { pf, trades, callOf } = D, open = (pf.rows || []).filter(x => x.qty > 0);
-    const isAi = x => callOf(x.symbol).length > 0;
-    const sets = { all: open, ai: open.filter(isAi), non: open.filter(x => !isAi(x)) };
+    const { pf, trades, rows: open, act } = D;
+    const isAi = x => x.status !== 'none' && x.status !== 'exit';
+    const sets = { all: open, ai: open.filter(isAi), non: open.filter(x => x.status === 'none'), exit: open.filter(x => x.status === 'exit' || x.status === 'stop') };
+    if (view === 'exit' && !sets.exit.length) view = 'all';
     const bad = Object.entries(pf.brokers || {}).filter(([, b]) => b.status && !['ok', 'not_set_up'].includes(b.status));
-    root.innerHTML = `${pf.error ? errBox(pf.error) : ''}${bad.map(([k, b]) => `<div class="err" role="alert"><span>${k}: ${esc(b.status === 'login_needed' ? 'connect again today (Brokers tab)' : b.error || b.status)}</span></div>`).join('')}
+    const nAct = (act.orders || []).length + (act.moves || []).length;
+    root.innerHTML = `${pf.error ? errBox(pf.error) : ''}${bad.map(([k, b]) => `<div class="err" role="alert"><span>${k}: ${esc(b.status === 'login_needed' ? 'connect again (Brokers tab)' : b.error || b.status)}</span></div>`).join('')}
       <div id="pf-seg"></div><div id="pf-body" style="margin-top:12px"></div>`;
-    segmented(root.querySelector('#pf-seg'), [['pf', 'Portfolio', open.length], ['log', 'Trade log', trades.length], ['brokers', 'Brokers', Object.values(pf.brokers || {}).filter(b => b.status === 'ok').length]], tab,
+    segmented(root.querySelector('#pf-seg'), [['pf', 'Holdings', open.length], ['act', 'Activity', nAct], ['log', 'Manual', trades.length], ['brokers', 'Brokers', Object.values(pf.brokers || {}).filter(b => b.status === 'ok').length]], tab,
       v => { tab = v; history.replaceState(history.state, '', location.pathname + '?v=' + v + (v === 'pf' ? '&f=' + view : '')); body2(); });
     root.querySelector('[data-retry]')?.addEventListener('click', () => load(true));
     body2();
@@ -58,11 +62,15 @@ export default async function portfolio(el, r) {
       const B = root.querySelector('#pf-body');
       if (tab === 'log') B.innerHTML = logView(trades);
       else if (tab === 'brokers') B.innerHTML = brokersView(pf.brokers || {}, trades.length);
+      else if (tab === 'act') B.innerHTML = actView(act);
       else {
         const rows = [...sets[view]].sort((a, b) => SORTS[sortBy][1](a) - SORTS[sortBy][1](b)), t = totals(rows);
         const kpi = (k, v, cls = '', sub = '') => `<div class="panel"><div class="k">${k}</div><div class="v ${cls} tnum">${v}</div>${sub ? `<div class="small">${sub}</div>` : ''}</div>`;
-        const name = { all: 'Complete portfolio', ai: 'AI call positions', non: 'Non-AI positions' }[view];
-        B.innerHTML = `<div class="hs pf-views" role="group" aria-label="Which positions">${[['all', 'Complete', sets.all.length], ['ai', 'AI calls', sets.ai.length], ['non', 'Non-AI', sets.non.length]].map(([k, l, c]) => `<button class="chip" data-view="${k}" aria-pressed="${k === view}">${l} <span class="n">${c}</span></button>`).join('')}</div>
+        const name = { all: 'Complete portfolio', ai: 'AI call positions', non: 'Non-AI positions', exit: 'Needs action' }[view];
+        const chips = [['all', 'Complete', sets.all.length], ['ai', 'AI calls', sets.ai.length], ['non', 'Non-AI', sets.non.length]].concat(sets.exit.length ? [['exit', 'Exit now', sets.exit.length]] : []);
+        const ex = sets.exit;
+        B.innerHTML = `${ex.length && view !== 'exit' ? `<button class="hc-alert" data-view="exit">${icon('bolt', 18)}<span><b>${ex.length} ${ex.length === 1 ? 'stock needs' : 'stocks need'} action</b><small>${esc(ex.slice(0, 4).map(x => x.symbol).join(', '))}${ex.length > 4 ? ' +' + (ex.length - 4) : ''}: the AI has closed the call, or price is at the stop.</small></span>${icon('chev', 18)}</button>` : ''}
+          <div class="hs pf-views" role="group" aria-label="Which positions">${chips.map(([k, l, c]) => `<button class="chip${k === 'exit' ? ' dnc' : ''}" data-view="${k}" aria-pressed="${k === view}">${l} <span class="n">${c}</span></button>`).join('')}</div>
           <div class="mine-kpis">
             ${kpi(name, fmt.lakh(t.value), '', `${fmt.int(t.n)} stocks · invested ${fmt.lakh(t.inv)}`)}
             ${kpi('Open P&amp;L', `${fmt.sinr(t.pnl)} <span class="small">${fmt.sp(t.pct)}</span>`, tone(t.pnl))}
@@ -70,26 +78,55 @@ export default async function portfolio(el, r) {
             ${kpi('Where it sits', SRC.filter(k => t.src[k] > 0).map(k => `<span class="srcv"><i class="${k.toLowerCase()}">${k}</i> ${fmt.lakh(t.src[k])}</span>`).join(' ') || '—', 'srcline')}
           </div>
           <div class="pf-tools"><label class="small" for="pf-sort">Sort</label><select id="pf-sort">${Object.entries(SORTS).map(([k, [l]]) => `<option value="${k}"${k === sortBy ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
-          ${rows.length ? table(rows, view === 'ai') : empty(view === 'ai' ? 'ai' : 'pf', view === 'ai' ? 'None of your stocks is an open AI call' : 'Nothing here', view === 'ai' ? 'Stocks you hold that are also open AI calls show here.' : 'Holdings from your brokers appear here automatically.')}`;
+          ${rows.length ? `<div class="hc-list">${rows.map(card).join('')}</div>` : empty(view === 'ai' ? 'ai' : 'pf', view === 'ai' ? 'None of your stocks is an open AI call' : 'Nothing here', view === 'ai' ? 'Stocks you hold that are also open AI calls show here.' : 'Holdings from your brokers appear here.')}`;
         B.querySelectorAll('[data-view]').forEach(b => b.onclick = () => { view = b.dataset.view; history.replaceState(history.state, '', location.pathname + '?v=pf&f=' + view); body2(); });
         B.querySelector('#pf-sort').onchange = e => { sortBy = e.target.value; try { localStorage.setItem('rh-pf-sort', sortBy); } catch { /* blocked */ } body2(); };
+        B.querySelectorAll('[data-sell]').forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation(); const x = open.find(y => y.symbol === b.dataset.sell);
+          orderSheet({ sym: x.symbol, side: 'SELL', broker: Object.keys(x.parts || {}).find(k => k !== 'Manual'), call: x.call, onDone: ok => ok && load(true) }); });
       }
-      B.insertAdjacentHTML('beforeend', footNote('Private: only you can see this. Broker prices come from each broker; manual prices from the live feed.'));
+      B.insertAdjacentHTML('beforeend', footNote(`Private: only you can see this. "Exit call" means the AI closed its call on a stock you still hold in the last ${EXIT_DAYS} days.`));
       bind(B); reveal(B);
     }
   }
 
-  function table(rows, withCall) {
-    return `<div class="pf-table" role="table">
-      <div class="pf-tr pf-th" role="row"><span>Stock</span><span>Qty · avg</span><span>Price</span><span>Value</span><span>P&amp;L</span></div>
-      ${rows.map(x => { const c = D.callOf(x.symbol)[0]; return link(c && withCall ? callPath(c) : `xray/${encodeURIComponent(x.symbol)}`, `
-        <span class="s1">${mono(x.symbol)}<span><b>${esc(x.symbol)}</b>${c ? ' <span class="tag bought">AI call</span>' : ''}<br><span class="src">${Object.keys(x.parts || {}).map(s => `<i class="${s.toLowerCase()}">${s}</i>`).join('')}</span>
-          ${c && withCall ? `<br><span class="small">Stop <b class="dn">${fmt.px(c.stop)}</b> · Target <b class="up">${fmt.px(c.target)}</b></span>` : ''}</span></span>
-        <span class="tnum">${fmt.x(x.qty, x.qty % 1 ? 2 : 0)}<br><span class="small">${fmt.px(x.avg)}</span></span>
-        <span class="tnum">${fmt.px(x.ltp)}<br><span class="small ${tone(x.day_pct)}">${fmt.sp(x.day_pct)}</span></span>
-        <span class="tnum">${fmt.lakh(x.value)}</span>
-        <span class="tnum ${tone(x.pnl)}">${fmt.sinr(x.pnl)}<br><span class="small">${fmt.sp(x.pnl_pct)}</span></span>`, `pf-tr${c ? ' ai' : ''}`, 'role="row"'); }).join('')}
-    </div>`;
+  /* One holding. Three prices side by side: what you paid, what the call said, where it is now. */
+  function card(x) {
+    const c = x.call, e = x.exitCall, st = STATUS[x.status];
+    const canSell = Object.keys(x.parts || {}).some(k => k !== 'Manual');
+    const cell = (k, v, d = '') => `<div><span>${k}</span><b class="tnum">${v}</b>${d ? `<small>${d}</small>` : ''}</div>`;
+    const note = x.status === 'exit' ? `<p class="hc-note dn">${icon('bolt', 15)}<span>The AI <b>closed this call on ${fmt.date(e.exitDate)}</b> at ${fmt.px(e.exit)} (${esc(e.reason.toLowerCase())}, ${fmt.sp(e.roi)}). You still hold ${fmt.int(x.qty)}.</span></p>`
+      : x.status === 'stop' ? `<p class="hc-note dn">${icon('bolt', 15)}<span>Price is <b>at or below the stop</b> of ${fmt.px(c.stop)}. The call fails on a close below it.</span></p>`
+      : x.status === 'target' ? `<p class="hc-note up">${icon('check', 15)}<span>Price has <b>reached the target</b> of ${fmt.px(c.target)}.</span></p>` : '';
+    return `<article class="hc st-${x.status}">
+      <a class="hc-main" href="/rahul/stock/${encodeURIComponent(x.symbol)}" data-nav aria-label="${esc(x.symbol)}, ${st.t}">
+        <div class="hc-top">${mono(x.symbol)}<div class="hc-id"><b>${esc(x.symbol)}</b><span class="src">${Object.keys(x.parts || {}).map(s => `<i class="${s.toLowerCase()}">${s}</i>`).join('')}</span></div>
+          <div class="hc-val"><b class="tnum">${fmt.lakh(x.value)}</b><span class="tnum ${tone(x.pnl)}">${fmt.sinr(x.pnl)} · ${fmt.sp(x.pnl_pct)}</span></div></div>
+        <div class="hc-st"><span class="pill ${st.cls}">${st.t}${c ? ` · day ${fmt.int(c.days)}` : ''}</span>${c ? engineBadge(c) : ''}${isFinite(x.day_pct) && x.day_pct !== null ? `<span class="small">today <b class="${tone(x.day_pct)}">${fmt.sp(x.day_pct)}</b></span>` : ''}</div>
+        <div class="hc-3">
+          ${cell('Your entry', fmt.px(x.avg), `${fmt.x(x.qty, x.qty % 1 ? 2 : 0)} shares`)}
+          ${c ? cell('Call entry', fmt.px(c.entry), isFinite(x.vsCall) ? (Math.abs(x.vsCall) < 0.3 ? 'same as yours' : `you paid ${fmt.sp(x.vsCall)}`) : fmt.date(c.entryDate))
+              : e ? cell('Call entry', fmt.px(e.entry), fmt.date(e.entryDate)) : cell('Call entry', '—', 'no AI call')}
+          ${cell('Now', fmt.px(x.ltp), c ? `stop ${fmt.px(c.stop)}` : e ? `AI exit ${fmt.px(e.exit)}` : '')}
+        </div>
+        ${c ? ruler({ stop: c.stop, entry: c.entry, target: c.target, now: x.ltp }, { short: true }) : ''}
+        ${note}
+      </a>
+      ${canSell && (x.status === 'exit' || x.status === 'stop' || x.status === 'target') ? `<button class="btn sm hc-sell" data-sell="${esc(x.symbol)}">Sell ${esc(x.symbol)}</button>` : ''}
+    </article>`;
+  }
+
+  function actView(a) {
+    const O = a.orders || [], M = a.moves || [];
+    if (!O.length && !M.length) return empty('clock', 'No activity yet', 'Orders you place here and buys or sells spotted when you refresh your brokers show up in this list.');
+    const kind = { sold: ['Sold', 'dn'], reduced: ['Sold part', 'dn'], bought: ['Bought', 'up'], added: ['Bought more', 'up'] };
+    const all = O.map(o => ({ ts: o.ts, html: `<div class="row pf-log"><span class="side ${o.side === 'BUY' ? 'up' : 'dn'}">${o.side}</span>
+        <div class="main"><div class="t">${esc(o.symbol)} <span class="pill ${o.status === 'sent' ? 'up' : 'dn'}">${o.status === 'sent' ? 'Order sent' : 'Failed'}</span></div><div class="small">${esc(o.broker)} · ${esc(String(o.ts).slice(0, 16))}${o.status !== 'sent' && o.message ? ' · ' + esc(o.message) : o.order_id ? ' · id ' + esc(o.order_id) : ''}</div></div>
+        <div class="end tnum"><div>${fmt.int(o.qty)} × ${o.order_type === 'LIMIT' ? fmt.px2(o.price) : 'market'}</div><div class="small">${fmt.inr(o.qty * (o.price || o.ref_price || 0))}</div></div></div>` }))
+      .concat(M.map(m => { const [lab, cls] = kind[m.kind] || [m.kind, '']; return { ts: m.ts, html: `<div class="row pf-log"><span class="side ${cls}">${lab}</span>
+        <div class="main"><div class="t">${esc(m.symbol)} <span class="small">spotted in ${esc(m.source)}</span></div><div class="small">${esc(String(m.ts).slice(0, 16))} · avg ${fmt.px2(m.avg_price)}</div></div>
+        <div class="end tnum"><div>${fmt.x(m.qty, m.qty % 1 ? 2 : 0)} × ${fmt.px2(m.price)}</div>${m.pnl != null ? `<div class="small ${tone(m.pnl)}">${fmt.sinr(m.pnl)}</div>` : ''}</div></div>` }; }))
+      .sort((x, y) => String(y.ts).localeCompare(String(x.ts)));
+    return `<p class="small" style="margin:0 2px 10px">Orders placed from this app, and buys or sells spotted by comparing your broker holdings each time you refresh. Spotted prices are the last traded price at refresh, not your exact fill.</p><div class="group">${all.map(x => x.html).join('')}</div>`;
   }
 
   function brokersView(b, nTrades) {
@@ -101,7 +138,7 @@ export default async function portfolio(el, r) {
       ${card('Kite', `<p class="small">Zerodha logs out every morning, so Kite needs one tap a day. You log in on Zerodha's own page; this app never sees your password.</p>${(b.Kite || {}).status === 'not_set_up' ? '<p class="small"><b>Setup once:</b> create a Kite Connect app at developers.kite.trade, set its redirect URL to <code>https://quantsync-api.duckdns.org:40034/api/owner/kite/callback</code>, then put <code>api_key</code> and <code>api_secret</code> under <code>"kite"</code> in the VPS config.json.</p>' : '<button class="btn block" data-kite>Connect Kite (Zerodha login)</button>'}`)}
       ${card('Dhan', `<p class="small">Dhan logs out every day, so Dhan needs one tap a day. You log in on Dhan's own page; this app never sees your password.</p><button class="btn block" data-dhan>Connect Dhan (Dhan login)</button>`)}
       <div class="panel brk"><div class="brk-h"><b>Manual</b><span class="pill">${fmt.int(nTrades)} trades</span></div><div class="small">For anything not in a connected broker. Add with +.</div></div>
-      <p class="small" style="margin-top:8px">All brokers are fetched when you open this page and saved every trading day at 4:10 PM.</p>`;
+      <p class="small" style="margin-top:8px">Angel updates on its own. Kite and Dhan update when you tap ↻ (top right); a stock that has gone from the list since the last refresh is logged as sold in Activity.</p>`;
   }
 
   function logView(trades) {

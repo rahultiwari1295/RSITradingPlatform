@@ -1,6 +1,7 @@
 import { icon, esc, link, fmt, go, intel, mono } from '../app.js';
 import { alertPrefs, seenAt } from '../feel.js';
 import { NEWS } from '../sample.js';
+import { stories, byTone, dealDigest } from './newsbrief.js';
 
 /* News: the intelligence feed. Brief (07:00 / 17:00), every filing scored, bulk/block deals, insider trades,
    the results calendar and world markets. Live from /api/intel2; labelled sample rows only if that is unreachable. */
@@ -59,17 +60,43 @@ async function buildHome() {
     sections: [{ id: 'stocks', title: 'Indian stocks', paragraph: para(a.items || [], 'stock'), items: a.items || [] }, { id: 'economy', title: 'India economy and policy', paragraph: para(b.items || [], 'policy'), items: b.items || [] }, { id: 'global', title: 'Global', paragraph: para(c.items || [], 'global'), items: c.items || [] }] };
 }
 async function getHome() { try { const h = await intel.home(); if (h && h.mood) return h; } catch { /* not on the server yet */ } return buildHome(); }
+/* One story row: what happened, one line on why it matters, who it is about, how many reports it stands for. */
+const story = (x, W) => {
+  const why = x.why && !x.why.toLowerCase().startsWith(x.title.toLowerCase().slice(0, 40)) ? x.why : '';
+  const meta = [x.n > 1 ? `${x.n} reports` : '', x.sources.slice(0, 2).join(', '), x.ts ? rel(x.ts) : ''].filter(Boolean).join(' · ');
+  const inner = `<span class="br-i ${tone(x.sentiment)}"><b>${x.impact || 0}</b></span>
+    <span class="br-t">${x.symbol ? `<span class="br-s ${W.has(x.symbol) ? 'ring' : ''}">${esc(x.symbol)}</span>` : ''}<b>${esc(x.title)}</b>${why ? `<span class="br-w">${esc(why)}</span>` : ''}<small>${esc(meta)}</small></span>`;
+  return x.symbol ? link(`xray/${encodeURIComponent(x.symbol)}?tab=filings`, inner, 'br-r') : `<a class="br-r" href="${esc(x.url || '#')}" ${x.url ? 'target="_blank" rel="noopener"' : ''}>${inner}</a>`;
+};
+const dealLine = g => {
+  const who = L => L.slice(0, 2).map(p => `${esc(p.name.replace(/\b(PRIVATE|PVT|LIMITED|LTD|LLP)\b\.?/gi, '').trim())} <b>${fmt.cr(Math.abs(p.net))}</b>`).join(', ') + (L.length > 2 ? ` +${L.length - 2} more` : '');
+  const net = g.buy_cr - g.sell_cr, real = g.buy_cr + g.sell_cr > 0;
+  const verdict = !real ? ['', 'Round trips only'] : g.buy_cr > 0 && g.sell_cr > 0 && Math.abs(net) / (g.buy_cr + g.sell_cr) < 0.2 ? ['', 'Changed hands'] : net > 0 ? ['good', 'Net buying'] : ['weak', 'Net selling'];
+  return link(`xray/${encodeURIComponent(g.symbol)}`, `<span class="dh">${mono(g.symbol)}<span class="dn2"><b>${esc(g.symbol)}</b><small>${g.deals} ${g.deals === 1 ? 'deal' : 'deals'} · ${fmt.cr(g.gross_cr)} traded · ${fmt.date(g.last)}</small></span><span class="st ${verdict[0] || 'info'}">${verdict[1]}</span></span>
+    ${g.buyers.length ? `<span class="dg-l"><i class="dot pos"></i><span>Bought: ${who(g.buyers)}</span></span>` : ''}
+    ${g.sellers.length ? `<span class="dg-l"><i class="dot neg"></i><span>Sold: ${who(g.sellers)}</span></span>` : ''}
+    ${!real ? `<span class="dg-l"><i class="dot"></i><span>The same parties bought and sold the same shares on the day. No lasting change in ownership.</span></span>` : g.churn > 0.5 ? `<span class="dg-l mute"><i class="dot"></i><span>${Math.round(g.churn * 100)}% of the volume was same-day round trips, left out here.</span></span>` : ''}`, 'deal dg');
+};
 async function todayView() {
-  const H = await getHome(), W = new Set(alertPrefs().watch), s0 = seenAt(), sixty = get60();
-  const fresh = (H.top || []).concat(...H.sections.map(s => s.items)).filter(x => evT(x) > s0).length;
-  const wl = H.sections.reduce((n, s) => n + s.items.filter(x => x.symbol && W.has(x.symbol)).length, 0);
-  const top = (H.top || []).slice(0, 3);
-  return `<div class="hm-mood ${H.mood.tone || ''}"><i class="dot big ${H.mood.tone || ''}"></i><div><small>Market mood${H.as_of ? ' · ' + rel(H.as_of) : ''}</small><b>${esc(H.mood.label)}</b><p>${esc(H.mood.line || '')}</p></div></div>
-    <div class="hm-bar"><span>${fresh ? `<b>${fresh} new</b> since you last opened` : 'Nothing new since you last opened'}${wl ? ` · <b>${wl}</b> about your watchlist` : ''}</span><div class="seg sm" id="hm60"><button data-v="0" aria-pressed="${!sixty}">Full</button><button data-v="1" aria-pressed="${sixty}">60 sec</button></div></div>
-    <p class="hm-key"><span><i class="dot pos"></i>Good news</span><span><i class="dot neg"></i>Bad news</span><span><i class="dot"></i>Mixed or unclear</span><span><i class="dot ring"></i>Your watchlist</span></p>
-    <section class="sec"><div class="sec-h"><h3 class="h3">Biggest today</h3><span class="tiny">ranked by impact</span></div>${top.length ? (sixty ? `<div class="grp hm-l">${top.map(x => bullet(x, W)).join('')}</div>` : top.map(x => evCard(x)).join('')) : '<p class="empty-s">Quiet so far today.</p>'}</section>
-    ${H.sections.map(s => `<section class="sec hm-s"><div class="sec-h"><h3 class="h3">${esc(s.title)}</h3></div>${!sixty && s.paragraph ? `<p class="hm-p">${esc(s.paragraph)}</p>` : ''}<div class="grp hm-l">${s.items.slice(0, sixty ? 5 : 8).map(x => bullet(x, W)).join('') || '<p class="empty-s" style="padding:14px">Nothing notable yet.</p>'}</div></section>`).join('')}
-    <p class="disc">Facts from exchange filings and news, summarised automatically and scored 0 to 100. Not investment advice.</p>`;
+  const [H, dl] = await Promise.all([getHome(), intel.deals(3).catch(() => ({ items: [] }))]);
+  const W = new Set(alertPrefs().watch), s0 = seenAt(), sixty = get60();
+  const raw = (H.top || []).concat(...H.sections.map(s => s.items));
+  const S = stories(raw), T = byTone(S), cap = sixty ? 3 : 8;
+  const fresh = S.filter(x => evT(x) > s0).length;
+  const mine = S.filter(x => x.symbol && W.has(x.symbol));
+  const D = dealDigest(dl.items || []), Dreal = D.filter(g => g.buy_cr + g.sell_cr > 0), Dchurn = D.length - Dreal.length;
+  const col = (title, cls, L, emptyMsg) => `<section class="br-c ${cls}"><div class="br-ch"><i class="dot big ${cls}"></i><h3 class="h3">${title}</h3><span class="br-n">${L.length}</span></div>
+    ${L.length ? `<div class="grp">${L.slice(0, cap).map(x => story(x, W)).join('')}</div>${L.length > cap ? `<p class="tiny br-more">+${L.length - cap} more in the Filings tab</p>` : ''}` : `<p class="empty-s">${emptyMsg}</p>`}</section>`;
+  const gist = `${T.good.length} good and ${T.bad.length} bad ${S.length === 1 ? 'story' : 'stories'} today${raw.length > S.length ? `, from ${raw.length} reports (repeats merged)` : ''}.`;
+  return `<div class="hm-mood ${H.mood.tone || ''}"><i class="dot big ${H.mood.tone || ''}"></i><div><small>Market mood${H.as_of ? ' · ' + rel(H.as_of) : ''}</small><b>${esc(H.mood.label)}</b><p>${esc(H.mood.line || '')}</p><p class="br-g">${gist}</p></div></div>
+    <div class="hm-bar"><span>${fresh ? `<b>${fresh} new</b> since you last opened` : 'Nothing new since you last opened'}${mine.length ? ` · <b>${mine.length}</b> about your watchlist` : ''}</span><div class="seg sm" id="hm60"><button data-v="0" aria-pressed="${!sixty}">Full</button><button data-v="1" aria-pressed="${sixty}">60 sec</button></div></div>
+    ${mine.length ? `<section class="br-c mine"><div class="br-ch"><i class="dot big ring"></i><h3 class="h3">Your watchlist</h3><span class="br-n">${mine.length}</span></div><div class="grp">${mine.map(x => story(x, W)).join('')}</div></section>` : ''}
+    <div class="br-2">${col('Good news', 'pos', T.good, 'No clearly good news yet today.')}${col('Bad news', 'neg', T.bad, 'No clearly bad news yet today.')}</div>
+    ${T.other.length && !sixty ? col('Worth knowing', '', T.other, '') : ''}
+    ${Dreal.length ? `<section class="br-c"><div class="br-ch"><i class="dot big"></i><h3 class="h3">Big money moves</h3><span class="tiny">large deals, last 3 days, one line per stock</span></div>
+      <div class="deals">${Dreal.slice(0, sixty ? 3 : 6).map(dealLine).join('')}</div>${Dchurn || Dreal.length > 6 ? `<p class="tiny br-more">${Dreal.length > 6 ? `+${Dreal.length - 6} more stocks in the Deals tab. ` : ''}${Dchurn ? `${Dchurn} ${Dchurn === 1 ? 'stock' : 'stocks'} with round-trip trading only left out.` : ''}</p>` : ''}</section>` : ''}
+    <p class="hm-key"><span><i class="dot pos"></i>Good for the stock</span><span><i class="dot neg"></i>Bad for the stock</span><span><i class="dot"></i>Mixed or unclear</span><span>Number = impact, 0 to 100</span></p>
+    <p class="disc">Facts from exchange filings and news, summarised automatically and scored 0 to 100. Repeated reports of one story are merged. Not investment advice.</p>`;
 }
 
 export default async function news(el, r) {
@@ -139,12 +166,12 @@ export default async function news(el, r) {
     async deals() {
       const d = await intel.deals(7); const D = d.items || [];
       if (!D.length) throw new Error('none');
-      const B = D.filter(x => x.side === 'Buy'), Sl = D.filter(x => x.side === 'Sell'), val = L => L.reduce((a, x) => a + (+x.value_cr || 0), 0);
-      return `<div class="kp2"><div><span>Bought in large deals</span><b class="tnum up">${fmt.cr(val(B))}</b><small>${B.length} deals, 7 days</small></div><div><span>Sold in large deals</span><b class="tnum dn">${fmt.cr(val(Sl))}</b><small>${Sl.length} deals, 7 days</small></div></div>
-        <div class="info-b">${icon('info', 16)}<span><b>Bulk deal</b>: one investor trades more than 0.5% of a company’s shares in a day. <b>Block deal</b>: one trade of ₹10 crore or more in a special window.</span></div>
-        <div class="deals">${D.map(x => link(`xray/${encodeURIComponent(x.symbol)}`, `<span class="dh">${mono(x.symbol)}<span class="dn2"><b>${esc(x.symbol)}</b><small>${esc(x.kind)} deal · ${fmt.date(x.deal_date)}</small></span><span class="st ${x.side === 'Buy' ? 'good' : 'weak'}">${x.side === 'Buy' ? 'Bought' : 'Sold'}</span></span>
-          <span class="who2">${esc(x.party)}</span>
-          <span class="d3"><span><small>Shares</small><b class="tnum">${qty(x.qty)}</b></span><span><small>Price</small><b class="tnum">${fmt.inr(x.price)}</b></span><span><small>Value</small><b class="tnum">${fmt.cr(x.value_cr)}</b></span></span>`, 'deal')).join('')}</div>`;
+      const G = dealDigest(D), real = G.filter(g => g.buy_cr + g.sell_cr > 0), churn = G.filter(g => g.buy_cr + g.sell_cr <= 0);
+      const nb = real.filter(g => g.buy_cr > g.sell_cr * 1.25), ns = real.filter(g => g.sell_cr > g.buy_cr * 1.25);
+      return `<div class="kp2"><div><span>Stocks with net buying</span><b class="tnum up">${nb.length}</b><small>${fmt.cr(nb.reduce((a, g) => a + g.buy_cr - g.sell_cr, 0))} net, 7 days</small></div><div><span>Stocks with net selling</span><b class="tnum dn">${ns.length}</b><small>${fmt.cr(ns.reduce((a, g) => a + g.sell_cr - g.buy_cr, 0))} net, 7 days</small></div></div>
+        <div class="info-b">${icon('info', 16)}<span>${fmt.int(D.length)} deals in ${G.length} stocks, shown as <b>one card per stock</b>. A party that buys and sells the same shares on the same day cancels out, so only real changes in ownership are listed. <b>Bulk deal</b>: more than 0.5% of a company in a day. <b>Block deal</b>: one trade of ₹10 crore or more.</span></div>
+        <div class="deals">${real.map(dealLine).join('')}</div>
+        ${churn.length ? `<details class="dg-x"><summary>${churn.length} ${churn.length === 1 ? 'stock' : 'stocks'} with round-trip trading only</summary><div class="deals">${churn.map(dealLine).join('')}</div></details>` : ''}`;
     },
     async insiders() {
       const d = await intel.insiders(30); const L = d.items || [];

@@ -1,7 +1,8 @@
 import { api, chrome, fill, fmt, esc, icon, n, ok, link, mono, delta, tone, loadTerminal, share, scoreTone, sentence, clean, q, empty, engineOf, engineBadge, ENGINES } from '../core.js';
 import { priceChart, toCandles, withEmas, ruler, settle } from '../charts.js';
 import { sec, statCell, closedRow, footNote, paperSheet } from './parts.js';
-import { paper, go } from '../core.js';
+import { paper, go, auth, isOwner } from '../core.js';
+import { orderSheet } from './trade.js';
 
 export default async function call(el, r) {
   const sym = r.arg.toUpperCase();
@@ -52,6 +53,7 @@ export default async function call(el, r) {
       <div id="k-hist"></div>
       ${footNote()}`;
     settle(body);
+    auth.whenReady().then(() => { if (!isOwner()) return; const hero = body.querySelector('.xhero'); hero.insertAdjacentHTML('afterend', `<div style="display:flex;gap:8px;margin-top:12px"><button class="btn block" data-buy>Buy ${esc(c.sym)}</button><button class="btn quiet" data-sell>Sell</button></div>`); body.querySelector('[data-buy]').onclick = () => orderSheet({ sym: c.sym, side: 'BUY', call: c }); body.querySelector('[data-sell]').onclick = () => orderSheet({ sym: c.sym, side: 'SELL', call: c }); });
     const pb = body.querySelector('[data-paper]'); if (pb) pb.onclick = () => (paper.has(c.sym) ? go('portfolio') : paperSheet(c, () => { pb.lastChild.textContent = 'Paper trade started'; }));
 
     const chartEl = body.querySelector('#k-chart');
