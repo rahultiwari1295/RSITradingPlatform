@@ -1599,3 +1599,14 @@ html .group.hl-list { display: grid; gap: 12px; background: none; box-shadow: no
 html .gp-alert { border-radius: 20px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--dn-solid) 35%, transparent), 0 10px 22px -14px rgba(204, 58, 54, .45); }
 /* v11: engine badges in the violet family (AI Pro indigo-violet, Chart AI Pro orchid) */
 html:root { --e2a: #8577F7; --e2b: #5A4AD9; --e3a: #C277E6; --e3b: #8F45CF; }
+
+/* ---------------------------------------------------------------- separate tiles: every row is its own card */
+html .group:not(.cr-empty):has(> .row, > .cr) { background: none; box-shadow: none; border-radius: 0; overflow: visible; display: grid; gap: 8px; }
+html .group > .row, html .group > .cr { background: var(--surface); box-shadow: var(--lift-sm); border-radius: 18px; overflow: hidden; border: 0; padding: 13px 14px; min-height: 0; }
+html .group > .cr { padding: 14px 14px 13px 16px; }
+html .group > .row + .row::before, html .group > .cr + .cr { content: none; border-top: 0; box-shadow: var(--lift-sm); }
+html .group > .row::after { border-radius: 0 3px 3px 0; }
+html .group > .row .mono { flex: none; }
+html .group > .row:active, html .group > .cr:active { transform: scale(.992); }
+html .group.cr-list { gap: 10px; }
+html .sec-h + .group, html .sec-h + .cr-list { margin-top: 2px; }
