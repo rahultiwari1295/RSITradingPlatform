@@ -18,4 +18,4 @@ export async function ownerApi(path) {
   throw new Error('preview has no data for ' + path);
 }
 /** Nothing is ever sent in the preview. */
-export async function ownerSend(method, path, body) { console.info('preview: would send', method, path); return { ok: true, order_id: 'PREVIEW', message: 'Preview only, nothing was sent.' }; }
+export async function ownerSend(method, path, body) { console.info('preview: would send', method, path); return { ok: true, order_id: 'PREVIEW', added: (body && body.rows ? body.rows.length : 0), skipped: 0, bad: 0, message: 'Preview only, nothing was sent.' }; }

@@ -4,8 +4,9 @@ import { chrome, fmt, esc, icon, n, mono, delta, tone, link, holdings, ownerApi,
 import { ruler } from '../charts.js';
 import { footNote } from './parts.js';
 import { loadBook, STATUS, EXIT_DAYS } from './pfdata.js';
-import { orderSheet } from './trade.js';
-import { reviewView } from './review.js';
+import { orderSheet, buySize } from './trade.js';
+import { reviewView, bindReview } from './review.js';
+import { followView, bindFollow, importPanel, bindImport } from './follow.js';
 import { edgeStocks } from './edgedata.js';
 import { go } from '../core.js';
 
@@ -16,7 +17,7 @@ export default async function portfolio(el, r) {
     actions: '<button class="ib" data-add aria-label="Add a trade">' + icon('plus', 22) + '</button><button class="ib" data-refresh aria-label="Refresh" style="font-size:20px">↻</button>' });
   body.innerHTML = `<div id="pf">${skel(90, 1, 18)}${skel(56, 6)}</div>`;
   const root = body.querySelector('#pf');
-  let tab = ['log', 'brokers', 'act', 'review'].includes(r.query.get('v')) ? r.query.get('v') : 'pf', D = null;
+  let tab = (r.query.get('v') === 'clean' ? 'review' : ['log', 'brokers', 'act', 'review', 'follow'].includes(r.query.get('v')) ? r.query.get('v') : 'pf'), D = null;
   let view = ['all', 'ai', 'non', 'exit'].includes(r.query.get('f')) ? r.query.get('f') : 'all';
   let sortBy = (() => { try { return localStorage.getItem('rh-pf-sort') || 'value_d'; } catch { return 'value_d'; } })();
   el.querySelector('[data-add]').onclick = () => tradeSheet();
@@ -46,6 +47,16 @@ export default async function portfolio(el, r) {
     return { value, inv, pnl: value - inv, pct: inv ? (value / inv - 1) * 100 : NaN, day, dayPct: value - day ? day / (value - day) * 100 : NaN, n: rows.length, src };
   }
 
+  /** Total, then the AI part against the part with no AI call. */
+  function headerPanel(rows) {
+    if (!rows.length) return '';
+    const all = totals(rows), a = totals(rows.filter(x => x.call)), o = totals(rows.filter(x => !x.call));
+    const part = (k, t) => `<div class="pf-hp"><span>${k}<small>${fmt.int(t.n)} stocks</small></span><b class="tnum">${fmt.lakh(t.value)}</b><span class="tnum ${tone(t.pnl)}">${fmt.sinr(t.pnl)} <small>${fmt.sp(t.pct)}</small></span></div>`;
+    return `<section class="panel pf-head" aria-label="Portfolio summary"><div class="pf-ht"><div><div class="k">Total value</div><div class="v tnum">${fmt.lakh(all.value)}</div></div>
+      <div class="pf-hd"><div class="k">Today</div><div class="tnum ${tone(all.day)}"><b>${fmt.sinr(all.day)}</b> <span class="small">${fmt.sp(all.dayPct)}</span></div></div></div>
+      ${part('AI calls', a)}${part('Not AI', o)}</section>`;
+  }
+
   function draw() {
     const { pf, trades, rows: open, act } = D;
     const isAi = x => x.status !== 'none' && x.status !== 'exit';
@@ -54,8 +65,8 @@ export default async function portfolio(el, r) {
     const bad = Object.entries(pf.brokers || {}).filter(([, b]) => b.status && !['ok', 'not_set_up'].includes(b.status));
     const nAct = (act.orders || []).length + (act.moves || []).length;
     root.innerHTML = `${pf.error ? errBox(pf.error) : ''}${bad.map(([k, b]) => `<div class="err" role="alert"><span>${k}: ${esc(b.status === 'login_needed' ? 'connect again (Brokers tab)' : b.error || b.status)}</span></div>`).join('')}
-      <div id="pf-seg"></div><div id="pf-body" style="margin-top:12px"></div>`;
-    segmented(root.querySelector('#pf-seg'), [['pf', 'Holdings', open.length], ['review', 'Review'], ['act', 'Activity', nAct || null], ['log', 'Manual'], ['brokers', 'Brokers']], tab,
+      ${headerPanel(open)}<div id="pf-seg"></div><div id="pf-body" style="margin-top:12px"></div>`;
+    segmented(root.querySelector('#pf-seg'), [['pf', 'Holdings', open.length], ['follow', 'Follow'], ['review', 'Clean-up'], ['act', 'Activity', nAct || null], ['log', 'Manual'], ['brokers', 'Brokers']], tab,
       v => { tab = v; history.replaceState(history.state, '', location.pathname + '?v=' + v + (v === 'pf' ? '&f=' + view : '')); body2(); });
     root.querySelector('[data-retry]')?.addEventListener('click', () => load(true));
     body2();
@@ -63,9 +74,10 @@ export default async function portfolio(el, r) {
     function body2() {
       const B = root.querySelector('#pf-body');
       if (tab === 'log') B.innerHTML = logView(trades);
-      else if (tab === 'brokers') B.innerHTML = brokersView(pf.brokers || {}, trades.length);
+      else if (tab === 'brokers') B.innerHTML = brokersView(pf.brokers || {}, trades.length) + importPanel();
+      else if (tab === 'follow') { B.innerHTML = skel(90, 3, 16); ownerApi('/owner/follow?size=' + buySize()).catch(() => ({ track_from: null, rows: [], summary: {} })).then(d => { if (tab !== 'follow') return; const paint = per => { B.innerHTML = followView(d, per); bindFollow(B, d, paint); reveal(B); }; paint('month'); }); return; }
       else if (tab === 'act') B.innerHTML = actView(act);
-      else if (tab === 'review') { B.innerHTML = skel(90, 4, 16); edgeStocks(open.map(x => String(x.symbol).toUpperCase())).catch(() => ({})).then(S => { if (tab !== 'review') return; B.innerHTML = reviewView(open, act, D.term, S); reveal(B); }); return; }
+      else if (tab === 'review') { B.innerHTML = skel(90, 4, 16); edgeStocks(open.map(x => String(x.symbol).toUpperCase())).catch(() => ({})).then(S => { if (tab !== 'review') return; B.innerHTML = reviewView(open, act, D.term, S); bindReview(B, open, okd => okd && load(true)); reveal(B); }); return; }
       else {
         const rows = [...sets[view]].sort((a, b) => SORTS[sortBy][1](a) - SORTS[sortBy][1](b)), t = totals(rows);
         const kpi = (k, v, cls = '', sub = '') => `<div class="panel"><div class="k">${k}</div><div class="v ${cls} tnum">${v}</div>${sub ? `<div class="small">${sub}</div>` : ''}</div>`;
@@ -75,7 +87,6 @@ export default async function portfolio(el, r) {
         B.innerHTML = `${ex.length && view !== 'exit' ? `<button class="hc-alert" data-view="exit">${icon('bolt', 18)}<span><b>${ex.length} ${ex.length === 1 ? 'stock needs' : 'stocks need'} action</b><small>${esc(ex.slice(0, 4).map(x => x.symbol).join(', '))}${ex.length > 4 ? ' +' + (ex.length - 4) : ''}: the AI has closed the call, or price is at the stop.</small></span>${icon('chev', 18)}</button>` : ''}
           <div class="hs pf-views" role="group" aria-label="Which positions">${chips.map(([k, l, c]) => `<button class="chip${k === 'exit' ? ' dnc' : ''}" data-view="${k}" aria-pressed="${k === view}">${l} <span class="n">${c}</span></button>`).join('')}</div>
           <div class="mine-kpis">
-            ${kpi(name, fmt.lakh(t.value), '', `${fmt.int(t.n)} stocks · invested ${fmt.lakh(t.inv)}`)}
             ${kpi('Open P&amp;L', `${fmt.sinr(t.pnl)} <span class="small">${fmt.sp(t.pct)}</span>`, tone(t.pnl))}
             ${kpi('Today', `${fmt.sinr(t.day)} <span class="small">${fmt.sp(t.dayPct)}</span>`, tone(t.day))}
             ${kpi('Where it sits', SRC.filter(k => t.src[k] > 0).map(k => `<span class="srcv"><i class="${k.toLowerCase()}">${k}</i> ${fmt.lakh(t.src[k])}</span>`).join(' ') || '—', 'srcline')}
@@ -155,6 +166,7 @@ export default async function portfolio(el, r) {
 
   function bind(L) {
     L.querySelector('[data-addb]')?.addEventListener('click', () => tradeSheet());
+    bindImport(L, () => { tab = 'follow'; history.replaceState(history.state, '', location.pathname + '?v=follow'); draw(); });
     L.querySelector('[data-dhan]')?.addEventListener('click', async () => { try { const d = await ownerApi('/owner/dhan/login'); location.href = d.url; } catch (e) { toast(e.message); } });
     L.querySelector('[data-kite]')?.addEventListener('click', async () => { try { const d = await ownerApi('/owner/kite/login'); location.href = d.url; } catch (e) { toast(e.message); } });
     L.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => tradeSheet(D.trades.find(t => String(t.id) === b.dataset.edit)));

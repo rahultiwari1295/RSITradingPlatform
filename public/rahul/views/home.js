@@ -1,5 +1,5 @@
 /* /rahul home: News, with one thin strip on top that says how many calls need action. */
-import { icon, link, auth, isOwner, allSignals } from '../core.js';
+import { icon, link, auth, isOwner, allSignals, ownerApi } from '../core.js';
 import { loadBook } from './pfdata.js';
 import { entryZone } from './parts.js';
 
@@ -18,6 +18,8 @@ export default async function home(el) {
     const txt = sell || fresh
       ? `<b class="${sell ? 'dn' : ''}">${sell} to sell</b> <i>·</i> <b>${fresh} new ${fresh === 1 ? 'call' : 'calls'}</b>`
       : 'Nothing to sell <i>·</i> no new call yet';
-    strip.innerHTML = link('calls', `<span class="hm-t">${txt}</span>${icon('chev', 16, 'chev')}`, 'hm-strip');
+    let took = '';
+    try { const f = await ownerApi('/owner/follow'); const m = (f.summary || {}).month; if (m && m.calls > 0) took = ` <i>·</i> took ${m.taken + m.late} of ${m.calls}`; } catch { /* not built yet */ }
+    strip.innerHTML = link('calls', `<span class="hm-t">${txt}${took}</span>${icon('chev', 16, 'chev')}`, 'hm-strip');
   } catch { strip.remove(); }
 }
