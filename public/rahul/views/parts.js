@@ -53,7 +53,7 @@ export function bindSignals(root, list, onChange) {
   root.querySelectorAll('[data-paper]').forEach(b => b.onclick = e => { e.preventDefault(); const c = list.find(x => x.sym === b.dataset.paper); if (c) paperSheet(c, onChange); });
   root.querySelectorAll('[data-open-paper]').forEach(b => b.onclick = e => { e.preventDefault(); go('portfolio'); });
 }
-const head = (t, sub, n, cls = '') => `<div class="sig-sec ${cls}"><div class="h"><h3>${t}</h3><span class="n tnum">${n}</span></div><p>${sub}</p></div>`;
+const head = (t, sub, n, cls = '', extra = '') => `<div class="sig-sec ${cls}"><div class="h"><h3>${t}</h3><span class="n tnum">${n}</span>${extra}</div><p>${sub}</p></div>`;
 /** Every open call appears once: new today, still open to buy (near or above entry), or below its entry. Nothing is hidden. */
 export function signalList(list, o = {}) {
   const by = (a, b) => (b.score || 0) - (a.score || 0);
@@ -64,7 +64,9 @@ export function signalList(list, o = {}) {
     const h = signalCard(c, o);
     return o.buy ? `<div class="sig-wrap">${h}<div class="sig-buy"><button class="btn sm" data-buy="${esc(c.sym)}">${o.owned && o.owned.has(String(c.sym).toUpperCase()) ? 'Buy more' : 'Buy'}</button></div></div>` : h;
   };
-  return `${head('Buy today', 'New calls from the last scan.', g1.length, 'fresh')}
+  const free = g1.filter(c => !(o.owned && o.owned.has(String(c.sym).toUpperCase())));
+  const all = o.buy && free.length >= 2 ? `<button class="btn sm" data-basket style="margin-left:auto">Buy all ${Math.min(free.length, 5)}</button>` : '';
+  return `${head('Buy today', 'New calls from the last scan.', g1.length, 'fresh', all)}
     <div class="sig-stack">${g1.length ? g1.map(card).join('') : `<div class="empty"><div class="ic">${icon('clock', 24)}</div><h3>No new call in the last scan</h3><p>Calls come at about 3:15 PM on market days.</p></div>`}</div>
     ${g2.length ? `${head('Still open to buy', 'Older calls that are at or above their entry price.', g2.length, 'old')}<div class="sig-stack">${g2.map(card).join('')}</div>` : ''}
     ${g3.length ? `${head('Below entry', 'The price has fallen under the call\'s entry. In the past, calls bought below their entry won about 3 in 10. Waiting for the price to get back above the entry is safer.', g3.length, 'old')}<div class="sig-stack">${g3.map(c => signalCard(c, o)).join('')}</div>` : ''}`;

@@ -1115,3 +1115,11 @@ body, .screen, .bar, .mk, .door, .labx, .panel, .group, .sig, .stat, .yr { trans
 .pf-hp { display: grid; grid-template-columns: 1.1fr 1fr 1.3fr; align-items: baseline; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
 .pf-hp > span:first-child { color: var(--ink-2); } .pf-hp > span:first-child small { display: block; font-size: 12px; opacity: .75; } .pf-hp b { font-weight: 650; } .pf-hp > span:last-child { text-align: right; } .pf-hp > span:last-child small { display: block; font-size: 12px; }
 .rv-fold { margin-top: 14px; } .rv-fold > summary { cursor: pointer; font-weight: 650; padding: 10px 2px; } .rv-fold .group { margin-top: 6px; }
+
+/* /rahul basket order sheet and weekly card */
+.bk-rows { display: grid; gap: 8px; margin-top: 10px; }
+.bk-row { padding: 10px 12px; border-radius: 14px; background: var(--surface); box-shadow: 0 0 0 1px var(--edge); display: grid; gap: 6px; }
+.bk-on { display: flex; align-items: center; gap: 8px; } .bk-on input { width: 20px; height: 20px; }
+.bk-in { display: flex; align-items: center; gap: 8px; } .bk-in input { width: 100%; min-width: 0; height: 40px; border-radius: 10px; border: 1px solid var(--edge); background: var(--card); color: var(--ink); padding: 0 10px; font: inherit; }
+.bk-stop { display: flex; gap: 8px; align-items: center; margin-top: 12px; font-size: 14px; }
+.wk { margin-bottom: 14px; border-left: 3px solid var(--brand-solid); }

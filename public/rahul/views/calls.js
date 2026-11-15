@@ -1,8 +1,8 @@
 import { reveal, chrome, fill, fmt, esc, icon, link, loadTerminal, allSignals, segmented, tone, toDate, tradeStats, yearTrades, auth, isOwner, ownedSymbols, skel, ownerApi } from '../core.js';
 import { settle } from '../charts.js';
-import { closedRow, footNote, signalList, sec } from './parts.js';
+import { closedRow, footNote, signalList, sec, entryZone } from './parts.js';
 import { loadBook, STATUS } from './pfdata.js';
-import { orderSheet } from './trade.js';
+import { orderSheet, basketSheet } from './trade.js';
 import { edgeHome, GAUGE, srow, day } from './edgedata.js';
 
 export default async function calls(el, r) {
@@ -34,7 +34,10 @@ export default async function calls(el, r) {
     const cut = Date.now() - 7 * 864e5;
     const warns = rows.flatMap(x => ((S[String(x.symbol).toUpperCase()] || {}).warnings || []).map(w => ({ ...w, sym: x.symbol })));
     const att = warns.filter(w => (w.level === 'bad' && w.d && new Date(w.d).getTime() >= cut) || (w.kind === 'results' && w.d && new Date(w.d).getTime() - Date.now() <= 3 * 864e5 && new Date(w.d).getTime() >= Date.now() - 864e5));
-    box.innerHTML = `${G ? link('edge?v=market', `<span class="cg-dot ${G.cls}"></span><span class="cg-t">Market: <b>${G.t}</b> <i>·</i> ${fmt.x(R.b50, 0)}% of stocks above their 50-day average</span>${icon('chev', 16, 'chev')}`, 'cg-line') : ''}
+    const W = await ownerApi('/owner/weekly').catch(() => ({}));
+    const ist = new Date(Date.now() + (330 + new Date().getTimezoneOffset()) * 60000), dow = ist.getDay(), hr = ist.getHours();
+    const weekOn = dow === 0 || (dow === 6 && hr >= 18) || (dow === 1 && hr < 9);
+    box.innerHTML = `${weekOn && W.text ? `<section class="panel pad wk"><b>Your week</b><div class="small" style="white-space:pre-line;margin-top:6px;color:var(--ink)">${esc(W.text)}</div></section>` : ''}${G ? link('edge?v=market', `<span class="cg-dot ${G.cls}"></span><span class="cg-t">Market: <b>${G.t}</b> <i>·</i> ${fmt.x(R.b50, 0)}% of stocks above their 50-day average</span>${icon('chev', 16, 'chev')}`, 'cg-line') : ''}
       ${sec('Sell', act.length ? `<div class="group">${act.map(x => `<div class="row td-act"><a href="${esc('/rahul/stock/' + encodeURIComponent(x.symbol))}" data-nav class="main"><div class="t">${esc(x.symbol)} <span class="pill ${STATUS[x.status].cls}">${STATUS[x.status].t}</span></div><div class="s">${why(x)} · you hold ${fmt.x(x.qty, 0)} (${fmt.inr(x.value)})</div></a>
           ${Object.keys(x.parts || {}).some(k => k !== 'Manual') ? `<button class="btn sm ${x.status === 'target' ? 'quiet' : 'sell'}" data-sell="${esc(x.symbol)}">Sell</button>` : ''}</div>`).join('')}</div>` : '<div class="panel pad small">Nothing to sell. No AI exit, stop or target on the stocks you hold.</div>')}
       ${att.length ? sec('Needs attention', `<div class="group">${att.slice(0, 8).map(w => srow(w.sym, esc(w.text), `<div class="d faint">${day(w.d)}</div>`)).join('')}</div>`) : ''}
@@ -50,6 +53,7 @@ export default async function calls(el, r) {
   function draw(t) {
     if (tab === 'closed') { closed(t); reveal(list); return; }
     const paint = (o = {}) => { const calls = allSignals(t); list.innerHTML = `<p class="tab-note"><b>Active trades</b> are calls that are still open. Buy the new ones, and the older ones that are still at or above their entry.</p>${o.expand ? `<p class="tab-note own">${o.owned.size ? `<b>Green border</b> = you already hold it (Angel or your trade log).` : 'Your holdings are loading…'} <a href="/rahul/portfolio" data-nav>My portfolio</a></p>` : ''}${signalList(allSignals(t), o)}`; settle(list); reveal(list);
+      list.querySelector('[data-basket]')?.addEventListener('click', e => { e.preventDefault(); const free = calls.filter(c => entryZone(c) === 'new' && !(o.owned && o.owned.has(String(c.sym).toUpperCase()))).sort((a, b) => (b.score || 0) - (a.score || 0)); basketSheet({ calls: free, onDone: okd => okd && ownedSymbols().then(owned => paint({ expand: true, owned, buy: true })) }); });
       list.querySelectorAll('[data-buy]').forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation(); const c = calls.find(y => y.sym === b.dataset.buy); orderSheet({ sym: b.dataset.buy, side: 'BUY', call: c, onDone: okd => okd && ownedSymbols().then(owned => paint({ expand: true, owned, buy: true })) }); }); };
     paint();
     auth.whenReady().then(() => { if (!isOwner() || tab !== 'signals') return; paint({ expand: true, owned: new Set(), buy: true }); ownedSymbols().then(owned => { if (tab === 'signals') paint({ expand: true, owned, buy: true }); }); });

@@ -42,3 +42,15 @@
 - Broker trade-book and stop-loss requests are written from memory of the brokers' formats and must be checked against their documentation.
 - The trade-book file column names are a starting list. The importer needs one real file from each broker to be tested.
 - The Patterns finding rests on 7 weeks of history.
+
+## Status, 15 Nov 2026
+
+- Release A, B, C and D are built and deployed. Server files are in `tools/server-files/release-b` and `release-c`.
+- Phase 7 findings:
+  - SILVERBEES: the price (168.76) matches Angel, the quote feed and the price history, and the average 268.85 is a price the ETF really traded at. The -37% is real; the exactly 100 gap is a coincidence. No fix needed.
+  - Angel cash: the funds call failed with "Invalid Token" because it did not log in again like the holdings call does. Fixed; it now returns the real balance.
+  - 65 closed calls have an entry price more than 3% from that day's close (`tools/reports/entry_price_check.csv`): 42 are plausible intraday entries, 2 look like split adjustments, 21 are entries outside the day's low-to-high range (mostly Gap and Breakout entries below the day's low, which could not have been bought, plus 4 BHAGYANGR rows with unadjusted prices).
+  - The +1.5% exits: V2 moves its stop to entry +1.5% once the price touches +5%, so a fall back gives exactly +1.5%. 42 of 378 calls ended this way.
+  - Phantom activity rows: not changed. Angel, Kite and Dhan holdings already include the T+1 quantity, and deleting buy/sell pairs could hide real quick trades. The follow tracker ignores such pairs only when it has no better evidence.
+  - Live-quote volume and day-low errors: could not reproduce with the market closed; the table is clean (9 of 2,741 rows have zero volume, none has a low above the price).
+- Not yet verified against real broker data: the trade-fills reader for Angel (field names not in a page I could read), the trade-book import on real files, stop-loss orders on all brokers, basket orders.

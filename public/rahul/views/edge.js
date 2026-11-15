@@ -1,7 +1,7 @@
 /* /rahul/edge — the research lists that paid services charge for, built from data the server already collects:
    market gauge, results reaction, promoter / institution moves, proven bulk-deal buyers, sector strength,
    delivery-based accumulation, and each engine's live track record. Every list says how far it has been tested. */
-import { chrome, fmt, esc, icon, n, link, tone, isOwner, auth, skel, errBox, empty } from '../core.js';
+import { chrome, fmt, esc, icon, n, link, tone, isOwner, auth, skel, errBox, empty, STRAT_NAMES } from '../core.js';
 import { sec, footNote } from './parts.js';
 import { edgeBlob, GAUGE, gaugeFacts, evidenceLine, rsPill, srow, cr, day, note } from './edgedata.js';
 import { titleCase } from './edgedata.js';
@@ -101,13 +101,17 @@ const DRAW = {
     const NAME = { v2: 'V2', v3: 'V3' }, E = S.engines || {};
     const cell = (k, s) => `<div class="stat"><div class="k">${k}</div><div class="v ${tone(s?.avg)}">${s && s.n ? fmt.sp(s.avg, 2) : '—'}</div><div class="d">${s && s.n ? `${s.n} calls · ${fmt.x(s.win, 0)}% won` : 'no closed calls'}</div></div>`;
     const eng = k => { const e = E[k]; if (!e || !e.all) return ''; const mx = Math.max(1, ...e.months.map(m => Math.abs(n(m.total) || 0)));
-      return sec(`${NAME[k] || k.toUpperCase()} engine`, `<div class="stats">${cell('All time', e.all)}${cell('Last 90 days', e.d90)}${cell('Last 30 days', e.d30)}</div>
+      const lv = e.live && e.live.n ? `<div class="stats two" style="margin-top:10px">${cell(`Live since ${day(e.live_first)}`, e.live)}${cell('Bought next morning', e.next_open)}</div>${e.live.n < 30 ? note('Too few live calls to judge yet. Live calls are the ones marked live when they were made, not rebuilt later.') : ''}` : '';
+      return sec(`${NAME[k] || k.toUpperCase()} engine`, `<div class="stats">${cell('All time', e.all)}${cell('Last 90 days', e.d90)}${cell('Last 30 days', e.d30)}</div>${lv}
         <div class="panel pad" style="margin-top:10px"><div class="small" style="margin-bottom:8px">Sum of call results by month (percent)</div><div class="eg-months">${e.months.map(m => `<div title="${m.m}: ${fmt.sp(m.total)} from ${m.n} calls"><i class="${tone(m.total)}" style="height:${Math.max(3, Math.abs(n(m.total)) / mx * 56)}px"></i><span>${m.m.slice(5)}</span></div>`).join('')}</div>
           <p class="small" style="margin:10px 0 0">Average win <b class="up">${fmt.sp(e.all.avg_win)}</b>, average loss <b class="dn">${fmt.sp(e.all.avg_loss)}</b>, held about ${fmt.int(e.all.hold)} days. ${e.open ? `Open now: <b>${e.open.n}</b> calls, averaging <b class="${tone(e.open.avg)}">${fmt.sp(e.open.avg)}</b>.` : ''}</p></div>
         <div class="group" style="margin-top:10px">${e.recent.map(x => srow(x.symbol, `${esc(String(x.why || '').replace(/_/g, ' ').toLowerCase())}`, `<div class="v tnum ${tone(x.pct)}">${fmt.sp(x.pct)}</div><div class="d faint">${day(x.exit)}</div>`)).join('')}</div>`, { p: `Closed calls from ${day(e.first)} ${String(e.first).slice(0, 4)} to ${day(e.last)}.` }); };
+    const types = EN => { const L = ['v2', 'v3'].flatMap(k => ((EN[k] || {}).types || []).map(t => ({ ...t, eng: k }))); if (!L.length) return '';
+      return sec('By call type', `<div class="group">${L.map(t => `<div class="row plain"><div class="main"><div class="t">${esc(STRAT_NAMES[t.type] || t.type)} <span class="small">${NAME[t.eng]}</span></div><div class="s" style="white-space:normal">${Object.entries(t.half || {}).map(([h, x]) => `${h.replace(/^20/, '').replace('H', ' H')} <b class="${tone(x.avg)}">${fmt.sp(x.avg, 1)}</b> (${x.n})`).join(' · ')}</div></div><div class="end"><div class="v tnum ${tone(t.avg)}">${fmt.sp(t.avg, 2)}</div><div class="d faint">${t.n} calls · ${fmt.x(t.win, 0)}% won</div></div></div>`).join('')}</div>`, { p: 'Information only. Past results by type did not predict later results, so calls are not ranked or hidden by type.' }); };
     const P = S.paper || {}, v10 = P.v10, vx = P.v2exit;
     return `${note(`Every closed call, counted the same way: exit price against entry price, minus ${S.cost_pct}% for costs. This is the live record on the server, not a backtest.`)}
       ${eng('v2')}${eng('v3')}
+      ${types(E)}
       ${v10 || vx ? sec('Paper tests', `<div class="group">${v10 ? `<div class="row plain"><div class="main"><div class="t">V10 momentum rotation</div><div class="s" style="white-space:normal">${esc(paperLine(v10))}</div></div></div>` : ''}${vx ? `<div class="row plain"><div class="main"><div class="t">AI exit for V2</div><div class="s" style="white-space:normal">${esc(`${vx.paper_exits_so_far ?? 0} paper exits so far, ${vx.compared ?? 0} compared${vx.compared ? `: paper ${fmt.sp(vx.avg_paper_pct)} vs live ${fmt.sp(vx.avg_live_pct)}` : ''}. Data to ${vx.data_to || ''}.`)}</div></div></div>` : ''}</div>`, { p: 'Paper only. No orders and no Telegram messages.' }) : ''}`;
   },
 };

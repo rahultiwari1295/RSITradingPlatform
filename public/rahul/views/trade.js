@@ -218,3 +218,78 @@ export function stopSheet(opts) {
     catch (e) { send.textContent = 'Place stop-loss'; $('#sl-pin').value = ''; $('#sl-err').innerHTML = `<p class="ot-warn">${esc(e.message)}</p>`; calc(); }
   };
 }
+
+
+/** Buy several AI calls with one trade code. opts: { calls: Call[], onDone? }. Orders are limit buys at the price shown. */
+export function basketSheet(opts) {
+  const tick = v => Math.round(v * 20) / 20;
+  const calls = opts.calls.slice(0, 5);
+  const st = { funds: null, broker: '', stops: false, rows: calls.map(c => ({ c, on: true, qty: Math.max(1, Math.floor(buySize() / (c.now || c.entry))), price: tick(c.now || c.entry) })), busy: false };
+  const s = sheet('<div class="ot" id="bk"><div class="sk" style="height:200px;border-radius:16px;margin-top:12px"></div></div>', { label: 'Buy several calls' });
+  const root = s.el.querySelector('#bk');
+  const cash = () => n(st.funds?.[st.broker]?.cash) || 0;
+  const picked = () => st.rows.filter(r => r.on && r.qty > 0 && r.price > 0);
+  const total = () => picked().reduce((a, r) => a + r.qty * r.price, 0);
+
+  ownerApi('/owner/funds').then(f => {
+    st.funds = f.funds || {};
+    const ok = Object.keys(st.funds).filter(k => st.funds[k].status === 'ok');
+    if (!ok.length) { root.innerHTML = '<div class="err" role="alert"><span>No broker is connected right now, so orders cannot be sent.</span></div>'; return; }
+    st.broker = ok.sort((a, b) => st.funds[b].cash - st.funds[a].cash)[0];
+    step1();
+  }).catch(e => { root.innerHTML = `<div class="err" role="alert"><span>${esc(e.message)}</span></div>`; });
+
+  function step1() {
+    const ok = Object.keys(st.funds).filter(k => st.funds[k].status === 'ok');
+    root.innerHTML = `<div class="ot-h"><div style="min-width:0;flex:1"><h3 style="margin:0">Buy ${st.rows.length} calls</h3><div class="small">One trade code places them all, one after the other. Each is a limit buy at the price shown.</div></div></div>
+      <div class="bk-rows">${st.rows.map((r, i) => `<div class="bk-row"><label class="bk-on"><input type="checkbox" data-on="${i}"${r.on ? ' checked' : ''} aria-label="Include ${esc(r.c.sym)}"><b>${esc(r.c.sym)}</b></label>
+        <div class="bk-in"><input data-q="${i}" inputmode="numeric" value="${r.qty}" aria-label="Quantity of ${esc(r.c.sym)}"><span>×</span><input data-p="${i}" inputmode="decimal" value="${r.price.toFixed(2)}" aria-label="Limit price of ${esc(r.c.sym)}"></div>
+        <div class="small">stop ${fmt.px(r.c.stop)} · target ${fmt.px(r.c.target)}</div></div>`).join('')}</div>
+      <div class="field" style="margin-top:10px"><label for="bk-b">Broker</label><select id="bk-b">${ok.map(k => `<option${k === st.broker ? ' selected' : ''} value="${k}">${k} · ${fmt.inr(st.funds[k].cash)} free</option>`).join('')}</select></div>
+      <label class="bk-stop"><input type="checkbox" id="bk-s"${st.stops ? ' checked' : ''}> Also leave a stop-loss sell at each call's stop</label>
+      <p class="tiny" style="margin:4px 0 0">Stop-loss orders have not yet been tried on every broker. Check the first one in your broker app.</p>
+      <div class="ot-sum" id="bk-sum"></div><div id="bk-err"></div><button class="btn block ot-go" id="bk-next" disabled>Continue</button>`;
+    const sum = () => {
+      const t = total(), c = cash(), k = picked().length;
+      root.querySelector('#bk-sum').innerHTML = `<div><span>${k} ${k === 1 ? 'order' : 'orders'}</span><b class="tnum">${fmt.inr(t)}</b></div><div><span>Free cash in ${esc(st.broker)}</span><b class="tnum ${t > c ? 'dn' : ''}">${fmt.inr(c)}</b></div>`;
+      root.querySelector('#bk-err').innerHTML = t > c ? `<p class="ot-warn">Add ${fmt.inr(Math.ceil(t - c))} to ${esc(st.broker)} first, or untick some calls.</p>` : '';
+      root.querySelector('#bk-next').disabled = !(k >= 1 && t <= c);
+    };
+    root.querySelectorAll('[data-on]').forEach(b => b.onchange = () => { st.rows[+b.dataset.on].on = b.checked; sum(); });
+    root.querySelectorAll('[data-q]').forEach(b => b.oninput = () => { st.rows[+b.dataset.q].qty = Math.floor(n(b.value)) || 0; sum(); });
+    root.querySelectorAll('[data-p]').forEach(b => b.oninput = () => { st.rows[+b.dataset.p].price = n(b.value) || 0; sum(); });
+    root.querySelector('#bk-b').onchange = e => { st.broker = e.target.value; sum(); };
+    root.querySelector('#bk-s').onchange = e => { st.stops = e.target.checked; };
+    root.querySelector('#bk-next').onclick = step2;
+    sum();
+  }
+
+  function step2() {
+    const P = picked();
+    root.innerHTML = `<div class="ot-h"><div style="min-width:0;flex:1"><h3 style="margin:0">Confirm ${P.length} ${P.length === 1 ? 'order' : 'orders'}</h3><div class="small">${esc(st.broker)} · total ${fmt.inr(total())}</div></div></div>
+      <div class="group" style="margin-top:10px">${P.map(r => `<div class="row plain"><div class="main"><div class="t">Buy ${r.qty} ${esc(r.c.sym)}</div><div class="s">limit ${fmt.px2(r.price)}${st.stops ? ` · stop-loss ${fmt.px2(r.c.stop)}` : ''}</div></div><div class="end tnum">${fmt.inr(r.qty * r.price)}</div></div>`).join('')}</div>
+      <div class="field" style="margin-top:10px"><label for="bk-pin">Trade code</label><input id="bk-pin" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Type your code to confirm"></div>
+      <div id="bk-err"></div><button class="btn block ot-go" id="bk-send" disabled>Place ${P.length} ${P.length === 1 ? 'order' : 'orders'}</button>
+      <button class="btn quiet block" id="bk-back" style="margin-top:8px">Back</button>`;
+    const pin = root.querySelector('#bk-pin'), go = root.querySelector('#bk-send');
+    pin.oninput = () => { go.disabled = st.busy || pin.value.length < 4; };
+    root.querySelector('#bk-back').onclick = step1;
+    go.onclick = async () => {
+      st.busy = true; go.disabled = true; go.textContent = 'Sending…';
+      try {
+        const d = await ownerSend('POST', '/owner/orders', { pin: pin.value, orders: P.map(r => ({ broker: st.broker, symbol: r.c.sym, qty: r.qty, price: r.price, nonce: crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now(), ...(st.stops ? { stop: r.c.stop } : {}) })) });
+        step3(d.results || []);
+      } catch (e) { st.busy = false; go.textContent = `Place ${P.length} ${P.length === 1 ? 'order' : 'orders'}`; pin.value = ''; root.querySelector('#bk-err').innerHTML = `<p class="ot-warn">${esc(e.message)}</p>`; }
+    };
+  }
+
+  function step3(R) {
+    const okN = R.filter(r => r.ok).length;
+    root.innerHTML = `<div class="ot-done"><div class="ot-ic ${okN === R.length ? 'up' : 'dn'}">${icon(okN === R.length ? 'check' : 'alert', 28)}</div><h3>${okN} of ${R.length} orders sent</h3></div>
+      <div class="group" style="margin-top:10px">${R.map(r => `<div class="row plain"><div class="main"><div class="t">${esc(r.symbol)} <span class="pill ${r.ok ? 'up' : 'dn'}">${r.ok ? 'Sent' : 'Not sent'}</span></div>
+        <div class="s" style="white-space:normal">${esc(String(r.message || ''))}${r.order_id ? ` · id ${esc(String(r.order_id))}` : ''}${r.stop ? ` · stop-loss ${r.stop.ok ? 'placed' : 'failed: ' + esc(String(r.stop.message || ''))}` : ''}</div></div></div>`).join('')}</div>
+      <p class="tiny" style="margin:10px 0 0">Check each order in your broker app. Nothing is retried for you.</p><button class="btn block" data-close style="margin-top:10px">Done</button>`;
+    root.querySelector('[data-close]').onclick = () => { s.close(); opts.onDone && opts.onDone(okN > 0); };
+    toast(`${okN} of ${R.length} orders sent`);
+  }
+}
