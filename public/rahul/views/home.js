@@ -1,10 +1,10 @@
 /* /rahul home: News, with one thin strip on top that says how many calls need action. */
-import { icon, link, auth, isOwner, allSignals, ownerApi } from '../core.js';
+import { icon, link, auth, isOwner, allSignals, ownerApi, logo, themeBtn } from '../core.js';
 import { loadBook } from './pfdata.js';
 import { entryZone } from './parts.js';
 
 export default async function home(el) {
-  el.innerHTML = `<div class="hm"><div class="hm-top hm-hd"><span class="hm-brand"><i></i>QuantSync</span><span id="hm-strip"></span></div>
+  el.innerHTML = `<div class="hm"><div class="hm-top hm-hd"><span class="qs-brand">${logo(26)}<b>QuantSync</b></span><span id="hm-strip"></span>${themeBtn()}</div>
     <iframe class="rh-embed" src="/app/news?embed=1" title="News" loading="eager"></iframe></div>`;
   const strip = el.querySelector('#hm-strip');
   await auth.whenReady();

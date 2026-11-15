@@ -1,6 +1,6 @@
 /* /rahul/portfolio — one table for everything Rahul owns: Angel One holdings (live) + the manual trade log,
    both stored on the VPS (Data/owner.db). Owner-only on the server (404 for anyone else). */
-import { chrome, fmt, esc, icon, n, mono, delta, tone, link, holdings, ownerApi, ownerSend, loadTerminal, allSignals, engineBadge, callPath, segmented, skel, errBox, empty, reveal, sheet, toast } from '../core.js';
+import { chrome, fmt, esc, icon, n, mono, delta, tone, link, holdings, ownerApi, ownerSend, loadTerminal, allSignals, engineBadge, callPath, skel, errBox, empty, reveal, sheet, toast } from '../core.js';
 import { ruler } from '../charts.js';
 import { footNote, miniRange } from './parts.js';
 import { loadBook, STATUS, EXIT_DAYS } from './pfdata.js';
@@ -47,17 +47,18 @@ export default async function portfolio(el, r) {
     return { value, inv, pnl: value - inv, pct: inv ? (value / inv - 1) * 100 : NaN, day, dayPct: value - day ? day / (value - day) * 100 : NaN, n: rows.length, src };
   }
 
-  /** Total and P&L, then one bar: how much of the money is in AI calls and how much is not. */
+  /** Hero card: total value and P&L on the brand gradient, then two tappable cards that split the money into AI calls and the rest. */
   function headerPanel(rows) {
     if (!rows.length) return '';
     const all = totals(rows), a = totals(rows.filter(x => x.call)), o = totals(rows.filter(x => !x.call));
     const share = all.value ? a.value / all.value * 100 : 0;
-    const leg = (cls, k, t, f) => `<button class="ph-leg" data-view="${f}"><i class="${cls}"></i><span><em>${k} · ${fmt.int(t.n)}</em><b class="tnum">${fmt.lakh(t.value)}</b></span><span class="tnum ${tone(t.pnl)}"><em>${fmt.sinr(t.pnl)}</em><b>${fmt.sp(t.pct)}</b></span></button>`;
-    return `<section class="panel ph" aria-label="Portfolio summary"><div class="ph-k">Total value</div><div class="ph-v tnum">${fmt.inr(all.value)}</div>
-      <div class="ph-d"><div><span>Overall</span><b class="tnum ${tone(all.pnl)}">${fmt.sinr(all.pnl)} <small>${fmt.sp(all.pct)}</small></b></div><div><span>Today</span><b class="tnum ${tone(all.day)}">${fmt.sinr(all.day)} <small>${fmt.sp(all.dayPct)}</small></b></div><div><span>Invested</span><b class="tnum">${fmt.lakh(all.inv)}</b></div></div>
-      <div class="ph-bar" role="img" aria-label="${fmt.x(share, 0)}% of the money is in AI calls"><i style="width:${share}%"></i></div>
-      <div class="ph-legs">${leg('ai', 'AI calls', a, 'ai')}${leg('non', 'Not AI', o, 'non')}</div>
-      <div class="ph-src">${SRC.filter(k => all.src[k] > 0).map(k => `<span class="srcv"><i class="${k.toLowerCase()}">${k}</i> ${fmt.lakh(all.src[k])}</span>`).join('')}</div></section>`;
+    const k = (l, v, p, t) => `<div class="pfh-c"><small>${l}</small><b class="tnum">${v}</b>${p ? `<em class="tnum ${t}">${p}</em>` : ''}</div>`;
+    const sp = (cls, l, t, f, w) => `<button class="pfs ${cls}" data-view="${f}"><span class="pfs-h"><i></i>${l}<em>${fmt.int(t.n)}</em></span><b class="tnum">${fmt.lakh(t.value)}</b>
+      <span class="pfs-p tnum ${tone(t.pnl)}">${fmt.sinr(t.pnl)} · ${fmt.sp(t.pct)}</span><span class="pfs-w"><i style="width:${Math.max(2, w)}%"></i></span><small>${fmt.x(w, 0)}% of money</small></button>`;
+    return `<section class="pfh" aria-label="Portfolio summary"><div class="pfh-k">Total value${SRC.filter(x => all.src[x] > 0).map(x => `<span>${x} ${fmt.lakh(all.src[x])}</span>`).join('')}</div>
+      <div class="pfh-v tnum">${fmt.inr(all.value)}</div>
+      <div class="pfh-row">${k('Overall', fmt.sinr(all.pnl), fmt.sp(all.pct), all.pnl >= 0 ? 'u' : 'd')}${k('Today', fmt.sinr(all.day), fmt.sp(all.dayPct), all.day >= 0 ? 'u' : 'd')}${k('Invested', fmt.lakh(all.inv))}</div></section>
+      <div class="pfs-2">${sp('ai', 'AI calls', a, 'ai', share)}${sp('non', 'Not AI', o, 'non', 100 - share)}</div>`;
   }
 
   function draw() {
@@ -68,10 +69,14 @@ export default async function portfolio(el, r) {
     const bad = Object.entries(pf.brokers || {}).filter(([, b]) => b.status && !['ok', 'not_set_up'].includes(b.status));
     const nAct = (act.orders || []).length + (act.moves || []).length;
     root.innerHTML = `${pf.error ? errBox(pf.error) : ''}${bad.map(([k, b]) => `<div class="err" role="alert"><span>${k}: ${esc(b.status === 'login_needed' ? 'connect again (Brokers tab)' : b.error || b.status)}</span></div>`).join('')}
-      ${headerPanel(open)}<div id="pf-seg"></div><div id="pf-body" style="margin-top:12px"></div>`;
-    root.querySelectorAll('.ph [data-view]').forEach(b => b.onclick = () => { view = b.dataset.view; tab = 'pf'; history.replaceState(history.state, '', location.pathname + '?v=pf&f=' + view); draw(); });
-    segmented(root.querySelector('#pf-seg'), [['pf', 'Holdings', open.length], ['follow', 'Follow'], ['review', 'Health'], ['act', 'Activity', nAct || null], ['log', 'Manual'], ['brokers', 'Brokers']], tab,
-      v => { tab = v; history.replaceState(history.state, '', location.pathname + '?v=' + v + (v === 'pf' ? '&f=' + view : '')); body2(); });
+      ${headerPanel(open)}<div id="pf-seg"></div><div id="pf-body"></div>`;
+    root.querySelectorAll('.pfs[data-view]').forEach(b => b.onclick = () => { view = b.dataset.view; tab = 'pf'; history.replaceState(history.state, '', location.pathname + '?v=pf&f=' + view); draw(); });
+    const TB = [['pf', 'Holdings', open.length], ['review', 'Health'], ['follow', 'Follow'], ['act', 'Activity', nAct || null], ['log', 'Manual'], ['brokers', 'Brokers']];
+    const seg = root.querySelector('#pf-seg');
+    const paintTabs = () => { seg.innerHTML = TB.map(([v, l, c]) => `<button class="pft" data-tab="${v}" aria-pressed="${v === tab}">${l}${c ? `<span>${c}</span>` : ''}</button>`).join(''); };
+    paintTabs(); seg.className = 'pf-tabs';
+    seg.onclick = e => { const b = e.target.closest('[data-tab]'); if (!b || b.dataset.tab === tab) return; tab = b.dataset.tab; paintTabs(); b.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+      history.replaceState(history.state, '', location.pathname + '?v=' + tab + (tab === 'pf' ? '&f=' + view : '')); body2(); };
     root.querySelector('[data-retry]')?.addEventListener('click', () => load(true));
     body2();
 
@@ -91,9 +96,10 @@ export default async function portfolio(el, r) {
         const chips = [['all', 'All', sets.all.length], ['ai', 'AI calls', sets.ai.length], ['non', 'Not AI', sets.non.length]].concat(sets.exit.length ? [['exit', 'Exit now', sets.exit.length]] : []);
         const ex = sets.exit, whole = sets.all.reduce((a, x) => a + x.value, 0);
         B.innerHTML = `${ex.length && view !== 'exit' ? `<button class="hc-alert" data-view="exit">${icon('bolt', 18)}<span><b>${ex.length} ${ex.length === 1 ? 'stock needs' : 'stocks need'} action</b><small>${esc(ex.slice(0, 4).map(x => x.symbol).join(', '))}${ex.length > 4 ? ' +' + (ex.length - 4) : ''}: the AI has closed the call, or price is at the stop.</small></span>${icon('chev', 18)}</button>` : ''}
-          <div class="hs pf-views" role="group" aria-label="Which positions">${chips.map(([k, l, c]) => `<button class="chip${k === 'exit' ? ' dnc' : ''}" data-view="${k}" aria-pressed="${k === view}">${l} <span class="n">${c}</span></button>`).join('')}</div>
-          <div class="pf-tools"><span class="pf-sum tnum">${view === 'all' ? `${rows.length} holdings` : `${fmt.lakh(t.value)} · <b class="${tone(t.pnl)}">${fmt.sinr(t.pnl)} ${fmt.sp(t.pct)}</b>`}</span><label class="sr" for="pf-sort">Sort</label><select id="pf-sort">${Object.entries(SORTS).map(([k, [l]]) => `<option value="${k}"${k === sortBy ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
-          ${rows.length ? `<div class="group hr-list">${rows.map(x => card(x, whole)).join('')}</div>` : empty(view === 'ai' ? 'ai' : 'pf', view === 'ai' ? 'None of your stocks is an open AI call' : 'Nothing here', view === 'ai' ? 'Stocks you hold that are also open AI calls show here.' : 'Holdings from your brokers appear here.')}`;
+          <div class="pf-bar"><div class="pf-f" role="group" aria-label="Which positions">${chips.map(([k, l, c]) => `<button class="pff${k === 'exit' ? ' dn' : ''}" data-view="${k}" aria-pressed="${k === view}">${l}<span>${c}</span></button>`).join('')}</div>
+          <label class="pf-sort">${icon('down', 14)}<span class="sr">Sort</span><select id="pf-sort">${Object.entries(SORTS).map(([k, [l]]) => `<option value="${k}"${k === sortBy ? ' selected' : ''}>${l}</option>`).join('')}</select></label></div>
+          ${view !== 'all' ? `<p class="pf-sum tnum">${rows.length} stocks · ${fmt.lakh(t.value)} · <b class="${tone(t.pnl)}">${fmt.sinr(t.pnl)} ${fmt.sp(t.pct)}</b></p>` : ''}
+          ${rows.length ? `<div class="hc-list">${rows.map(x => card(x, whole)).join('')}</div>` : empty(view === 'ai' ? 'ai' : 'pf', view === 'ai' ? 'None of your stocks is an open AI call' : 'Nothing here', view === 'ai' ? 'Stocks you hold that are also open AI calls show here.' : 'Holdings from your brokers appear here.')}`;
         B.querySelectorAll('[data-view]').forEach(b => b.onclick = () => { view = b.dataset.view; history.replaceState(history.state, '', location.pathname + '?v=pf&f=' + view); body2(); });
         B.querySelector('#pf-sort').onchange = e => { sortBy = e.target.value; try { localStorage.setItem('rh-pf-sort', sortBy); } catch { /* blocked */ } body2(); };
         B.querySelectorAll('[data-sell]').forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation(); const x = open.find(y => y.symbol === b.dataset.sell);
@@ -104,23 +110,28 @@ export default async function portfolio(el, r) {
     }
   }
 
-  /* One holding as a dense row: value and P&L first, then either the call's stop-to-target track or its share of the portfolio. */
+  /* One holding card: logo, name and value on top; what you paid and P&L under it; the call's stop-to-target track
+     or its share of the portfolio; then small facts. A sell strip at the bottom when the call says act. */
   function card(x, whole) {
     const c = x.call, e = x.exitCall, st = STATUS[x.status];
     const canSell = Object.keys(x.parts || {}).some(k => k !== 'Manual'), acts = ['exit', 'stop', 'target'].includes(x.status);
     const w = whole ? x.value / whole * 100 : 0, srcs = Object.keys(x.parts || {});
     const hv = D.H ? groupOf(x, D.H) : null, covered = ((D.G || {}).covered || {})[String(x.symbol).toUpperCase()] || {};
-    const today = isFinite(x.day_pct) && x.day_pct !== null ? `<span>today <b class="${tone(x.day_pct)}">${fmt.sp(x.day_pct)}</b></span>` : '';
     const why = x.status === 'exit' ? `The AI closed this call on ${fmt.date(e.exitDate)} at ${fmt.px(e.exit)} (${fmt.sp(e.roi)}).`
       : x.status === 'stop' ? `Price is at or below the stop ${fmt.px(c.stop)}.` : x.status === 'target' ? `Price reached the target ${fmt.px(c.target)}.` : '';
-    return `<article class="hr st-${x.status}${hv ? ' v-' + hv : ''}">
-      <a class="hr-main" href="/rahul/stock/${encodeURIComponent(x.symbol)}" data-nav aria-label="${esc(x.symbol)}, ${st.t}">
-        <div class="hr-top"><div class="hr-id"><b>${esc(x.symbol)}</b>${x.status !== 'none' ? `<span class="pill ${st.cls}">${st.t}</span>` : hv ? `<span class="pill ${VERDICT[hv].cls}">${VERDICT[hv].t}</span>` : ''}</div><b class="hr-val tnum">${fmt.inr(x.value)}</b></div>
-        <div class="hr-sub"><span class="tnum">${fmt.x(x.qty, x.qty % 1 ? 2 : 0)} × ${fmt.px(x.avg)} → <b>${fmt.px(x.ltp)}</b></span><span class="tnum ${tone(x.pnl)}">${fmt.sinr(x.pnl)} <b>${fmt.sp(x.pnl_pct)}</b></span></div>
-        ${c ? miniRange({ stop: c.stop, entry: c.entry, target: c.target, now: x.ltp }) : `<div class="hr-w"><i style="width:${Math.max(1, w)}%"></i></div>`}
-        <div class="hr-meta"><span class="src">${srcs.map(k => `<i class="${k.toLowerCase()}">${k}</i>`).join('')}</span><span>${fmt.x(w, 1)}% of portfolio</span>${covered.stop ? `<span class="up">stop at broker</span>` : ''}${c ? `<span>day ${fmt.int(c.days)}</span>${isFinite(x.vsCall) && Math.abs(x.vsCall) >= 0.3 ? `<span>paid ${fmt.sp(x.vsCall)} vs call</span>` : ''}` : ''}${today}</div>
+    const tag = x.status !== 'none' ? `<span class="pill ${st.cls}">${st.t}</span>` : hv ? `<span class="pill ${VERDICT[hv].cls}">${VERDICT[hv].t}</span>` : '';
+    const facts = [tag, `<span>${fmt.x(x.qty, x.qty % 1 ? 2 : 0)} shares</span>`, srcs.map(k => `<i class="b-${k.toLowerCase()}">${k}</i>`).join(''), `<span>${fmt.x(w, 1)}% of portfolio</span>`,
+      isFinite(x.day_pct) && x.day_pct !== null ? `<span>Today <b class="${tone(x.day_pct)}">${fmt.sp(x.day_pct)}</b></span>` : '',
+      c ? `<span>Day ${fmt.int(c.days)}</span>` : '', c && isFinite(x.vsCall) && Math.abs(x.vsCall) >= 0.3 ? `<span>Paid ${fmt.sp(x.vsCall)} vs call</span>` : '',
+      covered.stop ? '<span class="ok">Stop at broker</span>' : ''].filter(Boolean).join('');
+    return `<article class="hc st-${x.status}${hv ? ' v-' + hv : ''}">
+      <a class="hc-main" href="/rahul/stock/${encodeURIComponent(x.symbol)}" data-nav aria-label="${esc(x.symbol)}, ${st.t}">
+        <div class="hc-top">${mono(x.symbol)}<div class="hc-id"><div class="hc-n"><b>${esc(x.symbol)}</b></div><span class="tnum"><b>${fmt.px(x.ltp)}</b> <i>avg ${fmt.px(x.avg)}</i></span></div>
+          <div class="hc-v"><b class="tnum">${fmt.inr(x.value)}</b><span class="hc-p tnum ${tone(x.pnl)}">${fmt.sinr(x.pnl)} · ${fmt.sp(x.pnl_pct)}</span></div></div>
+        ${c ? `<div class="hc-rng">${miniRange({ stop: c.stop, entry: c.entry, target: c.target, now: x.ltp })}</div>` : ''}
+        <div class="hc-f">${facts}</div>
       </a>
-      ${acts ? `<div class="hr-act ${x.status === 'target' ? 'up' : 'dn'}"><span>${why}</span>${canSell ? `<button class="btn sm ${x.status === 'target' ? 'quiet' : 'sell'}" data-sell="${esc(x.symbol)}">Sell</button>` : ''}</div>` : ''}
+      ${acts ? `<div class="hc-act ${x.status === 'target' ? 'up' : 'dn'}"><span>${why}</span>${canSell ? `<button class="btn sm ${x.status === 'target' ? 'quiet' : 'sell'}" data-sell="${esc(x.symbol)}">Sell</button>` : ''}</div>` : ''}
     </article>`;
   }
 

@@ -683,10 +683,13 @@ export const isDark = () => (document.documentElement.dataset.theme ? document.d
 export function setTheme(t) {
   if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
   try { t ? localStorage.setItem('qs-theme', t) : localStorage.removeItem('qs-theme'); } catch { /* storage blocked */ }
+  document.querySelectorAll('iframe').forEach(f => { try { const d = f.contentDocument.documentElement; if (t) d.dataset.theme = t; else delete d.dataset.theme; } catch { /* other origin */ } });
   const dark = isDark();
   document.querySelectorAll('[data-theme-switch]').forEach(x => x.setAttribute('aria-checked', dark));
   document.querySelectorAll('meta[name="theme-color"]').forEach(m => { m.removeAttribute('media'); m.setAttribute('content', dark ? '#05080F' : '#F4F5F8'); });
 }
+/** The day and night button shown at the top right of every main page. */
+export const themeBtn = () => `<button class="ib thm" data-theme-switch role="switch" aria-checked="${isDark()}" aria-label="Dark mode">${icon('moon', 20)}${icon('sun', 20)}</button>`;
 export const themePref = () => { try { return localStorage.getItem('qs-theme') || ''; } catch { return ''; } };
 
 /** Shared chrome. Tab pages: QuantSync and the page name on the left, the day and night switch on the right.
@@ -694,10 +697,10 @@ export const themePref = () => { try { return localStorage.getItem('qs-theme') |
     top: { ey, h, hl, lede, extra } is the title block. */
 export function chrome(el, { title, sub = '', back: backTo, actions = '', top = null, page = '', compact = false }) {
   const t = top || { h: title, lede: sub }, isRoot = backTo == null;
-  const left = isRoot ? '<span class="bl"></span>' : `<button class="ib back" data-back aria-label="Back">${icon('back', 22)}<span>${esc(backTo)}</span></button>`;
+  const left = isRoot ? `<span class="qs-brand">${logo(26)}<b>QuantSync</b></span>` : `<button class="ib back" data-back aria-label="Back">${icon('back', 22)}<span>${esc(backTo)}</span></button>`;
   const head = isRoot && compact ? `<div class="wrap lt"><span class="lt-d">${todayLine()}</span><h1>${esc(page || title)}</h1></div>`
     : compact ? '' : `<div class="wrap head">${titleHTML(t)}</div>`;
-  el.innerHTML = `<header class="bar${isRoot ? ' root' : ''}">${left}<div class="bt">${esc(page || title)}</div><div class="acts">${actions}</div></header>${head}<div class="wrap body${compact ? ' compact' : ''}"></div>`;
+  el.innerHTML = `<header class="bar${isRoot ? ' root' : ''}">${left}<div class="bt">${esc(page || title)}</div><div class="acts">${actions}${isRoot ? themeBtn() : ''}</div></header>${head}<div class="wrap body${compact ? ' compact' : ''}"></div>`;
   const bar = el.querySelector('.bar'), h1 = el.querySelector('.lt h1, .tb-h');
   const b = el.querySelector('[data-back]'); if (b) b.onclick = () => back(TABS.find(t2 => t2[0] === parse().tab)?.[1]);
   if (!h1) { bar.classList.add('solid'); return el.querySelector('.body'); }
