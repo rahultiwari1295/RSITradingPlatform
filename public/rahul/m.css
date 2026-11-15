@@ -1610,3 +1610,9 @@ html .group > .row .mono { flex: none; }
 html .group > .row:active, html .group > .cr:active { transform: scale(.992); }
 html .group.cr-list { gap: 10px; }
 html .sec-h + .group, html .sec-h + .cr-list { margin-top: 2px; }
+
+/* tiles, part 2: holdings cards and any other row-type child of a group */
+html .group:not(.cr-empty):has(> .hr, > .hl, > a.row, > div.row) { background: none; box-shadow: none; border-radius: 0; overflow: visible; display: grid; gap: 10px; }
+html .group > .hr, html .group > .hl { background: var(--surface); box-shadow: var(--lift-sm); border-radius: 18px; overflow: hidden; border-top: 0; }
+html .group > .hr + .hr, html .group > .hl + .hl { border-top: 0; }
+@media (min-width: 900px) { html .group > .hr { box-shadow: var(--lift-sm); } }
