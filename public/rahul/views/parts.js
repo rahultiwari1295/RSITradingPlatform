@@ -51,9 +51,11 @@ export function miniRange({ stop, entry, target, now }) {
 export function signalCard(c, o = {}) {
   const fresh = isFreshSignal(c), traded = paper.has(c.sym), owned = !!(o.owned && o.owned.has(String(c.sym).toUpperCase()));
   const pct = Math.abs(c.roi) < .05 ? '<span class="d0">at entry</span>' : delta(c.roi);
-  const main = link(callPath(c), `<div class="cr-top"><div class="cr-id"><div class="t">${esc(c.sym)}${owned ? '<span class="tag bought">Held</span>' : ''}${traded ? '<span class="tag paper">Paper</span>' : ''}</div><div class="s">${engineBadge(c, 'sm')}<span class="ago">${ago(c)}</span>${zoneTag(c)}</div></div><div class="cr-px"><b class="tnum">${fmt.px(c.now)}</b>${pct}</div></div>${miniRange(c)}`,
+  const main = link(callPath(c), `<div class="cr-top">${mono(c.sym)}<div class="cr-id"><div class="t"><span class="nm">${esc(c.sym)}</span>${owned ? '<span class="tag bought">Held</span>' : ''}${traded ? '<span class="tag paper">Paper</span>' : ''}</div><div class="s">${engineBadge(c, 'sm')}<span class="ago">${ago(c)}</span>${zoneTag(c)}</div></div><div class="cr-px"><b class="tnum">${fmt.px(c.now)}</b>${pct}</div></div>`,
     'cr-main', `aria-label="${esc(c.sym)}, ${engineName(c)}, ${fresh ? 'new' : 'open'} call${owned ? ', held' : ''}"`);
-  return `<div class="cr${owned ? ' owned' : ''}${fresh ? ' fresh' : ''}">${main}${o.buy ? `<button class="btn sm${owned ? ' quiet' : ''}" data-buy="${esc(c.sym)}">${owned ? 'Add' : 'Buy'}</button>` : ''}</div>`;
+  const rng = miniRange(c);
+  const btn = o.buy ? `<button class="btn sm${owned ? ' quiet' : ''}" data-buy="${esc(c.sym)}">${owned ? 'Add' : 'Buy'}</button>` : '';
+  return `<div class="cr${owned ? ' owned' : ''}${fresh ? ' fresh' : ''}">${main}${rng || btn ? `<div class="cr-foot">${rng ? link(callPath(c), `<span class="cr-k">Stop</span>${rng}<span class="cr-k">Target</span>`, 'cr-rng', 'tabindex="-1" aria-hidden="true"') : '<span></span>'}${btn}</div>` : ''}</div>`;
 }
 /** Kept for callers that still wire paper-trade buttons (the call detail page). */
 export function bindSignals(root, list, onChange) {

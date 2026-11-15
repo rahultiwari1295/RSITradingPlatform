@@ -1,7 +1,7 @@
 /* Portfolio -> Health: one verdict per holding that has no AI call (exit / protect / buy-more zone / hold), the stocks
    marked long term, and every GTT left at the brokers, matched against what is held.
    Server: GET /owner/health, POST /owner/marks, GET /owner/gtt, POST /owner/gtt/place, POST /owner/gtt/cancel. */
-import { fmt, esc, icon, tone, ownerApi, ownerSend, toast } from '../core.js';
+import { fmt, esc, icon, tone, mono, ownerApi, ownerSend, toast } from '../core.js';
 import { orderSheet, gttSheet, gttCancelSheet } from './trade.js';
 
 export const VERDICT = {
@@ -15,7 +15,6 @@ export const VERDICT = {
 };
 const GSTATE = { orphan: ['dn', 'Not held'], too_big: ['dn', 'More than held'], stale: ['warn', 'Far from price'], ok: ['up', 'Active'], unknown: ['', 'Unchecked'], buy: ['', 'Buy trigger'] };
 const broker = x => Object.keys(x.parts || {}).find(k => k !== 'Manual');
-const arrow = d => (d === 'up' ? '<b class="up">↑</b>' : d === 'down' ? '<b class="dn">↓</b>' : '<b class="faint">→</b>');
 
 let cache = { k: '', t: 0, d: null };
 /** { stocks, marks, test } for these symbols; kept for a minute. */
@@ -49,28 +48,33 @@ export function healthView(rows, H, G) {
   const noStop = own.filter(x => !(cov[String(x.symbol).toUpperCase()] || {}).stop);
   const probs = ((G && G.items) || []).filter(g => g.state === 'orphan' || g.state === 'too_big');
 
-  const bar = `<div class="hb-bar" role="img" aria-label="Where the money sits by verdict">${order.map(k => `<i class="v-${k}" style="width:${val(groups[k]) / total * 100}%"></i>`).join('')}${ai.length ? `<i class="v-ai" style="width:${val(ai) / total * 100}%"></i>` : ''}</div>
-    <div class="hb-leg">${order.map(k => `<a href="#hg-${k}" data-jump><i class="v-${k}"></i>${VERDICT[k].t} <b class="tnum">${groups[k].length}</b><span class="tnum">${fmt.lakh(val(groups[k]))}</span></a>`).join('')}${ai.length ? `<a href="/rahul/calls" data-nav><i class="v-ai"></i>AI calls <b class="tnum">${ai.length}</b><span class="tnum">${fmt.lakh(val(ai))}</span></a>` : ''}</div>`;
+  const bar = `<div class="hsum-bar" role="img" aria-label="Where the money sits by verdict">${order.map(k => `<i class="v-${k}" style="flex:${val(groups[k]) / total * 100}"></i>`).join('')}${ai.length ? `<i class="v-ai" style="flex:${val(ai) / total * 100}"></i>` : ''}</div>
+    <div class="hsum-leg">${order.map(k => `<a href="#hg-${k}" data-jump><i class="v-${k}"></i><span class="l">${VERDICT[k].t}</span><b class="tnum">${groups[k].length}</b><span class="m tnum">${fmt.lakh(val(groups[k]))}</span>${icon('chev', 14)}</a>`).join('')}${ai.length ? `<a href="/rahul/calls" data-nav><i class="v-ai"></i><span class="l">AI calls</span><b class="tnum">${ai.length}</b><span class="m tnum">${fmt.lakh(val(ai))}</span>${icon('chev', 14)}</a>` : ''}</div>`;
 
+  /* one metric cell in the card's well: label over value */
+  const cell = (k, v, cls = '') => `<div class="hx-c"><small>${k}</small><b class="tnum ${cls}">${v}</b></div>`;
+  const dir = d => (d === 'up' ? '<span class="up">↑</span>' : d === 'down' ? '<span class="dn">↓</span>' : '<span class="faint">→</span>');
   const row = x => {
     const s = String(x.symbol).toUpperCase(), h = S[s] || {}, g = groupOf(x, H), c = cov[s] || {}, isLong = marks[s]?.mark === 'long', b = broker(x);
-    const lv = [h.weekly ? `<span class="lv">W ${arrow(h.weekly)} M ${arrow(h.monthly)}</span>` : '',
-      h.support ? `<span class="lv${h.broken ? ' dn' : ''}">3-mo low ${fmt.px(h.support)}</span>` : '',
-      g === 'buy' || (isLong && h.verdict === 'buy') ? `<span class="lv up">Zone ${fmt.px(h.zone[0])}–${fmt.px(h.zone[1])}</span>` : '',
-      h.rs != null && g === 'exit' ? `<span class="lv dn">vs market ${fmt.sp(h.rs, 0)}</span>` : ''].join('');
+    const zone = (g === 'buy' || (isLong && h.verdict === 'buy')) && h.zone;
+    const cells = [h.weekly ? cell('Trend', `W ${dir(h.weekly)}&nbsp; M ${dir(h.monthly)}`) : '',
+      h.support ? cell('3-mo low', fmt.px(h.support), h.broken ? 'dn' : '') : '',
+      zone ? cell('Buy zone', `${fmt.px(zone[0])}–${fmt.px(zone[1])}`, 'up') : h.rs != null ? cell('vs market', fmt.sp(h.rs, 0), tone(h.rs)) : ''].filter(Boolean);
     const flags = (h.flags || []).map(f => `<span class="flag">${icon('bolt', 12)}${esc(f.text)}</span>`).join('');
-    const prot = c.stop ? `<span class="pt ok">${icon('check', 12)}Stop at broker</span>` : `<span class="pt no">No stop</span>`;
-    const acts = [g === 'exit' && b ? `<button class="btn sm sell" data-h-sell="${esc(x.symbol)}">Sell</button>` : '',
-      g === 'buy' || (isLong && h.verdict === 'buy') ? `<button class="btn sm" data-h-buy="${esc(x.symbol)}">Buy more</button>` : '',
-      b && !c.stop && g !== 'fund' && g !== 'unknown' ? `<button class="btn sm ${g === 'exit' || g === 'protect' ? '' : 'quiet'}" data-h-gtt="${esc(x.symbol)}">Set GTT</button>` : ''].join('');
-    return `<article class="hl v-${g}">
-      <div class="hl-top"><a href="/rahul/stock/${encodeURIComponent(x.symbol)}" data-nav class="hl-id"><b>${esc(x.symbol)}</b>${h.thin ? '<span class="tag">thin</span>' : ''}</a>
-        <button class="star${isLong ? ' on' : ''}" data-h-long="${esc(s)}" aria-pressed="${isLong}" aria-label="${isLong ? 'Remove long-term mark' : 'Mark as long term'}">${isLong ? '★' : '☆'}</button>
-        <span class="hl-v tnum"><b>${fmt.inr(x.value)}</b><small class="${tone(x.pnl)}">${fmt.sp(x.pnl_pct)}</small></span></div>
-      <p class="hl-why">${esc(!isLong && g === 'protect' && (h.verdict === 'hold' || h.verdict === 'buy') ? 'Trends are fine, but there is a red flag. Keep a stop until it clears.' : isLong && h.why ? (h.verdict === 'buy' ? h.why : (h.flags || []).length ? 'Red flag on a long-term holding.' : 'Long-term holding. ' + (h.weekly === 'down' ? 'Weekly trend is down.' : 'Trend is fine.')) : h.why || '')}</p>
+    const prot = c.stop ? `<span class="hx-p ok">${icon('check', 13)}Stop at broker</span>` : `<span class="hx-p no"><i></i>No stop</span>`;
+    const acts = [b && !c.stop && g !== 'fund' && g !== 'unknown' ? `<button class="btn sm ${g === 'exit' || g === 'protect' ? 'ghost' : 'quiet'}" data-h-gtt="${esc(x.symbol)}">Set GTT</button>` : '',
+      g === 'exit' && b ? `<button class="btn sm sell" data-h-sell="${esc(x.symbol)}">Sell</button>` : '',
+      zone ? `<button class="btn sm" data-h-buy="${esc(x.symbol)}">Buy more</button>` : ''].join('');
+    const why = !isLong && g === 'protect' && (h.verdict === 'hold' || h.verdict === 'buy') ? 'Trends are fine, but there is a red flag. Keep a stop until it clears.' : isLong && h.why ? (h.verdict === 'buy' ? h.why : (h.flags || []).length ? 'Red flag on a long-term holding.' : 'Long-term holding. ' + (h.weekly === 'down' ? 'Weekly trend is down.' : 'Trend is fine.')) : h.why || '';
+    return `<article class="hx v-${g}">
+      <a href="/rahul/stock/${encodeURIComponent(x.symbol)}" data-nav class="hx-top">${mono(x.symbol)}
+        <span class="hx-id"><b>${esc(x.symbol)}</b><small>${fmt.x(x.value / total * 100, 1)}% of portfolio${h.thin ? ' · thin trading' : ''}</small></span>
+        <span class="hx-v"><b class="tnum">${fmt.inr(x.value)}</b><small class="tnum ${tone(x.pnl)}">${fmt.sp(x.pnl_pct)}</small></span></a>
+      ${why ? `<p class="hx-why">${esc(why)}</p>` : ''}
       ${flags ? `<div class="hl-flags">${flags}</div>` : ''}
-      <div class="hl-lv">${lv}${prot}<span class="lv faint">${fmt.x(x.value / total * 100, 1)}%</span></div>
-      ${acts ? `<div class="hl-act">${acts}</div>` : ''}</article>`;
+      ${cells.length ? `<div class="hx-well c${cells.length}">${cells.join('')}</div>` : ''}
+      <div class="hx-foot">${g === 'fund' || g === 'unknown' ? '<span></span>' : prot}
+        <span class="hx-acts"><button class="star${isLong ? ' on' : ''}" data-h-long="${esc(s)}" aria-pressed="${isLong}" aria-label="${isLong ? 'Remove long-term mark' : 'Mark as long term'}">${isLong ? '★' : '☆'}</button>${acts}</span></div></article>`;
   };
 
   const T = H.test || {}, P = T.periods || [];
@@ -82,7 +86,8 @@ export function healthView(rows, H, G) {
       <p class="tiny" style="margin-top:-4px">"Fell 20%+" is the share that dropped 20% or more at some point in the next 3 months.</p><p>Exit stocks did worse than Hold stocks in both periods and fell hard more often, but the gap is modest: an Exit is a weak stock, not a certain loser. Buy-more zones fell hard less often; their returns were about the same as Hold. Red flags and the long-term mark are not part of the test. ${esc(T.note || '')}</p></div></details>` : '';
 
   return `${probs.length ? `<div class="gp-alert" role="alert">${icon('bolt', 18)}<span><b>${probs.length} GTT ${probs.length === 1 ? 'order' : 'orders'} could sell shares you do not hold</b><small>${probs.map(g => esc(g.symbol + ' at ' + g.broker)).join(', ')}. If you buy the stock again later, the old trigger sells it. Cancel below.</small></span></div>` : ''}
-    <section class="panel hb"><div class="hb-h"><b>${own.length} holdings without an AI call</b><span class="small">${noStop.length ? `<b class="dn">${noStop.length}</b> without a stop · ${fmt.lakh(val(noStop))}` : 'all have a stop'}</span></div>${bar}</section>
+    <section class="panel hsum"><div class="hsum-h"><div><small class="hsum-k">Without an AI call</small><b class="hsum-n">${own.length} <span>holdings</span></b><span class="hsum-m tnum">${fmt.lakh(val(own))} · ${fmt.x(val(own) / total * 100, 0)}% of portfolio</span></div>
+      ${noStop.length ? `<span class="hsum-warn"><b class="tnum">${noStop.length}</b><small>no stop</small></span>` : `<span class="hsum-warn ok">${icon('check', 16)}<small>all stopped</small></span>`}</div>${bar}</section>
     ${order.map(k => `<section class="sec hg" id="hg-${k}"><div class="sec-h"><h2>${VERDICT[k].head} <span class="td-n${k === 'exit' ? ' dn' : ''}">${groups[k].length}</span></h2><span class="small tnum">${fmt.lakh(val(groups[k]))}</span></div><p class="sec-p">${VERDICT[k].sub}</p>
       ${k === 'hold' || k === 'fund' || k === 'unknown' ? `<details class="rv-fold"><summary>Show ${groups[k].length}</summary><div class="group hl-list">${groups[k].map(row).join('')}</div></details>` : `<div class="group hl-list">${groups[k].map(row).join('')}</div>`}</section>`).join('')}
     ${gttSection(G)}
