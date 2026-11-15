@@ -1,10 +1,13 @@
-import { reveal, chrome, fill, fmt, icon, link, loadTerminal, allSignals, segmented, tone, toDate, tradeStats, yearTrades, auth, isOwner, ownedSymbols } from '../core.js';
+import { reveal, chrome, fill, fmt, esc, icon, link, loadTerminal, allSignals, segmented, tone, toDate, tradeStats, yearTrades, auth, isOwner, ownedSymbols, skel, ownerApi } from '../core.js';
 import { settle } from '../charts.js';
-import { closedRow, footNote, signalList, isFreshSignal } from './parts.js';
+import { closedRow, footNote, signalList, sec } from './parts.js';
+import { loadBook, STATUS } from './pfdata.js';
+import { orderSheet } from './trade.js';
+import { edgeHome, GAUGE, srow, day } from './edgedata.js';
 
 export default async function calls(el, r) {
-  const body = chrome(el, { title: 'AI Calls', page: 'AI Calls', top: { ey: `${icon('ai', 16)}AI Buy &amp; Sell Calls`, h: 'Know when to buy, | and when to sell.', hl: ['buy', 'sell'], lede: 'Two AI engines scan every NSE stock after the close. Each call comes with a buy price, a stop loss and a target, so you always know your risk.' } });
-  body.innerHTML = `<div id="c-sum"></div><div id="c-seg" style="margin-top:16px"></div><div id="c-list" style="margin-top:6px"></div>${footNote('Calls are generated after the market closes and checked again before the open.')}`;
+  const body = chrome(el, { title: 'Calls', page: 'Calls', compact: true });
+  body.innerHTML = `<div id="c-own"></div><div id="c-sum"></div><div id="c-seg" style="margin-top:16px"></div><div id="c-list" style="margin-top:6px"></div>${footNote('Calls are generated after the market closes and checked again before the open.')}`;
   const sum = body.querySelector('#c-sum'), list = body.querySelector('#c-list');
   let tab = r.query.get('v') === 'closed' ? 'closed' : 'signals';
 
@@ -17,11 +20,39 @@ export default async function calls(el, r) {
     draw(t);
   }, '<div class="sk" style="height:104px;border-radius:18px"></div>');
 
+  /* Owner sections: market gauge, what to sell, what needs attention, cash. Information only; none of it hides a call. */
+  const own = async () => {
+    const box = body.querySelector('#c-own');
+    box.innerHTML = skel(44, 1, 14);
+    const book = await loadBook(true);
+    const rows = book.rows, syms = rows.map(x => String(x.symbol).toUpperCase());
+    let E = { regime: {}, stocks: {} };
+    try { E = await edgeHome(syms); } catch { /* the Edge build may not have run yet */ }
+    const R = E.regime || {}, G = GAUGE[R.gauge] || null, S = E.stocks || {};
+    const act = rows.filter(x => ['exit', 'stop', 'target'].includes(x.status)).sort((a, b) => STATUS[a.status].rank - STATUS[b.status].rank);
+    const why = x => (x.status === 'exit' ? `AI exited on ${fmt.date(x.exitCall.exitDate)} at ${fmt.px(x.exitCall.exit)}` : x.status === 'stop' ? `Price ${fmt.px(x.ltp)} is at the stop ${fmt.px(x.call.stop)}` : `Price ${fmt.px(x.ltp)} reached the target ${fmt.px(x.call.target)}`);
+    const cut = Date.now() - 7 * 864e5;
+    const warns = rows.flatMap(x => ((S[String(x.symbol).toUpperCase()] || {}).warnings || []).map(w => ({ ...w, sym: x.symbol })));
+    const att = warns.filter(w => (w.level === 'bad' && w.d && new Date(w.d).getTime() >= cut) || (w.kind === 'results' && w.d && new Date(w.d).getTime() - Date.now() <= 3 * 864e5 && new Date(w.d).getTime() >= Date.now() - 864e5));
+    box.innerHTML = `${G ? link('edge?v=market', `<span class="cg-dot ${G.cls}"></span><span class="cg-t">Market: <b>${G.t}</b> <i>·</i> ${fmt.x(R.b50, 0)}% of stocks above their 50-day average</span>${icon('chev', 16, 'chev')}`, 'cg-line') : ''}
+      ${sec('Sell', act.length ? `<div class="group">${act.map(x => `<div class="row td-act"><a href="${esc('/rahul/stock/' + encodeURIComponent(x.symbol))}" data-nav class="main"><div class="t">${esc(x.symbol)} <span class="pill ${STATUS[x.status].cls}">${STATUS[x.status].t}</span></div><div class="s">${why(x)} · you hold ${fmt.x(x.qty, 0)} (${fmt.inr(x.value)})</div></a>
+          ${Object.keys(x.parts || {}).some(k => k !== 'Manual') ? `<button class="btn sm ${x.status === 'target' ? 'quiet' : 'sell'}" data-sell="${esc(x.symbol)}">Sell</button>` : ''}</div>`).join('')}</div>` : '<div class="panel pad small">Nothing to sell. No AI exit, stop or target on the stocks you hold.</div>')}
+      ${att.length ? sec('Needs attention', `<div class="group">${att.slice(0, 8).map(w => srow(w.sym, esc(w.text), `<div class="d faint">${day(w.d)}</div>`)).join('')}</div>`) : ''}
+      <div id="c-cash" class="small" style="margin:6px 2px 14px"></div>`;
+    box.querySelectorAll('[data-sell]').forEach(b => b.onclick = () => { const x = rows.find(y => y.symbol === b.dataset.sell); orderSheet({ sym: x.symbol, side: 'SELL', call: x.call, broker: Object.keys(x.parts || {}).find(k => k !== 'Manual'), onDone: okd => okd && own() }); });
+    ownerApi('/owner/funds').then(f => {
+      const parts = Object.entries(f.funds || {}).map(([k, b]) => `${k} ${b.status === 'ok' ? fmt.inr(b.cash) : b.status === 'closed' ? 'market closed' : b.status === 'login_needed' ? 'not connected' : '—'}`);
+      const el2 = box.querySelector('#c-cash'); if (el2) el2.innerHTML = `Free cash: ${parts.join(' · ')}.`;
+    }).catch(() => {});
+  };
+  auth.whenReady().then(() => { if (isOwner()) own(); });
+
   function draw(t) {
     if (tab === 'closed') { closed(t); reveal(list); return; }
-    const paint = (o = {}) => { list.innerHTML = `<p class="tab-note"><b>Active trades</b> are calls that are still open. Buy only the fresh ones; the older ones have already moved.</p>${o.expand ? `<p class="tab-note own">${o.owned.size ? `<b>Green border</b> = you already hold it (Angel or your trade log).` : 'Your holdings are loading…'} <a href="/rahul/portfolio" data-nav>My portfolio</a></p>` : ''}${signalList(allSignals(t), o)}`; settle(list); reveal(list); };
+    const paint = (o = {}) => { const calls = allSignals(t); list.innerHTML = `<p class="tab-note"><b>Active trades</b> are calls that are still open. Buy the new ones, and the older ones that are still at or above their entry.</p>${o.expand ? `<p class="tab-note own">${o.owned.size ? `<b>Green border</b> = you already hold it (Angel or your trade log).` : 'Your holdings are loading…'} <a href="/rahul/portfolio" data-nav>My portfolio</a></p>` : ''}${signalList(allSignals(t), o)}`; settle(list); reveal(list);
+      list.querySelectorAll('[data-buy]').forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation(); const c = calls.find(y => y.sym === b.dataset.buy); orderSheet({ sym: b.dataset.buy, side: 'BUY', call: c, onDone: okd => okd && ownedSymbols().then(owned => paint({ expand: true, owned, buy: true })) }); }); };
     paint();
-    auth.whenReady().then(() => { if (!isOwner() || tab !== 'signals') return; paint({ expand: true, owned: new Set() }); ownedSymbols().then(owned => { if (tab === 'signals') paint({ expand: true, owned }); }); });
+    auth.whenReady().then(() => { if (!isOwner() || tab !== 'signals') return; paint({ expand: true, owned: new Set(), buy: true }); ownedSymbols().then(owned => { if (tab === 'signals') paint({ expand: true, owned, buy: true }); }); });
   }
 
   function closed(t) {

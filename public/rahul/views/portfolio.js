@@ -12,7 +12,7 @@ import { go } from '../core.js';
 const today = () => new Date().toISOString().slice(0, 10);
 
 export default async function portfolio(el, r) {
-  const body = chrome(el, { title: 'Portfolio', page: 'Portfolio', top: { ey: `${icon('pf', 16)}My portfolio`, h: 'All your brokers, | in one place.', hl: ['one place'], lede: 'Angel, Kite, Dhan and your manual trades, matched with the AI calls.' },
+  const body = chrome(el, { title: 'Portfolio', page: 'Portfolio', compact: true,
     actions: '<button class="ib" data-add aria-label="Add a trade">' + icon('plus', 22) + '</button><button class="ib" data-refresh aria-label="Refresh" style="font-size:20px">↻</button>' });
   body.innerHTML = `<div id="pf">${skel(90, 1, 18)}${skel(56, 6)}</div>`;
   const root = body.querySelector('#pf');

@@ -1,13 +1,12 @@
 import { api, chrome, fill, fmt, esc, icon, n, ok, link, mono, delta, tone, loadTerminal, share, scoreTone, sentence, clean, q, empty, engineOf, engineBadge, ENGINES } from '../core.js';
 import { priceChart, toCandles, withEmas, ruler, settle } from '../charts.js';
-import { sec, statCell, closedRow, footNote, paperSheet } from './parts.js';
+import { sec, statCell, closedRow, footNote, paperSheet, entryZone } from './parts.js';
 import { paper, go, auth, isOwner } from '../core.js';
 import { orderSheet } from './trade.js';
 
 export default async function call(el, r) {
   const sym = r.arg.toUpperCase();
-  const body = chrome(el, { title: sym, back: 'AI Calls', actions: `<button class="ib" data-share aria-label="Share this call">${icon('share', 20)}</button>` });
-  el.querySelector('.head').remove();
+  const body = chrome(el, { title: sym, back: 'Calls', compact: true, actions: `<button class="ib" data-share aria-label="Share this call">${icon('share', 20)}</button>` });
   const want = r.query.get('e') === 'v3' ? 'v3' : 'v2';
   el.querySelector('[data-share]').onclick = () => share(`${sym} AI call`, `QuantSync AI call on ${sym}`);
   fill(body, () => loadTerminal(), t => {
@@ -28,7 +27,7 @@ export default async function call(el, r) {
     const todo = fresh
       ? (above ? `It has already run ${fmt.sp((c.now / c.entry - 1) * 100)} past the entry. Buying here raises your risk, because the stop stays at <b>${fmt.px(c.stop)}</b>. Wait for a dip towards <b>${fmt.px(c.entry)}</b>.`
         : `Buy near <b>${fmt.px(c.entry)}</b>, and avoid paying more than <b>${fmt.px(chase)}</b>. Place a stop loss at <b>${fmt.px(c.stop)}</b>. The engine plans to take profit at <b>${fmt.px(c.target)}</b>.`)
-      : (belowEntry ? `The trade is slightly under water but still valid. It only fails on a close below <b>${fmt.px(c.stop)}</b>, about ${fmt.pct((1 - c.stop / c.now) * 100)} away.`
+      : (belowEntry ? `The price is under the entry. The call only fails on a close below <b>${fmt.px(c.stop)}</b>, about ${fmt.pct((1 - c.stop / c.now) * 100)} away. If you do not hold it, past calls bought below their entry won only about 3 in 10, so waiting for the price to get back above <b>${fmt.px(c.entry)}</b> is safer.`
         : `Holding with a gain. Keep the stop at <b>${fmt.px(c.stop)}</b>. The target of <b>${fmt.px(c.target)}</b> is ${fmt.pct((c.target / c.now - 1) * 100)} away.`);
     body.innerHTML = `
       <div class="xhero" style="margin-top:6px">
@@ -53,7 +52,7 @@ export default async function call(el, r) {
       <div id="k-hist"></div>
       ${footNote()}`;
     settle(body);
-    auth.whenReady().then(() => { if (!isOwner()) return; const hero = body.querySelector('.xhero'); hero.insertAdjacentHTML('afterend', `<div style="display:flex;gap:8px;margin-top:12px"><button class="btn block" data-buy>Buy ${esc(c.sym)}</button><button class="btn quiet" data-sell>Sell</button></div>`); body.querySelector('[data-buy]').onclick = () => orderSheet({ sym: c.sym, side: 'BUY', call: c }); body.querySelector('[data-sell]').onclick = () => orderSheet({ sym: c.sym, side: 'SELL', call: c }); });
+    auth.whenReady().then(() => { if (!isOwner()) return; const hero = body.querySelector('.xhero'); const below = entryZone(c) === 'below'; hero.insertAdjacentHTML('afterend', `${below ? `<p class="small" style="margin:12px 2px 0">The price is below this call's entry. In the past, calls bought here won about 3 in 10.</p>` : ''}<div style="display:flex;gap:8px;margin-top:${below ? 8 : 12}px"><button class="btn block${below ? ' quiet' : ''}" data-buy>Buy ${esc(c.sym)}</button><button class="btn quiet" data-sell>Sell</button></div>`); body.querySelector('[data-buy]').onclick = () => orderSheet({ sym: c.sym, side: 'BUY', call: c }); body.querySelector('[data-sell]').onclick = () => orderSheet({ sym: c.sym, side: 'SELL', call: c }); });
     const pb = body.querySelector('[data-paper]'); if (pb) pb.onclick = () => (paper.has(c.sym) ? go('portfolio') : paperSheet(c, () => { pb.lastChild.textContent = 'Paper trade started'; }));
 
     const chartEl = body.querySelector('#k-chart');

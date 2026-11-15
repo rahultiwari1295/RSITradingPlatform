@@ -29,15 +29,24 @@ export const ago = c => {
   if (d) { const t = new Date(); k = Math.max(0, Math.round((new Date(t.getFullYear(), t.getMonth(), t.getDate()) - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5)); }
   return !isFinite(k) ? '' : k === 0 ? 'Today' : k === 1 ? '1 day ago' : k + ' days ago';
 };
+/** 'new' | 'near' | 'ran' | 'below': where the price stands against the call's entry. */
+export function entryZone(c) {
+  if (isFreshSignal(c)) return 'new';
+  const g = (c.now / c.entry - 1) * 100;
+  if (!isFinite(g)) return 'near';
+  return g > 2 ? 'ran' : g < -1 ? 'below' : 'near';
+}
+const zoneTag = c => {
+  const z = entryZone(c), g = (c.now / c.entry - 1) * 100;
+  return z === 'ran' ? `<span class="tag">Already up ${fmt.sp(g, 1)}</span>` : z === 'below' ? `<span class="tag dn">Below entry ${fmt.sp(g, 1)}</span>` : '';
+};
 export function signalCard(c, o = {}) {
   const fresh = isFreshSignal(c), traded = paper.has(c.sym), owned = !!(o.owned && o.owned.has(String(c.sym).toUpperCase()));
-  const run = (c.now / c.entry - 1) * 100;
   const pct = Math.abs(c.roi) < .05 ? '<span class="d0">0.0%</span>' : delta(c.roi);
-  const body = `<div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}${owned ? '<span class="tag bought">Bought</span>' : ''}${traded ? '<span class="tag paper">Paper</span>' : ''}</div><div class="s">${engineBadge(c)}<span class="ago">${ago(c)}</span></div></div><div class="px"><div class="v">${fmt.px(c.now)}</div>${pct}</div></div>`;
+  const body = `<div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}${owned ? '<span class="tag bought">Bought</span>' : ''}${traded ? '<span class="tag paper">Paper</span>' : ''}</div><div class="s">${engineBadge(c)}<span class="ago">${ago(c)}</span>${zoneTag(c)}</div></div><div class="px"><div class="v">${fmt.px(c.now)}</div>${pct}</div></div>`;
   const ob = owned ? ' owned' : '';
-  if (!fresh && !o.expand) return link(callPath(c), `${body}${isFinite(run) && run > 1 ? `<p class="note">Already <b>${fmt.sp(run)}</b> above the entry.</p>` : ''}`, 'sig old compact' + ob, `aria-label="${esc(c.sym)}, ${engineName(c)}, old signal${owned ? ', bought' : ''}"`);
-  const note = !fresh && isFinite(run) && run > 1 ? `<p class="note">Already <b>${fmt.sp(run)}</b> above the entry.</p>` : '';
-  return link(callPath(c), `${body}${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: c.now }, { short: true })}${note}`, (fresh ? 'sig new' : 'sig old') + ob, `aria-label="${esc(c.sym)}, ${engineName(c)}, ${fresh ? 'fresh' : 'old'} signal${owned ? ', bought' : ''}"`);
+  if (!fresh && !o.expand) return link(callPath(c), body, 'sig old compact' + ob, `aria-label="${esc(c.sym)}, ${engineName(c)}, open call${owned ? ', bought' : ''}"`);
+  return link(callPath(c), `${body}${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: c.now }, { short: true })}`, (fresh ? 'sig new' : 'sig old') + ob, `aria-label="${esc(c.sym)}, ${engineName(c)}, ${fresh ? 'fresh' : 'open'} call${owned ? ', bought' : ''}"`);
 }
 /** Kept for callers that still wire paper-trade buttons (the call detail page). */
 export function bindSignals(root, list, onChange) {
@@ -45,13 +54,20 @@ export function bindSignals(root, list, onChange) {
   root.querySelectorAll('[data-open-paper]').forEach(b => b.onclick = e => { e.preventDefault(); go('portfolio'); });
 }
 const head = (t, sub, n, cls = '') => `<div class="sig-sec ${cls}"><div class="h"><h3>${t}</h3><span class="n tnum">${n}</span></div><p>${sub}</p></div>`;
-/** Fresh signals first, then old ones under a "skip" heading. Age is on every card, so no per-card badge. */
+/** Every open call appears once: new today, still open to buy (near or above entry), or below its entry. Nothing is hidden. */
 export function signalList(list, o = {}) {
-  const fresh = list.filter(isFreshSignal).sort((a, b) => (b.score || 0) - (a.score || 0));
-  const old = list.filter(c => !isFreshSignal(c)).sort((a, b) => (a.days || 0) - (b.days || 0));
-  return `${head('Fresh signals', 'From the last scan. Paper trade these.', fresh.length, 'fresh')}
-    <div class="sig-stack">${fresh.length ? fresh.map(c => signalCard(c, o)).join('') : `<div class="empty"><div class="ic">${icon('clock', 24)}</div><h3>No fresh signal in the last scan</h3><p>The scanner runs after every close. New setups appear here first.</p></div>`}</div>
-    ${old.length ? `${head('Old signals', 'Skip these. The best entry has passed.', old.length, 'old')}<div class="sig-stack">${old.map(c => signalCard(c, o)).join('')}</div>` : ''}`;
+  const by = (a, b) => (b.score || 0) - (a.score || 0);
+  const g1 = list.filter(c => entryZone(c) === 'new').sort(by);
+  const g2 = list.filter(c => ['near', 'ran'].includes(entryZone(c))).sort((a, b) => (entryZone(a) === 'near' ? 0 : 1) - (entryZone(b) === 'near' ? 0 : 1) || (a.days || 0) - (b.days || 0));
+  const g3 = list.filter(c => entryZone(c) === 'below').sort((a, b) => (a.days || 0) - (b.days || 0));
+  const card = c => {
+    const h = signalCard(c, o);
+    return o.buy ? `<div class="sig-wrap">${h}<div class="sig-buy"><button class="btn sm" data-buy="${esc(c.sym)}">${o.owned && o.owned.has(String(c.sym).toUpperCase()) ? 'Buy more' : 'Buy'}</button></div></div>` : h;
+  };
+  return `${head('Buy today', 'New calls from the last scan.', g1.length, 'fresh')}
+    <div class="sig-stack">${g1.length ? g1.map(card).join('') : `<div class="empty"><div class="ic">${icon('clock', 24)}</div><h3>No new call in the last scan</h3><p>Calls come at about 3:15 PM on market days.</p></div>`}</div>
+    ${g2.length ? `${head('Still open to buy', 'Older calls that are at or above their entry price.', g2.length, 'old')}<div class="sig-stack">${g2.map(card).join('')}</div>` : ''}
+    ${g3.length ? `${head('Below entry', 'The price has fallen under the call\'s entry. In the past, calls bought below their entry won about 3 in 10. Waiting for the price to get back above the entry is safer.', g3.length, 'old')}<div class="sig-stack">${g3.map(c => signalCard(c, o)).join('')}</div>` : ''}`;
 }
 export const scanRule = () => '';
 export const scanLogo = () => `<span class="scan-mark" aria-hidden="true">${icon('target', 17)}</span>`;

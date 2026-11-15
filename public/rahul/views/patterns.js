@@ -2,7 +2,7 @@ import { icon, api, chrome, fill, fmt, esc, n, ok, loadPatterns, q, empty, toDat
 import { patternCard, patternRow, sparks, sec, STAGE, footNote } from './parts.js';
 
 export default async function patterns(el, r) {
-  const body = chrome(el, { title: 'Patterns', page: 'Patterns', top: { ey: `${icon('pattern', 16)}Chart Patterns`, h: 'Love charts? | Catch breakouts early.', hl: ['breakouts'], lede: 'We scan the daily and weekly chart of every NSE stock for classic patterns, and show how often the same setup has worked since 2020.' } });
+  const body = chrome(el, { title: 'Patterns', back: 'More', top: { ey: `${icon('pattern', 16)}Chart Patterns`, h: 'Love charts? | Catch breakouts early.', hl: ['breakouts'], lede: 'We scan the daily and weekly chart of every NSE stock for classic patterns, and show how often the same setup has worked since 2020.' } });
   body.innerHTML = `<div id="p-flow"></div><div id="p-list"></div><div id="p-edge"></div>${footNote('Patterns are scanned after each close on daily and weekly charts.')}`;
   let stage = r.query.get('stage') || 'Breakout', tf = 'all', shown = 20;
 

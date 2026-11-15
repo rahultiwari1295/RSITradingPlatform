@@ -3,19 +3,19 @@
    stop / target drawn on it, a technical read-out, recent news, and buy / sell. */
 import { api, chrome, fill, fmt, esc, icon, ok, link, mono, delta, tone, engineBadge, engineName, callPath, scoreTone, clean, empty, skel, toDate } from '../core.js';
 import { priceChart, toCandles, withEmas, ruler, settle } from '../charts.js';
-import { sec, statCell, footNote } from './parts.js';
+import { sec, statCell, footNote, entryZone } from './parts.js';
 import { loadBook, enrich, technicals, TREND, STATUS, EXIT_DAYS } from './pfdata.js';
 import { orderSheet, stopSheet } from './trade.js';
 import { edgeStock, rsPill, cr, day } from './edgedata.js';
 import { ownerSend } from '../core.js';
-import { titleCase } from './today.js';
+import { titleCase } from './edgedata.js';
 
 const SRC = ['Angel', 'Kite', 'Dhan', 'Manual'];
 const rel = iso => { const t = toDate(iso); if (!t) return ''; const d = Math.round((Date.now() - t) / 864e5); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d < 30 ? d + ' days ago' : fmt.date(iso); };
 
 export default async function stock(el, r) {
   const sym = r.arg.toUpperCase();
-  const body = chrome(el, { title: sym, back: 'Portfolio', actions: '<button class="ib" data-refresh aria-label="Refresh" style="font-size:20px">↻</button>' });
+  const body = chrome(el, { title: sym, back: 'Portfolio', compact: true, actions: '<button class="ib" data-refresh aria-label="Refresh" style="font-size:20px">↻</button>' });
   body.innerHTML = `<div id="sk">${skel(150, 1, 22)}${skel(110, 2, 16)}${skel(300, 1, 16)}</div>`;
   const root = body.querySelector('#sk');
   el.querySelector('[data-refresh]').onclick = () => load(true);
@@ -57,7 +57,7 @@ export default async function stock(el, r) {
         ${c ? `<div style="margin-top:6px">${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: x.ltp })}</div>` : ''}
       </div>
       <div class="verdict sk-v ${vt}" style="margin-top:12px"><div class="h">${esc(vh)}</div><p style="color:var(--ink)">${vp}</p></div>
-      <div class="sk-act">${canTrade ? `<button class="btn block" data-buy>${held ? 'Buy more' : 'Buy'}</button>` : ''}${sellable ? `<button class="btn block ${x.status === 'exit' || x.status === 'stop' ? 'sell' : 'quiet'}" data-sell>Sell</button>` : ''}${held && c && sellable && x.status === 'ai' ? `<button class="btn block quiet" data-stop>Set stop</button>` : ''}</div>
+      ${c && entryZone(c) === 'below' ? `<p class="small" style="margin:10px 2px 0">The price is below this call's entry. In the past, calls bought here won about 3 in 10.</p>` : ''}<div class="sk-act">${canTrade ? (c ? `<button class="btn block${entryZone(c) === 'below' ? ' quiet' : ''}" data-buy>${held ? 'Buy more' : 'Buy'}</button>` : `<button class="lnk" data-buy>Buy anyway</button>`) : ''}${sellable ? `<button class="btn block ${x.status === 'exit' || x.status === 'stop' ? 'sell' : 'quiet'}" data-sell>Sell</button>` : ''}${held && c && sellable && x.status === 'ai' ? `<button class="btn block quiet" data-stop>Set stop</button>` : ''}</div>
       <div id="k-warn"></div>
 
       ${held ? sec('Your position', `<div class="stats four">

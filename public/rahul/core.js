@@ -544,38 +544,38 @@ export async function loadPatterns() {
 
 /* ---------------------------------------------------------------- router and screens */
 const TABS = [
-  ['today', '', 'Today', 'today'],
-  ['news', 'news', 'News', 'news'],
-  ['calls', 'calls', 'AI Calls', 'ai'],
-  ['patterns', 'patterns', 'Patterns', 'pattern'],
-  ['edge', 'edge', 'Edge', 'bolt'],
-  ['xray', 'xray', 'X-Ray', 'xray'],
+  ['news', '', 'News', 'news'],
+  ['calls', 'calls', 'Calls', 'ai'],
   ['portfolio', 'portfolio', 'Portfolio', 'pf'],
+  ['more', 'more', 'More', 'grid'],
 ];
 const ROUTES = [
-  [/^$/, 'today', 'today'],
-  [/^edge$/, 'edge', 'edge'],
-  [/^news$/, 'embed', 'news'],
+  [/^$/, 'home', 'news'],                 // News is the home page
+  [/^news$/, 'home', 'news'],             // old links keep working
+  [/^today$/, 'calls', 'calls'],
   [/^calls$/, 'calls', 'calls'],
   [/^calls\/closed\/([^/]+)$/, 'closed', 'calls'],
   [/^calls\/([^/]+)$/, 'call', 'calls'],
   [/^record$/, 'record', 'calls'],
-  [/^patterns$/, 'patterns', 'patterns'],
-  [/^patterns\/([^/]+)$/, 'pattern', 'patterns'],
-  [/^xray$/, 'embed', 'xray'],
-  [/^xray\/([^/]+)$/, 'embed', 'xray'],
   [/^portfolio$/, 'portfolio', 'portfolio'],
   [/^stock\/([^/]+)$/, 'stock', 'portfolio'],
+  [/^more$/, 'more', 'more'],
+  [/^edge$/, 'edge', 'more'],
+  [/^patterns$/, 'patterns', 'more'],
+  [/^patterns\/([^/]+)$/, 'pattern', 'more'],
+  [/^xray$/, 'embed', 'more'],
+  [/^xray\/([^/]+)$/, 'embed', 'more'],
 ];
+const ROOT_VIEWS = new Set(['home', 'calls', 'portfolio', 'more']);
 export function parse(loc = location) {
   let p = loc.pathname.replace(/\/+$/, '');
   if (p.startsWith(CFG.base)) p = p.slice(CFG.base.length);
   p = p.replace(/^\/+/, '');
   for (const [re, view, tab] of ROUTES) {
     const m = p.match(re);
-    if (m) return { view, tab, arg: m[1] ? decodeURIComponent(m[1]) : '', path: p, query: new URLSearchParams(loc.search), root: view === tab };
+    if (m) return { view, tab, arg: m[1] ? decodeURIComponent(m[1]) : '', path: p, query: new URLSearchParams(loc.search), root: ROOT_VIEWS.has(view) };
   }
-  return { view: 'today', tab: 'today', arg: '', path: '', query: new URLSearchParams(), root: true };
+  return { view: 'home', tab: 'news', arg: '', path: '', query: new URLSearchParams(), root: true };
 }
 const stage = () => document.getElementById('stage');
 const roots = {};
@@ -598,7 +598,7 @@ function setTabs(tab) {
   if (ind && i >= 0) ind.style.transform = `translateX(${i * 100}%)`;
 }
 function title(r) {
-  const t = { embed: { news: 'News', xray: 'Stock X-Ray' }[r.tab], today: 'Today', edge: 'Edge', calls: 'AI Calls', patterns: 'Pattern Calls', xray: 'Stock X-Ray', portfolio: 'Portfolio', record: 'Track record', market: 'Market map' }[r.view] || r.arg;
+  const t = { embed: 'Stock X-Ray', home: 'News', more: 'More', edge: 'Edge', calls: 'Calls', patterns: 'Pattern Calls', xray: 'Stock X-Ray', portfolio: 'Portfolio', record: 'Track record', market: 'Market map' }[r.view] || r.arg;
   document.title = (t ? t + ' · ' : '') + 'QuantSync';
 }
 const anim = (el, kf, o) => (RM || !el.animate ? Promise.resolve() : el.animate(kf, { duration: 340, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'both', ...o }).finished.catch(() => {}));
@@ -691,18 +691,19 @@ const themeSwitch = () => `<button class="tsw" type="button" role="switch" data-
 /** Shared chrome. Tab pages: QuantSync and the page name on the left, the day and night switch on the right.
     Detail pages: a back button and the title, which appears once the big title scrolls away.
     top: { ey, h, hl, lede, extra } is the title block. */
-export function chrome(el, { title, sub = '', back: backTo, actions = '', top = null, page = '' }) {
+export function chrome(el, { title, sub = '', back: backTo, actions = '', top = null, page = '', compact = false }) {
   const t = top || { h: title, lede: sub };
   const left = backTo != null
     ? `<button class="ib back" data-back aria-label="Back">${icon('back', 22)}<span>${esc(backTo)}</span></button><div class="bt">${esc(title)}</div>`
     : `<a class="brand" href="${CFG.base}/" data-nav aria-label="QuantSync home">${logo(26)}<span class="bn">QuantSync</span>${page ? `<span class="bp"><i></i>${esc(page)}</span>` : ''}</a><span class="grow"></span>`;
   el.innerHTML = `<div class="aurora" aria-hidden="true"></div><header class="bar${backTo != null ? '' : ' tabbar'}">${left}${actions}${backTo != null ? (actions ? '' : '<span class="sp"></span>') : themeSwitch()}</header>
-  <div class="wrap head">${titleHTML(t)}</div><div class="wrap body"></div>`;
+  ${compact ? '' : `<div class="wrap head">${titleHTML(t)}</div>`}<div class="wrap body${compact ? ' compact' : ''}"></div>`;
   const bar = el.querySelector('.bar'), h1 = el.querySelector('.tb-h');
   let tick = 0, solid = false;
+  const b = el.querySelector('[data-back]'); if (b) b.onclick = () => back(TABS.find(t2 => t2[0] === parse().tab)?.[1]);
+  if (compact) { bar.classList.add('solid'); return el.querySelector('.body'); }
   const on = () => { tick = 0; const s2 = el.scrollTop > (h1 ? h1.offsetTop + h1.offsetHeight - 40 : 40); if (s2 !== solid) { solid = s2; bar.classList.toggle('solid', s2); } };
   el.addEventListener('scroll', () => { if (!tick) tick = requestAnimationFrame(on); }, { passive: true });
-  const b = el.querySelector('[data-back]'); if (b) b.onclick = () => back(TABS.find(t2 => t2[0] === parse().tab)?.[1]);
   return el.querySelector('.body');
 }
 /** Today's date line, e.g. "Wed, 14 Oct". */

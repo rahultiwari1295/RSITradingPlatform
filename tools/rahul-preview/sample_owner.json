@@ -1,0 +1,651 @@
+{
+ "home": {
+  "meta": {
+   "built_at": "2026-11-14T20:12:00",
+   "as_of": "2026-11-13",
+   "stocks": 1800,
+   "seconds": 16
+  },
+  "regime": {
+   "gauge": "half",
+   "as_of": "2026-11-13",
+   "b50": 49.4,
+   "b50_wk": 40.0,
+   "index": {
+    "above50": true,
+    "above200": true
+   },
+   "highs": 44,
+   "lows": 6,
+   "flow5": {
+    "FII": 33343,
+    "DII": -24893
+   },
+   "evidence": {
+    "full": {
+     "avg": 3.72,
+     "n": 141
+    },
+    "half": {
+     "avg": 1.31,
+     "n": 100
+    },
+    "none": {
+     "avg": 0.1,
+     "n": 22
+    }
+   }
+  },
+  "earnings": {
+   "quarter": "Sep 2026",
+   "reported": 931,
+   "strong": []
+  },
+  "smart": {
+   "now": [],
+   "from": "2026-10-14"
+  },
+  "accum": [],
+  "stocks": {
+   "RELIANCE": {
+    "symbol": "RELIANCE",
+    "name": "Reliance",
+    "sector": "Energy",
+    "industry": "Energy",
+    "as_of": "2026-11-13",
+    "close": 100,
+    "liquid": true,
+    "rs": 72,
+    "r5": 1.0,
+    "r21": 3.0,
+    "r63": 12.0,
+    "r126": 5.0,
+    "r252": 10.0,
+    "trend": "up",
+    "sector_rank": 6,
+    "sectors": 20,
+    "earnings": null,
+    "owners": null,
+    "delivery": null,
+    "smart": [],
+    "warnings": []
+   },
+   "HDFCBANK": {
+    "symbol": "HDFCBANK",
+    "name": "Hdfcbank",
+    "sector": "Banks",
+    "industry": "Banks",
+    "as_of": "2026-11-13",
+    "close": 100,
+    "liquid": true,
+    "rs": 18,
+    "r5": 1.0,
+    "r21": 3.0,
+    "r63": -4.0,
+    "r126": 5.0,
+    "r252": 10.0,
+    "trend": "down",
+    "sector_rank": 6,
+    "sectors": 20,
+    "earnings": null,
+    "owners": null,
+    "delivery": null,
+    "smart": [],
+    "warnings": [
+     {
+      "kind": "results",
+      "level": "warn",
+      "text": "Results on 2026-11-17",
+      "d": "2026-11-17"
+     }
+    ]
+   },
+   "TCS": {
+    "symbol": "TCS",
+    "name": "Tcs",
+    "sector": "IT",
+    "industry": "IT",
+    "as_of": "2026-11-13",
+    "close": 100,
+    "liquid": true,
+    "rs": 25,
+    "r5": 1.0,
+    "r21": 3.0,
+    "r63": -4.0,
+    "r126": 5.0,
+    "r252": 10.0,
+    "trend": "down-weak",
+    "sector_rank": 6,
+    "sectors": 20,
+    "earnings": null,
+    "owners": null,
+    "delivery": null,
+    "smart": [],
+    "warnings": []
+   },
+   "NELCAST": {
+    "symbol": "NELCAST",
+    "name": "Nelcast",
+    "sector": "Industrials",
+    "industry": "Industrials",
+    "as_of": "2026-11-13",
+    "close": 100,
+    "liquid": true,
+    "rs": 97,
+    "r5": 1.0,
+    "r21": 3.0,
+    "r63": 12.0,
+    "r126": 5.0,
+    "r252": 10.0,
+    "trend": "up",
+    "sector_rank": 6,
+    "sectors": 20,
+    "earnings": null,
+    "owners": null,
+    "delivery": null,
+    "smart": [],
+    "warnings": []
+   },
+   "J&KBANK": {
+    "symbol": "J&KBANK",
+    "name": "J&Kbank",
+    "sector": "Banks",
+    "industry": "Banks",
+    "as_of": "2026-11-13",
+    "close": 100,
+    "liquid": true,
+    "rs": 30,
+    "r5": 1.0,
+    "r21": 3.0,
+    "r63": -4.0,
+    "r126": 5.0,
+    "r252": 10.0,
+    "trend": "down-weak",
+    "sector_rank": 6,
+    "sectors": 20,
+    "earnings": null,
+    "owners": null,
+    "delivery": null,
+    "smart": [],
+    "warnings": []
+   },
+   "KRN": {
+    "symbol": "KRN",
+    "name": "Krn",
+    "sector": "Industrials",
+    "industry": "Industrials",
+    "as_of": "2026-11-13",
+    "close": 100,
+    "liquid": true,
+    "rs": 8,
+    "r5": 1.0,
+    "r21": 3.0,
+    "r63": -4.0,
+    "r126": 5.0,
+    "r252": 10.0,
+    "trend": "down",
+    "sector_rank": 6,
+    "sectors": 20,
+    "earnings": null,
+    "owners": null,
+    "delivery": null,
+    "smart": [],
+    "warnings": [
+     {
+      "kind": "owners",
+      "level": "bad",
+      "text": "Promoters cut their stake by 5.1 points last quarter",
+      "d": null
+     }
+    ]
+   },
+   "CONFIPET": {
+    "symbol": "CONFIPET",
+    "name": "Confipet",
+    "sector": "Energy",
+    "industry": "Energy",
+    "as_of": "2026-11-13",
+    "close": 100,
+    "liquid": true,
+    "rs": 14,
+    "r5": 1.0,
+    "r21": 3.0,
+    "r63": -4.0,
+    "r126": 5.0,
+    "r252": 10.0,
+    "trend": "down-weak",
+    "sector_rank": 6,
+    "sectors": 20,
+    "earnings": null,
+    "owners": null,
+    "delivery": null,
+    "smart": [],
+    "warnings": [
+     {
+      "kind": "pledge",
+      "level": "bad",
+      "text": "46% of promoter shares are pledged",
+      "d": "2026-11-10"
+     }
+    ]
+   },
+   "ESAFSFB": {
+    "symbol": "ESAFSFB",
+    "name": "Esafsfb",
+    "sector": "Banks",
+    "industry": "Banks",
+    "as_of": "2026-11-13",
+    "close": 100,
+    "liquid": true,
+    "rs": 45,
+    "r5": 1.0,
+    "r21": 3.0,
+    "r63": 12.0,
+    "r126": 5.0,
+    "r252": 10.0,
+    "trend": "side",
+    "sector_rank": 6,
+    "sectors": 20,
+    "earnings": null,
+    "owners": null,
+    "delivery": null,
+    "smart": [],
+    "warnings": []
+   },
+   "MFSL": {
+    "symbol": "MFSL",
+    "name": "Mfsl",
+    "sector": "Insurance",
+    "industry": "Insurance",
+    "as_of": "2026-11-13",
+    "close": 100,
+    "liquid": true,
+    "rs": 80,
+    "r5": 1.0,
+    "r21": 3.0,
+    "r63": 12.0,
+    "r126": 5.0,
+    "r252": 10.0,
+    "trend": "up",
+    "sector_rank": 6,
+    "sectors": 20,
+    "earnings": null,
+    "owners": null,
+    "delivery": null,
+    "smart": [],
+    "warnings": []
+   },
+   "PAYTM": {
+    "symbol": "PAYTM",
+    "name": "Paytm",
+    "sector": "Financial services",
+    "industry": "Financial services",
+    "as_of": "2026-11-13",
+    "close": 100,
+    "liquid": true,
+    "rs": 85,
+    "r5": 1.0,
+    "r21": 3.0,
+    "r63": 12.0,
+    "r126": 5.0,
+    "r252": 10.0,
+    "trend": "up",
+    "sector_rank": 6,
+    "sectors": 20,
+    "earnings": null,
+    "owners": null,
+    "delivery": null,
+    "smart": [],
+    "warnings": []
+   },
+   "AUTOAXLES": {
+    "symbol": "AUTOAXLES",
+    "name": "Autoaxles",
+    "sector": "Auto parts",
+    "industry": "Auto parts",
+    "as_of": "2026-11-13",
+    "close": 100,
+    "liquid": true,
+    "rs": 90,
+    "r5": 1.0,
+    "r21": 3.0,
+    "r63": 12.0,
+    "r126": 5.0,
+    "r252": 10.0,
+    "trend": "up",
+    "sector_rank": 6,
+    "sectors": 20,
+    "earnings": null,
+    "owners": null,
+    "delivery": null,
+    "smart": [],
+    "warnings": []
+   }
+  },
+  "alerts": []
+ },
+ "blob": {
+  "regime": {
+   "gauge": "half",
+   "as_of": "2026-11-13",
+   "b50": 49.4,
+   "b50_wk": 40.0,
+   "index": {
+    "above50": true,
+    "above200": true
+   },
+   "highs": 44,
+   "lows": 6,
+   "flow5": {
+    "FII": 33343,
+    "DII": -24893
+   },
+   "evidence": {
+    "full": {
+     "avg": 3.72,
+     "n": 141
+    },
+    "half": {
+     "avg": 1.31,
+     "n": 100
+    },
+    "none": {
+     "avg": 0.1,
+     "n": 22
+    }
+   }
+  },
+  "earnings": {
+   "quarter": "Sep 2026",
+   "reported": 931,
+   "strong": []
+  },
+  "owners": {},
+  "smart": {
+   "now": []
+  },
+  "sectors": {
+   "sectors": []
+  },
+  "accum": {
+   "list": []
+  },
+  "scorecard": {
+   "engines": {},
+   "paper": {}
+  }
+ },
+ "portfolio": {
+  "as_of": "test",
+  "rows": [
+   {
+    "symbol": "ESAFSFB",
+    "source": "Angel",
+    "parts": {
+     "Angel": {
+      "qty": 300,
+      "avg": 46.4
+     }
+    },
+    "qty": 300,
+    "avg": 46.4,
+    "ltp": 44.0,
+    "invested": 13920.0,
+    "value": 13200.0,
+    "pnl": -720.0,
+    "pnl_pct": -5.17,
+    "day_pct": -1.2,
+    "realised": 0.0
+   },
+   {
+    "symbol": "MFSL",
+    "source": "Angel",
+    "parts": {
+     "Angel": {
+      "qty": 10,
+      "avg": 1401
+     }
+    },
+    "qty": 10,
+    "avg": 1401,
+    "ltp": 1530,
+    "invested": 14010,
+    "value": 15300,
+    "pnl": 1290,
+    "pnl_pct": 9.21,
+    "day_pct": 2.1,
+    "realised": 0.0
+   },
+   {
+    "symbol": "PAYTM",
+    "source": "Angel",
+    "parts": {
+     "Angel": {
+      "qty": 8,
+      "avg": 1925
+     }
+    },
+    "qty": 8,
+    "avg": 1925,
+    "ltp": 1940,
+    "invested": 15400,
+    "value": 15520,
+    "pnl": 120,
+    "pnl_pct": 0.78,
+    "day_pct": 0.8,
+    "realised": 0.0
+   },
+   {
+    "symbol": "AUTOAXLES",
+    "source": "Angel",
+    "parts": {
+     "Angel": {
+      "qty": 8,
+      "avg": 1680
+     }
+    },
+    "qty": 8,
+    "avg": 1680,
+    "ltp": 1817.5,
+    "invested": 13440,
+    "value": 14540.0,
+    "pnl": 1100.0,
+    "pnl_pct": 8.18,
+    "day_pct": 3.0,
+    "realised": 0.0
+   },
+   {
+    "symbol": "RELIANCE",
+    "source": "Angel",
+    "parts": {
+     "Angel": {
+      "qty": 20,
+      "avg": 1300
+     }
+    },
+    "qty": 20,
+    "avg": 1300,
+    "ltp": 1420,
+    "invested": 26000,
+    "value": 28400,
+    "pnl": 2400,
+    "pnl_pct": 9.23,
+    "day_pct": 0.4,
+    "realised": 0.0
+   },
+   {
+    "symbol": "HDFCBANK",
+    "source": "Angel",
+    "parts": {
+     "Angel": {
+      "qty": 60,
+      "avg": 980
+     }
+    },
+    "qty": 60,
+    "avg": 980,
+    "ltp": 830,
+    "invested": 58800,
+    "value": 49800,
+    "pnl": -9000,
+    "pnl_pct": -15.31,
+    "day_pct": -0.6,
+    "realised": 0.0
+   },
+   {
+    "symbol": "TCS",
+    "source": "Angel",
+    "parts": {
+     "Angel": {
+      "qty": 12,
+      "avg": 3400
+     }
+    },
+    "qty": 12,
+    "avg": 3400,
+    "ltp": 3050,
+    "invested": 40800,
+    "value": 36600,
+    "pnl": -4200,
+    "pnl_pct": -10.29,
+    "day_pct": -0.3,
+    "realised": 0.0
+   },
+   {
+    "symbol": "NELCAST",
+    "source": "Angel",
+    "parts": {
+     "Angel": {
+      "qty": 250,
+      "avg": 110
+     }
+    },
+    "qty": 250,
+    "avg": 110,
+    "ltp": 153.5,
+    "invested": 27500,
+    "value": 38375.0,
+    "pnl": 10875.0,
+    "pnl_pct": 39.55,
+    "day_pct": 0.5,
+    "realised": 0.0
+   },
+   {
+    "symbol": "J&KBANK",
+    "source": "Angel",
+    "parts": {
+     "Angel": {
+      "qty": 200,
+      "avg": 130
+     }
+    },
+    "qty": 200,
+    "avg": 130,
+    "ltp": 110,
+    "invested": 26000,
+    "value": 22000,
+    "pnl": -4000,
+    "pnl_pct": -15.38,
+    "day_pct": -0.9,
+    "realised": 0.0
+   },
+   {
+    "symbol": "SILVERBEES",
+    "source": "Angel",
+    "parts": {
+     "Angel": {
+      "qty": 289,
+      "avg": 268.85
+     }
+    },
+    "qty": 289,
+    "avg": 268.85,
+    "ltp": 168.85,
+    "invested": 77697.65,
+    "value": 48797.65,
+    "pnl": -28900.0,
+    "pnl_pct": -37.2,
+    "day_pct": 0.0,
+    "realised": 0.0
+   },
+   {
+    "symbol": "KRN",
+    "source": "Angel",
+    "parts": {
+     "Angel": {
+      "qty": 40,
+      "avg": 500
+     }
+    },
+    "qty": 40,
+    "avg": 500,
+    "ltp": 345,
+    "invested": 20000,
+    "value": 13800,
+    "pnl": -6200,
+    "pnl_pct": -31.0,
+    "day_pct": -1.5,
+    "realised": 0.0
+   },
+   {
+    "symbol": "CONFIPET",
+    "source": "Angel",
+    "parts": {
+     "Angel": {
+      "qty": 500,
+      "avg": 60
+     }
+    },
+    "qty": 500,
+    "avg": 60,
+    "ltp": 44,
+    "invested": 30000,
+    "value": 22000,
+    "pnl": -8000,
+    "pnl_pct": -26.67,
+    "day_pct": -0.4,
+    "realised": 0.0
+   }
+  ],
+  "by_source": {
+   "Angel": 0,
+   "Kite": 0,
+   "Dhan": 0,
+   "Manual": 0
+  },
+  "brokers": {
+   "Angel": {
+    "status": "ok"
+   },
+   "Kite": {
+    "status": "not_set_up"
+   },
+   "Dhan": {
+    "status": "login_needed"
+   }
+  },
+  "realised": 0.0
+ },
+ "activity": {
+  "orders": [],
+  "moves": []
+ },
+ "trades": {
+  "trades": []
+ },
+ "funds": {
+  "funds": {
+   "Angel": {
+    "status": "ok",
+    "cash": 41250.0
+   },
+   "Kite": {
+    "status": "not_set_up"
+   },
+   "Dhan": {
+    "status": "login_needed"
+   }
+  },
+  "as_of": "test"
+ }
+}

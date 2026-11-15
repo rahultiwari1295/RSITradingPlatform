@@ -4,7 +4,7 @@ import { sec, statCell, closedRow, footNote } from './parts.js';
 
 export default async function closed(el, r) {
   const id = r.arg;
-  const body = chrome(el, { title: 'Closed trade', back: 'AI Calls', actions: `<button class="ib" data-share aria-label="Share">${icon('share', 20)}</button>` });
+  const body = chrome(el, { title: 'Closed trade', back: 'Calls', actions: `<button class="ib" data-share aria-label="Share">${icon('share', 20)}</button>` });
   el.querySelector('.head').remove();
   el.querySelector('[data-share]').onclick = () => share('Closed trade', 'QuantSync closed trade');
   let stops = [];

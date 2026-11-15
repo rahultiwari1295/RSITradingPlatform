@@ -4,7 +4,8 @@
 import { fmt, esc, icon, n, mono, tone, ownerApi, ownerSend, sheet, toast } from '../core.js';
 
 const BROKERS = ['Angel', 'Dhan', 'Kite'];
-const BUDGET = 14000;            // default size of one buy
+/** The owner's standard size of one buy (set on the More page). */
+export const buySize = () => { try { const v = +localStorage.getItem('rh-size'); return v >= 2000 && v <= 50000 ? v : 14000; } catch { return 14000; } };
 const AMOUNTS = [10000, 12000, 14000, 15000];
 
 /** opts: { sym, side: 'BUY'|'SELL', broker?, call?: {entry, stop, target}, onDone? } */
@@ -54,7 +55,7 @@ export function orderSheet(opts) {
   }
 
   function defaults() {
-    if (side === 'BUY') { const p = price(); st.qty = p > 0 ? Math.floor(BUDGET / p) : 0; }
+    if (side === 'BUY') { const p = price(); st.qty = p > 0 ? Math.floor(buySize() / p) : 0; }
     else st.qty = heldIn(st.broker);
   }
 
@@ -113,7 +114,7 @@ export function orderSheet(opts) {
 
   function problems() {
     const p = price(), val = st.qty * p, out = [];
-    if (!(st.qty > 0)) out.push(side === 'BUY' && p > BUDGET ? `One share costs ${fmt.inr(p)}, more than ₹14K. Quantity is 0; type one in if you still want it.` : 'Enter a quantity.');
+    if (!(st.qty > 0)) out.push(side === 'BUY' && p > buySize() ? `One share costs ${fmt.inr(p)}, more than ${fmt.inr(buySize())}. Quantity is 0; type one in if you still want it.` : 'Enter a quantity.');
     if (!(p > 0)) out.push('No price yet.');
     if (side === 'BUY' && !okBroker(st.broker)) out.push(`${st.broker} is not connected.`);
     if (side === 'BUY' && okBroker(st.broker) && val > cashIn(st.broker)) out.push(`Needs ${fmt.inr(val)}, but ${st.broker} has ${fmt.inr(cashIn(st.broker))} free.`);

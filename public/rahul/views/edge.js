@@ -4,13 +4,13 @@
 import { chrome, fmt, esc, icon, n, link, tone, isOwner, auth, skel, errBox, empty } from '../core.js';
 import { sec, footNote } from './parts.js';
 import { edgeBlob, GAUGE, gaugeFacts, evidenceLine, rsPill, srow, cr, day, note } from './edgedata.js';
-import { titleCase } from './today.js';
+import { titleCase } from './edgedata.js';
 
 const VIEWS = [['market', 'Market'], ['results', 'Results'], ['owners', 'Owners'], ['smart', 'Smart money'], ['sectors', 'Sectors'], ['delivery', 'Delivery'], ['score', 'Scorecard']];
 const UNTESTED = 'Not yet lab-tested on your data. Use it to find stocks to look at, not as a buy signal.';
 
 export default async function edge(el, r) {
-  const body = chrome(el, { title: 'Edge', page: 'Edge', top: { ey: `${icon('bolt', 16)}Research edge`, h: 'What the big money | is doing.', hl: ['big money'], lede: 'Results, owners, proven buyers, sector strength and the engines\' real record.' } });
+  const body = chrome(el, { title: 'Edge', back: 'More', compact: true });
   await auth.whenReady();
   if (!isOwner()) { body.innerHTML = errBox('Sign in as the owner to see this page.', false); return; }
   let view = VIEWS.some(v => v[0] === r.query.get('v')) ? r.query.get('v') : 'market';

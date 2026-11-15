@@ -40,3 +40,4 @@ export const srow = (sym, sub, end = '', extra = '') => link(`stock/${encodeURIC
 export const cr = v => (n(v) >= 100 ? '₹' + fmt.int(Math.round(v)) + ' cr' : '₹' + fmt.x(v, 1) + ' cr');
 export const day = iso => { const d = new Date(String(iso).slice(0, 10) + 'T00:00:00'); return isNaN(d) ? '' : d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }); };
 export const note = html => `<p class="eg-note">${html}</p>`;
+export const titleCase = s => String(s || '').toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase()).replace(/\b(Llp|Pte|Ltd|Fpi|Mf|Etf|Bnp|Lic|Sbi|Hdfc|Icici|Uti|Dsp)\b/g, m => m.toUpperCase());
