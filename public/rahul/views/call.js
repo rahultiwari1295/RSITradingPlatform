@@ -1,6 +1,6 @@
 import { api, chrome, fill, fmt, esc, icon, n, ok, link, mono, delta, tone, loadTerminal, share, scoreTone, sentence, clean, q, empty, engineOf, engineBadge, ENGINES } from '../core.js';
 import { priceChart, toCandles, withEmas, ruler, settle } from '../charts.js';
-import { sec, statCell, closedRow, footNote, paperSheet, entryZone } from './parts.js';
+import { sec, statCell, closedRow, footNote, paperSheet, entryZone, whyList } from './parts.js';
 import { paper, go, auth, isOwner } from '../core.js';
 import { orderSheet } from './trade.js';
 
@@ -44,7 +44,7 @@ export default async function call(el, r) {
         ${statCell('Target', `<span class="up">${fmt.px(c.target)}</span>`, `${fmt.sp(gainPct)} from entry`, 'target')}
         ${statCell('Reward to risk', isFinite(rr) ? fmt.x(rr, 1) + '×' : '—', 'gain vs loss', 'rr')}
       </div>`)}
-      ${c.why ? sec('Why the engine bought', `<div class="panel pad"><p class="lede" style="margin:0">${esc(c.why)}</p></div>`) : ''}
+      ${c.why ? sec('Why the engine bought', `<div class="panel pad">${whyList(c.why)}</div>`) : ''}
       ${sec('Chart', `<div class="panel pad"><div class="chart-head"><div><div class="v" id="k-v"></div><div class="w" id="k-w"></div></div><div class="d" id="k-d"></div></div><div id="k-chart"></div>
         <div class="legend"><span><i style="background:var(--brand)"></i>20-day avg</span><span><i style="background:var(--ai-solid)"></i>50-day avg</span><span style="color:var(--ink-3)"><i class="dash"></i>200-day avg</span></div></div>`, { p: 'Hold and drag across the chart to read any day.' })}
       <div id="k-strat"></div>

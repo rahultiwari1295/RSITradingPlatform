@@ -19,9 +19,10 @@ export function followView(d, period = 'month') {
   const byMonth = new Map();
   rows.forEach(r => { const k = String(r.call_date).slice(0, 7); if (!byMonth.has(k)) byMonth.set(k, []); byMonth.get(k).push(r); });
   const row = r => { const [cls, lab] = STATE[r.state] || ['', r.state];
-    return link(`stock/${encodeURIComponent(r.symbol)}`, `${mono(r.symbol)}<div class="main"><div class="t">${esc(r.symbol)} <span class="pill ${cls}">${lab}</span></div>
-      <div class="s" style="white-space:normal">${engineBadge({ engine: r.engine }, 'sm')}<span>Called ${fmt.date(r.call_date)} at ${fmt.px(r.call_entry)}${r.your_price ? ` · you paid ${fmt.px(r.your_price)}` : ''}${r.zone === 'below' ? ' · below entry' : ''}</span></div></div>
-      <div class="end"><div class="v tnum ${tone(r.call_result)}">${r.call_result == null ? 'open' : fmt.sp(r.call_result)}</div>${r.your_result != null ? `<div class="d faint">you ${fmt.sp(r.your_result)}</div>` : r.exit_lag != null ? `<div class="d faint">sold ${r.exit_lag === 0 ? 'on the exit day' : r.exit_lag > 0 ? r.exit_lag + 'd after' : 'before'}</div>` : ''}</div>`, 'row'); };
+    const sold = r.exit_lag != null ? `sold ${r.exit_lag === 0 ? 'on exit day' : r.exit_lag > 0 ? r.exit_lag + 'd late' : 'early'}` : '';
+    return link(`stock/${encodeURIComponent(r.symbol)}`, `<div class="main"><div class="t">${esc(r.symbol)} <span class="pill ${cls}">${lab}</span></div>
+      <div class="s tnum">${fmt.date(r.call_date)} · call ${fmt.px(r.call_entry)}${r.your_price ? ` · you ${fmt.px(r.your_price)}` : ''}${r.zone === 'below' ? ' · <span class="dn">below entry</span>' : ''}</div></div>
+      <div class="end"><div class="v tnum ${tone(r.call_result)}">${r.call_result == null ? '<span class="faint">open</span>' : fmt.sp(r.call_result)}</div>${r.your_result != null ? `<div class="d tnum">you <b class="${tone(r.your_result)}">${fmt.sp(r.your_result)}</b></div>` : sold ? `<div class="d faint">${sold}</div>` : ''}</div>`, `row plain fl st-${r.state}`); };
   return `<div class="hs" role="group" aria-label="Period">${[['month', S.label && period === 'month' ? S.label : (d.summary.month || {}).label || 'This month'], ['all', 'All time']].map(([k, l]) => `<button class="chip" data-fperiod="${k}" aria-pressed="${k === period}">${esc(l)}</button>`).join('')}</div>
     <div class="stats four" style="margin-top:12px">
       ${stat('Calls taken', `${took} of ${S.calls || 0}`, S.late ? `${S.late} of them late` : 'within 3 sessions')}

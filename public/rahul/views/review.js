@@ -34,7 +34,7 @@ export function reviewView(rows, act, term, S) {
   const stopBtn = o => (broker(o.x) ? `<button class="btn sm quiet" data-rv-stop="${esc(o.x.symbol)}">Set stop</button>` : '');
 
   return `
-    <div class="stats">
+    <div class="stats rows">
       ${stat('If every AI stop is hit', `<span class="dn">−${fmt.inr(atRisk)}</span>`, `${fmt.x(atRisk / total * 100, 1)}% of the portfolio · ${ai.length} AI positions`)}
       ${stat('Covered by an AI call', pct(aiVal), `${fmt.lakh(aiVal)} of ${fmt.lakh(total)}`)}
       ${stat('Top 5 holdings', pct(top5), `largest: ${esc(big[0]?.symbol || '—')} ${big[0] ? pct(big[0].value) : ''}`)}

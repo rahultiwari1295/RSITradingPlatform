@@ -2,7 +2,7 @@
    both stored on the VPS (Data/owner.db). Owner-only on the server (404 for anyone else). */
 import { chrome, fmt, esc, icon, n, mono, delta, tone, link, holdings, ownerApi, ownerSend, loadTerminal, allSignals, engineBadge, callPath, segmented, skel, errBox, empty, reveal, sheet, toast } from '../core.js';
 import { ruler } from '../charts.js';
-import { footNote } from './parts.js';
+import { footNote, miniRange } from './parts.js';
 import { loadBook, STATUS, EXIT_DAYS } from './pfdata.js';
 import { orderSheet, buySize } from './trade.js';
 import { reviewView, bindReview } from './review.js';
@@ -47,14 +47,17 @@ export default async function portfolio(el, r) {
     return { value, inv, pnl: value - inv, pct: inv ? (value / inv - 1) * 100 : NaN, day, dayPct: value - day ? day / (value - day) * 100 : NaN, n: rows.length, src };
   }
 
-  /** Total, then the AI part against the part with no AI call. */
+  /** Total and P&L, then one bar: how much of the money is in AI calls and how much is not. */
   function headerPanel(rows) {
     if (!rows.length) return '';
     const all = totals(rows), a = totals(rows.filter(x => x.call)), o = totals(rows.filter(x => !x.call));
-    const part = (k, t) => `<div class="pf-hp"><span>${k}<small>${fmt.int(t.n)} stocks</small></span><b class="tnum">${fmt.lakh(t.value)}</b><span class="tnum ${tone(t.pnl)}">${fmt.sinr(t.pnl)} <small>${fmt.sp(t.pct)}</small></span></div>`;
-    return `<section class="panel pf-head" aria-label="Portfolio summary"><div class="pf-ht"><div><div class="k">Total value</div><div class="v tnum">${fmt.lakh(all.value)}</div></div>
-      <div class="pf-hd"><div class="k">Today</div><div class="tnum ${tone(all.day)}"><b>${fmt.sinr(all.day)}</b> <span class="small">${fmt.sp(all.dayPct)}</span></div></div></div>
-      ${part('AI calls', a)}${part('Not AI', o)}</section>`;
+    const share = all.value ? a.value / all.value * 100 : 0;
+    const leg = (cls, k, t, f) => `<button class="ph-leg" data-view="${f}"><i class="${cls}"></i><span><em>${k} · ${fmt.int(t.n)}</em><b class="tnum">${fmt.lakh(t.value)}</b></span><span class="tnum ${tone(t.pnl)}"><em>${fmt.sinr(t.pnl)}</em><b>${fmt.sp(t.pct)}</b></span></button>`;
+    return `<section class="panel ph" aria-label="Portfolio summary"><div class="ph-k">Total value</div><div class="ph-v tnum">${fmt.inr(all.value)}</div>
+      <div class="ph-d"><div><span>Overall</span><b class="tnum ${tone(all.pnl)}">${fmt.sinr(all.pnl)} <small>${fmt.sp(all.pct)}</small></b></div><div><span>Today</span><b class="tnum ${tone(all.day)}">${fmt.sinr(all.day)} <small>${fmt.sp(all.dayPct)}</small></b></div><div><span>Invested</span><b class="tnum">${fmt.lakh(all.inv)}</b></div></div>
+      <div class="ph-bar" role="img" aria-label="${fmt.x(share, 0)}% of the money is in AI calls"><i style="width:${share}%"></i></div>
+      <div class="ph-legs">${leg('ai', 'AI calls', a, 'ai')}${leg('non', 'Not AI', o, 'non')}</div>
+      <div class="ph-src">${SRC.filter(k => all.src[k] > 0).map(k => `<span class="srcv"><i class="${k.toLowerCase()}">${k}</i> ${fmt.lakh(all.src[k])}</span>`).join('')}</div></section>`;
   }
 
   function draw() {
@@ -66,6 +69,7 @@ export default async function portfolio(el, r) {
     const nAct = (act.orders || []).length + (act.moves || []).length;
     root.innerHTML = `${pf.error ? errBox(pf.error) : ''}${bad.map(([k, b]) => `<div class="err" role="alert"><span>${k}: ${esc(b.status === 'login_needed' ? 'connect again (Brokers tab)' : b.error || b.status)}</span></div>`).join('')}
       ${headerPanel(open)}<div id="pf-seg"></div><div id="pf-body" style="margin-top:12px"></div>`;
+    root.querySelectorAll('.ph [data-view]').forEach(b => b.onclick = () => { view = b.dataset.view; tab = 'pf'; history.replaceState(history.state, '', location.pathname + '?v=pf&f=' + view); draw(); });
     segmented(root.querySelector('#pf-seg'), [['pf', 'Holdings', open.length], ['follow', 'Follow'], ['review', 'Clean-up'], ['act', 'Activity', nAct || null], ['log', 'Manual'], ['brokers', 'Brokers']], tab,
       v => { tab = v; history.replaceState(history.state, '', location.pathname + '?v=' + v + (v === 'pf' ? '&f=' + view : '')); body2(); });
     root.querySelector('[data-retry]')?.addEventListener('click', () => load(true));
@@ -80,19 +84,12 @@ export default async function portfolio(el, r) {
       else if (tab === 'review') { B.innerHTML = skel(90, 4, 16); edgeStocks(open.map(x => String(x.symbol).toUpperCase())).catch(() => ({})).then(S => { if (tab !== 'review') return; B.innerHTML = reviewView(open, act, D.term, S); bindReview(B, open, okd => okd && load(true)); reveal(B); }); return; }
       else {
         const rows = [...sets[view]].sort((a, b) => SORTS[sortBy][1](a) - SORTS[sortBy][1](b)), t = totals(rows);
-        const kpi = (k, v, cls = '', sub = '') => `<div class="panel"><div class="k">${k}</div><div class="v ${cls} tnum">${v}</div>${sub ? `<div class="small">${sub}</div>` : ''}</div>`;
-        const name = { all: 'Complete portfolio', ai: 'AI call positions', non: 'Non-AI positions', exit: 'Needs action' }[view];
-        const chips = [['all', 'Complete', sets.all.length], ['ai', 'AI calls', sets.ai.length], ['non', 'Non-AI', sets.non.length]].concat(sets.exit.length ? [['exit', 'Exit now', sets.exit.length]] : []);
-        const ex = sets.exit;
+        const chips = [['all', 'All', sets.all.length], ['ai', 'AI calls', sets.ai.length], ['non', 'Not AI', sets.non.length]].concat(sets.exit.length ? [['exit', 'Exit now', sets.exit.length]] : []);
+        const ex = sets.exit, whole = sets.all.reduce((a, x) => a + x.value, 0);
         B.innerHTML = `${ex.length && view !== 'exit' ? `<button class="hc-alert" data-view="exit">${icon('bolt', 18)}<span><b>${ex.length} ${ex.length === 1 ? 'stock needs' : 'stocks need'} action</b><small>${esc(ex.slice(0, 4).map(x => x.symbol).join(', '))}${ex.length > 4 ? ' +' + (ex.length - 4) : ''}: the AI has closed the call, or price is at the stop.</small></span>${icon('chev', 18)}</button>` : ''}
           <div class="hs pf-views" role="group" aria-label="Which positions">${chips.map(([k, l, c]) => `<button class="chip${k === 'exit' ? ' dnc' : ''}" data-view="${k}" aria-pressed="${k === view}">${l} <span class="n">${c}</span></button>`).join('')}</div>
-          <div class="mine-kpis">
-            ${kpi('Open P&amp;L', `${fmt.sinr(t.pnl)} <span class="small">${fmt.sp(t.pct)}</span>`, tone(t.pnl))}
-            ${kpi('Today', `${fmt.sinr(t.day)} <span class="small">${fmt.sp(t.dayPct)}</span>`, tone(t.day))}
-            ${kpi('Where it sits', SRC.filter(k => t.src[k] > 0).map(k => `<span class="srcv"><i class="${k.toLowerCase()}">${k}</i> ${fmt.lakh(t.src[k])}</span>`).join(' ') || '—', 'srcline')}
-          </div>
-          <div class="pf-tools"><label class="small" for="pf-sort">Sort</label><select id="pf-sort">${Object.entries(SORTS).map(([k, [l]]) => `<option value="${k}"${k === sortBy ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
-          ${rows.length ? `<div class="hc-list">${rows.map(card).join('')}</div>` : empty(view === 'ai' ? 'ai' : 'pf', view === 'ai' ? 'None of your stocks is an open AI call' : 'Nothing here', view === 'ai' ? 'Stocks you hold that are also open AI calls show here.' : 'Holdings from your brokers appear here.')}`;
+          <div class="pf-tools"><span class="pf-sum tnum">${view === 'all' ? `${rows.length} holdings` : `${fmt.lakh(t.value)} · <b class="${tone(t.pnl)}">${fmt.sinr(t.pnl)} ${fmt.sp(t.pct)}</b>`}</span><label class="sr" for="pf-sort">Sort</label><select id="pf-sort">${Object.entries(SORTS).map(([k, [l]]) => `<option value="${k}"${k === sortBy ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
+          ${rows.length ? `<div class="group hr-list">${rows.map(x => card(x, whole)).join('')}</div>` : empty(view === 'ai' ? 'ai' : 'pf', view === 'ai' ? 'None of your stocks is an open AI call' : 'Nothing here', view === 'ai' ? 'Stocks you hold that are also open AI calls show here.' : 'Holdings from your brokers appear here.')}`;
         B.querySelectorAll('[data-view]').forEach(b => b.onclick = () => { view = b.dataset.view; history.replaceState(history.state, '', location.pathname + '?v=pf&f=' + view); body2(); });
         B.querySelector('#pf-sort').onchange = e => { sortBy = e.target.value; try { localStorage.setItem('rh-pf-sort', sortBy); } catch { /* blocked */ } body2(); };
         B.querySelectorAll('[data-sell]').forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation(); const x = open.find(y => y.symbol === b.dataset.sell);
@@ -103,29 +100,22 @@ export default async function portfolio(el, r) {
     }
   }
 
-  /* One holding. Three prices side by side: what you paid, what the call said, where it is now. */
-  function card(x) {
+  /* One holding as a dense row: value and P&L first, then either the call's stop-to-target track or its share of the portfolio. */
+  function card(x, whole) {
     const c = x.call, e = x.exitCall, st = STATUS[x.status];
-    const canSell = Object.keys(x.parts || {}).some(k => k !== 'Manual');
-    const cell = (k, v, d = '') => `<div><span>${k}</span><b class="tnum">${v}</b>${d ? `<small>${d}</small>` : ''}</div>`;
-    const note = x.status === 'exit' ? `<p class="hc-note dn">${icon('bolt', 15)}<span>The AI <b>closed this call on ${fmt.date(e.exitDate)}</b> at ${fmt.px(e.exit)} (${esc(e.reason.toLowerCase())}, ${fmt.sp(e.roi)}). You still hold ${fmt.int(x.qty)}.</span></p>`
-      : x.status === 'stop' ? `<p class="hc-note dn">${icon('bolt', 15)}<span>Price is <b>at or below the stop</b> of ${fmt.px(c.stop)}. The call fails on a close below it.</span></p>`
-      : x.status === 'target' ? `<p class="hc-note up">${icon('check', 15)}<span>Price has <b>reached the target</b> of ${fmt.px(c.target)}.</span></p>` : '';
-    return `<article class="hc st-${x.status}">
-      <a class="hc-main" href="/rahul/stock/${encodeURIComponent(x.symbol)}" data-nav aria-label="${esc(x.symbol)}, ${st.t}">
-        <div class="hc-top">${mono(x.symbol)}<div class="hc-id"><b>${esc(x.symbol)}</b><span class="src">${Object.keys(x.parts || {}).map(s => `<i class="${s.toLowerCase()}">${s}</i>`).join('')}</span></div>
-          <div class="hc-val"><b class="tnum">${fmt.lakh(x.value)}</b><span class="tnum ${tone(x.pnl)}">${fmt.sinr(x.pnl)} · ${fmt.sp(x.pnl_pct)}</span></div></div>
-        <div class="hc-st"><span class="pill ${st.cls}">${st.t}${c ? ` · day ${fmt.int(c.days)}` : ''}</span>${c ? engineBadge(c) : ''}${isFinite(x.day_pct) && x.day_pct !== null ? `<span class="small">today <b class="${tone(x.day_pct)}">${fmt.sp(x.day_pct)}</b></span>` : ''}</div>
-        <div class="hc-3">
-          ${cell('Your entry', fmt.px(x.avg), `${fmt.x(x.qty, x.qty % 1 ? 2 : 0)} shares`)}
-          ${c ? cell('Call entry', fmt.px(c.entry), isFinite(x.vsCall) ? (Math.abs(x.vsCall) < 0.3 ? 'same as yours' : `you paid ${fmt.sp(x.vsCall)}`) : fmt.date(c.entryDate))
-              : e ? cell('Call entry', fmt.px(e.entry), fmt.date(e.entryDate)) : cell('Call entry', '—', 'no AI call')}
-          ${cell('Now', fmt.px(x.ltp), c ? `stop ${fmt.px(c.stop)}` : e ? `AI exit ${fmt.px(e.exit)}` : '')}
-        </div>
-        ${c ? ruler({ stop: c.stop, entry: c.entry, target: c.target, now: x.ltp }, { short: true }) : ''}
-        ${note}
+    const canSell = Object.keys(x.parts || {}).some(k => k !== 'Manual'), acts = ['exit', 'stop', 'target'].includes(x.status);
+    const w = whole ? x.value / whole * 100 : 0, srcs = Object.keys(x.parts || {});
+    const today = isFinite(x.day_pct) && x.day_pct !== null ? `<span>today <b class="${tone(x.day_pct)}">${fmt.sp(x.day_pct)}</b></span>` : '';
+    const why = x.status === 'exit' ? `The AI closed this call on ${fmt.date(e.exitDate)} at ${fmt.px(e.exit)} (${fmt.sp(e.roi)}).`
+      : x.status === 'stop' ? `Price is at or below the stop ${fmt.px(c.stop)}.` : x.status === 'target' ? `Price reached the target ${fmt.px(c.target)}.` : '';
+    return `<article class="hr st-${x.status}">
+      <a class="hr-main" href="/rahul/stock/${encodeURIComponent(x.symbol)}" data-nav aria-label="${esc(x.symbol)}, ${st.t}">
+        <div class="hr-top"><div class="hr-id"><b>${esc(x.symbol)}</b>${x.status !== 'none' ? `<span class="pill ${st.cls}">${st.t}</span>` : ''}</div><b class="hr-val tnum">${fmt.inr(x.value)}</b></div>
+        <div class="hr-sub"><span class="tnum">${fmt.x(x.qty, x.qty % 1 ? 2 : 0)} × ${fmt.px(x.avg)} → <b>${fmt.px(x.ltp)}</b></span><span class="tnum ${tone(x.pnl)}">${fmt.sinr(x.pnl)} <b>${fmt.sp(x.pnl_pct)}</b></span></div>
+        ${c ? miniRange({ stop: c.stop, entry: c.entry, target: c.target, now: x.ltp }) : `<div class="hr-w"><i style="width:${Math.max(1, w)}%"></i></div>`}
+        <div class="hr-meta"><span class="src">${srcs.map(k => `<i class="${k.toLowerCase()}">${k}</i>`).join('')}</span><span>${fmt.x(w, 1)}% of portfolio</span>${c ? `<span>day ${fmt.int(c.days)}</span>${isFinite(x.vsCall) && Math.abs(x.vsCall) >= 0.3 ? `<span>paid ${fmt.sp(x.vsCall)} vs call</span>` : ''}` : ''}${today}</div>
       </a>
-      ${canSell && (x.status === 'exit' || x.status === 'stop' || x.status === 'target') ? `<button class="btn sm hc-sell" data-sell="${esc(x.symbol)}">Sell ${esc(x.symbol)}</button>` : ''}
+      ${acts ? `<div class="hr-act ${x.status === 'target' ? 'up' : 'dn'}"><span>${why}</span>${canSell ? `<button class="btn sm ${x.status === 'target' ? 'quiet' : 'sell'}" data-sell="${esc(x.symbol)}">Sell</button>` : ''}</div>` : ''}
     </article>`;
   }
 

@@ -40,37 +40,43 @@ const zoneTag = c => {
   const z = entryZone(c), g = (c.now / c.entry - 1) * 100;
   return z === 'ran' ? `<span class="tag">Already up ${fmt.sp(g, 1)}</span>` : z === 'below' ? `<span class="tag dn">Below entry ${fmt.sp(g, 1)}</span>` : '';
 };
+/** Thin stop → entry → target track with a dot for the current price. Stop price on the left, target on the right. */
+export function miniRange({ stop, entry, target, now }) {
+  if (![stop, entry, target].every(isFinite) || !(target > stop)) return '';
+  const lo = Math.min(stop, isFinite(now) ? now : stop), hi = Math.max(target, isFinite(now) ? now : target), sp = hi - lo || 1;
+  const P = v => Math.max(0, Math.min(100, (v - lo) / sp * 100));
+  return `<div class="mr" role="img" aria-label="Stop ${fmt.px(stop)}, entry ${fmt.px(entry)}, target ${fmt.px(target)}${isFinite(now) ? `, now ${fmt.px(now)}` : ''}"><span class="dn tnum">${fmt.px(stop)}</span><div class="mr-t"><i class="l" style="left:${P(stop)}%;width:${P(entry) - P(stop)}%"></i><i class="w" style="left:${P(entry)}%;width:${P(target) - P(entry)}%"></i><u style="left:${P(entry)}%"></u>${isFinite(now) ? `<b style="left:${P(now)}%"></b>` : ''}</div><span class="up tnum">${fmt.px(target)}</span></div>`;
+}
+/** One open call as a dense row: name, engine and age, price against entry, the stop-to-target track, and a Buy button for the owner. */
 export function signalCard(c, o = {}) {
   const fresh = isFreshSignal(c), traded = paper.has(c.sym), owned = !!(o.owned && o.owned.has(String(c.sym).toUpperCase()));
-  const pct = Math.abs(c.roi) < .05 ? '<span class="d0">0.0%</span>' : delta(c.roi);
-  const body = `<div class="top">${mono(c.sym)}<div class="nm"><div class="t">${esc(c.sym)}${owned ? '<span class="tag bought">Bought</span>' : ''}${traded ? '<span class="tag paper">Paper</span>' : ''}</div><div class="s">${engineBadge(c)}<span class="ago">${ago(c)}</span>${zoneTag(c)}</div></div><div class="px"><div class="v">${fmt.px(c.now)}</div>${pct}</div></div>`;
-  const ob = owned ? ' owned' : '';
-  if (!fresh && !o.expand) return link(callPath(c), body, 'sig old compact' + ob, `aria-label="${esc(c.sym)}, ${engineName(c)}, open call${owned ? ', bought' : ''}"`);
-  return link(callPath(c), `${body}${ruler({ stop: c.stop, entry: c.entry, target: c.target, now: c.now }, { short: true })}`, (fresh ? 'sig new' : 'sig old') + ob, `aria-label="${esc(c.sym)}, ${engineName(c)}, ${fresh ? 'fresh' : 'open'} call${owned ? ', bought' : ''}"`);
+  const pct = Math.abs(c.roi) < .05 ? '<span class="d0">at entry</span>' : delta(c.roi);
+  const main = link(callPath(c), `<div class="cr-top"><div class="cr-id"><div class="t">${esc(c.sym)}${owned ? '<span class="tag bought">Held</span>' : ''}${traded ? '<span class="tag paper">Paper</span>' : ''}</div><div class="s">${engineBadge(c, 'sm')}<span class="ago">${ago(c)}</span>${zoneTag(c)}</div></div><div class="cr-px"><b class="tnum">${fmt.px(c.now)}</b>${pct}</div></div>${miniRange(c)}`,
+    'cr-main', `aria-label="${esc(c.sym)}, ${engineName(c)}, ${fresh ? 'new' : 'open'} call${owned ? ', held' : ''}"`);
+  return `<div class="cr${owned ? ' owned' : ''}${fresh ? ' fresh' : ''}">${main}${o.buy ? `<button class="btn sm${owned ? ' quiet' : ''}" data-buy="${esc(c.sym)}">${owned ? 'Add' : 'Buy'}</button>` : ''}</div>`;
 }
 /** Kept for callers that still wire paper-trade buttons (the call detail page). */
 export function bindSignals(root, list, onChange) {
   root.querySelectorAll('[data-paper]').forEach(b => b.onclick = e => { e.preventDefault(); const c = list.find(x => x.sym === b.dataset.paper); if (c) paperSheet(c, onChange); });
   root.querySelectorAll('[data-open-paper]').forEach(b => b.onclick = e => { e.preventDefault(); go('portfolio'); });
 }
-const head = (t, sub, n, cls = '', extra = '') => `<div class="sig-sec ${cls}"><div class="h"><h3>${t}</h3><span class="n tnum">${n}</span>${extra}</div><p>${sub}</p></div>`;
+const head = (t, sub, n, cls = '', extra = '') => `<div class="sig-sec ${cls}"><div class="h"><h3>${t}</h3><span class="n tnum">${n}</span>${extra}</div>${sub ? `<p>${sub}</p>` : ''}</div>`;
 /** Every open call appears once: new today, still open to buy (near or above entry), or below its entry. Nothing is hidden. */
 export function signalList(list, o = {}) {
   const by = (a, b) => (b.score || 0) - (a.score || 0);
   const g1 = list.filter(c => entryZone(c) === 'new').sort(by);
   const g2 = list.filter(c => ['near', 'ran'].includes(entryZone(c))).sort((a, b) => (entryZone(a) === 'near' ? 0 : 1) - (entryZone(b) === 'near' ? 0 : 1) || (a.days || 0) - (b.days || 0));
   const g3 = list.filter(c => entryZone(c) === 'below').sort((a, b) => (a.days || 0) - (b.days || 0));
-  const card = c => {
-    const h = signalCard(c, o);
-    return o.buy ? `<div class="sig-wrap">${h}<div class="sig-buy"><button class="btn sm" data-buy="${esc(c.sym)}">${o.owned && o.owned.has(String(c.sym).toUpperCase()) ? 'Buy more' : 'Buy'}</button></div></div>` : h;
-  };
+  const rows = (l, oo = o) => `<div class="group cr-list">${l.map(c => signalCard(c, oo)).join('')}</div>`;
   const free = g1.filter(c => !(o.owned && o.owned.has(String(c.sym).toUpperCase())));
   const all = o.buy && free.length >= 2 ? `<button class="btn sm" data-basket style="margin-left:auto">Buy all ${Math.min(free.length, 5)}</button>` : '';
-  return `${head('Buy today', 'New calls from the last scan.', g1.length, 'fresh', all)}
-    <div class="sig-stack">${g1.length ? g1.map(card).join('') : `<div class="empty"><div class="ic">${icon('clock', 24)}</div><h3>No new call in the last scan</h3><p>Calls come at about 3:15 PM on market days.</p></div>`}</div>
-    ${g2.length ? `${head('Still open to buy', 'Older calls that are at or above their entry price.', g2.length, 'old')}<div class="sig-stack">${g2.map(card).join('')}</div>` : ''}
-    ${g3.length ? `${head('Below entry', 'The price has fallen under the call\'s entry. In the past, calls bought below their entry won about 3 in 10. Waiting for the price to get back above the entry is safer.', g3.length, 'old')}<div class="sig-stack">${g3.map(c => signalCard(c, o)).join('')}</div>` : ''}`;
+  return `${head('Buy today', '', g1.length, 'fresh', all)}
+    ${g1.length ? rows(g1) : '<div class="group cr-empty">No new call in the last scan. Calls come at about 3:15 PM on market days.</div>'}
+    ${g2.length ? `${head('Still open to buy', 'At or above the entry price.', g2.length, 'old')}${rows(g2)}` : ''}
+    ${g3.length ? `${head('Below entry', 'Calls bought below their entry won about 3 in 10. Wait for the price to get back above it.', g3.length, 'old')}${rows(g3, { ...o, buy: false })}` : ''}`;
 }
+/** The engine's reasons as a short list. The text arrives as one comma-joined line. */
+export const whyList = t => { const xs = String(t || '').split(/\s*[,;]\s*(?=[A-Z])/).map(x => x.trim()).filter(Boolean); return xs.length > 1 ? `<ul class="why-l">${xs.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p class="why-1">${esc(t)}</p>`; };
 export const scanRule = () => '';
 export const scanLogo = () => `<span class="scan-mark" aria-hidden="true">${icon('target', 17)}</span>`;
 export function paperSheet(c, done) {

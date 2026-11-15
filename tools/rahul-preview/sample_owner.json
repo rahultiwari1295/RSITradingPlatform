@@ -1148,8 +1148,20 @@
  },
  "weekly": {
   "week": "2026-11-09",
-  "text": "Week 09 Nov to 13 Nov\nCalls made: 5. You took 3, skipped 2.\nAI exits: 1. You followed 1 within 2 days.\nPortfolio value +\u20b97,978 (+1.3%) over the week.\nTo fix: You skipped 2 calls this week. Most of the profit comes from about 1 call in 10.",
+  "text": "Week 09 Nov to 13 Nov\nCalls made: 5. You took 3, skipped 2.\nAI exits: 1. You followed 1 within 2 days.\nPortfolio value +₹7,978 (+1.3%) over the week.\nTo fix: You skipped 2 calls this week. Most of the profit comes from about 1 call in 10.",
   "sent": false,
-  "body": {}
+  "body": {
+   "week": "2026-11-09",
+   "from": "2026-11-09",
+   "to": "2026-11-13",
+   "calls_made": 5,
+   "taken": 3,
+   "skipped": 2,
+   "closed_taken": 0,
+   "exits": 1,
+   "exits_followed": 1,
+   "value_change": 7978,
+   "fix": "You skipped 2 calls this week. Most of the profit comes from about 1 call in 10."
+  }
  }
 }

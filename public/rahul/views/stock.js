@@ -3,7 +3,7 @@
    stop / target drawn on it, a technical read-out, recent news, and buy / sell. */
 import { api, chrome, fill, fmt, esc, icon, ok, link, mono, delta, tone, engineBadge, engineName, callPath, scoreTone, clean, empty, skel, toDate } from '../core.js';
 import { priceChart, toCandles, withEmas, ruler, settle } from '../charts.js';
-import { sec, statCell, footNote, entryZone } from './parts.js';
+import { sec, statCell, footNote, entryZone, whyList } from './parts.js';
 import { loadBook, enrich, technicals, TREND, STATUS, EXIT_DAYS } from './pfdata.js';
 import { orderSheet, stopSheet } from './trade.js';
 import { edgeStock, rsPill, cr, day } from './edgedata.js';
@@ -72,7 +72,7 @@ export default async function stock(el, r) {
           ${stt('Stop loss', `<span class="dn">${fmt.px(c.stop)}</span>`, `${fmt.sp((c.stop / x.ltp - 1) * 100)} from here`)}
           ${stt('Target', `<span class="up">${fmt.px(c.target)}</span>`, `${fmt.sp((c.target / x.ltp - 1) * 100)} from here`)}
           ${stt('Call so far', `<span class="${tone(c.roi)}">${fmt.sp(c.roi)}</span>`, `day ${fmt.int(c.days)}`)}
-        </div>${c.why ? `<div class="panel pad" style="margin-top:10px"><p class="lede" style="margin:0">${esc(c.why)}</p></div>` : ''}`, { more: link(callPath(c), 'Full call', 'more') })
+        </div>${c.why ? `<div class="panel pad" style="margin-top:10px">${whyList(c.why)}</div>` : ''}`, { more: link(callPath(c), 'Full call', 'more') })
       : e ? sec('The AI call (closed)', `<div class="stats four">
           ${stt('Call entry', fmt.px(e.entry), fmt.date(e.entryDate))}
           ${stt('AI exit', fmt.px(e.exit), `${fmt.date(e.exitDate)} · ${rel(e.exitDate)}`)}
