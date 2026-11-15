@@ -1163,5 +1163,346 @@
    "value_change": 7978,
    "fix": "You skipped 2 calls this week. Most of the profit comes from about 1 call in 10."
   }
+ },
+ "health": {
+  "stocks": {
+   "HDFCBANK": {
+    "verdict": "protect",
+    "why": "Weekly trend is down.",
+    "px": 830,
+    "ltp": 830,
+    "as_of": "2026-11-13",
+    "weekly": "down",
+    "monthly": "flat",
+    "d50": 830.0,
+    "support": 790,
+    "rs": null,
+    "broken": false,
+    "stop": 786.05,
+    "target": 954.5,
+    "zone": [
+     805.1,
+     846.6
+    ],
+    "flags": [],
+    "fund": false,
+    "sector": "X",
+    "thin": false
+   },
+   "TCS": {
+    "verdict": "exit",
+    "why": "Weekly and monthly trends are down and price broke its 3-month low ₹3,120.00.",
+    "px": 3050,
+    "ltp": 3050,
+    "as_of": "2026-11-13",
+    "weekly": "down",
+    "monthly": "down",
+    "d50": 3050.0,
+    "support": 3120,
+    "rs": -14,
+    "broken": true,
+    "stop": 3104.4,
+    "target": 3507.5,
+    "zone": [
+     2958.5,
+     3111.0
+    ],
+    "flags": [],
+    "fund": false,
+    "sector": "X",
+    "thin": false
+   },
+   "NELCAST": {
+    "verdict": "buy",
+    "why": "Weekly and monthly trends are up and price is back at its 50-day average, the zone ₹149.00 to ₹156.60.",
+    "px": 153.5,
+    "ltp": 153.5,
+    "as_of": "2026-11-13",
+    "weekly": "up",
+    "monthly": "up",
+    "d50": 153.5,
+    "support": 141,
+    "rs": null,
+    "broken": false,
+    "stop": 140.29,
+    "target": 176.52,
+    "zone": [
+     148.89,
+     156.57
+    ],
+    "flags": [],
+    "fund": false,
+    "sector": "X",
+    "thin": false
+   },
+   "J&KBANK": {
+    "verdict": "hold",
+    "why": "Trends are fine and no support is broken.",
+    "px": 110,
+    "ltp": 110,
+    "as_of": "2026-11-13",
+    "weekly": "up",
+    "monthly": "flat",
+    "d50": 110.0,
+    "support": 101,
+    "rs": null,
+    "broken": false,
+    "stop": 100.5,
+    "target": 126.5,
+    "zone": [
+     106.7,
+     112.2
+    ],
+    "flags": [],
+    "fund": false,
+    "sector": "X",
+    "thin": false
+   },
+   "SILVERBEES": {
+    "verdict": "fund",
+    "why": "ETF or fund. The stock rules do not apply; trend shown for information.",
+    "px": 168.9,
+    "ltp": 168.9,
+    "as_of": "2026-11-13",
+    "weekly": "down",
+    "monthly": "flat",
+    "d50": 168.9,
+    "support": 160,
+    "rs": null,
+    "broken": false,
+    "stop": 159.2,
+    "target": 194.23,
+    "zone": [
+     163.83,
+     172.28
+    ],
+    "flags": [],
+    "fund": true,
+    "sector": null,
+    "thin": false
+   },
+   "KRN": {
+    "verdict": "exit",
+    "why": "Weekly and monthly trends are down and price broke its 3-month low ₹350.00.",
+    "px": 312,
+    "ltp": 312,
+    "as_of": "2026-11-13",
+    "weekly": "down",
+    "monthly": "down",
+    "d50": 312.0,
+    "support": 350,
+    "rs": -22,
+    "broken": true,
+    "stop": 348.25,
+    "target": 358.8,
+    "zone": [
+     302.64,
+     318.24
+    ],
+    "flags": [
+     {
+      "kind": "owners",
+      "level": "bad",
+      "text": "Promoters cut their stake by 5.1 points last quarter"
+     }
+    ],
+    "fund": false,
+    "sector": "X",
+    "thin": false
+   },
+   "CONFIPET": {
+    "verdict": "hold",
+    "why": "Trends are fine and no support is broken.",
+    "px": 44,
+    "ltp": 44,
+    "as_of": "2026-11-13",
+    "weekly": "flat",
+    "monthly": "up",
+    "d50": 44.0,
+    "support": 41,
+    "rs": null,
+    "broken": false,
+    "stop": 40.8,
+    "target": 50.6,
+    "zone": [
+     42.68,
+     44.88
+    ],
+    "flags": [
+     {
+      "kind": "pledge",
+      "level": "bad",
+      "text": "46% of promoter shares are pledged"
+     }
+    ],
+    "fund": false,
+    "sector": "X",
+    "thin": false
+   }
+  },
+  "marks": {
+   "HDFCBANK": {
+    "mark": "long"
+   }
+  },
+  "test": {
+   "periods": [
+    "2019-22",
+    "2023-26"
+   ],
+   "exit": {
+    "n": [
+     2611,
+     4868
+    ],
+    "rel6m": [
+     2.74,
+     1.88
+    ],
+    "fall20": [
+     25.9,
+     24.7
+    ]
+   },
+   "protect": {
+    "n": [
+     7571,
+     13265
+    ],
+    "rel6m": [
+     2.79,
+     3.2
+    ],
+    "fall20": [
+     22.3,
+     21.4
+    ]
+   },
+   "hold": {
+    "n": [
+     13071,
+     20414
+    ],
+    "rel6m": [
+     7.69,
+     4.47
+    ],
+    "fall20": [
+     22.2,
+     22.3
+    ]
+   },
+   "buy": {
+    "n": [
+     2696,
+     4817
+    ],
+    "rel6m": [
+     5.96,
+     4.93
+    ],
+    "fall20": [
+     19.1,
+     17.6
+    ]
+   },
+   "note": "The price list holds today's stocks only, so stocks that were delisted are missing. That flatters the weak groups."
+  }
+ },
+ "gtt": {
+  "items": [
+   {
+    "broker": "Angel",
+    "id": "101",
+    "symbol": "NELCAST",
+    "side": "SELL",
+    "qty": 250,
+    "triggers": [
+     140.0
+    ],
+    "price": 137.2,
+    "status": "ACTIVE",
+    "created": "2026-10-02",
+    "type": "single",
+    "ltp": 153.5,
+    "held": 250,
+    "kinds": [
+     "stop"
+    ],
+    "state": "ok",
+    "as_of": "2026-11-15 09:12:00"
+   },
+   {
+    "broker": "Angel",
+    "id": "102",
+    "symbol": "IRCTC",
+    "side": "SELL",
+    "qty": 15,
+    "triggers": [
+     690.0
+    ],
+    "price": 676.2,
+    "status": "ACTIVE",
+    "created": "2026-08-20",
+    "type": "single",
+    "ltp": 742,
+    "held": 0,
+    "kinds": [
+     "stop"
+    ],
+    "state": "orphan",
+    "as_of": "2026-11-15 09:12:00"
+   },
+   {
+    "broker": "Angel",
+    "id": "103",
+    "symbol": "J&KBANK",
+    "side": "SELL",
+    "qty": 300,
+    "triggers": [
+     98.0
+    ],
+    "price": 96.0,
+    "status": "ACTIVE",
+    "created": "2026-09-11",
+    "type": "single",
+    "ltp": 110,
+    "held": 200,
+    "kinds": [
+     "stop"
+    ],
+    "state": "too_big",
+    "as_of": "2026-11-15 09:12:00"
+   }
+  ],
+  "status": {
+   "Angel": {
+    "ok": true,
+    "message": "3 open",
+    "as_of": "2026-11-15 09:12:00"
+   },
+   "Kite": {
+    "ok": false,
+    "message": "not connected today",
+    "as_of": "2026-11-15 09:12:00"
+   },
+   "Dhan": {
+    "ok": false,
+    "message": "not connected today",
+    "as_of": "2026-11-15 09:12:00"
+   }
+  },
+  "covered": {
+   "NELCAST": {
+    "stop": true,
+    "target": false,
+    "qty": 250
+   },
+   "J&KBANK": {
+    "stop": true,
+    "target": false,
+    "qty": 300
+   }
+  }
  }
 }

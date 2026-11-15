@@ -10,6 +10,8 @@ export async function ownerApi(path) {
   if (q.startsWith('/owner/portfolio')) return m.portfolio;
   if (q.startsWith('/owner/activity')) return m.activity;
   if (q.startsWith('/owner/trades')) return m.trades;
+  if (q.startsWith('/owner/health')) return m.health;
+  if (q.startsWith('/owner/gtt')) return m.gtt;
   if (q.startsWith('/owner/follow')) return m.follow || { track_from: null, rows: [], summary: {} };
   if (q.startsWith('/owner/weekly')) return m.weekly || {};
   if (q.startsWith('/owner/brokers')) return m.portfolio.brokers;

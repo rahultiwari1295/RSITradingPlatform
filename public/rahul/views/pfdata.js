@@ -62,18 +62,3 @@ export const TREND = { up: ['Strong uptrend', 'up', 'Price is above its 20, 50 a
   'down-weak': ['Downtrend', 'dn', 'Price is below its 50 and 200-day averages.'], down: ['Strong downtrend', 'dn', 'Price is below its 20, 50 and 200-day averages, and they are stacked downward.'] };
 export { n };
 
-const DOWN = new Set(['down', 'down-weak']);
-/** For a holding with no AI call. e = its edge row (undefined for ETFs and funds). Returns { g: 'fund'|'sell'|'stop'|'keep', why }.
-    These groups are a starting point for your own decision, not a tested rule. */
-export function cleanupGroup(x, e) {
-  if (!e || !e.sector) return { g: 'fund', why: 'ETF or fund. The stock rules do not apply.' };
-  const bad = (e.warnings || []).filter(w => w.level === 'bad'), dn = DOWN.has(e.trend);
-  if (dn && bad.length) return { g: 'sell', why: `${e.trend === 'down' ? 'Strong downtrend' : 'Downtrend'} and ${bad[0].text.charAt(0).toLowerCase()}${bad[0].text.slice(1)}` };
-  if (dn && x.pnl_pct <= -25) return { g: 'sell', why: `Down ${fmt.x(-x.pnl_pct, 0)}% and still below its 50 and 200-day averages` };
-  if (dn) return { g: 'stop', why: 'Below its 50 and 200-day averages. Set a stop or decide why you keep it.' };
-  if (bad.length) return { g: 'stop', why: bad[0].text };
-  if (x.pnl_pct >= 30) return { g: 'stop', why: `Up ${fmt.x(x.pnl_pct, 0)}% with no stop protecting it` };
-  return { g: 'keep', why: 'Uptrend or sideways, no red flag' };
-}
-/** A starting stop: 8% under the price, rounded down to 0.05. */
-export const suggestStop = ltp => Math.floor(ltp * 0.92 * 20) / 20;

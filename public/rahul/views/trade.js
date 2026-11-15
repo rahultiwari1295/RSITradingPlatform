@@ -196,30 +196,6 @@ export function orderSheet(opts) {
 
 
 /** Leave a stop-loss sell with the broker for shares already held. opts: { sym, broker, qty, stop, ltp } */
-export function stopSheet(opts) {
-  const sym = String(opts.sym).toUpperCase(), nonce = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now());
-  const s = sheet(`<div class="ot" data-side="SELL"><div class="ot-h">${mono(sym, 'lg')}<div style="min-width:0;flex:1"><h3 style="margin:0">Stop-loss for ${esc(sym)}</h3><div class="small">A sell order that waits at ${esc(opts.broker)} and fires if price falls to the stop.</div></div></div>
-    <div class="kv2" style="margin-top:12px"><div class="field"><label for="sl-q">Quantity</label><input id="sl-q" inputmode="numeric" value="${Math.floor(n(opts.qty) || 0)}"></div>
-      <div class="field"><label for="sl-p">Stop price (₹)</label><input id="sl-p" inputmode="decimal" value="${n(opts.stop).toFixed(2)}"></div></div>
-    <div class="ot-sum" id="sl-sum"></div>
-    <div class="field" style="margin-top:10px"><label for="sl-pin">Trade code</label><input id="sl-pin" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Type your code to confirm"></div>
-    <div id="sl-err"></div><button class="btn block ot-go" data-send disabled>Place stop-loss</button>
-    <p class="tiny" style="text-align:center;margin:10px 0 0">The sell limit sits 2% under the stop so it fills. Cancel or change it in the ${esc(opts.broker)} app (GTT / Forever orders).</p></div>`, { label: `Stop-loss ${sym}` });
-  const $ = id => s.el.querySelector(id), send = $('[data-send]');
-  const calc = () => { const q = Math.floor(n($('#sl-q').value) || 0), p = n($('#sl-p').value) || 0, l = n(opts.ltp);
-    $('#sl-sum').innerHTML = `<div><span>Price now</span><b class="tnum">${fmt.px2(l)}</b></div><div><span>Stop is</span><b class="tnum dn">${l > 0 && p > 0 ? fmt.sp((p / l - 1) * 100) : '—'} from here</b></div><div><span>Sale value at the stop</span><b class="tnum">${fmt.inr(q * p)}</b></div>`;
-    send.disabled = !(q > 0 && p > 0 && p < l && $('#sl-pin').value.length >= 4); };
-  ['#sl-q', '#sl-p', '#sl-pin'].forEach(i => { $(i).oninput = calc; });
-  calc();
-  send.onclick = async () => {
-    send.disabled = true; send.textContent = 'Sending…';
-    try { const r = await ownerSend('POST', '/owner/stop', { broker: opts.broker, symbol: sym, qty: Math.floor(n($('#sl-q').value)), trigger: n($('#sl-p').value), pin: $('#sl-pin').value, nonce });
-      s.el.querySelector('.ot').innerHTML = `<div class="ot-done"><div class="ot-ic up">${icon('check', 28)}</div><h3>Stop-loss placed</h3><p>${esc(opts.broker)} will sell ${esc(sym)} if price falls to ${fmt.px2(n($('#sl-p')?.value) || opts.stop)}${r.order_id ? ` · id <b>${esc(r.order_id)}</b>` : ''}.</p></div>`; toast('Stop-loss placed'); }
-    catch (e) { send.textContent = 'Place stop-loss'; $('#sl-pin').value = ''; $('#sl-err').innerHTML = `<p class="ot-warn">${esc(e.message)}</p>`; calc(); }
-  };
-}
-
-
 /** Buy several AI calls with one trade code. opts: { calls: Call[], onDone? }. Orders are limit buys at the price shown. */
 export function basketSheet(opts) {
   const tick = v => Math.round(v * 20) / 20;
@@ -292,4 +268,57 @@ export function basketSheet(opts) {
     root.querySelector('[data-close]').onclick = () => { s.close(); opts.onDone && opts.onDone(okN > 0); };
     toast(`${okN} of ${R.length} orders sent`);
   }
+}
+
+/** GTT at the broker: a stop-loss, a profit-booking target, or both (one cancels the other where the broker allows).
+    opts: { sym, broker, qty, ltp, stop?, target?, why?, onDone? } */
+export function gttSheet(opts) {
+  const sym = String(opts.sym).toUpperCase(), nonce = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now());
+  const both = opts.broker !== 'Angel';
+  const s = sheet(`<div class="ot" data-side="SELL"><div class="ot-h">${mono(sym, 'lg')}<div style="min-width:0;flex:1"><h3 style="margin:0">GTT for ${esc(sym)}</h3><div class="small">Sell orders that wait at ${esc(opts.broker)} until price reaches a level.</div></div></div>
+    ${opts.why ? `<p class="small" style="margin:10px 2px 0">${esc(opts.why)}</p>` : ''}
+    <div class="gt-legs">
+      <label class="gt-leg"><input type="checkbox" id="gt-s1" checked><span><b>Stop-loss</b><small>sell if price falls to</small></span><input id="gt-sp" inputmode="decimal" value="${n(opts.stop) ? n(opts.stop).toFixed(2) : ''}"></label>
+      <label class="gt-leg"><input type="checkbox" id="gt-t1" ${both ? '' : 'disabled'}><span><b>Book profit</b><small>${both ? 'sell if price rises to' : 'Angel holds one trigger per GTT'}</small></span><input id="gt-tp" inputmode="decimal" value="${n(opts.target) ? n(opts.target).toFixed(2) : ''}" ${both ? '' : 'disabled'}></label>
+    </div>
+    <div class="field" style="margin-top:10px"><label for="gt-q">Quantity</label><input id="gt-q" inputmode="numeric" value="${Math.floor(n(opts.qty) || 0)}"></div>
+    <div class="ot-sum" id="gt-sum"></div>
+    <div class="field" style="margin-top:10px"><label for="gt-pin">Trade code</label><input id="gt-pin" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Type your code to confirm"></div>
+    <div id="gt-err"></div><button class="btn block ot-go" data-send disabled>Place GTT</button>
+    <p class="tiny" style="text-align:center;margin:10px 0 0">${both ? 'With both ticked, whichever fills first cancels the other. ' : ''}The sell limit sits just under the trigger so it fills. If you later sell these shares by hand, cancel the GTT in Health → Protection.</p></div>`, { label: `GTT ${sym}` });
+  const $ = id => s.el.querySelector(id), send = $('[data-send]');
+  const vals = () => ({ q: Math.floor(n($('#gt-q').value) || 0), sp: $('#gt-s1').checked ? n($('#gt-sp').value) || 0 : 0, tp: $('#gt-t1').checked ? n($('#gt-tp').value) || 0 : 0, l: n(opts.ltp) });
+  const calc = () => { const { q, sp, tp, l } = vals();
+    $('#gt-sum').innerHTML = `<div><span>Price now</span><b class="tnum">${fmt.px2(l)}</b></div>${sp ? `<div><span>Stop</span><b class="tnum dn">${fmt.sp((sp / l - 1) * 100)} · lose ${fmt.inr(q * Math.max(0, l - sp))}</b></div>` : ''}${tp ? `<div><span>Target</span><b class="tnum up">${fmt.sp((tp / l - 1) * 100)} · gain ${fmt.inr(q * Math.max(0, tp - l))}</b></div>` : ''}`;
+    send.disabled = !(q > 0 && (sp || tp) && (!sp || sp < l) && (!tp || tp > l) && $('#gt-pin').value.length >= 4); };
+  ['#gt-q', '#gt-sp', '#gt-tp', '#gt-pin'].forEach(i => { $(i).oninput = calc; });
+  ['#gt-s1', '#gt-t1'].forEach(i => { $(i).onchange = () => { if (!both && $(i).checked) ['#gt-s1', '#gt-t1'].filter(j => j !== i).forEach(j => { $(j).checked = false; }); calc(); }; });
+  if (!both) { $('#gt-t1').disabled = false; $('#gt-tp').disabled = false; $('#gt-t1').nextElementSibling.querySelector('small').textContent = 'or, instead, sell if price rises to'; }
+  calc();
+  send.onclick = async () => {
+    const { q, sp, tp } = vals();
+    send.disabled = true; send.textContent = 'Sending…';
+    try { const r = await ownerSend('POST', '/owner/gtt/place', { broker: opts.broker, symbol: sym, qty: q, stop: sp || null, target: tp || null, pin: $('#gt-pin').value, nonce });
+      s.el.querySelector('.ot').innerHTML = `<div class="ot-done"><div class="ot-ic up">${icon('check', 28)}</div><h3>GTT placed</h3><p>${esc(opts.broker)} will sell ${fmt.int(q)} ${esc(sym)}${sp ? ` if price falls to ${fmt.px2(sp)}` : ''}${sp && tp ? ' or' : ''}${tp ? ` if it rises to ${fmt.px2(tp)}` : ''}${r.order_id ? ` · id <b>${esc(r.order_id)}</b>` : ''}. Check it once in the ${esc(opts.broker)} app.</p></div>`;
+      toast('GTT placed'); opts.onDone && opts.onDone(true); }
+    catch (e) { send.textContent = 'Place GTT'; $('#gt-pin').value = ''; $('#gt-err').innerHTML = `<p class="ot-warn">${esc(e.message)}</p>`; calc(); }
+  };
+}
+
+/** Cancel one GTT. opts: { g: saved GTT row, onDone? } */
+export function gttCancelSheet({ g, onDone }) {
+  const nonce = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now());
+  const s = sheet(`<div class="ot"><div class="ot-h">${mono(g.symbol, 'lg')}<div style="min-width:0;flex:1"><h3 style="margin:0">Cancel GTT ${esc(g.symbol)}</h3><div class="small">${esc(g.broker)} · sells ${fmt.x(g.qty, 0)} at ${g.triggers.map(t => fmt.px2(t)).join(' / ')}</div></div></div>
+    <p class="small" style="margin:12px 2px 0">${g.state === 'orphan' ? `You hold no ${esc(g.symbol)} at ${esc(g.broker)}. If you buy it again, this trigger would sell it.` : g.state === 'too_big' ? `It sells ${fmt.x(g.qty, 0)} but you hold ${fmt.x(g.held, 0)}. Cancel it, then place a new one for the right quantity.` : 'The stock stays in your account; only the waiting sell order is removed.'}</p>
+    <div class="field" style="margin-top:10px"><label for="gc-pin">Trade code</label><input id="gc-pin" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Type your code to confirm"></div>
+    <div id="gc-err"></div><button class="btn block sell" data-send disabled>Cancel this GTT</button></div>`, { label: `Cancel GTT ${g.symbol}` });
+  const $ = id => s.el.querySelector(id), send = $('[data-send]');
+  $('#gc-pin').oninput = () => { send.disabled = $('#gc-pin').value.length < 4; };
+  send.onclick = async () => {
+    send.disabled = true; send.textContent = 'Cancelling…';
+    try { await ownerSend('POST', '/owner/gtt/cancel', { broker: g.broker, id: g.id, pin: $('#gc-pin').value, nonce });
+      s.el.querySelector('.ot').innerHTML = `<div class="ot-done"><div class="ot-ic up">${icon('check', 28)}</div><h3>GTT cancelled</h3><p>${esc(g.broker)} will no longer sell ${esc(g.symbol)} at ${g.triggers.map(t => fmt.px2(t)).join(' / ')}.</p></div>`;
+      toast('GTT cancelled'); onDone && onDone(true); }
+    catch (e) { send.textContent = 'Cancel this GTT'; $('#gc-pin').value = ''; send.disabled = true; $('#gc-err').innerHTML = `<p class="ot-warn">${esc(e.message)}</p>`; }
+  };
 }

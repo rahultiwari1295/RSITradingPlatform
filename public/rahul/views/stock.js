@@ -5,7 +5,8 @@ import { api, chrome, fill, fmt, esc, icon, ok, link, mono, delta, tone, engineB
 import { priceChart, toCandles, withEmas, ruler, settle } from '../charts.js';
 import { sec, statCell, footNote, entryZone, whyList } from './parts.js';
 import { loadBook, enrich, technicals, TREND, STATUS, EXIT_DAYS } from './pfdata.js';
-import { orderSheet, stopSheet } from './trade.js';
+import { orderSheet, gttSheet } from './trade.js';
+import { loadHealth, VERDICT } from './health.js';
 import { edgeStock, rsPill, cr, day } from './edgedata.js';
 import { ownerSend } from '../core.js';
 import { titleCase } from './edgedata.js';
@@ -97,7 +98,7 @@ export default async function stock(el, r) {
       <div id="k-edge"></div>
       <div id="k-ask"></div>
       <div id="k-xray"></div>
-      <div id="k-news"></div>
+      <div id="k-health"></div><div id="k-news"></div>
       ${footNote(`Private page. "Exit call" means the AI closed its call in the last ${EXIT_DAYS} days.`)}`;
     settle(body);
 
@@ -105,7 +106,8 @@ export default async function stock(el, r) {
     root.querySelector('[data-buy]')?.addEventListener('click', () => orderSheet({ sym, side: 'BUY', call, onDone: okd => okd && load(true) }));
     root.querySelector('[data-sell]')?.addEventListener('click', () => orderSheet({ sym, side: 'SELL', call, broker: Object.keys(x.parts || {}).find(k => k !== 'Manual'), onDone: okd => okd && load(true) }));
 
-    root.querySelector('[data-stop]')?.addEventListener('click', () => { const b = Object.keys(x.parts || {}).find(k => k !== 'Manual'); stopSheet({ sym, broker: b, qty: x.parts[b].qty, stop: c.stop, ltp: x.ltp }); });
+    root.querySelector('[data-stop]')?.addEventListener('click', () => { const b = Object.keys(x.parts || {}).find(k => k !== 'Manual'); gttSheet({ sym, broker: b, qty: x.parts[b].qty, stop: c.stop, target: c.target, ltp: x.ltp, why: 'Levels from the AI call.' }); });
+    healthBox(x);
     edgeBox(x, held, c);
     askBox(x, held, c);
 
@@ -187,4 +189,22 @@ export default async function stock(el, r) {
     box.querySelector('[data-read]').onclick = () => run('/owner/read', { symbol: sym }, 'Latest results filing');
   }
   return () => (el._stops || []).forEach(f => f && f());
+}
+
+/* Health verdict for a holding with no AI call (same rules as Portfolio -> Health). */
+async function healthBox(x) {
+  const box = document.getElementById('k-health');
+  if (!box || !x || x.status !== 'none' || !(x.qty > 0)) return;
+  const s = String(x.symbol).toUpperCase();
+  let H; try { H = await loadHealth([s]); } catch { return; }
+  const h = (H.stocks || {})[s]; if (!h || !box.isConnected) return;
+  const long = (H.marks || {})[s]?.mark === 'long', v = long ? 'long' : (h.verdict === 'hold' || h.verdict === 'buy') && (h.flags || []).length ? 'protect' : h.verdict;
+  const V = VERDICT[v] || VERDICT.unknown, b = Object.keys(x.parts || {}).find(k => k !== 'Manual');
+  box.innerHTML = `<section class="sec"><div class="sec-h"><h2>Health</h2><a class="more" href="/rahul/portfolio?v=review" data-nav>All holdings</a></div>
+    <div class="panel pad hk v-${v}"><div class="hk-h"><span class="pill ${V.cls}">${V.t}</span>${h.weekly ? `<span class="small">Weekly ${h.weekly} · monthly ${h.monthly}</span>` : ''}</div>
+    <p class="small" style="color:var(--ink);margin:8px 0 0">${esc(h.why || '')}</p>
+    ${(h.flags || []).map(f => `<p class="small dn" style="margin:6px 0 0">${esc(f.text)}</p>`).join('')}
+    ${h.support ? `<div class="hl-lv" style="margin-top:10px"><span class="lv">3-mo low ${fmt.px(h.support)}</span><span class="lv">Stop idea ${fmt.px(h.stop)}</span><span class="lv">Target idea ${fmt.px(h.target)}</span>${v === 'buy' ? `<span class="lv up">Zone ${fmt.px(h.zone[0])}–${fmt.px(h.zone[1])}</span>` : ''}</div>` : ''}
+    ${b && h.stop ? '<button class="btn sm quiet" data-hk-gtt style="margin-top:12px">Set GTT</button>' : ''}</div></section>`;
+  box.querySelector('[data-hk-gtt]')?.addEventListener('click', () => gttSheet({ sym: s, broker: b, qty: x.parts[b].qty, ltp: x.ltp, stop: h.stop, target: h.target, why: h.why }));
 }
