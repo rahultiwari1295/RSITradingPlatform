@@ -114,7 +114,8 @@ def _fetch() -> Dict[str, Any]:
         raw = raw.get("holdings") or []
     items: List[Dict[str, Any]] = []
     for h in raw:
-        qty = _f(h.get("quantity")) + _f(h.get("t1quantity"))
+        # Angel's "quantity" already counts shares still in T1; t1quantity is only the T1 part of it. Adding them doubled new buys.
+        qty = max(_f(h.get("quantity")), _f(h.get("t1quantity")))
         if qty <= 0:
             continue
         avg, ltp, close = _f(h.get("averageprice")), _f(h.get("ltp")), _f(h.get("close"))

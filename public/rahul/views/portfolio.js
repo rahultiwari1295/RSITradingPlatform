@@ -119,17 +119,15 @@ export default async function portfolio(el, r) {
     const hv = D.H ? groupOf(x, D.H) : null, covered = ((D.G || {}).covered || {})[String(x.symbol).toUpperCase()] || {};
     const why = x.status === 'exit' ? `The AI closed this call on ${fmt.date(e.exitDate)} at ${fmt.px(e.exit)} (${fmt.sp(e.roi)}).`
       : x.status === 'stop' ? `Price is at or below the stop ${fmt.px(c.stop)}.` : x.status === 'target' ? `Price reached the target ${fmt.px(c.target)}.` : '';
-    const tag = x.status !== 'none' ? `<span class="pill ${st.cls}">${st.t}</span>` : hv ? `<span class="pill ${VERDICT[hv].cls}">${VERDICT[hv].t}</span>` : '';
-    const facts = [tag, `<span>${fmt.x(x.qty, x.qty % 1 ? 2 : 0)} shares</span>`, srcs.map(k => `<i class="b-${k.toLowerCase()}">${k}</i>`).join(''), `<span>${fmt.x(w, 1)}% of portfolio</span>`,
-      isFinite(x.day_pct) && x.day_pct !== null ? `<span>Today <b class="${tone(x.day_pct)}">${fmt.sp(x.day_pct)}</b></span>` : '',
-      c ? `<span>Day ${fmt.int(c.days)}</span>` : '', c && isFinite(x.vsCall) && Math.abs(x.vsCall) >= 0.3 ? `<span>Paid ${fmt.sp(x.vsCall)} vs call</span>` : '',
-      covered.stop ? '<span class="ok">Stop at broker</span>' : ''].filter(Boolean).join('');
+    const tag = hv ? `<span class="pill ${VERDICT[hv].cls}">${VERDICT[hv].t}</span>` : x.status !== 'none' ? `<span class="pill ${st.cls}">${({ target: 'Target hit', exit: 'Exit', stop: 'At stop' })[x.status] || st.t}</span>` : '';
+    const dOk = isFinite(x.day_pct) && x.day_pct !== null, dRs = dOk ? x.value - x.value / (1 + x.day_pct / 100) : 0;
     return `<article class="hc st-${x.status}${hv ? ' v-' + hv : ''}">
       <a class="hc-main" href="/rahul/stock/${encodeURIComponent(x.symbol)}" data-nav aria-label="${esc(x.symbol)}, ${st.t}">
-        <div class="hc-top">${mono(x.symbol)}<div class="hc-id"><div class="hc-n"><b>${esc(x.symbol)}</b></div><span class="tnum"><b>${fmt.px(x.ltp)}</b> <i>avg ${fmt.px(x.avg)}</i></span></div>
+        <div class="hc-top">${mono(x.symbol)}<div class="hc-id"><div class="hc-n"><b>${esc(x.symbol)}</b></div><span class="tnum"><b>${fmt.px(x.ltp)}</b> <i>avg ${fmt.px(x.avg)} · ${fmt.x(x.qty, x.qty % 1 ? 2 : 0)} sh</i></span></div>
           <div class="hc-v"><b class="tnum">${fmt.inr(x.value)}</b><span class="hc-p tnum ${tone(x.pnl)}">${fmt.sinr(x.pnl)} · ${fmt.sp(x.pnl_pct)}</span></div></div>
         ${c ? `<div class="hc-rng">${miniRange({ stop: c.stop, entry: c.entry, target: c.target, now: x.ltp })}</div>` : ''}
-        <div class="hc-f">${facts}</div>
+        <div class="hc-b"><div class="hc-t"><small>Today</small>${dOk ? `<b class="tnum ${tone(x.day_pct)}">${fmt.sinr(dRs)}<em>${fmt.sp(x.day_pct)}</em></b>` : '<b class="faint">—</b>'}</div>
+          <div class="hc-tags">${tag}${srcs.map(k => `<i class="b-${k.toLowerCase()}">${k}</i>`).join('')}</div></div>
       </a>
       ${acts ? `<div class="hc-act ${x.status === 'target' ? 'up' : 'dn'}"><span>${why}</span>${canSell ? `<button class="btn sm ${x.status === 'target' ? 'quiet' : 'sell'}" data-sell="${esc(x.symbol)}">Sell</button>` : ''}</div>` : ''}
     </article>`;

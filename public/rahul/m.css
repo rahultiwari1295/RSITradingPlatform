@@ -1728,3 +1728,25 @@ html .hc-alert { border-radius: 20px; box-shadow: var(--lift-sm); }
 .hc-n .pill { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hc-f > .pill { height: 22px; padding: 0 8px; border-radius: 8px; font-size: 11.5px; }
 .hc-id > span b { font-size: 13.5px; } .hc-id > span i { margin-left: 3px; }
+/* holding card v2: one Today line and two tags */
+.hc-b { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 0 0 51px; padding-top: 11px; border-top: 1px solid var(--line); }
+.hc-t { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.hc-t small { font-size: 12px; font-weight: 650; color: var(--ink-3); }
+.hc-t b { font-size: 14.5px; font-weight: 780; letter-spacing: -.015em; white-space: nowrap; }
+.hc-t b em { font-style: normal; margin-left: 6px; font-size: 12.5px; font-weight: 700; opacity: .85; }
+.hc-tags { display: flex; align-items: center; gap: 5px; flex: none; }
+.hc-tags .pill, .hc-tags > i { height: 24px; display: inline-flex; align-items: center; padding: 0 9px; border-radius: 999px; font-size: 11.5px; font-weight: 750; font-style: normal; white-space: nowrap; }
+.hc-tags > i { background: var(--well); color: var(--ink-2); }
+.hc-tags > i.b-angel { background: color-mix(in srgb, var(--brand) 14%, transparent); color: var(--brand-ink); }
+.hc-tags > i.b-dhan { background: color-mix(in srgb, #0ea5e9 16%, transparent); color: #0369a1; }
+.hc-tags > i.b-kite { background: color-mix(in srgb, #ff6a3d 16%, transparent); color: #c2410c; }
+.hc-tags > i.b-manual { background: var(--well); color: var(--ink-2); }
+.hc-id > span i { font-size: 12px; }
+.hc-list > .hc { min-width: 0; border: 0 !important; outline: 0; box-shadow: var(--lift-sm) !important; }
+.hc-b { flex-wrap: wrap; row-gap: 8px; }
+.hc-tags { flex: 0 1 auto; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
+.hc-id > span { min-width: 0; }
+.hc-b, .hc-rng { margin-left: 0; }
+.hc-b { flex-wrap: nowrap; }
+.hc-tags { flex-wrap: nowrap; }
+.hc-t { overflow: hidden; }
