@@ -1616,3 +1616,11 @@ html .group:not(.cr-empty):has(> .hr, > .hl, > a.row, > div.row) { background: n
 html .group > .hr, html .group > .hl { background: var(--surface); box-shadow: var(--lift-sm); border-radius: 18px; overflow: hidden; border-top: 0; }
 html .group > .hr + .hr, html .group > .hl + .hl { border-top: 0; }
 @media (min-width: 900px) { html .group > .hr { box-shadow: var(--lift-sm); } }
+
+/* ---------------------------------------------------------------- News home: QuantSync header with a calls pill */
+html .hm-hd { justify-content: space-between; gap: 10px; min-height: calc(50px + var(--safe-t)); background: var(--bg); box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.hm-brand { display: inline-flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 800; letter-spacing: -.03em; color: var(--ink); }
+.hm-brand i { width: 22px; height: 22px; border-radius: 7px; background: linear-gradient(135deg, #8E7CFF, #6C5CE7); box-shadow: 0 4px 10px -3px rgba(108, 92, 231, .5); }
+#hm-strip { min-width: 0; display: flex; justify-content: flex-end; }
+html .hm-pill { width: auto; height: 32px; gap: 4px; padding: 0 8px 0 12px; border-radius: 999px; background: var(--surface); box-shadow: var(--lift-sm); font-size: 13px; white-space: nowrap; overflow: hidden; }
+html .hm-pill .hm-t { overflow: hidden; text-overflow: ellipsis; }
