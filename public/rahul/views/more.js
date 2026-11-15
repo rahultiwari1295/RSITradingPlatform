@@ -1,5 +1,5 @@
 /* /rahul/more: the pages that are not on the main tabs, and the owner's one setting. */
-import { chrome, icon, link, fmt } from '../core.js';
+import { chrome, icon, link, fmt, setTheme, themePref } from '../core.js';
 import { footNote } from './parts.js';
 import { buySize } from './trade.js';
 
@@ -16,11 +16,14 @@ export default async function more(el) {
       ${ROWS.map(([p, k, t, s]) => link(p, `${ic(k)}<div class="main"><div class="t">${t}</div><div class="s">${s}</div></div>${icon('chev', 16, 'chev')}`, 'row')).join('')}
       <a class="row" href="/app/scanner.html">${ic('flask')}<div class="main"><div class="t">Scanner</div><div class="s">Build and test your own rules</div></div>${icon('chev', 16, 'chev')}</a>
     </div>
+    <section class="sec"><div class="sec-h"><h2>Appearance</h2></div>
+      <div class="seg" id="mo-theme" role="group" aria-label="Appearance">${[['', 'Phone setting'], ['light', 'Light'], ['dark', 'Dark']].map(([k, l]) => `<button type="button" data-th="${k}" aria-pressed="${themePref() === k}">${l}</button>`).join('')}</div></section>
     <section class="sec"><div class="sec-h"><h2>Settings</h2></div>
       <div class="panel pad"><div class="field"><label for="mo-size">Standard buy amount (₹)</label>
         <input id="mo-size" inputmode="numeric" value="${buySize()}" aria-describedby="mo-help"></div>
         <p class="small" id="mo-help" style="margin:8px 0 0">The buy sheet starts with this amount. Allowed: ₹2,000 to ₹50,000. Now ${fmt.inr(buySize())}.</p></div></section>
     ${footNote('Private page.')}`;
+  body.querySelectorAll('[data-th]').forEach(b => b.onclick = () => { setTheme(b.dataset.th); body.querySelectorAll('[data-th]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
   const inp = body.querySelector('#mo-size'), help = body.querySelector('#mo-help');
   inp.onchange = () => {
     const v = Math.round(Number(String(inp.value).replace(/[^\d.]/g, '')));

@@ -226,7 +226,7 @@ export function reveal(root) {
     el.dataset.rv = 1; el.classList.add('rv'); mine.push(el);
     requestAnimationFrame(() => rio.observe(el));
   });
-  if (mine.length) setTimeout(() => mine.forEach(el => { el.classList.add('in'); }), 1200);
+  if (mine.length) setTimeout(() => mine.forEach(el => { el.classList.add('in'); }), 220);
 }
 /** Load into a slot with skeleton, error and retry handled the same way everywhere. */
 export async function fill(el, load, draw, sk = skel(80, 2), { quiet = false } = {}) {
@@ -681,28 +681,28 @@ export function back(fallback) { if (stack.length && history.state && history.st
 /* ---------------------------------------------------------------- day and night */
 export const isDark = () => (document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : W.matchMedia('(prefers-color-scheme: dark)').matches);
 export function setTheme(t) {
-  document.documentElement.dataset.theme = t;
-  try { localStorage.setItem('qs-theme', t); } catch { /* storage blocked */ }
-  document.querySelectorAll('[data-theme-switch]').forEach(b => b.setAttribute('aria-checked', t === 'dark'));
-  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', t === 'dark' ? '#070B13' : '#F2F4F7'));
+  if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+  try { t ? localStorage.setItem('qs-theme', t) : localStorage.removeItem('qs-theme'); } catch { /* storage blocked */ }
+  const dark = isDark();
+  document.querySelectorAll('[data-theme-switch]').forEach(x => x.setAttribute('aria-checked', dark));
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => { m.removeAttribute('media'); m.setAttribute('content', dark ? '#05080F' : '#F4F5F8'); });
 }
-const themeSwitch = () => `<button class="tsw" type="button" role="switch" data-theme-switch aria-checked="${isDark()}" aria-label="Night mode"><span class="tsw-k">${icon('sun', 14, 'i-sun')}${icon('moon', 14, 'i-moon')}</span></button>`;
+export const themePref = () => { try { return localStorage.getItem('qs-theme') || ''; } catch { return ''; } };
 
 /** Shared chrome. Tab pages: QuantSync and the page name on the left, the day and night switch on the right.
     Detail pages: a back button and the title, which appears once the big title scrolls away.
     top: { ey, h, hl, lede, extra } is the title block. */
 export function chrome(el, { title, sub = '', back: backTo, actions = '', top = null, page = '', compact = false }) {
-  const t = top || { h: title, lede: sub };
-  const left = backTo != null
-    ? `<button class="ib back" data-back aria-label="Back">${icon('back', 22)}<span>${esc(backTo)}</span></button><div class="bt">${esc(title)}</div>`
-    : `<a class="brand" href="${CFG.base}/" data-nav aria-label="QuantSync home">${logo(26)}<span class="bn">QuantSync</span>${page ? `<span class="bp"><i></i>${esc(page)}</span>` : ''}</a><span class="grow"></span>`;
-  el.innerHTML = `<div class="aurora" aria-hidden="true"></div><header class="bar${backTo != null ? '' : ' tabbar'}">${left}${actions}${backTo != null ? (actions ? '' : '<span class="sp"></span>') : themeSwitch()}</header>
-  ${compact ? '' : `<div class="wrap head">${titleHTML(t)}</div>`}<div class="wrap body${compact ? ' compact' : ''}"></div>`;
-  const bar = el.querySelector('.bar'), h1 = el.querySelector('.tb-h');
-  let tick = 0, solid = false;
+  const t = top || { h: title, lede: sub }, isRoot = backTo == null;
+  const left = isRoot ? '<span class="bl"></span>' : `<button class="ib back" data-back aria-label="Back">${icon('back', 22)}<span>${esc(backTo)}</span></button>`;
+  const head = isRoot && compact ? `<div class="wrap lt"><span class="lt-d">${todayLine()}</span><h1>${esc(page || title)}</h1></div>`
+    : compact ? '' : `<div class="wrap head">${titleHTML(t)}</div>`;
+  el.innerHTML = `<header class="bar${isRoot ? ' root' : ''}">${left}<div class="bt">${esc(page || title)}</div><div class="acts">${actions}</div></header>${head}<div class="wrap body${compact ? ' compact' : ''}"></div>`;
+  const bar = el.querySelector('.bar'), h1 = el.querySelector('.lt h1, .tb-h');
   const b = el.querySelector('[data-back]'); if (b) b.onclick = () => back(TABS.find(t2 => t2[0] === parse().tab)?.[1]);
-  if (compact) { bar.classList.add('solid'); return el.querySelector('.body'); }
-  const on = () => { tick = 0; const s2 = el.scrollTop > (h1 ? h1.offsetTop + h1.offsetHeight - 40 : 40); if (s2 !== solid) { solid = s2; bar.classList.toggle('solid', s2); } };
+  if (!h1) { bar.classList.add('solid'); return el.querySelector('.body'); }
+  let tick = 0, solid = false;
+  const on = () => { tick = 0; const s2 = el.scrollTop > h1.offsetTop + h1.offsetHeight - 52; if (s2 !== solid) { solid = s2; bar.classList.toggle('solid', s2); } };
   el.addEventListener('scroll', () => { if (!tick) tick = requestAnimationFrame(on); }, { passive: true });
   return el.querySelector('.body');
 }
@@ -745,11 +745,11 @@ export async function boot() {
   return bootApp();
 }
 function bootApp() {
-  const theme = (() => { try { return localStorage.getItem('qs-theme'); } catch { return null; } })();
-  if (theme) document.documentElement.dataset.theme = theme;
+  setTheme(themePref());
+  try { W.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!themePref()) setTheme(''); }); } catch { /* old browser */ }
   const tabs = document.getElementById('tabs'), rail = document.getElementById('rail');
   tabs.style.setProperty('--tn', TABS.length);
-  tabs.innerHTML = '<span class="ind" aria-hidden="true"></span>' + TABS.map(([k, p, l, ic]) => `<a class="tab" href="${CFG.base}/${p}" data-nav data-tab="${k}" aria-label="${l}">${tabIcon(ic)}<span>${l}</span></a>`).join('');
+  tabs.innerHTML = TABS.map(([k, p, l, ic]) => `<a class="tab" href="${CFG.base}/${p}" data-nav data-tab="${k}" aria-label="${l}">${tabIcon(ic)}<span>${l}</span></a>`).join('');
   rail.innerHTML = `<div class="brand">${logo(28)}QuantSync</div>` + TABS.map(([k, p, l, ic]) => `<a href="${CFG.base}/${p}" data-nav data-tab="${k}">${tabIcon(ic)}<span>${l}</span></a>`).join('') +
     `<a href="/rahul/ops/" style="margin-top:14px">${icon('chip', 22)}<span>Control room</span></a><a href="/app/">${icon('flask', 22)}<span>Strategy Lab</span></a><div class="rail-foot">Research and education. Not investment advice. Prices can be delayed.</div>`;
   document.addEventListener('click', e => {

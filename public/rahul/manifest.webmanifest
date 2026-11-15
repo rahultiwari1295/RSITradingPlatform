@@ -1,0 +1,22 @@
+{
+  "name": "QuantSync",
+  "short_name": "QuantSync",
+  "description": "AI calls, your portfolio and its health, in one private app.",
+  "id": "/rahul/",
+  "start_url": "/rahul/calls",
+  "scope": "/rahul/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F4F5F8",
+  "theme_color": "#F4F5F8",
+  "icons": [
+    { "src": "/rahul/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/rahul/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/rahul/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Calls", "url": "/rahul/calls" },
+    { "name": "Portfolio", "url": "/rahul/portfolio" },
+    { "name": "Health", "url": "/rahul/portfolio?v=health" }
+  ]
+}

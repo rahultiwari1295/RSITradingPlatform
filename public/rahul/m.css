@@ -1340,3 +1340,91 @@ body, .screen, .bar, .mk, .door, .labx, .panel, .group, .sig, .stat, .yr { trans
 .gt-leg span { display: grid; } .gt-leg span b { font-size: 14.5px; } .gt-leg span small { font-size: 12px; color: var(--ink-2); }
 .gt-leg input[inputmode] { width: 100%; height: 40px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); text-align: right; font-weight: 650; font-variant-numeric: tabular-nums; }
 .gt-leg input:disabled { opacity: .5; }
+
+/* ================================================================ v9: phone app frame
+   Large title that hands over to a compact blurred bar, a flush tab bar, quiet surfaces, instant content. */
+:root { --bg: #F4F5F8; --tab-h: 54px; --line: #E3E6EC; --edge: rgba(11, 21, 38, .07); }
+:root[data-theme="dark"] { --bg: #05080F; --line: #1A2333; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #05080F; --line: #1A2333; } }
+html, body { background: var(--bg); }
+body { overscroll-behavior: none; }
+a, button, .tab, .row, .chip, .seg button { -webkit-user-select: none; user-select: none; touch-action: manipulation; -webkit-touch-callout: none; }
+.aurora, .tsw { display: none !important; }
+
+/* instant content: a short fade, no slide */
+.rv { opacity: 0; transform: none; }
+.rv.in { opacity: 1; transform: none; transition: opacity .16s linear; transition-delay: 0ms; }
+
+/* top bar */
+.bar { display: grid; grid-template-columns: minmax(64px, 1fr) auto minmax(64px, 1fr); align-items: center; gap: 4px; height: calc(48px + var(--safe-t)); padding: var(--safe-t) 6px 0; background: transparent; }
+.bar.solid { background: color-mix(in srgb, var(--bg) 78%, transparent); -webkit-backdrop-filter: saturate(1.8) blur(20px); backdrop-filter: saturate(1.8) blur(20px); box-shadow: 0 .5px 0 var(--line); }
+.bar .bl { display: block; }
+.bar .bt { grid-column: 2; max-width: 56vw; font-size: 16.5px; font-weight: 650; letter-spacing: -.015em; text-align: center; }
+.bar .acts { grid-column: 3; display: flex; justify-content: flex-end; align-items: center; gap: 0; }
+.bar > .ib.back { grid-column: 1; justify-self: start; }
+.bar .ib { width: 40px; height: 40px; color: var(--brand); }
+.bar .ib svg { width: 22px; height: 22px; }
+
+/* large title on the tab pages */
+.lt { padding-top: 2px; padding-bottom: 8px; }
+.lt-d { display: block; font-size: 12.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); }
+.lt h1 { margin: 2px 0 0; font: 780 33px/1.1 var(--font); letter-spacing: -.035em; color: var(--ink); }
+.screen.root .bar { margin-bottom: -6px; }
+.wrap.body.compact { margin-top: 6px; }
+
+/* flush tab bar */
+#tabs { left: 0; right: 0; bottom: 0; width: 100%; max-width: none; margin: 0; border-radius: 0; padding: 0 4px var(--safe-b); height: calc(var(--tab-h) + var(--safe-b));
+  background: color-mix(in srgb, var(--bg) 82%, transparent); -webkit-backdrop-filter: saturate(1.8) blur(22px); backdrop-filter: saturate(1.8) blur(22px); box-shadow: 0 -.5px 0 var(--line); }
+#tabs .ind { display: none; }
+.tab { gap: 3px; padding-top: 4px; font-size: 10.5px; font-weight: 600; letter-spacing: 0; color: var(--ink-3); }
+.tab svg { width: 25px; height: 25px; }
+.tab[aria-current="page"] { color: var(--brand); }
+.tab[aria-current="page"] svg { transform: none; }
+.tab:active svg { transform: scale(.86); }
+.screen { padding-bottom: calc(var(--tab-h) + var(--safe-b) + 28px); }
+.toast { bottom: calc(var(--tab-h) + var(--safe-b) + 14px); }
+.hm { height: calc(100dvh - var(--tab-h) - var(--safe-b)); }
+.hm-top { background: color-mix(in srgb, var(--bg) 82%, transparent); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+.rh-embed { height: calc(100dvh - var(--tab-h) - var(--safe-b)); }
+
+/* segmented control: the pressed button carries its own background (no sliding knob to fall out of place) */
+.seg { padding: 3px; border-radius: 12px; background: color-mix(in srgb, var(--ink-3) 14%, transparent); box-shadow: none; }
+.seg .knob { display: none; }
+.seg button { height: 34px; border-radius: 9px; font-size: 14px; font-weight: 600; color: var(--ink-2); transition: background-color .15s, color .15s; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(11, 21, 38, .12), 0 0 0 .5px rgba(11, 21, 38, .05); }
+:root[data-theme="dark"] .seg button[aria-pressed="true"] { background: #1C2638; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .seg button[aria-pressed="true"] { background: #1C2638; } }
+#pf-seg.seg button { padding: 0 13px; }
+
+/* quiet surfaces: hairline plus a soft shadow */
+.panel, .group, .kp, .yr, .cg-line, .empty { box-shadow: 0 0 0 .5px var(--edge), 0 1px 2px rgba(11, 21, 38, .04), 0 6px 18px -12px rgba(11, 21, 38, .14); background: var(--surface); }
+:root[data-theme="dark"] :is(.panel, .group, .kp, .yr, .cg-line, .empty) { box-shadow: 0 0 0 .5px rgba(255, 255, 255, .07); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.panel, .group, .kp, .yr, .cg-line, .empty) { box-shadow: 0 0 0 .5px rgba(255, 255, 255, .07); } }
+.kp.alert { background: var(--dn-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dn-solid) 40%, transparent); }
+.chip { height: 32px; padding: 0 13px; font-size: 13.5px; box-shadow: 0 0 0 .5px var(--edge); background: var(--surface); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); box-shadow: none; }
+.hs { gap: 8px; }
+
+/* press feedback on every tappable row */
+.row, .cr-main, .hr-main, .kp, .hb-leg a, .cg-line { transition: background-color .12s; }
+.row:active, .hr-main:active, .cr:active { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.btn { min-height: 44px; } .btn.sm { min-height: 34px; }
+.btn:active { transform: scale(.97); }
+
+/* section titles: one size everywhere */
+.sec { margin-top: 24px; }
+.sec-h h2, .body.compact .sec-h h2 { font-size: 19px; font-weight: 720; letter-spacing: -.025em; }
+.sec-h .more { font-size: 14.5px; font-weight: 600; }
+.sec-p { font-size: 13.5px; }
+.month { margin: 18px 4px 8px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); font-weight: 650; }
+
+/* bottom sheets feel native */
+.sheet { border-radius: 20px 20px 0 0; box-shadow: 0 -10px 40px -10px rgba(0, 0, 0, .25); }
+.sheet .grab { width: 36px; height: 5px; margin-bottom: 12px; background: color-mix(in srgb, var(--ink-3) 45%, transparent); }
+
+@media (min-width: 900px) {
+  .bar.root { grid-template-columns: 1fr auto 1fr; }
+  .lt h1 { font-size: 36px; }
+}
+/* v9: three-up stat tiles on narrow phones — labels wrap instead of clipping */
+@media (max-width: 430px) { .stats:not(.rows) .stat .k { white-space: normal; line-height: 1.25; } }

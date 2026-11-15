@@ -46,9 +46,9 @@ const DRAW = {
     return `<div class="td-gauge ${G.cls}"><div class="td-gh"><span class="k">Market gauge · ${day(R.as_of)}</span><b>${G.t}</b></div><p>${G.line}</p><p class="small">${gaugeFacts(R)}</p></div>
       ${sec('Stocks above their 50-day average', `<div class="panel pad"><div id="eg-b" class="eg-chart"></div></div>`, { p: `Counted across ${fmt.int(R.universe)} liquid stocks. Above 55% with the index rising reads Full size. Below 30% reads No new buys.` })}
       <div class="stats" style="margin-top:14px">
-        <div class="stat"><div class="k">Above 200-day avg</div><div class="v">${fmt.x(R.b200, 0)}%</div><div class="d">long-term health</div></div>
+        <div class="stat"><div class="k">Above 200-day</div><div class="v">${fmt.x(R.b200, 0)}%</div><div class="d">long-term health</div></div>
         <div class="stat"><div class="k">New highs / lows</div><div class="v"><span class="up">${fmt.int(R.highs)}</span> / <span class="dn">${fmt.int(R.lows)}</span></div><div class="d">52-week, today</div></div>
-        <div class="stat"><div class="k">NIFTY 500, 1 month</div><div class="v ${tone(R.index.r21)}">${fmt.sp(R.index.r21)}</div><div class="d">${fmt.sp(R.index.r5)} this week</div></div>
+        <div class="stat"><div class="k">NIFTY 500 · 1M</div><div class="v ${tone(R.index.r21)}">${fmt.sp(R.index.r21)}</div><div class="d">${fmt.sp(R.index.r5)} this week</div></div>
       </div>
       ${sec('Did the gauge matter for past AI calls?', `<div class="stats">${['full', 'half', 'none'].map(k => `<div class="stat"><div class="k">${GAUGE[k].t}</div><div class="v ${tone(e[k]?.avg)}">${e[k] ? fmt.sp(e[k].avg) : '—'}</div><div class="d">${e[k] ? `${e[k].n} calls · ${fmt.x(e[k].win, 0)}% won` : 'no calls'}</div></div>`).join('')}</div>`,
     { p: 'Average result per closed V2 and V3 call, after costs, grouped by the reading on the day before entry. The rule was set first and then checked; it was not tuned to fit.' })}
